@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "857102138852",
+    "project_id": "trianglehomes-b7306",
+    "storage_bucket": "trianglehomes-b7306.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857102138852:android:f9b141bcdc77cf62b31bf1",
+        "android_client_info": {
+          "package_name": "com.example.triangle_home"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "857102138852-1jbvlno6tegogae39p9knubb4pvr4im4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.triangle_home",
+            "certificate_hash": "6112c9b94697c5be36331d5b63f04d8adb8ffa45"
+          }
+        },
+        {
+          "client_id": "857102138852-jist7a8fj6vrg22ucbka2v7ce87jsq06.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAXZRKcJvCPWUvn9AaApaRdbvxDryb-uB8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "857102138852-jist7a8fj6vrg22ucbka2v7ce87jsq06.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "857102138852-oikd0muoeagu1grqtr29pg7m9gt2bt9a.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.triangleHome"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
