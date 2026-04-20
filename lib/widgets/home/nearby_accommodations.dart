@@ -1,260 +1,231 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_animate/flutter_animate.dart';
-
-// class NearbyAccommodations extends StatelessWidget {
-//   final List<Map<String, dynamic>> accommodations;
-
-//   const NearbyAccommodations({
-//     super.key,
-//     required this.accommodations,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         const Padding(
-//           padding: EdgeInsets.all(16),
-//           child: Text(
-//             'PG Accommodation Near Yenepoya University',
-//             style: TextStyle(
-//               fontSize: 16,
-//               fontWeight: FontWeight.bold,
-//             ),
-//           ),
-//         ),
-//         SizedBox(
-//           height: 280,
-//           child: ListView.builder(
-//             scrollDirection: Axis.horizontal,
-//             padding: const EdgeInsets.symmetric(horizontal: 16),
-//             itemCount: accommodations.length,
-//             itemBuilder: (context, index) {
-//               final accommodation = accommodations[index];
-//               return Container(
-//                 width: 280,
-//                 margin: const EdgeInsets.only(right: 16),
-//                 decoration: BoxDecoration(
-//                   color: Colors.white,
-//                   borderRadius: BorderRadius.circular(12),
-//                 ),
-//                 child: Column(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   children: [
-//                     ClipRRect(
-//                       borderRadius: const BorderRadius.vertical(
-//                         top: Radius.circular(12),
-//                       ),
-//                       child: Image.network(
-//                         accommodation['image'],
-//                         height: 180,
-//                         width: double.infinity,
-//                         fit: BoxFit.cover,
-//                       ),
-//                     ),
-//                     Padding(
-//                       padding: const EdgeInsets.all(12),
-//                       child: Column(
-//                         crossAxisAlignment: CrossAxisAlignment.start,
-//                         children: [
-//                           Text(
-//                             accommodation['title'],
-//                             style: const TextStyle(
-//                               fontSize: 16,
-//                               fontWeight: FontWeight.bold,
-//                             ),
-//                           ),
-//                           const SizedBox(height: 4),
-//                           Text(
-//                             accommodation['location'],
-//                             style: TextStyle(
-//                               color: Colors.grey[600],
-//                             ),
-//                           ),
-//                           const SizedBox(height: 8),
-//                           Row(
-//                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                             children: [
-//                               Row(
-//                                 children: [
-//                                   const Icon(
-//                                     Icons.people_outline,
-//                                     size: 20,
-//                                     color: Colors.grey,
-//                                   ),
-//                                   const SizedBox(width: 4),
-//                                   Text(
-//                                     accommodation['type'],
-//                                     style: const TextStyle(
-//                                       color: Colors.grey,
-//                                     ),
-//                                   ),
-//                                 ],
-//                               ),
-//                               Text(
-//                                 '₹${accommodation['price']}/Month',
-//                                 style: const TextStyle(
-//                                   fontWeight: FontWeight.bold,
-//                                 ),
-//                               ),
-//                             ],
-//                           ),
-//                         ],
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ).animate().fadeIn(delay: (800 + (index * 200)).ms);
-//             },
-//           ),
-//         ),
-//       ],
-//     );
-//   }
-// }
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:triangle_home/screens/room_details_screen.dart';
+import 'package:triangle_home/theme/app_theme.dart';
 
 class NearbyAccommodations extends StatelessWidget {
   final List<Map<String, dynamic>> accommodations;
+  final String selectedCity;
 
   const NearbyAccommodations({
     super.key,
     required this.accommodations,
+    required this.selectedCity,
   });
 
   @override
   Widget build(BuildContext context) {
+    final filteredAccommodations =
+        (selectedCity.toLowerCase() == 'near me' ||
+                selectedCity.toLowerCase() == 'all' ||
+                selectedCity.isEmpty)
+            ? accommodations
+            : accommodations
+                .where(
+                  (acc) =>
+                      (acc['city']?.toString().toLowerCase() ?? '') ==
+                      selectedCity.toLowerCase(),
+                )
+                .toList();
+
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFFEAF1F8), Color(0xFFFFFFFF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
-        ),
-      ),
+      color: Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'PG Accommodation Near Yenepoya University',
-              style: TextStyle(
-                fontSize: 14,
-                fontFamily: 'Poppins',
+              selectedCity.toLowerCase() == 'near me'
+                  ? 'PG Accommodations Near You'
+                  : 'PG Accommodations in $selectedCity',
+              style: const TextStyle(
+                fontSize: AppTheme.fontBase,
+                fontFamily: AppTheme.fontFamily,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                color: AppTheme.textDarkColor,
               ),
             ),
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 300,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: accommodations.length,
-              itemBuilder: (context, index) {
-                final accommodation = accommodations[index];
-                return Container(
-                  width: 260,
-                  margin: const EdgeInsets.only(right: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+            height: 330,
+            child:
+                filteredAccommodations.isEmpty
+                    ? const Center(
+                      child: Text(
+                        "No properties found.",
+                        style: TextStyle(color: Colors.grey),
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(24),
-                        ),
-                        child: Image.network(
-                          accommodation['image'],
-                          height: 160,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              accommodation['title'],
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontFamily:  'outfit',
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              accommodation['location'],
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontFamily: 'outfit',
-                                fontWeight: FontWeight.normal,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.people_outline,
-                                      size: 18,
-                                      color: Colors.blueGrey,
+                    )
+                    : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: filteredAccommodations.length,
+                      itemBuilder: (context, index) {
+                        final accommodation = filteredAccommodations[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => RoomDetailsScreen(
+                                      accommodation: accommodation,
                                     ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      accommodation['type'],
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.blueGrey,
-                                      ),
-                                    ),
-                                  ],
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 280,
+                            margin: const EdgeInsets.only(right: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
                                 ),
-                                Text(
-                                  '₹${accommodation['price']}/Month',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF2C3E50),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(20),
+                                  ),
+                                  child: CachedNetworkImage(
+                                    imageUrl: accommodation['image'] ?? '',
+                                    height: 180,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    placeholder:
+                                        (context, url) => Container(
+                                          height: 180,
+                                          color: Colors.grey[200],
+                                          child: const Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: AppTheme.primaryColor,
+                                            ),
+                                          ),
+                                        ),
+                                    errorWidget:
+                                        (context, url, error) => Container(
+                                          height: 180,
+                                          color: Colors.grey[300],
+                                          child: const Center(
+                                            child: Icon(Icons.error),
+                                          ),
+                                        ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        accommodation['title'] ?? '',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: AppTheme.fontBase,
+                                          fontFamily: AppTheme.fontFamily,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppTheme.textDarkColor,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        accommodation['location'] ?? '',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: AppTheme.fontSM,
+                                          fontFamily: AppTheme.fontFamily,
+                                          fontWeight: FontWeight.normal,
+                                          color: AppTheme.textLightColor,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              SvgPicture.asset(
+                                                'assets/images/sharingicon.svg',
+                                                height: 16,
+                                                width: 16,
+                                                colorFilter:
+                                                    const ColorFilter.mode(
+                                                      AppTheme.primaryColor,
+                                                      BlendMode.srcIn,
+                                                    ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                accommodation['sharing'] ?? '',
+                                                style: const TextStyle(
+                                                  fontSize: AppTheme.fontSM,
+                                                  fontFamily:
+                                                      AppTheme.fontFamily,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: AppTheme.primaryColor,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Text.rich(
+                                            TextSpan(
+                                              children: [
+                                                TextSpan(
+                                                  text:
+                                                      '₹${accommodation['price'] ?? '0'}',
+                                                  style: const TextStyle(
+                                                    fontSize: AppTheme.fontLG,
+                                                    fontFamily:
+                                                        AppTheme.fontFamily,
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        AppTheme.textDarkColor,
+                                                  ),
+                                                ),
+                                                const TextSpan(
+                                                  text: ' /Month',
+                                                  style: TextStyle(
+                                                    fontSize:
+                                                        AppTheme.fontXS + 1,
+                                                    fontFamily:
+                                                        AppTheme.fontFamily,
+                                                    fontWeight: FontWeight.w500,
+                                                    color:
+                                                        AppTheme.textLightColor,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(delay: (300 + (index * 150)).ms);
-              },
-            ),
+                          ),
+                        ).animate().fadeIn(delay: (300 + index * 150).ms);
+                      },
+                    ),
           ),
         ],
       ),

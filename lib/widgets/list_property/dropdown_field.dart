@@ -12,7 +12,7 @@ class DropdownField extends StatelessWidget {
     required this.label,
     required this.controller,
     required this.items,
-    this.required = false,
+    this.required = false, required void Function(dynamic value) onChanged,
   });
 
   @override

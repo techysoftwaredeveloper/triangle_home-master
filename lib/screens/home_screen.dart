@@ -1,349 +1,250 @@
-// import 'package:flutter/material.dart';
-// import 'package:triangle_home/screens/search_screen.dart';
-// import 'package:triangle_home/theme/app_theme.dart';
-// import 'package:triangle_home/widgets/home/accommodation_types.dart';
-// import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
-// import 'package:triangle_home/widgets/home/city_tags.dart';
-// import 'package:triangle_home/widgets/home/enrollment_card.dart';
-// import 'package:triangle_home/widgets/home/nearby_accommodations.dart';
-// import 'package:triangle_home/widgets/home/top_hostels.dart';
-// import 'package:flutter_animate/flutter_animate.dart';
-
-// class HomeScreen extends StatefulWidget {
-//   const HomeScreen({super.key});
-
-//   @override
-//   State<HomeScreen> createState() => _HomeScreenState();
-// }
-
-// class _HomeScreenState extends State<HomeScreen> {
-//   final TextEditingController _searchController = TextEditingController();
-//   //int _selectedIndex = 0;
-
-//   final List<String> _cities = [
-//     'Bangalore',
-//     'Chennai',
-//     'Kochi',
-//     'Mangalore',
-//   ];
-
-//   final List<Map<String, String>> _topHostels = [
-//     {
-//       'name': 'Yenepoya University',
-//       'location': 'Mangalore, Karnataka',
-//       'image': 'https://demo3.chillipages.com/Yenepoya-2023/yenepoya-ayurveda-college/og.png',
-//     },
-//     {
-//       'name': 'Yenepoya Medical',
-//       'location': 'Bangalore, Karnataka',
-//       'image': 'https://demo3.chillipages.com/Yenepoya-2023/yenepoya-ayurveda-college/og.png',
-//     },
-//     {
-//       'name': 'S-Vyas University',
-//       'location': 'chennai, Tamil Nadu',
-//       'image': 'https://www.turiya.co/360/SVYASA/Assets/clientlogo1.png',
-//     },
-//   ];
-
-//   final List<Map<String, dynamic>> _accommodations = [
-//     {
-//       'title': 'Aurora Paying Guest Accommodation',
-//       'location': 'Anna Nagar, Chennai',
-//       'type': 'Twin Sharing',
-//       'price': 6500,
-//       'image': 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg',
-//     },
-//     {
-//       'title': 'Aurora Deluxe PG',
-//       'location': 'Anna Nagar, Chennai',
-//       'type': 'Twin Sharing',
-//       'price': 7500,
-//       'image': 'https://images.pexels.com/photos/271618/pexels-photo-271618.jpeg',
-//     },
-//   ];
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Colors.grey[100],
-//       appBar: _buildAppBar(context),
-//       body: SingleChildScrollView(
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             CityTags(cities: _cities),
-//             const AccommodationTypes(),
-//             TopHostels(hostels: _topHostels),
-//             NearbyAccommodations(accommodations: _accommodations),
-//             const EnrollmentCard(),
-//           ],
-//         ),
-//       ),
-//       bottomNavigationBar: const HomeBottomNavBar(selectedIndex: 0),
-//       // bottomNavigationBar: HomeBottomNavBar(
-//       //   selectedIndex: _selectedIndex,
-//       //   onTap: (index) => setState(() => _selectedIndex = index),
-//       // ),
-//     );
-//   }
-
-// PreferredSizeWidget _buildAppBar(BuildContext context) {
-//   return PreferredSize(
-//     preferredSize: const Size.fromHeight(150),
-//     child: Container(
-//       decoration: const BoxDecoration(
-//         gradient: LinearGradient(
-//           colors: [AppTheme.primaryColor, AppTheme.accentColor],
-//           begin: Alignment.topLeft,
-//           end: Alignment.bottomRight,
-//         ),
-//         borderRadius: BorderRadius.only(
-//           bottomLeft: Radius.circular(20),
-//           bottomRight: Radius.circular(20),
-//         ),
-//       ),
-//       child: SafeArea(
-//         child: Padding(
-//           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-//           child: Column(
-//             children: [
-//               Row(
-//                 children: [
-//                   Image.asset(
-//                     'assets/images/logomain.png',
-//                     height: 50,
-//                     width: 50,
-//                   ),
-//                   const SizedBox(width: 8),
-//                   const Text(
-//                     'TRIANGLE HOMES',
-//                     style: TextStyle(
-//                       color: Colors.white,
-//                       fontSize: 16,
-//                       fontWeight: FontWeight.w600,
-//                       letterSpacing: 1.2,
-//                     ),
-//                   ),
-//                 ],
-//               ),
-//               const SizedBox(height: 16),
-
-//               // ⬇️ Wrapped with GestureDetector
-//               GestureDetector(
-//                 onTap: () {
-//                   Navigator.push(
-//                     context,
-//                     MaterialPageRoute(builder: (_) => const SearchScreen()),
-//                   );
-//                 },
-//                 child: Container(
-//                   height: 45,
-//                   decoration: BoxDecoration(
-//                     color: Colors.white,
-//                     borderRadius: BorderRadius.circular(30),
-//                     boxShadow: [
-//                       BoxShadow(
-//                         color: Colors.black.withOpacity(0.1),
-//                         blurRadius: 10,
-//                         offset: const Offset(0, 2),
-//                       ),
-//                     ],
-//                   ),
-//                   child: IgnorePointer(
-//                     child: TextField(
-//                       controller: _searchController,
-//                       decoration: InputDecoration(
-//                         hintText: 'Search for Area/City/College',
-//                         hintStyle: TextStyle(
-//                           color: Colors.grey[600],
-//                           fontSize: 14,
-//                         ),
-//                         prefixIcon: const Icon(Icons.search, color: Colors.grey),
-//                         border: InputBorder.none,
-//                         contentPadding: const EdgeInsets.symmetric(
-//                           horizontal: 20,
-//                           vertical: 12,
-//                         ),
-//                       ),
-//                     ),
-//                   ),
-//                 ),
-//               ).animate().fadeIn().slideY(begin: -0.2, end: 0),
-//             ],
-//           ),
-//         ),
-//       ),
-//     ),
-//   );
-// }
-
-//--------------------------------------------------------------------------
-
-// PreferredSizeWidget _buildAppBar() {
-//   return AppBar(
-//     backgroundColor: Theme.of(context).primaryColor,
-//     elevation: 0,
-//     toolbarHeight: 150,
-
-//     title: Column(
-
-//       children: [
-//         Row(
-//           children: [
-//           //  TriangleLogo(size: 24),
-//            Image.asset(
-//               'assets/images/logomain.png',
-//               height: 50,
-//               width: 50,
-//             ),
-//             const SizedBox(width: 8),
-//             const Text(
-//               'TRIANGLE HOMES',
-//               style: TextStyle(
-//                 color: Colors.white,
-//                 fontSize: 16,
-//                 fontWeight: FontWeight.w600,
-//                 letterSpacing: 1.2,
-//               ),
-//             ),
-//           ],
-//         ),
-//         const SizedBox(height: 16),
-//         Container(
-//           height: 45,
-//           decoration: BoxDecoration(
-//             color: Colors.white,
-//             borderRadius: BorderRadius.circular(30),
-//             boxShadow: [
-//               BoxShadow(
-//                 color: Colors.black.withOpacity(0.1),
-//                 blurRadius: 10,
-//                 offset: const Offset(0, 2),
-//               ),
-//             ],
-//           ),
-//           child: TextField(
-//             controller: _searchController,
-//             decoration: InputDecoration(
-//               hintText: 'Search for Area/City/College',
-//               hintStyle: TextStyle(
-//                 color: Colors.grey[600],
-//                 fontSize: 14,
-//               ),
-//               prefixIcon: const Icon(Icons.search, color: Colors.grey),
-//               border: InputBorder.none,
-//               contentPadding: const EdgeInsets.symmetric(
-//                 horizontal: 20,
-//                 vertical: 12,
-//               ),
-//             ),
-//           ),
-//         ).animate().fadeIn().slideY(begin: -0.2, end: 0),
-//       ],
-//     ),
-//     // leading: IconButton(
-//     //   icon: const Icon(Icons.menu, color: Colors.white),
-//     //   onPressed: () {},
-//     // ),
-//   );
-// }
-//---------------------------------------------------------------------------
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:triangle_home/providers/property_provider.dart';
+import 'package:triangle_home/screens/auth/login_screen.dart';
+import 'package:triangle_home/screens/profile/profile_screen.dart';
 import 'package:triangle_home/screens/search_screen.dart';
+import 'package:triangle_home/services/firebase_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/home/accommodation_types.dart';
 import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
-import 'package:triangle_home/widgets/home/city_tags.dart';
+import 'package:triangle_home/widgets/home/state_tags.dart';
 import 'package:triangle_home/widgets/home/enrollment_card.dart';
+import 'package:triangle_home/widgets/home/hoster_registration_card.dart';
 import 'package:triangle_home/widgets/home/nearby_accommodations.dart';
 import 'package:triangle_home/widgets/home/top_hostels.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
-  final List<String> _cities = ['Bangalore', 'Chennai', 'Kochi', 'Mangalore'];
-
-  final List<Map<String, String>> _topHostels = [
-    {
-      'name': 'Yenepoya University',
-      'location': 'Mangalore, Karnataka',
-      'image':
-          'https://demo3.chillipages.com/Yenepoya-2023/yenepoya-ayurveda-college/og.png',
-    },
-    {
-      'name': 'Yenepoya Medical',
-      'location': 'Bangalore, Karnataka',
-      'image':
-          'https://demo3.chillipages.com/Yenepoya-2023/yenepoya-ayurveda-college/og.png',
-    },
-    {
-      'name': 'S-Vyas University',
-      'location': 'Chennai, Tamil Nadu',
-      'image': 'https://www.turiya.co/360/SVYASA/Assets/clientlogo1.png',
-    },
-  ];
-
-  List<Map<String, dynamic>> _accommodations = [];
+  List<String> _states = [];
+  String _currentCity = '';
+  String _detectedCity = '';
 
   @override
   void initState() {
     super.initState();
-    _fetchPropertiesFromFirestore();
+    _fetchCitiesFromFirestore();
+    _getCurrentCityFromLocation();
+    _scrollController.addListener(_onScroll);
   }
 
-  Future<void> _fetchPropertiesFromFirestore() async {
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      ref.read(paginatedPropertiesProvider.notifier).fetchNextBatch();
+    }
+  }
+
+  Future<void> _fetchCitiesFromFirestore() async {
     try {
       final snapshot =
-          await FirebaseFirestore.instance.collection('properties').get();
-      final List<Map<String, dynamic>> properties =
-          snapshot.docs.map((doc) {
-            final data = doc.data();
-            return {
-              'title': data['collegeName'] ?? 'Unnamed Property',
-              'location':
-                  "${data['addressLine1'] ?? ''}, ${data['city'] ?? ''}",
-              'type': data['type'] ?? 'N/A',
-              'price':
-                  int.tryParse(data['price1']?.replaceAll(',', '') ?? '0') ?? 0,
-              'image':
-                  (data['imageUrls'] is List && data['imageUrls'].isNotEmpty)
-                      ? data['imageUrls'][0]
-                      : 'https://via.placeholder.com/150',
-            };
-          }).toList();
-
+          await FirebaseFirestore.instance.collection('cities').get();
+      
+      debugPrint('📍 Found ${snapshot.docs.length} cities in Firestore');
+      if (snapshot.docs.isNotEmpty) {
+        debugPrint('📍 Available cities: ${snapshot.docs.map((d) => d['name']).join(', ')}');
+      } else {
+        debugPrint('⚠️ No cities found in Firestore! Please run uploadCitiesToFirestore()');
+      }
+      
+      final List<String> cities =
+          snapshot.docs.map((doc) => doc['name'].toString()).toList();
       setState(() {
-        _accommodations = properties;
+        _states = cities;
       });
     } catch (e) {
-      debugPrint('Error fetching properties: $e');
+      debugPrint('❌ Error fetching cities: $e');
+    }
+  }
+
+  Future<void> _getCurrentCityFromLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
+        Position position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+          ),
+        );
+
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+
+        if (placemarks.isNotEmpty) {
+          final Placemark place = placemarks.first;
+          String detectedCity = place.locality?.trim() ?? '';
+
+          if (detectedCity.isEmpty) {
+            debugPrint('Detected city is empty');
+            return;
+          }
+
+          final snapshot =
+              await FirebaseFirestore.instance.collection('cities').get();
+
+          // Find matching city (case-insensitive)
+          String? matchedCity;
+          for (final doc in snapshot.docs) {
+            final cityName = doc['name'].toString();
+            if (cityName.toLowerCase() == detectedCity.toLowerCase()) {
+              matchedCity = cityName;
+              break;
+            }
+          }
+
+          if (matchedCity != null) {
+            setState(() {
+              _detectedCity = matchedCity!;
+              _currentCity = _detectedCity;
+            });
+
+            _fetchAreasByCity(_detectedCity);
+          } else {
+            debugPrint(
+              'City "$detectedCity" not found in Firestore. Available cities: ${snapshot.docs.map((d) => d['name']).join(', ')}',
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching location or city: $e');
+    }
+  }
+
+  Future<void> _fetchAreasByCity(String city) async {
+    try {
+      // First, find the document by city name (case-insensitive)
+      final snapshot =
+          await FirebaseFirestore.instance.collection('cities').get();
+
+      String? docId;
+      for (final doc in snapshot.docs) {
+        final cityName = doc['name'].toString();
+        if (cityName.toLowerCase() == city.toLowerCase()) {
+          docId = doc.id;
+          break;
+        }
+      }
+
+      if (docId != null) {
+        final doc =
+            await FirebaseFirestore.instance
+                .collection('cities')
+                .doc(docId)
+                .get();
+
+        if (doc.exists) {
+          setState(() {
+            // _allLocalities = areas;
+            // _selectedLocalities = areas.take(2).toList();
+          });
+        } else {
+          debugPrint('City document "$docId" not found.');
+        }
+      } else {
+        debugPrint('City "$city" not found in Firestore.');
+      }
+    } catch (e) {
+      debugPrint('Error fetching areas: $e');
+    }
+  }
+
+  void _handleCitySelected(String city) {
+    setState(() {
+      _currentCity = city;
+    });
+    _fetchAreasByCity(city);
+  }
+
+  void _navigateToProfileOrLogin(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen(isStudent: true)),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final propertiesState = ref.watch(paginatedPropertiesProvider);
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: _buildAppBar(context),
       body: SingleChildScrollView(
+        controller: _scrollController,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CityTags(cities: _cities),
+            StateTags(
+              states: _states,
+              selectedState: _currentCity,
+              currentLocation: _detectedCity,
+              onStateSelected: _handleCitySelected,
+            ),
             const AccommodationTypes(),
-            TopHostels(hostels: _topHostels),
-            NearbyAccommodations(accommodations: _accommodations),
+            StreamBuilder<List<Map<String, dynamic>>>(
+              stream: FirebaseService().getTopHostels(limit: 5),
+              builder: (context, snapshot) {
+                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                  return TopHostels(hostels: snapshot.data!);
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+            const SizedBox(height: 10),
+            propertiesState.when(
+              data:
+                  (accommodations) => NearbyAccommodations(
+                    accommodations: accommodations,
+                    selectedCity: _currentCity,
+                  ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error:
+                  (error, stack) =>
+                      Center(child: Text('Error: ${error.toString()}')),
+            ),
+            const SizedBox(height: 10),
             const EnrollmentCard(),
+            const HosterRegistrationCard(),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -357,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [AppTheme.primaryColor, AppTheme.accentColor],
+            colors: [AppTheme.primaryColor, AppTheme.primaryColor],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -368,69 +269,107 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             child: Column(
               children: [
                 Row(
                   children: [
-                    Image.asset(
-                      'assets/images/logomain.png',
-                      height: 50,
-                      width: 50,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'TRIANGLE HOMES',
-                      style: TextStyle(
+                    IconButton(
+                      icon: const Icon(
+                        Icons.person_outline,
                         color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.2,
+                      ),
+                      onPressed: () => _navigateToProfileOrLogin(context),
+                    ),
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SvgPicture.asset(
+                            'assets/images/Logosmall.svg',
+                            height: 15,
+                            width: 15,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'TRIANGLE HOMES',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'outfit',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 4,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    const SizedBox(width: 48),
                   ],
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SearchScreen()),
-                    );
-                  },
+                  onTap:
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SearchScreen()),
+                      ),
                   child: Container(
                     height: 45,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(15),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
-                    child: IgnorePointer(
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Search for Area/City/College',
-                          hintStyle: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.search,
-                            color: Colors.grey,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: IgnorePointer(
+                            child: TextField(
+                              controller: _searchController,
+                              style: const TextStyle(
+                                fontFamily: 'outfit',
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                                color: Colors.black,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Search for Area/City/College',
+                                hintStyle: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontFamily: 'outfit',
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: SvgPicture.asset(
+                            'assets/images/searchicon.svg',
+                            height: 20,
+                            width: 20,
+                            colorFilter: ColorFilter.mode(
+                              Colors.grey[600]!,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ).animate().fadeIn().slideY(begin: -0.2, end: 0),

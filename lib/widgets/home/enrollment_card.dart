@@ -38,9 +38,9 @@
 //   }
 // }
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:triangle_home/theme/app_theme.dart';
 
 class EnrollmentCard extends StatelessWidget {
   const EnrollmentCard({super.key});
@@ -59,7 +59,7 @@ class EnrollmentCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -77,19 +77,19 @@ class EnrollmentCard extends StatelessWidget {
                       TextSpan(
                         text: 'Enrolled In ',
                         style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'outfit',
+                          fontSize: AppTheme.fontMD,
+                          fontFamily: AppTheme.fontFamily,
                           fontWeight: FontWeight.w600,
-                          color: Colors.teal,
+                          color: AppTheme.successColor,
                         ),
                       ),
                       TextSpan(
                         text: 'Yenepoya University?',
                         style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'outfit',
+                          fontSize: AppTheme.fontMD,
+                          fontFamily: AppTheme.fontFamily,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF4CAF50), // green
+                          color: AppTheme.successColor,
                         ),
                       ),
                     ],
@@ -100,11 +100,12 @@ class EnrollmentCard extends StatelessWidget {
                   TextSpan(
                     children: [
                       TextSpan(
-                        text: 'Now easily book your exclusive\nHostel Room in only ',
+                        text:
+                            'Now easily book your exclusive\nHostel Room in only ',
                         style: TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'outfit',
-                          color: Color(0xFF666666),
+                          fontSize: AppTheme.fontSM,
+                          fontFamily: AppTheme.fontFamily,
+                          color: AppTheme.textLightColor,
                           height: 1.5,
                         ),
                       ),
@@ -112,9 +113,9 @@ class EnrollmentCard extends StatelessWidget {
                         text: '2 Simple Steps!',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontFamily: 'outfit',
-                          fontSize: 12,
-                          color: Colors.black87,
+                          fontFamily: AppTheme.fontFamily,
+                          fontSize: AppTheme.fontSM,
+                          color: AppTheme.textColor,
                         ),
                       ),
                     ],

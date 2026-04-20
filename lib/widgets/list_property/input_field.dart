@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class InputField extends StatelessWidget {
@@ -20,7 +19,8 @@ class InputField extends StatelessWidget {
     this.obscureText = false,
     this.validator,
     this.textCapitalization = TextCapitalization.none,
-    this.prefix, required int maxLines,
+    this.prefix,
+    required int maxLines,
   });
 
   @override
@@ -32,10 +32,7 @@ class InputField extends StatelessWidget {
         children: [
           Text(
             '$label${required ? '*' : ''}',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
           TextFormField(
@@ -64,14 +61,16 @@ class InputField extends StatelessWidget {
                 vertical: 12,
               ),
             ),
-            validator: validator ?? (required
-                ? (value) {
-                    if (value == null || value.isEmpty) {
-                      return '$label is required';
+            validator:
+                validator ??
+                (required
+                    ? (value) {
+                      if (value == null || value.isEmpty) {
+                        return '$label is required';
+                      }
+                      return null;
                     }
-                    return null;
-                  }
-                : null),
+                    : null),
           ),
         ],
       ),

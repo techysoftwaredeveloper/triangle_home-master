@@ -1,1307 +1,940 @@
-// // import 'package:flutter/material.dart';
-// // import 'package:flutter_animate/flutter_animate.dart';
-
-// // class SearchScreen extends StatefulWidget {
-// //   const SearchScreen({super.key});
-
-// //   @override
-// //   State<SearchScreen> createState() => _SearchScreenState();
-// // }
-
-// // class _SearchScreenState extends State<SearchScreen> {
-// //   final List<String> _cities = [
-// //     'Chennai',
-// //     'Mangalore',
-// //     'Bangalore',
-// //     'Kochi',
-// //     'Hyderabad',
-// //     'Pune',
-// //   ];
-// //   final Map<String, List<String>> _cityLocalities = {
-// //     'Chennai': ['CIT Nagar', 'Alwarpet', 'T Nagar', 'Anna Nagar', 'Velachery'],
-// //     'Mangalore': ['Deralakatte', 'City Center', 'Hampankatta', 'Bejai'],
-// //     'Bangalore': ['Koramangala', 'HSR Layout', 'Indiranagar', 'Whitefield'],
-// //     'Kochi': ['Kakkanad', 'Edappally', 'Fort Kochi', 'Palarivattom'],
-// //   };
-
-// //   String _selectedCity = 'Chennai';
-// //   String _selectedSearchType = 'By Area';
-// //   List<String> _selectedLocalities = ['CIT Nagar', 'Alwarpet'];
-// //   String _selectedAccommodationType = 'Paying Guest Hostels';
-// //   String _selectedTenantType = 'Anyone';
-// //   String _selectedRoomType = 'Any';
-
-// //   void _handleAddLocality() {
-// //     showModalBottomSheet(
-// //       context: context,
-// //       backgroundColor: Colors.transparent,
-// //       builder:
-// //           (context) => Container(
-// //             decoration: const BoxDecoration(
-// //               color: Colors.white,
-// //               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-// //             ),
-// //             child: Column(
-// //               mainAxisSize: MainAxisSize.min,
-// //               children: [
-// //                 Container(
-// //                   padding: const EdgeInsets.all(16),
-// //                   decoration: BoxDecoration(
-// //                     border: Border(
-// //                       bottom: BorderSide(color: Colors.grey.shade200),
-// //                     ),
-// //                   ),
-// //                   child: Row(
-// //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-// //                     children: [
-// //                       const Text(
-// //                         'Select Locality',
-// //                         style: TextStyle(
-// //                           fontSize: 18,
-// //                           fontWeight: FontWeight.w600,
-// //                         ),
-// //                       ),
-// //                       IconButton(
-// //                         icon: const Icon(Icons.close),
-// //                         onPressed: () => Navigator.pop(context),
-// //                       ),
-// //                     ],
-// //                   ),
-// //                 ),
-// //                 Expanded(
-// //                   child: ListView.builder(
-// //                     padding: const EdgeInsets.symmetric(vertical: 8),
-// //                     itemCount: _cityLocalities[_selectedCity]?.length ?? 0,
-// //                     itemBuilder: (context, index) {
-// //                       final locality = _cityLocalities[_selectedCity]![index];
-// //                       final isSelected = _selectedLocalities.contains(locality);
-
-// //                       return ListTile(
-// //                         title: Text(locality),
-// //                         trailing:
-// //                             isSelected
-// //                                 ? const Icon(
-// //                                   Icons.check_circle,
-// //                                   color: Color(0xFF1E3A8A),
-// //                                 )
-// //                                 : null,
-// //                         onTap: () {
-// //                           if (!isSelected && _selectedLocalities.length < 5) {
-// //                             setState(() {
-// //                               _selectedLocalities.add(locality);
-// //                             });
-// //                             Navigator.pop(context);
-// //                           } else if (isSelected) {
-// //                             setState(() {
-// //                               _selectedLocalities.remove(locality);
-// //                             });
-// //                             Navigator.pop(context);
-// //                           } else {
-// //                             ScaffoldMessenger.of(context).showSnackBar(
-// //                               const SnackBar(
-// //                                 content: Text(
-// //                                   'You can select up to 5 localities',
-// //                                 ),
-// //                                 duration: Duration(seconds: 2),
-// //                               ),
-// //                             );
-// //                           }
-// //                         },
-// //                       );
-// //                     },
-// //                   ),
-// //                 ),
-// //               ],
-// //             ),
-// //           ),
-// //     );
-// //   }
-
-// //   @override
-// //   Widget build(BuildContext context) {
-// //     return Scaffold(
-// //       backgroundColor: Colors.grey[50],
-// //       appBar: AppBar(
-// //         backgroundColor: const Color(0xFF1E3A8A),
-// //         leading: IconButton(
-// //           icon: const Icon(Icons.arrow_back, color: Colors.white),
-// //           onPressed: () => Navigator.pop(context),
-// //         ),
-// //         title: const Text(
-// //           'Search For Hostels/PGs or Apartments',
-// //           style: TextStyle(color: Colors.white, fontSize: 16),
-// //         ),
-// //         elevation: 0,
-// //       ),
-// //       body: SingleChildScrollView(
-// //         child: Column(
-// //           crossAxisAlignment: CrossAxisAlignment.start,
-// //           children: [
-// //             Container(
-// //               padding: const EdgeInsets.all(5),
-// //               child: Column(
-// //                 crossAxisAlignment: CrossAxisAlignment.start,
-// //                 children: [
-// //                   const Text(
-// //                     'Where are you planning to move into?',
-// //                     style: TextStyle(
-// //                       fontSize: 16,
-// //                       fontWeight: FontWeight.w600,
-// //                       color: Color(0xFF1E293B),
-// //                     ),
-// //                   ).animate().fadeIn().slideX(begin: -0.2, end: 0),
-
-// //                   const SizedBox(height: 16),
-
-// //                   const Text(
-// //                     'Select City:',
-// //                     style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
-// //                   ),
-
-// //                   const SizedBox(height: 8),
-
-// //                   SingleChildScrollView(
-// //                     scrollDirection: Axis.horizontal,
-// //                     child: Wrap(
-// //                       spacing: 8,
-// //                       children:
-// //                           _cities.map((city) {
-// //                             final isSelected = city == _selectedCity;
-// //                             return ChoiceChip(
-// //                               label: Text(city),
-// //                               selected: isSelected,
-// //                               onSelected: (selected) {
-// //                                 if (selected) {
-// //                                   setState(() {
-// //                                     _selectedCity = city;
-// //                                     _selectedLocalities.clear();
-// //                                   });
-// //                                 }
-// //                               },
-// //                               backgroundColor: Colors.white,
-// //                               selectedColor: const Color(0xFF1E3A8A),
-// //                               labelStyle: TextStyle(
-// //                                 color:
-// //                                     isSelected ? Colors.white : Colors.black87,
-// //                               ),
-// //                             );
-// //                           }).toList(),
-// //                     ),
-// //                   ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.2, end: 0),
-
-// //                   // Wrap(
-// //                   //   spacing: 0,
-// //                   //   children: _cities.map((city) {
-// //                   //     final isSelected = city == _selectedCity;
-// //                   //     return ChoiceChip(
-// //                   //       label: Text(city),
-// //                   //       selected: isSelected,
-// //                   //       onSelected: (selected) {
-// //                   //         if (selected) {
-// //                   //           setState(() {
-// //                   //             _selectedCity = city;
-// //                   //             _selectedLocalities.clear();
-// //                   //           });
-// //                   //         }
-// //                   //       },
-// //                   //       backgroundColor: Colors.white,
-// //                   //       selectedColor: const Color(0xFF1E3A8A),
-// //                   //       labelStyle: TextStyle(
-// //                   //         color: isSelected ? Colors.white : Colors.black87,
-// //                   //       ),
-// //                   //     );
-// //                   //   }).toList(),
-// //                   // ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.2, end: 0),
-// //                   const SizedBox(height: 16),
-
-// //                   Row(
-// //                     children: [
-// //                       Expanded(
-// //                         child: _buildOptionButton(
-// //                           'By Area',
-// //                           _selectedSearchType == 'By Area',
-// //                           () => setState(() => _selectedSearchType = 'By Area'),
-// //                         ),
-// //                       ),
-// //                       const SizedBox(width: 16),
-// //                       Expanded(
-// //                         child: _buildOptionButton(
-// //                           'By College',
-// //                           _selectedSearchType == 'By College',
-// //                           () => setState(
-// //                             () => _selectedSearchType = 'By College',
-// //                           ),
-// //                         ),
-// //                       ),
-// //                     ],
-// //                   ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.2, end: 0),
-
-// //                   const SizedBox(height: 16),
-
-// //                   Row(
-// //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-// //                     children: [
-// //                       const Text(
-// //                         'Locality Filters:',
-// //                         style: TextStyle(
-// //                           fontSize: 14,
-// //                           color: Color(0xFF64748B),
-// //                         ),
-// //                       ),
-// //                       TextButton(
-// //                         onPressed: _handleAddLocality,
-// //                         child: const Text(
-// //                           'Add More',
-// //                           style: TextStyle(
-// //                             color: Color(0xFF1E3A8A),
-// //                             fontWeight: FontWeight.w500,
-// //                           ),
-// //                         ),
-// //                       ),
-// //                     ],
-// //                   ),
-                 
-// //                   Row(
-// //                     spacing: 8,
-// //                     //spacing: 8,
-// //                     children:
-// //                         _selectedLocalities.map((locality) {
-// //                           return Chip(
-// //                             label: Text(locality),
-// //                             deleteIcon: const Icon(Icons.close, size: 18),
-// //                             onDeleted: () {
-// //                               setState(() {
-// //                                 _selectedLocalities.remove(locality);
-// //                               });
-// //                             },
-// //                             backgroundColor: const Color(
-// //                               0xFF1E3A8A,
-// //                             ).withOpacity(0.1),
-// //                             labelStyle: const TextStyle(
-// //                               color: Color(0xFF1E3A8A),
-// //                             ),
-// //                           );
-// //                         }).toList(),
-// //                   ).animate().fadeIn(delay: 600.ms).slideX(begin: -0.2, end: 0),
-// //                 ],
-// //               ),
-// //             ),
-
-// //             Container(
-// //               margin: const EdgeInsets.symmetric(horizontal: 16),
-// //               padding: const EdgeInsets.all(16),
-// //               decoration: BoxDecoration(
-// //                 color: Colors.white,
-// //                 borderRadius: BorderRadius.circular(12),
-// //                 boxShadow: [
-// //                   BoxShadow(
-// //                     color: Colors.black.withOpacity(0.05),
-// //                     blurRadius: 10,
-// //                     offset: const Offset(0, 2),
-// //                   ),
-// //                 ],
-// //               ),
-// //               child: Column(
-// //                 crossAxisAlignment: CrossAxisAlignment.start,
-// //                 children: [
-// //                   const Text(
-// //                     'Do you have any additional preferences?',
-// //                     style: TextStyle(
-// //                       fontSize: 16,
-// //                       fontWeight: FontWeight.w600,
-// //                       color: Color(0xFF1E293B),
-// //                     ),
-// //                   ).animate().fadeIn(delay: 800.ms).slideX(begin: -0.2, end: 0),
-
-// //                   const SizedBox(height: 16),
-
-// //                   const Text(
-// //                     'Looking For:',
-// //                     style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
-// //                   ),
-
-// //                   const SizedBox(height: 8),
-
-// //                   Row(
-// //                         children: [
-// //                           Expanded(
-// //                             child: _buildOptionButton(
-// //                               'Paying Guest Hostels',
-// //                               _selectedAccommodationType ==
-// //                                   'Paying Guest Hostels',
-// //                               () => setState(
-// //                                 () =>
-// //                                     _selectedAccommodationType =
-// //                                         'Paying Guest Hostels',
-// //                               ),
-// //                             ),
-// //                           ),
-// //                           const SizedBox(width: 16),
-// //                           Expanded(
-// //                             child: _buildOptionButton(
-// //                               'Apartments',
-// //                               _selectedAccommodationType == 'Apartments',
-// //                               () => setState(
-// //                                 () => _selectedAccommodationType = 'Apartments',
-// //                               ),
-// //                             ),
-// //                           ),
-// //                         ],
-// //                       )
-// //                       .animate()
-// //                       .fadeIn(delay: 1000.ms)
-// //                       .slideX(begin: -0.2, end: 0),
-
-// //                   const SizedBox(height: 16),
-
-// //                   const Text(
-// //                     'Tenant Type:',
-// //                     style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
-// //                   ),
-
-// //                   const SizedBox(height: 8),
-
-// //                   Column(
-// //                         children: [
-// //                           Row(
-// //                             children: [
-// //                               Expanded(
-// //                                 child: _buildOptionButton(
-// //                                   'Man',
-// //                                   _selectedTenantType == 'Man',
-// //                                   () => setState(
-// //                                     () => _selectedTenantType = 'Man',
-// //                                   ),
-// //                                 ),
-// //                               ),
-// //                               const SizedBox(width: 16),
-// //                               Expanded(
-// //                                 child: _buildOptionButton(
-// //                                   'Woman',
-// //                                   _selectedTenantType == 'Woman',
-// //                                   () => setState(
-// //                                     () => _selectedTenantType = 'Woman',
-// //                                   ),
-// //                                 ),
-// //                               ),
-// //                             ],
-// //                           ),
-// //                           const SizedBox(height: 8),
-// //                           _buildOptionButton(
-// //                             'Anyone',
-// //                             _selectedTenantType == 'Anyone',
-// //                             () =>
-// //                                 setState(() => _selectedTenantType = 'Anyone'),
-// //                           ),
-// //                         ],
-// //                       )
-// //                       .animate()
-// //                       .fadeIn(delay: 1200.ms)
-// //                       .slideX(begin: -0.2, end: 0),
-
-// //                   const SizedBox(height: 16),
-
-// //                   const Text(
-// //                     'Room Type:',
-// //                     style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
-// //                   ),
-
-// //                   const SizedBox(height: 8),
-
-// //                   Wrap(
-// //                         spacing: 8,
-// //                         runSpacing: 8,
-// //                         children:
-// //                             [
-// //                               'Any',
-// //                               'Single',
-// //                               '2 Sharing',
-// //                               '3 Sharing',
-// //                               '4 Sharing',
-// //                             ].map((type) {
-// //                               return SizedBox(
-// //                                 width:
-// //                                     (MediaQuery.of(context).size.width - 80) /
-// //                                     3,
-// //                                 child: _buildOptionButton(
-// //                                   type,
-// //                                   _selectedRoomType == type,
-// //                                   () =>
-// //                                       setState(() => _selectedRoomType = type),
-// //                                 ),
-// //                               );
-// //                             }).toList(),
-// //                       )
-// //                       .animate()
-// //                       .fadeIn(delay: 1400.ms)
-// //                       .slideX(begin: -0.2, end: 0),
-// //                 ],
-// //               ),
-// //             ),
-
-// //            // const SizedBox(height: 100),
-           
-// //           ],
-// //         ),
-// //       ),
-// //       bottomNavigationBar: Container(
-// //         height: 150,
-// //         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 50),
-// //         decoration: BoxDecoration(
-// //           color: Colors.white,
-// //           boxShadow: [
-// //             BoxShadow(
-// //               color: Colors.black.withOpacity(0.1),
-// //               blurRadius: 10,
-// //               offset: const Offset(0, -5),
-// //             ),
-// //           ],
-// //         ),
-// //         child: ElevatedButton(
-// //           onPressed: () {
-// //             // Implement search functionality
-// //             print('Search with:');
-// //             print('City: $_selectedCity');
-// //             print('Search Type: $_selectedSearchType');
-// //             print('Localities: $_selectedLocalities');
-// //             print('Accommodation Type: $_selectedAccommodationType');
-// //             print('Tenant Type: $_selectedTenantType');
-// //             print('Room Type: $_selectedRoomType');
-// //           },
-// //           style: ElevatedButton.styleFrom(
-// //             backgroundColor: const Color(0xFF1E3A8A),
-// //             foregroundColor: Colors.white,
-// //             padding: const EdgeInsets.symmetric(vertical: 16),
-// //             shape: RoundedRectangleBorder(
-// //               borderRadius: BorderRadius.circular(8),
-// //             ),
-// //           ),
-// //           child: const Text(
-// //             'Search',
-// //             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-// //           ),
-// //         ),
-// //       ).animate().fadeIn(delay: 1600.ms).slideY(begin: 0.2, end: 0),
-// //     );
-// //   }
-
-// //   Widget _buildOptionButton(String text, bool isSelected, VoidCallback onTap) {
-// //     return InkWell(
-// //       onTap: onTap,
-// //       child: Container(
-// //         padding: const EdgeInsets.symmetric(vertical: 12),
-// //         decoration: BoxDecoration(
-// //           color: isSelected ? const Color(0xFF1E3A8A) : Colors.white,
-// //           borderRadius: BorderRadius.circular(8),
-// //           border: Border.all(
-// //             color: isSelected ? const Color(0xFF1E3A8A) : Colors.grey.shade300,
-// //           ),
-// //         ),
-// //         child: Center(
-// //           child: Text(
-// //             text,
-// //             style: TextStyle(
-// //               color: isSelected ? Colors.white : Colors.black87,
-// //               fontWeight: FontWeight.w500,
-// //             ),
-// //           ),
-// //         ),
-// //       ),
-// //     );
-// //   }
-// // }
-
-
-// import 'package:flutter/material.dart';
-// import 'package:flutter_animate/flutter_animate.dart';
-
-// class SearchScreen extends StatefulWidget {
-//   const SearchScreen({super.key});
-
-//   @override
-//   State<SearchScreen> createState() => _SearchScreenState();
-// }
-
-// class _SearchScreenState extends State<SearchScreen> {
-//   final List<String> _cities = [
-//     'Chennai',
-//     'Mangalore',
-//     'Bangalore',
-//     'Kochi',
-//     'Hyderabad',
-//     'Pune',
-//   ];
-//   final Map<String, List<String>> _cityLocalities = {
-//     'Chennai': ['CIT Nagar', 'Alwarpet', 'T Nagar', 'Anna Nagar', 'Velachery'],
-//     'Mangalore': ['Deralakatte', 'City Center', 'Hampankatta', 'Bejai'],
-//     'Bangalore': ['Koramangala', 'HSR Layout', 'Indiranagar', 'Whitefield'],
-//     'Kochi': ['Kakkanad', 'Edappally', 'Fort Kochi', 'Palarivattom'],
-//   };
-
-//   String _selectedCity = 'Chennai';
-//   String _selectedSearchType = 'By Area';
-//   final List<String> _selectedLocalities = ['CIT Nagar', 'Alwarpet'];
-//   String _selectedAccommodationType = 'Paying Guest Hostels';
-//   String _selectedTenantType = 'Anyone';
-//   String _selectedRoomType = 'Any';
-
-
-// void _handleAddLocality() {
-//   showModalBottomSheet(
-//     context: context,
-//     backgroundColor: Colors.transparent,
-//     isScrollControlled: true,
-//     builder: (context) => _selectedSearchType == 'By College'
-//         ? buildCollegeBottomSheet()
-//         : buildAreaBottomSheet(),
-//   );
-// }
-
-// Widget buildAreaBottomSheet() {
-//   return DraggableScrollableSheet(
-//     expand: false,
-//     builder: (_, controller) => Container(
-//       decoration: const BoxDecoration(
-//         color: Colors.white,
-//         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-//       ),
-//       child: Column(
-//         children: [
-//           Container(
-//             padding: const EdgeInsets.all(16),
-//             child: Row(
-//               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//               children: [
-//                 const Text(
-//                   'Select Locality',
-//                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-//                 ),
-//                 IconButton(
-//                   icon: const Icon(Icons.close),
-//                   onPressed: () => Navigator.pop(context),
-//                 ),
-//               ],
-//             ),
-//           ),
-//           Expanded(
-//             child: ListView.builder(
-//               controller: controller,
-//               itemCount: _cityLocalities[_selectedCity]?.length ?? 0,
-//               itemBuilder: (context, index) {
-//                 final locality = _cityLocalities[_selectedCity]![index];
-//                 final isSelected = _selectedLocalities.contains(locality);
-
-//                 return ListTile(
-//                   title: Text(locality),
-//                   trailing: isSelected
-//                       ? const Icon(Icons.check_circle, color: Color(0xFF1E3A8A))
-//                       : null,
-//                   onTap: () {
-//                     setState(() {
-//                       if (isSelected) {
-//                         _selectedLocalities.remove(locality);
-//                       } else if (_selectedLocalities.length < 5) {
-//                         _selectedLocalities.add(locality);
-//                       } else {
-//                         ScaffoldMessenger.of(context).showSnackBar(
-//                           const SnackBar(
-//                             content: Text('You can select up to 5 localities'),
-//                           ),
-//                         );
-//                       }
-//                     });
-//                     Navigator.pop(context);
-//                   },
-//                 );
-//               },
-//             ),
-//           ),
-//         ],
-//       ),
-//     ),
-//   );
-// }
-
-//   // void _handleAddLocality() {
-//   //   showModalBottomSheet(
-//   //     context: context,
-//   //     backgroundColor: Colors.transparent,
-//   //     isScrollControlled: true,
-//   //     builder: (context) => DraggableScrollableSheet(
-//   //       expand: false,
-//   //       builder: (_, controller) => Container(
-//   //         decoration: const BoxDecoration(
-//   //           color: Colors.white,
-//   //           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-//   //         ),
-//   //         child: Column(
-//   //           children: [
-//   //             Container(
-//   //               padding: const EdgeInsets.all(16),
-//   //               child: Row(
-//   //                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//   //                 children: [
-//   //                   const Text(
-//   //                     'Select Locality',
-//   //                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-//   //                   ),
-//   //                   IconButton(
-//   //                     icon: const Icon(Icons.close),
-//   //                     onPressed: () => Navigator.pop(context),
-//   //                   ),
-//   //                 ],
-//   //               ),
-//   //             ),
-//   //             Expanded(
-//   //               child: ListView.builder(
-//   //                 controller: controller,
-//   //                 itemCount: _cityLocalities[_selectedCity]?.length ?? 0,
-//   //                 itemBuilder: (context, index) {
-//   //                   final locality = _cityLocalities[_selectedCity]![index];
-//   //                   final isSelected = _selectedLocalities.contains(locality);
-
-//   //                   return ListTile(
-//   //                     title: Text(locality),
-//   //                     trailing: isSelected
-//   //                         ? const Icon(Icons.check_circle, color: Color(0xFF1E3A8A))
-//   //                         : null,
-//   //                     onTap: () {
-//   //                       setState(() {
-//   //                         if (isSelected) {
-//   //                           _selectedLocalities.remove(locality);
-//   //                         } else if (_selectedLocalities.length < 5) {
-//   //                           _selectedLocalities.add(locality);
-//   //                         } else {
-//   //                           ScaffoldMessenger.of(context).showSnackBar(
-//   //                             const SnackBar(
-//   //                               content: Text('You can select up to 5 localities'),
-//   //                             ),
-//   //                           );
-//   //                         }
-//   //                       });
-//   //                       Navigator.pop(context);
-//   //                     },
-//   //                   );
-//   //                 },
-//   //               ),
-//   //             ),
-//   //           ],
-//   //         ),
-//   //       ),
-//   //     ),
-//   //   );
-//   // }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final width = MediaQuery.of(context).size.width;
-
-//     return Scaffold(
-//       backgroundColor: Colors.grey[50],
-//       appBar: AppBar(
-//         backgroundColor: const Color(0xFF1E3A8A),
-//         title: const Text(
-//           'Search For Hostels/PGs or Apartments',
-//           style: TextStyle(color: Colors.white, fontSize: 16),
-//         ),
-//         leading: IconButton(
-//           icon: const Icon(Icons.arrow_back, color: Colors.white),
-//           onPressed: () => Navigator.pop(context),
-//         ),
-//       ),
-//       body: SafeArea(
-//         child: SingleChildScrollView(
-//           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-//           child: Column(
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: [
-//               const Text(
-//                 'Where are you planning to move into?',
-//                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
-//               ).animate().fadeIn().slideX(begin: -0.2, end: 0),
-
-//               const SizedBox(height: 16),
-
-//               const Text('Select City:', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
-
-//               const SizedBox(height: 8),
-
-//               Wrap(
-//                 spacing: 8,
-//                 children: _cities.map((city) {
-//                   final isSelected = city == _selectedCity;
-//                   return ChoiceChip(
-//                     label: Text(city),
-//                     selected: isSelected,
-//                     onSelected: (selected) {
-//                       if (selected) {
-//                         setState(() {
-//                           _selectedCity = city;
-//                           _selectedLocalities.clear();
-//                         });
-//                       }
-//                     },
-//                     backgroundColor: Colors.white,
-//                     selectedColor: const Color(0xFF1E3A8A),
-//                     labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
-//                   );
-//                 }).toList(),
-//               ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.2, end: 0),
-
-//               const SizedBox(height: 16),
-
-//               Row(
-//                 children: [
-//                   Expanded(
-//                     child: _buildOptionButton(
-//                       'By Area',
-//                       _selectedSearchType == 'By Area',
-//                       () => setState(() => _selectedSearchType = 'By Area'),
-//                     ),
-//                   ),
-//                   const SizedBox(width: 12),
-//                   Expanded(
-//                     child: _buildOptionButton(
-//                       'By College',
-//                       _selectedSearchType == 'By College',
-//                       () => setState(() => _selectedSearchType = 'By College'),
-//                     ),
-//                   ),
-//                 ],
-//               ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.2, end: 0),
-
-//               const SizedBox(height: 16),
-
-//               Row(
-//                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                 children: [
-//                   const Text('Locality Filters:', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
-//                   TextButton(
-//                     onPressed: _handleAddLocality,
-//                     child: const Text('Add More', style: TextStyle(color: Color(0xFF1E3A8A))),
-//                   ),
-//                 ],
-//               ),
-
-//               Wrap(
-//                 spacing: 8,
-//                 runSpacing: 8,
-//                 children: _selectedLocalities.map((locality) {
-//                   return Chip(
-//                     label: Text(locality),
-//                     deleteIcon: const Icon(Icons.close, size: 18),
-//                     onDeleted: () {
-//                       setState(() {
-//                         _selectedLocalities.remove(locality);
-//                       });
-//                     },
-//                     backgroundColor: const Color(0xFF1E3A8A).withOpacity(0.1),
-//                     labelStyle: const TextStyle(color: Color(0xFF1E3A8A)),
-//                   );
-//                 }).toList(),
-//               ).animate().fadeIn(delay: 600.ms).slideX(begin: -0.2, end: 0),
-
-//               const SizedBox(height: 20),
-
-//               _buildSectionTitle('Do you have any additional preferences?'),
-
-//               const SizedBox(height: 16),
-
-//               _buildSubtitle('Looking For:'),
-
-//               const SizedBox(height: 8),
-
-//               Row(
-//                 children: [
-//                   Expanded(
-//                     child: _buildOptionButton(
-//                       'Paying Guest Hostels',
-//                       _selectedAccommodationType == 'Paying Guest Hostels',
-//                       () => setState(() => _selectedAccommodationType = 'Paying Guest Hostels'),
-//                     ),
-//                   ),
-//                   const SizedBox(width: 12),
-//                   Expanded(
-//                     child: _buildOptionButton(
-//                       'Apartments',
-//                       _selectedAccommodationType == 'Apartments',
-//                       () => setState(() => _selectedAccommodationType = 'Apartments'),
-//                     ),
-//                   ),
-//                 ],
-//               ).animate().fadeIn(delay: 800.ms).slideX(begin: -0.2, end: 0),
-
-//               const SizedBox(height: 16),
-
-//               _buildSubtitle('Tenant Type:'),
-
-//               const SizedBox(height: 8),
-
-//               Column(
-//                 children: [
-//                   Row(
-//                     children: [
-//                       Expanded(
-//                         child: _buildOptionButton(
-//                           'Man',
-//                           _selectedTenantType == 'Man',
-//                           () => setState(() => _selectedTenantType = 'Man'),
-//                         ),
-//                       ),
-//                       const SizedBox(width: 12),
-//                       Expanded(
-//                         child: _buildOptionButton(
-//                           'Woman',
-//                           _selectedTenantType == 'Woman',
-//                           () => setState(() => _selectedTenantType = 'Woman'),
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                   const SizedBox(height: 8),
-//                   _buildOptionButton(
-//                     'Anyone',
-//                     _selectedTenantType == 'Anyone',
-//                     () => setState(() => _selectedTenantType = 'Anyone'),
-//                   ),
-//                 ],
-//               ).animate().fadeIn(delay: 1000.ms).slideX(begin: -0.2, end: 0),
-
-//               const SizedBox(height: 16),
-
-//               _buildSubtitle('Room Type:'),
-
-//               const SizedBox(height: 8),
-
-//               Wrap(
-//                 spacing: 8,
-//                 runSpacing: 8,
-//                 children: ['Any', 'Single', '2 Sharing', '3 Sharing', '4 Sharing'].map((type) {
-//                   return SizedBox(
-//                     width: (width - 64) / 3,
-//                     child: _buildOptionButton(
-//                       type,
-//                       _selectedRoomType == type,
-//                       () => setState(() => _selectedRoomType = type),
-//                     ),
-//                   );
-//                 }).toList(),
-//               ).animate().fadeIn(delay: 1200.ms).slideX(begin: -0.2, end: 0),
-
-//               const SizedBox(height: 24),
-
-//               ElevatedButton(
-//                 onPressed: () {
-//                   print('Search with:');
-//                   print('City: $_selectedCity');
-//                   print('Search Type: $_selectedSearchType');
-//                   print('Localities: $_selectedLocalities');
-//                   print('Accommodation Type: $_selectedAccommodationType');
-//                   print('Tenant Type: $_selectedTenantType');
-//                   print('Room Type: $_selectedRoomType');
-//                 },
-//                 style: ElevatedButton.styleFrom(
-//                   backgroundColor: const Color(0xFF1E3A8A),
-//                   padding: const EdgeInsets.symmetric(vertical: 16),
-//                   shape: RoundedRectangleBorder(
-//                     borderRadius: BorderRadius.circular(8),
-//                   ),
-//                 ),
-//                 child: const Center(
-//                   child: Text(
-//                     'Search',
-//                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-//                   ),
-//                 ),
-//               ).animate().fadeIn(delay: 1400.ms).slideY(begin: 0.2, end: 0),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-
-//   Widget _buildOptionButton(String text, bool isSelected, VoidCallback onTap) {
-//     return InkWell(
-//       onTap: onTap,
-//       child: Container(
-//         padding: const EdgeInsets.symmetric(vertical: 12),
-//         decoration: BoxDecoration(
-//           color: isSelected ? const Color(0xFF1E3A8A) : Colors.white,
-//           borderRadius: BorderRadius.circular(8),
-//           border: Border.all(
-//             color: isSelected ? const Color(0xFF1E3A8A) : Colors.grey.shade300,
-//           ),
-//         ),
-//         child: Center(
-//           child: Text(
-//             text,
-//             style: TextStyle(
-//               color: isSelected ? Colors.white : Colors.black87,
-//               fontWeight: FontWeight.w500,
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-
-//   Widget _buildSectionTitle(String title) {
-//     return Text(
-//       title,
-//       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
-//     );
-//   }
-
-//   Widget _buildSubtitle(String subtitle) {
-//     return Text(
-//       subtitle,
-//       style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
-//     );
-//   }
-// }
-
-// Widget buildCollegeBottomSheet() {
-//   final List<Map<String, String>> popularInstitutions = [
-//     {
-//       'name': 'Yenepoya University',
-//       'location': 'Mangaluru, Karnataka',
-//       'logo': 'assets/yenepoya.png', // Add your asset path here
-//     },
-//     {
-//       'name': 'Madras Christian College',
-//       'location': 'Chennai, Tamil Nadu',
-//       'logo': 'assets/mcc.png', // Add your asset path here
-//     },
-//   ];
-
-//   BuildContext context;
-//   return DraggableScrollableSheet(
-//     expand: false,
-//     builder: (_, controller) => Container(
-//       decoration: const BoxDecoration(
-//         color: Colors.white,
-//         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-//       ),
-//       padding: const EdgeInsets.all(16),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           // Header with title and close button
-//           Row(
-//             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//             children: [
-//               const Text(
-//                 'Search for Your College/Institution',
-//                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-//               ),
-//               // IconButton(
-//               //   icon: const Icon(Icons.close),
-//               //   onPressed: () => Navigator.pop(context), // Use context here instead if you pass it in
-//               // ),
-//             ],
-//           ),
-
-//           const SizedBox(height: 12),
-
-//           // Search field
-//           TextField(
-//             decoration: InputDecoration(
-//               hintText: 'Search for College Name',
-//               prefixIcon: const Icon(Icons.search),
-//               border: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(12),
-//               ),
-//               contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-//             ),
-//           ),
-
-//           const SizedBox(height: 20),
-
-//           const Text(
-//             'Our Popular Institutions',
-//             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-//           ),
-
-//           const SizedBox(height: 12),
-
-//           // Horizontal list of popular colleges
-//           SingleChildScrollView(
-//             scrollDirection: Axis.horizontal,
-//             child: Row(
-//               children: popularInstitutions.map((college) {
-//                 return Padding(
-//                   padding: const EdgeInsets.only(right: 16),
-//                   child: Column(
-//                     children: [
-//                       CircleAvatar(
-//                         radius: 24,
-//                         backgroundImage: AssetImage(college['logo']!),
-//                         backgroundColor: Colors.grey[200],
-//                       ),
-//                       const SizedBox(height: 6),
-//                       Text(
-//                         college['name']!,
-//                         style: const TextStyle(fontWeight: FontWeight.w500),
-//                       ),
-//                       Text(
-//                         college['location']!,
-//                         style: const TextStyle(fontSize: 12, color: Colors.grey),
-//                       ),
-//                     ],
-//                   ),
-//                 );
-//               }).toList(),
-//             ),
-//           ),
-//         ],
-//       ),
-//     ),
-//   );
-// }
-
-// // Widget buildCollegeBottomSheet() {
- 
-// //   return DraggableScrollableSheet(
-// //     expand: false,
-// //     builder: (_, controller) => Container(
-// //       decoration: const BoxDecoration(
-// //         color: Colors.white,
-// //         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-// //       ),
-// //       child: Column(
-// //         children: [
-// //           Container(
-// //             padding: const EdgeInsets.all(16),
-// //             child: Row(
-// //               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-// //               children: [
-// //                 const Text(
-// //                   'Select College',
-// //                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-// //                 ),
-// //                 // IconButton(
-// //                 //   icon: const Icon(Icons.close),
-// //                 //   onPressed: () => Navigator.pop(context),
-// //                 // ),
-// //               ],
-// //             ),
-// //           ),
-// //           Expanded(
-// //             child: ListView(
-// //               controller: controller,
-// //               children: const [
-// //                 ListTile(title: Text('Anna University')),
-// //                 ListTile(title: Text('IIT Madras')),
-// //                 ListTile(title: Text('Loyola College')),
-// //                 ListTile(title: Text('SRM University')),
-// //               ],
-// //             ),
-// //           ),
-// //         ],
-// //       ),
-// //     ),
-// //   );
-// // }
-
-
-
-// lib/screens/search_screen.dart
-
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:triangle_home/widgets/search/city_selector.dart';
-import 'package:triangle_home/widgets/search/college_search_sheet.dart';
-import 'package:triangle_home/widgets/search/locality_filters.dart';
-import 'package:triangle_home/widgets/search/search_type_selector.dart';
+import 'package:triangle_home/search_results_screen.dart';
+import 'package:triangle_home/services/firebase_service.dart';
+import 'package:triangle_home/theme/app_theme.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+  final String? initialSearchType;
+  final String? initialAccommodationType;
+  final String? initialTenantType;
+
+  const SearchScreen({
+    super.key,
+    this.initialSearchType,
+    this.initialAccommodationType,
+    this.initialTenantType,
+  });
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final List<String> _cities = ['Chennai', 'Mangalore', 'Bangalore', 'Kochi'];
-  String _selectedCity = 'Chennai';
-  String _selectedSearchType = 'By Area';
-  final List<String> _selectedLocalities = ['CIT Nagar', 'Alwarpet'];
-  final String _selectedAccommodationType = 'Paying Guest Hostels';
-  final String _selectedTenantType = 'Anyone';
-  final String _selectedRoomType = 'Any';
+  final FirebaseService _firebaseService = FirebaseService();
 
-  void _handleSearchTypeChange(String type) {
-    setState(() {
-      _selectedSearchType = type;
-      if (type == 'By College') {
-        _showCollegeSearch();
-      }
-    });
+  List<String> _cities = [];
+  List<String> _localities = [];
+  List<String> _colleges = [];
+
+  String _selectedCity = '';
+  late String _selectedSearchType;
+  final List<String> _selectedLocalities = [];
+  String _selectedCollege = '';
+  late String _selectedAccommodationType;
+  late String _selectedTenantType;
+  String _selectedRoomType = 'Any';
+
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSearchType = widget.initialSearchType ?? 'By Area';
+    _selectedAccommodationType = widget.initialAccommodationType ?? 'Paying Guest Hostels';
+    _selectedTenantType = widget.initialTenantType ?? 'Anyone';
+    _loadInitialData();
   }
 
-  void _showCollegeSearch() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const CollegeSearchSheet(),
-    );
+  Future<void> _loadInitialData() async {
+    try {
+      final cities = await _firebaseService.getCities();
+      final colleges = await _firebaseService.getColleges();
+
+      setState(() {
+        _cities = cities;
+        _colleges = colleges;
+        if (cities.isNotEmpty) {
+          _selectedCity = cities.first;
+        }
+        _isLoading = false;
+      });
+
+      // Load localities for the first city
+      if (_selectedCity.isNotEmpty) {
+        _loadLocalities(_selectedCity);
+      }
+    } catch (e) {
+      debugPrint('Error loading initial data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadLocalities(String city) async {
+    try {
+      final localities = await _firebaseService.getLocalities(city);
+      setState(() {
+        _localities = localities;
+      });
+    } catch (e) {
+      debugPrint('Error loading localities: $e');
+    }
   }
 
   void _handleAddLocality() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      isScrollControlled: true,
+      builder:
+          (context) =>
+              _selectedSearchType == 'By College'
+                  ? _buildCollegeBottomSheet()
+                  : _buildAreaBottomSheet(),
+    );
+  }
+
+  Widget _buildAreaBottomSheet() {
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      maxChildSize: 0.9,
+      minChildSize: 0.4,
+      builder:
+          (_, controller) => Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 12, 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Select Locality',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 22),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child:
+                      _localities.isEmpty
+                          ? const Center(child: Text('No localities available'))
+                          : ListView.builder(
+                            controller: controller,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            itemCount: _localities.length,
+                            itemBuilder: (context, index) {
+                              final locality = _localities[index];
+                              final isSelected = _selectedLocalities.contains(
+                                locality,
+                              );
+
+                              return ListTile(
+                                title: Text(
+                                  locality,
+                                  style: TextStyle(
+                                    color: isSelected ? AppTheme.primaryColor : const Color(0xFF334155),
+                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                  ),
+                                ),
+                                trailing:
+                                    isSelected
+                                        ? const Icon(
+                                          Icons.check_circle,
+                                          color: AppTheme.primaryColor,
+                                        )
+                                        : null,
+                                onTap: () {
+                                  setState(() {
+                                    if (isSelected) {
+                                      _selectedLocalities.remove(locality);
+                                    } else if (_selectedLocalities.length < 5) {
+                                      _selectedLocalities.add(locality);
+                                    } else {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'You can select up to 5 localities',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  });
+                                  Navigator.pop(context);
+                                },
+                              );
+                            },
+                          ),
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
+  Widget _buildCollegeBottomSheet() {
+    String searchQuery = '';
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        final filteredColleges = _colleges
+            .where((c) => c.toLowerCase().contains(searchQuery.toLowerCase()))
+            .toList();
+
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.9,
+          maxChildSize: 0.9,
+          minChildSize: 0.5,
+          builder: (_, controller) => Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 12, 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Search for Your College/Institution',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 22),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView(
+                    controller: controller,
+                    padding: const EdgeInsets.all(20),
+                    children: [
+                      // Search Field
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: TextField(
+                          autofocus: true,
+                          decoration: const InputDecoration(
+                            hintText: 'Search for College Name',
+                            hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                            suffixIcon: Icon(Icons.search, color: Color(0xFF94A3B8), size: 20),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          ),
+                          onChanged: (value) {
+                            setModalState(() {
+                              searchQuery = value;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Search Results or Popular Institutions
+                      if (searchQuery.isNotEmpty) ...[
+                        const Text(
+                          'Search Results',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ...filteredColleges.map((college) => _buildCollegeListTile(college)),
+                      ] else ...[
+                        const Text(
+                          'Our Popular Institutions',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _buildPopularInstitutionsGrid(),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCollegeListTile(String college) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedCollege = college;
+        });
+        Navigator.pop(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              width: 3,
+              height: 20,
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Select Locality',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
+                color: AppTheme.primaryColor,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
+            const SizedBox(width: 12),
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: 5,
-                itemBuilder: (context, index) {
-                  final locality = 'Locality ${index + 1}';
-                  final isSelected = _selectedLocalities.contains(locality);
-                  
-                  return ListTile(
-                    title: Text(locality),
-                    trailing: isSelected 
-                      ? const Icon(Icons.check_circle, color: Color(0xFF1E3A8A))
-                      : null,
-                    onTap: () {
-                      setState(() {
-                        if (isSelected) {
-                          _selectedLocalities.remove(locality);
-                        } else {
-                          _selectedLocalities.add(locality);
-                        }
-                      });
-                      Navigator.pop(context);
-                    },
-                  );
-                },
+              child: Text(
+                college,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF334155),
+                ),
               ),
             ),
+            const Icon(Icons.north_east, color: Color(0xFF94A3B8), size: 18),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildPopularInstitutionsGrid() {
+    final popular = [
+      {
+        'name': 'Yenepoya University',
+        'location': 'Mangaluru, Karnataka',
+        'logo': 'https://upload.wikimedia.org/wikipedia/en/2/2e/Yenepoya_University_Logo.png'
+      },
+      {
+        'name': 'Madras Christian College',
+        'location': 'Chennai, Tamil Nadu',
+        'logo': 'https://upload.wikimedia.org/wikipedia/en/0/0d/Madras_Christian_College_logo.png'
+      },
+    ];
+
+    return Wrap(
+      spacing: 16,
+      runSpacing: 20,
+      children: popular.map((inst) {
+        return SizedBox(
+          width: (MediaQuery.of(context).size.width - 56) / 2,
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _selectedCollege = inst['name']!;
+              });
+              Navigator.pop(context);
+            },
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    inst['logo']!,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.school, size: 20, color: Color(0xFF94A3B8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        inst['name']!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E293B),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        inst['location']!,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFF94A3B8),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  void _handleSearch() {
+    if (_selectedCity.isEmpty || (_selectedSearchType == 'By Area' && _selectedLocalities.isEmpty) || (_selectedSearchType == 'By College' && _selectedCollege.isEmpty)) {
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => SearchResultsScreen(
+              searchQuery:
+                  _selectedSearchType == 'By Area'
+                      ? _selectedLocalities.join(", ")
+                      : _selectedCollege,
+              selectedCity: _selectedCity,
+              selectedState: '',
+              searchType: _selectedSearchType,
+              selectedLocalities: _selectedLocalities,
+              selectedCollege: _selectedCollege,
+              accommodationType: _selectedAccommodationType,
+              tenantType: _selectedTenantType,
+              roomType: _selectedRoomType,
+            ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    bool isSearchDisabled = _selectedCity.isEmpty ||
+        (_selectedSearchType == 'By Area' && _selectedLocalities.isEmpty) ||
+        (_selectedSearchType == 'By College' && _selectedCollege.isEmpty);
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E3A8A),
-        title: const Text(
-          'Search For Hostels/PGs or Apartments',
-          style: TextStyle(color: Colors.white, fontSize: 16),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+        backgroundColor: AppTheme.primaryColor,
+        elevation: 0,
+        centerTitle: false,
+        automaticallyImplyLeading: false,
+        title: Row(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: AppTheme.primaryColor,
+                  size: 16,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Text(
+                'Search For Hostels/PGs or Apartments',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildMainSearchCard(),
+                        const SizedBox(height: 24),
+                        _buildAdditionalPreferencesSection(),
+                        const SizedBox(height: 100), // Space for sticky button
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+      bottomSheet: Container(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Where are you planning to move into?',
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: ElevatedButton(
+            onPressed: isSearchDisabled ? null : _handleSearch,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              disabledBackgroundColor: const Color(0xFFE2E8F0),
+              minimumSize: const Size(double.infinity, 54),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'Search',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1E293B),
+                color: isSearchDisabled ? Colors.black26 : Colors.white,
               ),
-            ).animate().fadeIn().slideX(begin: -0.2, end: 0),
-
-            const SizedBox(height: 16),
-
-            CitySelector(
-              cities: _cities,
-              selectedCity: _selectedCity,
-              onCitySelected: (city) => setState(() => _selectedCity = city),
             ),
+          ),
+        ),
+      ),
+    );
+  }
 
-            const SizedBox(height: 16),
-
-            SearchTypeSelector(
-              selectedType: _selectedSearchType,
-              onTypeSelected: _handleSearchTypeChange,
+  Widget _buildMainSearchCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Where are you planning to move into?',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF475569),
             ),
-
-            if (_selectedSearchType == 'By Area') ...[
-              const SizedBox(height: 16),
-              LocalityFilters(
-                selectedLocalities: _selectedLocalities,
-                onLocalityRemoved: (locality) {
-                  setState(() => _selectedLocalities.remove(locality));
-                },
-                onAddMore: _handleAddLocality,
-              ),
-            ],
-
-            // Additional preferences section
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Select City:',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _cities.map((city) {
+                final isSelected = city == _selectedCity;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(city),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _selectedCity = city;
+                          _selectedLocalities.clear();
+                        });
+                        _loadLocalities(city);
+                      }
+                    },
+                    backgroundColor: Colors.white,
+                    selectedColor: AppTheme.primaryColor,
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : const Color(0xFF64748B),
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(
+                        color: isSelected
+                            ? AppTheme.primaryColor
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    showCheckmark: false,
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Do you have any additional preferences?',
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildSegmentButton(
+                    'By Area',
+                    _selectedSearchType == 'By Area',
+                    () => setState(() => _selectedSearchType = 'By Area'),
+                  ),
+                ),
+                Expanded(
+                  child: _buildSegmentButton(
+                    'By College',
+                    _selectedSearchType == 'By College',
+                    () => setState(() => _selectedSearchType = 'By College'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          if (_selectedSearchType == 'By Area') ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Locality Filters:',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _handleAddLocality,
+                  child: const Text(
+                    'Add More',
                     style: TextStyle(
-                      fontSize: 16,
+                      color: AppTheme.accentColor,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E293B),
                     ),
                   ),
-                  // Add your additional preferences UI here
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_selectedLocalities.isEmpty)
+              GestureDetector(
+                onTap: _handleAddLocality,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Select Localities (Max 5)',
+                          style: TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.add_circle_outline,
+                        color: Color(0xFF94A3B8),
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _selectedLocalities.map((locality) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppTheme.accentColor.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          locality,
+                          style: const TextStyle(
+                            color: AppTheme.primaryColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              _selectedLocalities.remove(locality);
+                            });
+                          },
+                          child: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
               ),
-            ).animate().fadeIn(delay: 800.ms).slideX(begin: -0.2, end: 0),
+          ] else ...[
+            GestureDetector(
+              onTap: _handleAddLocality,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _selectedCollege.isEmpty
+                            ? 'Search for College Name'
+                            : _selectedCollege,
+                        style: TextStyle(
+                          color: _selectedCollege.isEmpty
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF1E293B),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.search,
+                      color: Color(0xFF94A3B8),
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSegmentButton(String text, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: isSelected ? AppTheme.primaryColor : const Color(0xFF64748B),
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdditionalPreferencesSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Do you have any additional preferences?',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF475569),
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildPreferenceGroup(
+            'Looking For:',
+            ['Paying Guest Hostels', 'Apartments'],
+            _selectedAccommodationType,
+            (val) => setState(() => _selectedAccommodationType = val),
+          ),
+          const SizedBox(height: 24),
+          _buildPreferenceGroup(
+            'Tenant Type:',
+            ['Man', 'Woman', 'Anyone'],
+            _selectedTenantType,
+            (val) => setState(() => _selectedTenantType = val),
+            isGrid: true,
+          ),
+          const SizedBox(height: 24),
+          _buildPreferenceGroup(
+            'Room Type:',
+            ['Any', 'Single', '2 Sharing', '3 Sharing', '4 Sharing'],
+            _selectedRoomType,
+            (val) => setState(() => _selectedRoomType = val),
+            isGrid: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreferenceGroup(
+    String title,
+    List<String> options,
+    String selectedValue,
+    Function(String) onSelected, {
+    bool isGrid = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF64748B),
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (isGrid)
+          LayoutBuilder(builder: (context, constraints) {
+            final itemWidth = (constraints.maxWidth - 12) / 2;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: options.map((option) {
+                final isSelected = option == selectedValue;
+                return SizedBox(
+                  width: itemWidth,
+                  child: _buildPreferenceButton(option, isSelected, () => onSelected(option)),
+                );
+              }).toList(),
+            );
+          })
+        else
+          Row(
+            children: options.map((option) {
+              final isSelected = option == selectedValue;
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: option == options.last ? 0 : 12,
+                  ),
+                  child: _buildPreferenceButton(option, isSelected, () => onSelected(option)),
+                ),
+              );
+            }).toList(),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPreferenceButton(String text, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? AppTheme.accentColor : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: isSelected ? AppTheme.primaryColor : const Color(0xFF64748B),
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
         ),
       ),
     );

@@ -42,7 +42,7 @@ class LocalityFilters extends StatelessWidget {
               label: Text(locality),
               deleteIcon: const Icon(Icons.close, size: 18),
               onDeleted: () => onLocalityRemoved(locality),
-              backgroundColor: const Color(0xFF1E3A8A).withOpacity(0.1),
+              backgroundColor: const Color(0xFF1E3A8A).withValues(alpha: 0.1),
               labelStyle: const TextStyle(color: Color(0xFF1E3A8A)),
             );
           }).toList(),

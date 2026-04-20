@@ -1,7 +1,7 @@
 // import 'package:flutter/material.dart';
 // import 'package:flutter/services.dart';
 // import 'package:flutter_animate/flutter_animate.dart';
-// import 'package:triangle_home/screens/OtpVerificationScreen.dart';
+// import 'package:triangle_home/screens/otp_verification_screen.dart';
 
 
 // class PhoneInput extends StatefulWidget {
@@ -43,7 +43,7 @@
 //             borderRadius: BorderRadius.circular(12),
 //             boxShadow: [
 //               BoxShadow(
-//                 color: Colors.black.withOpacity(0.20),
+//                 color: Colors.black.withValues(alpha: 0.20),
 //                 blurRadius: 10,
 //                 offset: const Offset(0, 2),
 //               ),
@@ -80,7 +80,7 @@
 //                     Container(
 //                       height: 24,
 //                       width: 1,
-//                       color: Colors.grey.withOpacity(0.5),
+//                       color: Colors.grey.withValues(alpha: 0.5),
 //                       margin: const EdgeInsets.symmetric(horizontal: 8),
 //                     ),
 //                   ],
@@ -109,7 +109,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:triangle_home/screens/OtpVerificationScreen.dart';
+import 'package:triangle_home/screens/otp_verification_screen.dart';
 
 
 class PhoneInput extends StatefulWidget {
@@ -166,7 +166,7 @@ class _PhoneInputState extends State<PhoneInput> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -205,7 +205,7 @@ class _PhoneInputState extends State<PhoneInput> {
                     Container(
                       height: 24,
                       width: 1,
-                      color: Colors.grey.withOpacity(0.5),
+                      color: Colors.grey.withValues(alpha: 0.5),
                       margin: const EdgeInsets.symmetric(horizontal: 8),
                     ),
                   ],

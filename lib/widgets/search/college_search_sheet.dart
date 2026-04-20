@@ -79,6 +79,7 @@
 // }
 
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class CollegeSearchSheet extends StatefulWidget {
   const CollegeSearchSheet({super.key});
@@ -230,11 +231,27 @@ class _CollegeSearchSheetState extends State<CollegeSearchSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Image.network(
-                          college['image']!,
+                        CachedNetworkImage(
+                          imageUrl: college['image']!,
                           width: 40,
                           height: 40,
                           fit: BoxFit.contain,
+                          placeholder: (context, url) => Container(
+                            width: 40,
+                            height: 40,
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            width: 40,
+                            height: 40,
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.school, size: 20),
+                          ),
                         ),
                         const SizedBox(height: 6),
                         Text(

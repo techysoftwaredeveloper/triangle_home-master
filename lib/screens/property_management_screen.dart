@@ -1,20 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
+import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
 import 'package:triangle_home/widgets/property_managment/payment_history_card.dart';
 import 'package:triangle_home/widgets/property_managment/property_card.dart';
 
 class PropertyManagementScreen extends StatefulWidget {
-  const 
-  
-  PropertyManagementScreen({super.key});
+  const PropertyManagementScreen({super.key});
 
   @override
-  State<PropertyManagementScreen> createState() => _PropertyManagementScreenState();
+  State<PropertyManagementScreen> createState() =>
+      _PropertyManagementScreenState();
 }
 
-class _PropertyManagementScreenState extends State<PropertyManagementScreen> with SingleTickerProviderStateMixin {
+class _PropertyManagementScreenState extends State<PropertyManagementScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -44,21 +46,20 @@ class _PropertyManagementScreenState extends State<PropertyManagementScreen> wit
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildPropertyHistory(),
-          _buildPaymentHistory(),
-        ],
+        children: [_buildPropertyHistory(), _buildPaymentHistory()],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
-          );
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('List New Property'),
-      ).animate().scale(),
+      floatingActionButton:
+          FloatingActionButton.extended(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+              );
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('List New Property'),
+          ).animate().scale(),
+      bottomNavigationBar: const HomeBottomNavBar(selectedIndex: 3),
     );
   }
 
@@ -127,88 +128,98 @@ class _PropertyManagementScreenState extends State<PropertyManagementScreen> wit
   // }
 
   Widget _buildPropertyHistory() {
-  return StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance.collection('properties').snapshots(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator());
-      }
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    return StreamBuilder<QuerySnapshot>(
+      stream:
+          FirebaseFirestore.instance
+              .collection('properties')
+              .where('hosterId', isEqualTo: uid)
+              .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-      if (snapshot.hasError) {
-        return const Center(child: Text('Failed to load properties.'));
-      }
+        if (snapshot.hasError) {
+          return const Center(child: Text('Failed to load properties.'));
+        }
 
-      final docs = snapshot.data?.docs ?? [];
+        final docs = snapshot.data?.docs ?? [];
 
-      if (docs.isEmpty) {
-        return const Center(child: Text('No properties listed yet.'));
-      }
+        if (docs.isEmpty) {
+          return const Center(child: Text('No properties listed yet.'));
+        }
 
-      return ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: docs.length,
-        itemBuilder: (context, index) {
-          final data = docs[index].data() as Map<String, dynamic>;
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: docs.length,
+          itemBuilder: (context, index) {
+            final data = docs[index].data() as Map<String, dynamic>;
 
-          final property = {
-            'title': data['collegeName'] ?? 'Unnamed Property',
-            'address': "${data['addressLine1'] ?? ''}, ${data['locality'] ?? ''}",
-            'status': 'Active', // or dynamic field if available
-            'type': data['type'] ?? 'Unknown',
-            'rooms': data['rooms'] ?? 0,
-            'listed': 'Today',  // Format if needed
-            'image': data['imageUrl'] ?? 'https://via.placeholder.com/150',
-          };
+            final property = {
+              'title': data['collegeName'] ?? 'Unnamed Property',
+              'address':
+                  "${data['addressLine1'] ?? ''}, ${data['locality'] ?? ''}",
+              'status': 'Active', // or dynamic field if available
+              'type': data['type'] ?? 'Unknown',
+              'rooms': data['rooms'] ?? 0,
+              'listed': 'Today', // Format if needed
+              'image': data['imageUrl'] ?? 'https://via.placeholder.com/150',
+            };
 
-          return PropertyCard(property: property)
-              .animate()
-              .fadeIn(delay: Duration(milliseconds: 100 * index));
-        },
-      );
-    },
-  );
-}
+            return PropertyCard(
+              property: property,
+            ).animate().fadeIn(delay: Duration(milliseconds: 100 * index));
+          },
+        );
+      },
+    );
+  }
 
-Widget _buildPaymentHistory() {
-  return StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance.collection('payments').snapshots(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator());
-      }
+  Widget _buildPaymentHistory() {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    return StreamBuilder<QuerySnapshot>(
+      stream:
+          FirebaseFirestore.instance
+              .collection('payments')
+              .where('hosterId', isEqualTo: uid)
+              .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-      if (snapshot.hasError) {
-        return const Center(child: Text('Failed to load payments.'));
-      }
+        if (snapshot.hasError) {
+          return const Center(child: Text('Failed to load payments.'));
+        }
 
-      final docs = snapshot.data?.docs ?? [];
+        final docs = snapshot.data?.docs ?? [];
 
-      if (docs.isEmpty) {
-        return const Center(child: Text('No payment history found.'));
-      }
+        if (docs.isEmpty) {
+          return const Center(child: Text('No payment history found.'));
+        }
 
-      return ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: docs.length,
-        itemBuilder: (context, index) {
-          final data = docs[index].data() as Map<String, dynamic>;
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: docs.length,
+          itemBuilder: (context, index) {
+            final data = docs[index].data() as Map<String, dynamic>;
 
-          final payment = {
-            'propertyName': data['propertyName'] ?? 'Unknown Property',
-            'tenantName': data['tenantName'] ?? 'Tenant',
-            'amount': data['amount'] ?? 0,
-            'date': data['date'] ?? 'Unknown Date',
-            'status': data['status'] ?? 'Pending',
-            'type': data['type'] ?? 'Rent',
-          };
+            final payment = {
+              'propertyName': data['propertyName'] ?? 'Unknown Property',
+              'tenantName': data['tenantName'] ?? 'Tenant',
+              'amount': data['amount'] ?? 0,
+              'date': data['date'] ?? 'Unknown Date',
+              'status': data['status'] ?? 'Pending',
+              'type': data['type'] ?? 'Rent',
+            };
 
-          return PaymentHistoryCard(payment: payment)
-              .animate()
-              .fadeIn(delay: Duration(milliseconds: 100 * index));
-        },
-      );
-    },
-  );
-}
-
+            return PaymentHistoryCard(
+              payment: payment,
+            ).animate().fadeIn(delay: Duration(milliseconds: 100 * index));
+          },
+        );
+      },
+    );
+  }
 }

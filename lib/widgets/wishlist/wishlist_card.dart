@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:triangle_home/screens/auth/login_screen.dart';
+import 'package:triangle_home/screens/room_details_screen.dart';
 
 class WishlistCard extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -17,7 +21,7 @@ class WishlistCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -30,11 +34,25 @@ class WishlistCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Image.network(
-                  item['image'],
+                child: CachedNetworkImage(
+                  imageUrl: item['image'],
                   height: 200,
                   width: double.infinity,
                   fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    height: 200,
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    height: 200,
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.error),
+                  ),
                 ),
               ),
               if (item['isBooked'])
@@ -142,18 +160,48 @@ class WishlistCard extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      final user = FirebaseAuth.instance.currentUser;
+                      if (user == null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => LoginScreen(
+                                  isStudent: true,
+                                  onLoginNavigateTo: RoomDetailsScreen(
+                                    accommodation: Map<String, dynamic>.from(item),
+                                  ),
+                                ),
+                          ),
+                        );
+                        return;
+                      }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (_) => RoomDetailsScreen(
+                                accommodation: Map<String, dynamic>.from(item),
+                              ),
+                        ),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: item['isBooked']
-                          ? Colors.white
-                          : const Color(0xFF1E3A8A),
-                      foregroundColor: item['isBooked']
-                          ? const Color(0xFF1E3A8A)
-                          : Colors.white,
+                      backgroundColor:
+                          item['isBooked']
+                              ? Colors.white
+                              : const Color(0xFF1E3A8A),
+                      foregroundColor:
+                          item['isBooked']
+                              ? const Color(0xFF1E3A8A)
+                              : Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: item['isBooked']
-                          ? const BorderSide(color: Color(0xFF1E3A8A))
-                          : null,
+                      side:
+                          item['isBooked']
+                              ? const BorderSide(color: Color(0xFF1E3A8A))
+                              : null,
                     ),
                     child: Text(
                       item['isBooked'] ? 'View Details' : 'Book Now',

@@ -2,7 +2,7 @@
 // import 'package:flutter_animate/flutter_animate.dart';
 // import 'package:carousel_slider/carousel_slider.dart';
 // import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-// import 'package:triangle_home/screens/OtpVerificationScreen.dart';
+// import 'package:triangle_home/screens/otp_verification_screen.dart';
 // import 'package:triangle_home/widgets/accommodation_search.dart';
 // import 'package:triangle_home/widgets/logo.dart';
 // import 'package:triangle_home/widgets/phone_input.dart';
@@ -201,7 +201,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:triangle_home/screens/OtpVerificationScreen.dart';
+import 'package:triangle_home/screens/otp_verification_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/phone_input.dart';
 import 'package:triangle_home/widgets/social_buttons.dart';
@@ -334,7 +334,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     borderRadius: BorderRadius.circular(30),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),

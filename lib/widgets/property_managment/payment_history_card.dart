@@ -10,7 +10,9 @@ class PaymentHistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
     final amount = formatter.format(payment['amount']);
-    final date = DateFormat('dd MMM yyyy').format(DateTime.parse(payment['date']));
+    final date = DateFormat(
+      'dd MMM yyyy',
+    ).format(DateTime.parse(payment['date']));
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -24,9 +26,7 @@ class PaymentHistoryCard extends StatelessWidget {
               children: [
                 Text(
                   payment['propertyName'],
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 _buildStatusChip(payment['status']),
               ],
@@ -68,20 +68,14 @@ class PaymentHistoryCard extends StatelessWidget {
                       ),
                       child: Text(
                         payment['type'],
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ),
                   ],
                 ),
                 Text(
                   date,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
               ],
             ),
@@ -96,7 +90,10 @@ class PaymentHistoryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isCompleted ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+        color:
+            isCompleted
+                ? Colors.green.withValues(alpha: 0.1)
+                : Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(

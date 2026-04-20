@@ -3,7 +3,16 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class SocialLoginButtons extends StatelessWidget {
-  const SocialLoginButtons({super.key});
+  final VoidCallback? onGoogleTap;
+  final VoidCallback? onFacebookTap;
+  final VoidCallback? onAppleTap;
+
+  const SocialLoginButtons({
+    super.key,
+    this.onGoogleTap,
+    this.onFacebookTap,
+    this.onAppleTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +25,7 @@ class SocialLoginButtons extends StatelessWidget {
             FontAwesomeIcons.facebook,
             color: Color(0xFF1877F2),
           ),
-          onPressed: () {},
+          onPressed: onFacebookTap ?? () {},
         ),
         const SizedBox(width: 16),
         _buildSocialButton(
@@ -32,7 +41,7 @@ class SocialLoginButtons extends StatelessWidget {
               ),
             ),
           ),
-          onPressed: () {},
+          onPressed: onGoogleTap ?? () {},
         ),
         const SizedBox(width: 16),
         _buildSocialButton(
@@ -41,7 +50,7 @@ class SocialLoginButtons extends StatelessWidget {
             FontAwesomeIcons.apple,
             color: Colors.black,
           ),
-          onPressed: () {},
+          onPressed: onAppleTap ?? () {},
         ),
       ],
     );
@@ -62,7 +71,7 @@ class SocialLoginButtons extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
           ),
         ),
         child: Center(child: icon),

@@ -25,9 +25,15 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macos - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.windows:
-        return windows;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for windows - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -41,48 +47,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAf6sci7jZdtWVplHKHm8qEv6Rnqj3VWUY',
-    appId: '1:857102138852:web:4c5ab785d232b737b31bf1',
-    messagingSenderId: '857102138852',
-    projectId: 'trianglehomes-b7306',
-    authDomain: 'trianglehomes-b7306.firebaseapp.com',
-    storageBucket: 'trianglehomes-b7306.firebasestorage.app',
-    measurementId: 'G-N117SGH1NE',
+    apiKey: 'AIzaSyBkrdX7tLSV-PaTDsy7I3o0mEcc1T3SLDM',
+    appId: '1:318624228870:web:ecd79eaeb323d5d3ea8587',
+    messagingSenderId: '318624228870',
+    projectId: 'trianglehome',
+    authDomain: 'trianglehome.firebaseapp.com',
+    storageBucket: 'trianglehome.firebasestorage.app',
+    measurementId: 'G-140T72V49Y',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAXZRKcJvCPWUvn9AaApaRdbvxDryb-uB8',
-    appId: '1:857102138852:android:f9b141bcdc77cf62b31bf1',
-    messagingSenderId: '857102138852',
-    projectId: 'trianglehomes-b7306',
-    storageBucket: 'trianglehomes-b7306.firebasestorage.app',
+    apiKey: 'AIzaSyCq42OG1bSYpR9c1OFex2N0E0tOJl7FiDA',
+    appId: '1:318624228870:android:bea08e67e5ed8637ea8587',
+    messagingSenderId: '318624228870',
+    projectId: 'trianglehome',
+    storageBucket: 'trianglehome.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDlTpdpj-S9YyqrCATJ-gaeKiMk56536Ac',
-    appId: '1:857102138852:ios:4f88de040ca3d8fab31bf1',
-    messagingSenderId: '857102138852',
-    projectId: 'trianglehomes-b7306',
-    storageBucket: 'trianglehomes-b7306.firebasestorage.app',
+    apiKey: 'AIzaSyD4GjBS1u7Mzng5anUqd3QYECkXNY1tESM',
+    appId: '1:318624228870:ios:081b60a18e363746ea8587',
+    messagingSenderId: '318624228870',
+    projectId: 'trianglehome',
+    storageBucket: 'trianglehome.firebasestorage.app',
     iosBundleId: 'com.example.triangleHome',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDlTpdpj-S9YyqrCATJ-gaeKiMk56536Ac',
-    appId: '1:857102138852:ios:4f88de040ca3d8fab31bf1',
-    messagingSenderId: '857102138852',
-    projectId: 'trianglehomes-b7306',
-    storageBucket: 'trianglehomes-b7306.firebasestorage.app',
-    iosBundleId: 'com.example.triangleHome',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAf6sci7jZdtWVplHKHm8qEv6Rnqj3VWUY',
-    appId: '1:857102138852:web:2591bed3249fea28b31bf1',
-    messagingSenderId: '857102138852',
-    projectId: 'trianglehomes-b7306',
-    authDomain: 'trianglehomes-b7306.firebaseapp.com',
-    storageBucket: 'trianglehomes-b7306.firebasestorage.app',
-    measurementId: 'G-4HGXMZ8843',
   );
 }

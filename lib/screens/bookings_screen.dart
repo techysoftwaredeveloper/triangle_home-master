@@ -1,57 +1,26 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:triangle_home/screens/home_screen.dart';
+import 'package:triangle_home/services/firebase_service.dart';
+import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/bookingscreen/booking_card.dart';
 import 'package:triangle_home/widgets/bookingscreen/booking_tabs.dart';
 import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
 
-
 class BookingsScreen extends StatefulWidget {
-  const BookingsScreen({super.key});
+  final Map<String, dynamic>? newBooking;
+
+  const BookingsScreen({super.key, this.newBooking});
 
   @override
   State<BookingsScreen> createState() => _BookingsScreenState();
 }
 
-class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProviderStateMixin {
+class _BookingsScreenState extends State<BookingsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
-  final List<Map<String, dynamic>> _confirmedBookings = [
-    {
-      'image': 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg',
-      'price': 6500,
-      'type': 'Twin Sharing',
-      'title': 'Aurora Paying Guest Accommodation',
-      'location': 'Anna Nagar, Mangalore',
-      'status': 'confirmed',
-    },
-    {
-      'image': 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg',
-      'price': 4500,
-      'type': 'Twin Sharing',
-      'title': 'Aurora Paying Guest Accommodation',
-      'location': 'Anna Nagar, Mangalore',
-      'status': 'confirmed',
-    },
-  ];
-
-  final List<Map<String, dynamic>> _pendingBookings = [
-    {
-      'image': 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg',
-      'price': 6500,
-      'type': 'Twin Sharing',
-      'title': 'Aurora Paying Guest Accommodation',
-      'location': 'Anna Nagar, Mangalore',
-      'status': 'pending',
-    },
-    {
-      'image': 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg',
-      'price': 4500,
-      'type': 'Twin Sharing',
-      'title': 'Aurora Paying Guest Accommodation',
-      'location': 'Anna Nagar, Mangalore',
-      'status': 'pending',
-    },
-  ];
 
   @override
   void initState() {
@@ -67,55 +36,138 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E3A8A),
+        backgroundColor: AppTheme.primaryColor,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => HomeScreen()),
+              (route) => false,
+            );
+          },
         ),
         title: const Text(
           'My Paying Guest Bookings',
           style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
+            color: AppTheme.textOnPrimary,
+            fontSize: AppTheme.fontLG,
             fontWeight: FontWeight.w600,
+            fontFamily: AppTheme.fontFamily,
           ),
         ),
         bottom: BookingTabs(controller: _tabController),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body:
+          user == null
+              ? _buildEmptyState('Please login to view your bookings')
+              : TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildBookingsList(status: 'confirmed'),
+                  _buildBookingsList(status: 'pending'),
+                ],
+              ),
+      bottomNavigationBar: const HomeBottomNavBar(selectedIndex: 2),
+    );
+  }
+
+  Widget _buildBookingsList({required String status}) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseService().getBookings(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        final allDocs = snapshot.data?.docs ?? [];
+
+        // Filter by status
+        final filteredDocs =
+            allDocs.where((doc) {
+              final data = doc.data();
+              return data['status'] == status;
+            }).toList();
+
+        if (filteredDocs.isEmpty) {
+          return _buildEmptyState(
+            status == 'confirmed'
+                ? 'No confirmed bookings'
+                : 'No pending bookings',
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: filteredDocs.length,
+          itemBuilder: (context, index) {
+            final doc = filteredDocs[index];
+            final data = doc.data();
+            final propertyData =
+                data['propertyData'] as Map<String, dynamic>? ?? {};
+
+            // Safely get image from property data
+            String imageUrl = '';
+            if (propertyData['images'] is List &&
+                (propertyData['images'] as List).isNotEmpty) {
+              imageUrl = propertyData['images'][0].toString();
+            } else if (propertyData['image'] is String) {
+              imageUrl = propertyData['image'];
+            }
+
+            final booking = {
+              'id': doc.id,
+              'propertyId': data['propertyId'],
+              'image': imageUrl,
+              'price': data['price'] ?? 0,
+              'type': data['type'] ?? '',
+              'title': propertyData['title'] ?? 'Property',
+              'location':
+                  propertyData['address'] ??
+                  propertyData['location'] ??
+                  'Unknown location',
+              'status': data['status'],
+              'paymentStatus': data['paymentStatus'],
+              'tenantDetails': data['tenantDetails'],
+              'createdAt': data['createdAt'],
+            };
+
+            return BookingCard(
+              booking: booking,
+            ).animate().fadeIn(delay: Duration(milliseconds: 100 * index));
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Confirmed Bookings Tab
-          ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _confirmedBookings.length,
-            itemBuilder: (context, index) {
-              return BookingCard(
-                booking: _confirmedBookings[index],
-              ).animate().fadeIn(delay: Duration(milliseconds: 100 * index));
-            },
-          ),
-          
-          // Pending Bookings Tab
-          ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _pendingBookings.length,
-            itemBuilder: (context, index) {
-              return BookingCard(
-                booking: _pendingBookings[index],
-              ).animate().fadeIn(delay: Duration(milliseconds: 100 * index));
-            },
+          Icon(Icons.book_outlined, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: const TextStyle(
+              color: AppTheme.textLightColor,
+              fontSize: AppTheme.fontMD,
+              fontFamily: AppTheme.fontFamily,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
-       bottomNavigationBar: const HomeBottomNavBar(selectedIndex: 2),
-      // bottomNavigationBar: const HomeBottomNavBar(
-      //   selectedIndex: 2,
-      //   onTap: null,
-      // ),
     );
   }
 }
