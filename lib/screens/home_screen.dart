@@ -18,7 +18,7 @@ import 'package:triangle_home/widgets/home/state_tags.dart';
 import 'package:triangle_home/widgets/home/enrollment_card.dart';
 import 'package:triangle_home/widgets/home/hoster_registration_card.dart';
 import 'package:triangle_home/widgets/home/nearby_accommodations.dart';
-import 'package:triangle_home/widgets/home/top_hostels.dart';
+import 'package:triangle_home/widgets/home/highest_rated_section.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -61,14 +61,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     try {
       final snapshot =
           await FirebaseFirestore.instance.collection('cities').get();
-      
-      debugPrint('📍 Found ${snapshot.docs.length} cities in Firestore');
-      if (snapshot.docs.isNotEmpty) {
-        debugPrint('📍 Available cities: ${snapshot.docs.map((d) => d['name']).join(', ')}');
-      } else {
-        debugPrint('⚠️ No cities found in Firestore! Please run uploadCitiesToFirestore()');
-      }
-      
       final List<String> cities =
           snapshot.docs.map((doc) => doc['name'].toString()).toList();
       setState(() {
@@ -104,35 +96,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           final Placemark place = placemarks.first;
           String detectedCity = place.locality?.trim() ?? '';
 
-          if (detectedCity.isEmpty) {
-            debugPrint('Detected city is empty');
-            return;
-          }
-
-          final snapshot =
-              await FirebaseFirestore.instance.collection('cities').get();
-
-          // Find matching city (case-insensitive)
-          String? matchedCity;
-          for (final doc in snapshot.docs) {
-            final cityName = doc['name'].toString();
-            if (cityName.toLowerCase() == detectedCity.toLowerCase()) {
-              matchedCity = cityName;
-              break;
-            }
-          }
-
-          if (matchedCity != null) {
+          if (detectedCity.isNotEmpty) {
             setState(() {
-              _detectedCity = matchedCity!;
-              _currentCity = _detectedCity;
+              _detectedCity = detectedCity;
+              _currentCity = detectedCity;
             });
-
-            _fetchAreasByCity(_detectedCity);
-          } else {
-            debugPrint(
-              'City "$detectedCity" not found in Firestore. Available cities: ${snapshot.docs.map((d) => d['name']).join(', ')}',
-            );
           }
         }
       }
@@ -141,49 +109,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  Future<void> _fetchAreasByCity(String city) async {
-    try {
-      // First, find the document by city name (case-insensitive)
-      final snapshot =
-          await FirebaseFirestore.instance.collection('cities').get();
-
-      String? docId;
-      for (final doc in snapshot.docs) {
-        final cityName = doc['name'].toString();
-        if (cityName.toLowerCase() == city.toLowerCase()) {
-          docId = doc.id;
-          break;
-        }
-      }
-
-      if (docId != null) {
-        final doc =
-            await FirebaseFirestore.instance
-                .collection('cities')
-                .doc(docId)
-                .get();
-
-        if (doc.exists) {
-          setState(() {
-            // _allLocalities = areas;
-            // _selectedLocalities = areas.take(2).toList();
-          });
-        } else {
-          debugPrint('City document "$docId" not found.');
-        }
-      } else {
-        debugPrint('City "$city" not found in Firestore.');
-      }
-    } catch (e) {
-      debugPrint('Error fetching areas: $e');
-    }
-  }
-
   void _handleCitySelected(String city) {
     setState(() {
       _currentCity = city;
     });
-    _fetchAreasByCity(city);
   }
 
   void _navigateToProfileOrLogin(BuildContext context) {
@@ -220,27 +149,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onStateSelected: _handleCitySelected,
             ),
             const AccommodationTypes(),
-            StreamBuilder<List<Map<String, dynamic>>>(
-              stream: FirebaseService().getTopHostels(limit: 5),
-              builder: (context, snapshot) {
-                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                  return TopHostels(hostels: snapshot.data!);
-                }
-                return const SizedBox.shrink();
-              },
+
+            // Highest Rated Sections
+            HighestRatedSection(
+              title: 'Highest Rated College Hostels of 2025',
+              items: _mockInstitutions,
+              onItemTap: (item) {},
             ),
+
             const SizedBox(height: 10),
             propertiesState.when(
               data:
                   (accommodations) => NearbyAccommodations(
                     accommodations: accommodations,
-                    selectedCity: _currentCity,
+                    selectedCity: 'near me',
+                    customTitle: 'PG Accommodation Near Yenepoya University',
                   ),
               loading: () => const Center(child: CircularProgressIndicator()),
               error:
                   (error, stack) =>
                       Center(child: Text('Error: ${error.toString()}')),
             ),
+
+            HighestRatedSection(
+              title: 'Highest Rated Apartments of 2025',
+              items: _mockApartments,
+              onItemTap: (item) {},
+            ),
+
+            HighestRatedSection(
+              title: 'Highest Rated PGs of 2025',
+              items: _mockPGs,
+              onItemTap: (item) {},
+            ),
+
             const SizedBox(height: 10),
             const EnrollmentCard(),
             const HosterRegistrationCard(),
@@ -257,11 +199,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       preferredSize: const Size.fromHeight(150),
       child: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppTheme.primaryColor, AppTheme.primaryColor],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: AppTheme.primaryColor,
           borderRadius: BorderRadius.only(
             bottomLeft: Radius.circular(20),
             bottomRight: Radius.circular(20),
@@ -269,16 +207,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
               children: [
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(
-                        Icons.person_outline,
-                        color: Colors.white,
-                      ),
+                      icon: const Icon(Icons.menu, color: Colors.white),
                       onPressed: () => _navigateToProfileOrLogin(context),
                     ),
                     Expanded(
@@ -286,9 +221,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           SvgPicture.asset(
-                            'assets/images/Logosmall.svg',
-                            height: 15,
-                            width: 15,
+                            'assets/images/Logo.svg',
+                            height: 24,
+                            width: 24,
+                            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                           ),
                           const SizedBox(width: 8),
                           const Text(
@@ -297,8 +233,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               color: Colors.white,
                               fontFamily: 'outfit',
                               fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 4,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 2,
                             ),
                           ),
                         ],
@@ -309,70 +245,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(
-                  onTap:
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const SearchScreen()),
-                      ),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen())),
                   child: Container(
-                    height: 45,
+                    height: 50,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(15),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
                     ),
-                    child: Row(
+                    child: const Row(
                       children: [
-                        const SizedBox(width: 16),
                         Expanded(
-                          child: IgnorePointer(
-                            child: TextField(
-                              controller: _searchController,
-                              style: const TextStyle(
-                                fontFamily: 'outfit',
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                                color: Colors.black,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Search for Area/City/College',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontFamily: 'outfit',
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                ),
-                                border: InputBorder.none,
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                              ),
+                          child: Text(
+                            'Search for Area/City/College',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontFamily: 'outfit',
+                              fontSize: 14,
                             ),
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: SvgPicture.asset(
-                            'assets/images/searchicon.svg',
-                            height: 20,
-                            width: 20,
-                            colorFilter: ColorFilter.mode(
-                              Colors.grey[600]!,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                        ),
+                        Icon(Icons.search, color: Colors.black54),
                       ],
                     ),
                   ),
-                ).animate().fadeIn().slideY(begin: -0.2, end: 0),
+                ).animate().fadeIn().slideY(begin: 0.2, end: 0),
               ],
             ),
           ),
@@ -380,4 +277,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
+
+  final List<Map<String, dynamic>> _mockInstitutions = [
+    {
+      'name': 'Yenepoya University',
+      'location': 'Mangaluru, Karnataka',
+      'logo': 'https://upload.wikimedia.org/wikipedia/en/2/2e/Yenepoya_University_Logo.png',
+    },
+    {
+      'name': 'Madras Christian College',
+      'location': 'Chennai, Tamil Nadu',
+      'logo': 'https://upload.wikimedia.org/wikipedia/en/0/0d/Madras_Christian_College_logo.png',
+    },
+  ];
+
+  final List<Map<String, dynamic>> _mockApartments = [
+    {
+      'name': 'Prestige Apartments',
+      'location': 'Bangalore, Karnataka',
+      'logo': 'https://logo.clearbit.com/prestigeconstructions.com',
+    },
+    {
+      'name': 'Brigade Gateway',
+      'location': 'Bangalore, Karnataka',
+      'logo': 'https://logo.clearbit.com/brigadegroup.com',
+    },
+  ];
+
+  final List<Map<String, dynamic>> _mockPGs = [
+    {
+      'name': 'Zolo Stay PGs',
+      'location': 'Chennai, Tamil Nadu',
+      'logo': 'https://logo.clearbit.com/zolostays.com',
+    },
+    {
+      'name': 'Stanza Living',
+      'location': 'Kochi, Kerala',
+      'logo': 'https://logo.clearbit.com/stanzaliving.com',
+    },
+  ];
 }

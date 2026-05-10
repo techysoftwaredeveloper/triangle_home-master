@@ -82,51 +82,51 @@ class AppTheme {
       onSurface: textColor,
       onError: Colors.white,
     ),
-    textTheme: GoogleFonts.interTextTheme().copyWith(
-      displayLarge: GoogleFonts.inter(
+    textTheme: GoogleFonts.outfitTextTheme().copyWith(
+      displayLarge: GoogleFonts.outfit(
         fontSize: 32,
         fontWeight: FontWeight.bold,
         color: textColor,
       ),
-      displayMedium: GoogleFonts.inter(
+      displayMedium: GoogleFonts.outfit(
         fontSize: 28,
         fontWeight: FontWeight.bold,
         color: textColor,
       ),
-      displaySmall: GoogleFonts.inter(
+      displaySmall: GoogleFonts.outfit(
         fontSize: 24,
         fontWeight: FontWeight.bold,
         color: textColor,
       ),
-      headlineMedium: GoogleFonts.inter(
+      headlineMedium: GoogleFonts.outfit(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: textColor,
       ),
-      titleLarge: GoogleFonts.inter(
+      titleLarge: GoogleFonts.outfit(
         fontSize: 18,
         fontWeight: FontWeight.w600,
         color: textColor,
       ),
-      bodyLarge: GoogleFonts.inter(
+      bodyLarge: GoogleFonts.outfit(
         fontSize: 16,
         fontWeight: FontWeight.normal,
         color: textColor,
         height: 1.5,
       ),
-      bodyMedium: GoogleFonts.inter(
+      bodyMedium: GoogleFonts.outfit(
         fontSize: 14,
         fontWeight: FontWeight.normal,
         color: textColor,
         height: 1.5,
       ),
-      bodySmall: GoogleFonts.inter(
+      bodySmall: GoogleFonts.outfit(
         fontSize: 12,
         fontWeight: FontWeight.normal,
         color: textLightColor,
         height: 1.5,
       ),
-      labelLarge: GoogleFonts.inter(
+      labelLarge: GoogleFonts.outfit(
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: Colors.white,
@@ -138,7 +138,7 @@ class AppTheme {
         foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
+        textStyle: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w600),
         elevation: 0,
       ),
     ),
@@ -148,13 +148,13 @@ class AppTheme {
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         side: const BorderSide(color: primaryColor),
-        textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
+        textStyle: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: Colors.white,
-      hintStyle: GoogleFonts.inter(fontSize: 14, color: textLightColor),
+      hintStyle: GoogleFonts.outfit(fontSize: 14, color: textLightColor),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,

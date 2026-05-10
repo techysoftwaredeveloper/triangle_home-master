@@ -315,6 +315,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:triangle_home/apartment_search_screen.dart';
+import 'package:triangle_home/screens/college_search_screen.dart';
 import 'package:triangle_home/screens/search_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
@@ -339,16 +341,14 @@ class _AccommodationTypesState extends State<AccommodationTypes> {
       {
         'title': 'College Hostels For Men',
         'icon': 'assets/images/Boyface.svg',
-        'searchType': 'By College',
-        'accommodationType': 'Paying Guest Hostels',
-        'tenantType': 'Man',
+        'isCollege': true,
+        'gender': 'Men',
       },
       {
         'title': 'College Hostels For Women',
         'icon': 'assets/images/Girlface.svg',
-        'searchType': 'By College',
-        'accommodationType': 'Paying Guest Hostels',
-        'tenantType': 'Woman',
+        'isCollege': true,
+        'gender': 'Women',
       },
     ],
     [
@@ -371,32 +371,45 @@ class _AccommodationTypesState extends State<AccommodationTypes> {
       {
         'title': 'Near My College/University',
         'icon': 'assets/images/school.svg',
-        'searchType': 'By College',
-        'accommodationType': 'Apartments',
-        'tenantType': 'Anyone',
+        'isApartment': true,
+        'isByArea': false,
       },
       {
         'title': 'Around My City/Area',
         'icon': 'assets/images/home_work.svg',
-        'searchType': 'By Area',
-        'accommodationType': 'Apartments',
-        'tenantType': 'Anyone',
+        'isApartment': true,
+        'isByArea': true,
       },
     ],
   ];
 
   void _handleCardTap(Map<String, dynamic> params) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (_) => SearchScreen(
-              initialSearchType: params['searchType'],
-              initialAccommodationType: params['accommodationType'],
-              initialTenantType: params['tenantType'],
-            ),
-      ),
-    );
+    if (params['isCollege'] == true) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CollegeSearchScreen(gender: params['gender']),
+        ),
+      );
+    } else if (params['isApartment'] == true) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ApartmentSearchScreen(isByArea: params['isByArea']),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SearchScreen(
+            initialSearchType: params['searchType'],
+            initialAccommodationType: params['accommodationType'],
+            initialTenantType: params['tenantType'],
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildTab(String label, int index) {

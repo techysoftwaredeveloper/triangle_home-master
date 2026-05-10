@@ -9,6 +9,8 @@ import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
 import 'package:triangle_home/screens/list_property/my_property_info_screen.dart';
 import 'package:triangle_home/screens/wishlist_screen.dart';
+import 'package:triangle_home/theme/app_theme.dart';
+import 'package:triangle_home/splash_screen.dart';
 
 class HomeBottomNavBar extends StatelessWidget {
   final int selectedIndex;
@@ -252,40 +254,68 @@ class HomeBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: selectedIndex,
-      onTap: (index) => _navigate(context, index),
-      backgroundColor: Theme.of(context).primaryColor,
-      selectedItemColor: Colors.white,
-      unselectedItemColor: Colors.white70,
-      type: BottomNavigationBarType.fixed,
-      selectedLabelStyle: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
-      unselectedLabelStyle: const TextStyle(fontSize: 10),
-      items: [
-        _buildNavItem(
-          iconPath: 'assets/images/Homeicon.svg',
-          label: 'Home',
-          isActive: selectedIndex == 0,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
         ),
-        _buildNavItem(
-          iconPath: 'assets/images/mywishlisticon.svg',
-          label: 'My Wishlist',
-          isActive: selectedIndex == 1,
+        child: BottomNavigationBar(
+          currentIndex: selectedIndex,
+          onTap: (index) => _navigate(context, index),
+          backgroundColor: AppTheme.primaryColor,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white.withOpacity(0.6),
+          type: BottomNavigationBarType.fixed,
+          elevation: 0,
+          selectedLabelStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Outfit',
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Outfit',
+          ),
+          items: [
+            _buildNavItem(
+              iconPath: 'assets/images/Homeicon.svg',
+              label: 'Home',
+              isActive: selectedIndex == 0,
+            ),
+            _buildNavItem(
+              iconPath: 'assets/images/mywishlisticon.svg',
+              label: 'My Wishlist',
+              isActive: selectedIndex == 1,
+            ),
+            _buildNavItem(
+              iconPath: 'assets/images/mypgbookings.svg',
+              label: 'My PG Bookings',
+              isActive: selectedIndex == 2,
+            ),
+            _buildNavItem(
+              iconPath: 'assets/images/listmyproperty.svg',
+              label: 'List A Property',
+              isActive: selectedIndex == 3,
+            ),
+          ],
         ),
-        _buildNavItem(
-          iconPath: 'assets/images/mypgbookings.svg',
-          label: 'My Bookings',
-          isActive: selectedIndex == 2,
-        ),
-        _buildNavItem(
-          iconPath: 'assets/images/listmyproperty.svg',
-          label: 'List A Property',
-          isActive: selectedIndex == 3,
-        ),
-      ],
+      ),
     );
   }
 
@@ -295,15 +325,16 @@ class HomeBottomNavBar extends StatelessWidget {
     required bool isActive,
   }) {
     return BottomNavigationBarItem(
-      icon: SvgPicture.asset(
-        iconPath,
-        height: 22,
-        colorFilter: ColorFilter.mode(Colors.white70, BlendMode.srcIn),
-      ),
-      activeIcon: SvgPicture.asset(
-        iconPath,
-        height: 24,
-        colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
+      icon: Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: SvgPicture.asset(
+          iconPath,
+          height: 20,
+          colorFilter: ColorFilter.mode(
+            Colors.white.withOpacity(isActive ? 1.0 : 0.6),
+            BlendMode.srcIn,
+          ),
+        ),
       ),
       label: label,
     );

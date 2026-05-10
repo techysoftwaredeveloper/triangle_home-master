@@ -1,280 +1,3 @@
-// // lib/screens/profile_screen.dart
-// import 'package:flutter/material.dart';
-// import 'package:flutter_animate/flutter_animate.dart';
-// import 'package:cached_network_image/cached_network_image.dart';
-// import 'package:fluttertoast/fluttertoast.dart';
-// import 'package:triangle_home/screens/profile/about_screen.dart';
-// import 'package:triangle_home/screens/profile/edit_profile_screen.dart';
-// import 'package:triangle_home/screens/profile/help_support_screen.dart';
-// import 'package:triangle_home/screens/profile/notifications_screen.dart';
-// import 'package:triangle_home/screens/profile/privacy_policy_screen.dart';
-// import 'package:triangle_home/screens/profile/privacy_security_screen.dart';
-// import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
-
-// class ProfileScreen extends StatelessWidget {
-//   const ProfileScreen({super.key});
-
-//   void _handleSignOut(BuildContext context) {
-//     showDialog(
-//       context: context,
-//       builder:
-//           (context) => AlertDialog(
-//             title: const Text('Sign Out'),
-//             content: const Text('Are you sure you want to sign out?'),
-//             actions: [
-//               TextButton(
-//                 onPressed: () => Navigator.pop(context),
-//                 child: const Text('Cancel'),
-//               ),
-//               TextButton(
-//                 onPressed: () {
-//                   // Navigator.pushAndRemoveUntil(
-//                   //   context,
-//                   //   MaterialPageRoute(builder: (_) => const LoginScreen()),
-//                   //   (route) => false,
-//                   // );
-//                   Fluttertoast.showToast(msg: 'Signed out successfully');
-//                 },
-//                 child: const Text(
-//                   'Sign Out',
-//                   style: TextStyle(color: Colors.red),
-//                 ),
-//               ),
-//             ],
-//           ),
-//     );
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text('Profile'),
-//         actions: [
-//           IconButton(
-//             icon: const Icon(Icons.logout),
-//             onPressed: () => _handleSignOut(context),
-//           ),
-//         ],
-//       ),
-//       body: SingleChildScrollView(
-//         child: Column(
-//           children: [
-//             Container(
-//               padding: const EdgeInsets.all(16),
-//               decoration: BoxDecoration(
-//                 color: Theme.of(context).primaryColor,
-//                 borderRadius: const BorderRadius.only(
-//                   bottomLeft: Radius.circular(30),
-//                   bottomRight: Radius.circular(30),
-//                 ),
-//               ),
-//               child: Column(
-//                 children: [
-//                   CircleAvatar(
-//                     radius: 50,
-//                     backgroundColor: Colors.white,
-//                     child: ClipOval(
-//                       child: CachedNetworkImage(
-//                         imageUrl: 'https://i.pravatar.cc/200',
-//                         placeholder:
-//                             (context, url) => const CircularProgressIndicator(),
-//                         errorWidget:
-//                             (context, url, error) =>
-//                                 const Icon(Icons.person, size: 50),
-//                         fit: BoxFit.cover,
-//                         width: 100,
-//                         height: 100,
-//                       ),
-//                     ),
-//                   ).animate().scale(),
-//                   const SizedBox(height: 16),
-//                   const Text(
-//                     'John Doe',
-//                     style: TextStyle(
-//                       fontSize: 24,
-//                       fontWeight: FontWeight.bold,
-//                       color: Colors.white,
-//                     ),
-//                   ).animate().fadeIn(delay: 200.ms),
-//                   const Text(
-//                     'john.doe@example.com',
-//                     style: TextStyle(fontSize: 16, color: Colors.white70),
-//                   ).animate().fadeIn(delay: 400.ms),
-//                 ],
-//               ),
-//             ),
-//             const SizedBox(height: 20),
-//             _buildSection(
-//               title: 'Account Settings',
-//               items: [
-//                 _MenuItem(
-//                   icon: Icons.person_outline,
-//                   title: 'Edit Profile',
-//                   onTap: () {
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (_) => const EditProfileScreen(),
-//                       ),
-//                     );
-//                   },
-//                 ),
-//                 _MenuItem(
-//                   icon: Icons.notifications_outlined,
-//                   title: 'Notifications',
-//                   onTap: () {
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (_) => const NotificationsScreen(),
-//                       ),
-//                     );
-//                   },
-//                 ),
-//                 _MenuItem(
-//                   icon: Icons.lock_outline,
-//                   title: 'Privacy & Security',
-//                   onTap: () {
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (_) => const PrivacySecurityScreen(),
-//                       ),
-//                     );
-//                   },
-//                 ),
-//               ],
-//             ),
-//             // _buildSection(
-//             //   title: 'Preferences',
-//             //   items: [
-//             //     _MenuItem(
-//             //       icon: Icons.language,
-//             //       title: 'Language',
-//             //       onTap: () {},
-//             //     ),
-//             //     _MenuItem(
-//             //       icon: Icons.dark_mode_outlined,
-//             //       title: 'Theme',
-//             //       onTap: () {},
-//             //     ),
-//             //     _MenuItem(
-//             //       icon: Icons.notifications_active_outlined,
-//             //       title: 'Push Notifications',
-//             //       onTap: () {},
-//             //     ),
-//             //   ],
-//             // ),
-//             _buildSection(
-//               title: 'Support & About',
-//               items: [
-//                 _MenuItem(
-//                   icon: Icons.help_outline,
-//                   title: 'Help & Support',
-//                   onTap: () {
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (_) => const HelpSupportScreen(),
-//                       ),
-//                     );
-//                   },
-//                 ),
-//                 _MenuItem(
-//                   icon: Icons.info_outline,
-//                   title: 'About Us',
-//                   onTap: () {
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(builder: (_) => const AboutScreen()),
-//                     );
-//                   },
-//                 ),
-//                 _MenuItem(
-//                   icon: Icons.privacy_tip_outlined,
-//                   title: 'Privacy Policy',
-//                   onTap: () {
-//                     {
-//                       Navigator.push(
-//                         context,
-//                         MaterialPageRoute(
-//                           builder: (_) => const PrivacyPolicyScreen(),
-//                         ),
-//                       );
-//                     }
-//                   },
-//                 ),
-//                 _MenuItem(
-//                   icon: Icons.privacy_tip_outlined,
-//                   title: 'Terms & Conditions',
-//                   onTap: () {
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(builder: (_) => const AboutScreen()),
-//                     );
-//                   },
-//                 ),
-//               ],
-//             ),
-//           ],
-//         ),
-//       ),
-//       bottomNavigationBar: const HomeBottomNavBar(selectedIndex: 4),
-//     );
-//   }
-
-//   Widget _buildSection({
-//     required String title,
-//     required List<_MenuItem> items,
-//   }) {
-//     return Padding(
-//       padding: const EdgeInsets.all(16),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           Text(
-//             title,
-//             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-//           ).animate().fadeIn().slideX(begin: -0.2, end: 0),
-//           const SizedBox(height: 12),
-//           Card(
-//             elevation: 2,
-//             shape: RoundedRectangleBorder(
-//               borderRadius: BorderRadius.circular(12),
-//             ),
-//             child: Column(
-//               children: items.map((item) => _buildMenuItem(item)).toList(),
-//             ),
-//           ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
-//         ],
-//       ),
-//     );
-//   }
-
-//   Widget _buildMenuItem(_MenuItem item) {
-//     return ListTile(
-//       leading: Icon(item.icon, color: Colors.grey[700]),
-//       title: Text(item.title),
-//       trailing: const Icon(Icons.chevron_right),
-//       onTap: item.onTap,
-//     );
-//   }
-// }
-
-// class _MenuItem {
-//   final IconData icon;
-//   final String title;
-//   final VoidCallback onTap;
-
-//   const _MenuItem({
-//     required this.icon,
-//     required this.title,
-//     required this.onTap,
-//   });
-// }
-
-// lib/screens/profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -290,9 +13,13 @@ import 'package:triangle_home/screens/profile/notifications_screen.dart';
 import 'package:triangle_home/screens/profile/privacy_policy_screen.dart';
 import 'package:triangle_home/screens/profile/privacy_security_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
+import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
+import 'package:triangle_home/widgets/logout_confirmation_dialog.dart';
+import 'package:triangle_home/splash_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final bool showBottomNav;
+  const ProfileScreen({super.key, this.showBottomNav = true});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -303,6 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? email;
   String? profileImageUrl;
   bool _isHoster = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -312,256 +40,301 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> fetchUserProfile() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
 
     final uid = user.uid;
-    final phone = user.phoneNumber ?? uid;
+    final phone = user.phoneNumber;
     final collectionNames = ['hoster', 'student', 'guest'];
 
-    for (final collection in collectionNames) {
-      // Try by uid first, then by phone
-      DocumentSnapshot doc =
-          await FirebaseFirestore.instance
+    try {
+      for (final collection in collectionNames) {
+        // Try by uid first
+        DocumentSnapshot doc = await FirebaseFirestore.instance
+            .collection(collection)
+            .doc(uid)
+            .get();
+
+        // If not found by uid, try by phone if available
+        if (!doc.exists && phone != null) {
+          doc = await FirebaseFirestore.instance
               .collection(collection)
-              .doc(uid)
+              .doc(phone)
               .get();
-      if (!doc.exists) {
-        doc =
-            await FirebaseFirestore.instance
-                .collection(collection)
-                .doc(phone)
-                .get();
-      }
+        }
 
-      if (!mounted) return;
-
-      if (doc.exists) {
-        final data = doc.data()! as Map<String, dynamic>;
-        final info = (data['info'] as Map?)?.cast<String, dynamic>() ?? {};
-        setState(() {
-          name = info['name'] as String?;
-          email = info['email'] as String?;
-          profileImageUrl = info['profileImage'] as String?;
-          _isHoster = (collection == 'hoster');
-        });
-        break;
+        if (doc.exists) {
+          final data = doc.data()! as Map<String, dynamic>;
+          final info = (data['info'] as Map?)?.cast<String, dynamic>() ?? {};
+          if (mounted) {
+            setState(() {
+              name = info['name'] as String? ?? data['name'] as String?;
+              email = info['email'] as String? ?? data['email'] as String?;
+              profileImageUrl = info['profileImage'] as String? ??
+                  data['profileImage'] as String?;
+              _isHoster = (collection == 'hoster');
+              _isLoading = false;
+            });
+          }
+          return;
+        }
       }
+    } catch (e) {
+      debugPrint('Error fetching profile: $e');
+    }
+
+    if (mounted) {
+      setState(() => _isLoading = false);
     }
   }
 
   void _handleSignOut(BuildContext context) {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Sign Out'),
-            content: const Text('Are you sure you want to sign out?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
-                  if (!context.mounted) return;
-                  Fluttertoast.showToast(msg: 'Signed out successfully');
-                  // Redirect to home screen
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => HomeScreen()),
-                    (route) => false,
-                  );
-                },
-                child: const Text(
-                  'Sign Out',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ],
-          ),
+      builder: (context) => LogoutConfirmationDialog(
+        onConfirm: () async {
+          await FirebaseAuth.instance.signOut();
+          if (!context.mounted) return;
+          Fluttertoast.showToast(
+            msg: 'Signed out successfully',
+            backgroundColor: AppTheme.textDarkColor,
+            textColor: Colors.white,
+          );
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const SplashScreen()),
+            (route) => false,
+          );
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.scaffoldBgColor,
       appBar: AppBar(
         backgroundColor: AppTheme.primaryColor,
-        title: const Text('Profile', style: TextStyle(color: Colors.white)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () => _handleSignOut(context),
-          ),
-        ],
-      ),
-      body: Container(
-        color: Colors.grey[200],
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.white,
-                      child: ClipOval(
-                        child: CachedNetworkImage(
-                          imageUrl:
-                              profileImageUrl ??
-                              'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name ?? "U")}',
-                          placeholder:
-                              (context, url) =>
-                                  const CircularProgressIndicator(),
-                          errorWidget:
-                              (context, url, error) =>
-                                  const Icon(Icons.person, size: 50),
-                          fit: BoxFit.cover,
-                          width: 100,
-                          height: 100,
-                        ),
-                      ),
-                    ).animate().scale(),
-                    const SizedBox(height: 10),
-                    Text(
-                      name ?? 'Loading...',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ).animate().fadeIn(delay: 200.ms),
-                    if (email != null)
-                      Text(
-                        email!,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.black,
-                        ),
-                      ).animate().fadeIn(delay: 400.ms),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              _buildSection(
-                title: 'Account Settings',
-                items: [
-                  _MenuItem(
-                    icon: Icons.person_outline,
-                    title: 'Edit Profile',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const EditProfileScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  if (_isHoster)
-                    _MenuItem(
-                      icon: Icons.apartment_rounded,
-                      title: 'My Properties',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const HosterDashboardScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  _MenuItem(
-                    icon: Icons.notifications_outlined,
-                    title: 'Notifications',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const NotificationsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _MenuItem(
-                    icon: Icons.lock_outline,
-                    title: 'Privacy & Security',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const PrivacySecurityScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              _buildSection(
-                title: 'Support & About',
-                items: [
-                  _MenuItem(
-                    icon: Icons.help_outline,
-                    title: 'Help & Support',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const HelpSupportScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _MenuItem(
-                    icon: Icons.info_outline,
-                    title: 'About Us',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const AboutScreen()),
-                      );
-                    },
-                  ),
-                  _MenuItem(
-                    icon: Icons.privacy_tip_outlined,
-                    title: 'Privacy Policy',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const PrivacyPolicyScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _MenuItem(
-                    icon: Icons.privacy_tip_outlined,
-                    title: 'Terms & Conditions',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const AboutScreen()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 40),
-            ],
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            color: Colors.white,
+            fontFamily: AppTheme.fontFamily,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
-      // bottomNavigationBar: const HomeBottomNavBar(selectedIndex: 4),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildProfileHeader(),
+                  const SizedBox(height: AppTheme.spaceMD),
+                  _buildSection(
+                    title: 'Account Settings',
+                    items: [
+                      _MenuItem(
+                        icon: Icons.person_outline_rounded,
+                        title: 'Edit Profile',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const EditProfileScreen()),
+                        ),
+                      ),
+                      if (_isHoster)
+                        _MenuItem(
+                          icon: Icons.dashboard_outlined,
+                          title: 'Hoster Dashboard',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const HosterDashboardScreen()),
+                          ),
+                        ),
+                      _MenuItem(
+                        icon: Icons.notifications_none_rounded,
+                        title: 'Notifications',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const NotificationsScreen()),
+                        ),
+                      ),
+                      _MenuItem(
+                        icon: Icons.lock_outline_rounded,
+                        title: 'Privacy & Security',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const PrivacySecurityScreen()),
+                        ),
+                      ),
+                    ],
+                  ),
+                  _buildSection(
+                    title: 'Support & About',
+                    items: [
+                      _MenuItem(
+                        icon: Icons.help_outline_rounded,
+                        title: 'Help & Support',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const HelpSupportScreen()),
+                        ),
+                      ),
+                      _MenuItem(
+                        icon: Icons.info_outline_rounded,
+                        title: 'About Us',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const AboutScreen()),
+                        ),
+                      ),
+                      _MenuItem(
+                        icon: Icons.privacy_tip_outlined,
+                        title: 'Privacy Policy',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const PrivacyPolicyScreen()),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: OutlinedButton.icon(
+                      onPressed: () => _handleSignOut(context),
+                      icon: const Icon(Icons.logout_rounded, size: 20),
+                      label: const Text(
+                        'Sign Out',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.errorColor,
+                        side: const BorderSide(color: AppTheme.errorColor, width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
+                  const SizedBox(height: 40),
+                  const Text(
+                    'Version 1.0.0',
+                    style: TextStyle(
+                      color: AppTheme.textMutedColor,
+                      fontSize: AppTheme.fontSM,
+                      fontFamily: AppTheme.fontFamily,
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spaceXL),
+                ],
+              ),
+            ),
+      bottomNavigationBar:
+          widget.showBottomNav ? const HomeBottomNavBar(selectedIndex: 0) : null,
+    );
+  }
+
+  Widget _buildProfileHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+      decoration: const BoxDecoration(
+        color: AppTheme.primaryColor,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
+      ),
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.white,
+                  child: ClipOval(
+                    child: CachedNetworkImage(
+                      imageUrl: profileImageUrl ??
+                          'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name ?? "U")}&background=random',
+                      placeholder: (context, url) =>
+                          const CircularProgressIndicator(),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.person, size: 50, color: AppTheme.primaryColor),
+                      fit: BoxFit.cover,
+                      width: 100,
+                      height: 100,
+                    ),
+                  ),
+                ),
+              ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.accentColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.edit_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ).animate().scale(delay: 400.ms),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            name ?? 'Guest User',
+            style: const TextStyle(
+              fontSize: AppTheme.font2XL,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontFamily: AppTheme.fontFamily,
+            ),
+          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
+          const SizedBox(height: 4),
+          Text(
+            email ?? (FirebaseAuth.instance.currentUser?.phoneNumber ?? ''),
+            style: TextStyle(
+              fontSize: AppTheme.fontMD,
+              color: Colors.white.withOpacity(0.8),
+              fontFamily: AppTheme.fontFamily,
+            ),
+          ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
+        ],
+      ),
     );
   }
 
@@ -570,35 +343,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required List<_MenuItem> items,
   }) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ).animate().fadeIn().slideX(begin: -0.2, end: 0),
-          const SizedBox(height: 12),
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: AppTheme.fontMD,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textDarkColor,
+                fontFamily: AppTheme.fontFamily,
+              ),
+            ),
+          ).animate().fadeIn().slideX(begin: -0.1, end: 0),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
-              children: items.map((item) => _buildMenuItem(item)).toList(),
+              children: items.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                return Column(
+                  children: [
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(item.icon, color: AppTheme.primaryColor, size: 22),
+                      ),
+                      title: Text(
+                        item.title,
+                        style: const TextStyle(
+                          fontSize: AppTheme.fontBase,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.textColor,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.chevron_right_rounded, color: AppTheme.textMutedColor),
+                      onTap: item.onTap,
+                    ),
+                    if (index < items.length - 1)
+                      const Divider(height: 1, indent: 56, endIndent: 16, color: AppTheme.dividerColor),
+                  ],
+                );
+              }).toList(),
             ),
-          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
+          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0),
         ],
       ),
-    );
-  }
-
-  Widget _buildMenuItem(_MenuItem item) {
-    return ListTile(
-      leading: Icon(item.icon, color: Colors.grey[700]),
-      title: Text(item.title),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: item.onTap,
     );
   }
 }

@@ -686,4 +686,81 @@ class FirebaseService {
     final snapshot = await uploadTask;
     return await snapshot.ref.getDownloadURL();
   }
+
+  // ==================== ADMIN OPERATIONS ====================
+
+  /// Check if current user is admin
+  Future<bool> isAdmin() async {
+    if (_userPhone == null) return false;
+    final doc = await _firestore.collection('admins').doc(_userPhone).get();
+    return doc.exists;
+  }
+
+  /// Get stats for admin dashboard
+  Future<Map<String, dynamic>> getAdminStats() async {
+    final properties = await _firestore.collection('properties').get();
+    final bookings = await _firestore.collection('bookings').get();
+    final students = await _firestore.collection('student').get();
+    final hosters = await _firestore.collection('hoster').get();
+    final payments = await _firestore.collection('payments').get();
+
+    double totalRevenue = 0;
+    for (var doc in payments.docs) {
+      totalRevenue += (doc.data()['amount'] as num?)?.toDouble() ?? 0;
+    }
+
+    return {
+      'totalProperties': properties.docs.length,
+      'totalBookings': bookings.docs.length,
+      'totalUsers': students.docs.length + hosters.docs.length,
+      'totalRevenue': totalRevenue,
+      'pendingProperties': properties.docs
+          .where((doc) => doc.data()['status'] == 'pending')
+          .length,
+    };
+  }
+
+  /// Get all properties with optional status filter
+  Stream<QuerySnapshot<Map<String, dynamic>>> getAllPropertiesAdmin({
+    String? status,
+  }) {
+    Query<Map<String, dynamic>> query = _firestore.collection('properties');
+    if (status != null) {
+      query = query.where('status', isEqualTo: status);
+    }
+    return query.orderBy('createdAt', descending: true).snapshots();
+  }
+
+  /// Update property status (Approve/Reject)
+  Future<void> updatePropertyStatus(String propertyId, String status) async {
+    await _firestore.collection('properties').doc(propertyId).update({
+      'status': status,
+      'updatedAt': Timestamp.now(),
+    });
+  }
+
+  /// Get all users from all roles
+  Future<List<Map<String, dynamic>>> getAllUsersAdmin() async {
+    final List<Map<String, dynamic>> users = [];
+
+    final students = await _firestore.collection('student').get();
+    for (var doc in students.docs) {
+      users.add({...doc.data(), 'role': 'student', 'id': doc.id});
+    }
+
+    final hosters = await _firestore.collection('hoster').get();
+    for (var doc in hosters.docs) {
+      users.add({...doc.data(), 'role': 'hoster', 'id': doc.id});
+    }
+
+    return users;
+  }
+
+  /// Get all bookings for admin
+  Stream<QuerySnapshot<Map<String, dynamic>>> getAllBookingsAdmin() {
+    return _firestore
+        .collection('bookings')
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
 }

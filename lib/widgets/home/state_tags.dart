@@ -172,40 +172,10 @@ class StateTags extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Text('Jump to State:  ', style: _labelStyle(context)),
-
-          /// ➕ NEAR ME BUTTON
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: TextButton.icon(
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 0,
-                ),
-                backgroundColor: Colors.blue.shade50,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  side: BorderSide(color: Colors.blue.shade200),
-                ),
-              ),
-              icon: const Icon(Icons.my_location, size: 16, color: Colors.blue),
-              label: Text(
-                'Near Me: $currentLocation',
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: AppTheme.fontXS,
-                  color: Colors.blue,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: AppTheme.fontFamily,
-                ),
-              ),
-              onPressed: () => onStateSelected(currentLocation),
-            ),
-          ),
+          Text('Jump To City:  ', style: _labelStyle(context)),
 
           /// ➕ STATE CHIPS
           ...states.map((state) {
@@ -214,22 +184,20 @@ class StateTags extends StatelessWidget {
               key: ValueKey(state),
               padding: const EdgeInsets.only(right: 8),
               child: ActionChip(
-                backgroundColor: isSelected ? Colors.blue[100] : Colors.white,
+                backgroundColor: isSelected ? AppTheme.primaryColor : Colors.white,
                 side: BorderSide(
-                  color: isSelected ? Colors.blue : Colors.grey.shade300,
-                  width: 0.9,
+                  color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
+                  width: 1,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
                 label: Text(
                   state,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
                   style: TextStyle(
-                    color: isSelected ? Colors.blue[800] : Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                    fontSize: AppTheme.fontXS,
+                    color: isSelected ? Colors.white : const Color(0xFF475569),
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    fontSize: 12,
                     fontFamily: AppTheme.fontFamily,
                   ),
                 ),

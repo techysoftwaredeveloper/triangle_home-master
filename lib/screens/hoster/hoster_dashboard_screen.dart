@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
-import 'package:triangle_home/screens/profile/profile_screen.dart';
+import 'package:triangle_home/screens/profile/profile_screen.dart' as sub;
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/hoster/hoster_bottom_nav.dart';
 
@@ -27,7 +27,7 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
       _DashboardTab(uid: _uid),
       _PropertiesTab(uid: _uid),
       _BookingsTab(uid: _uid),
-      const ProfileScreen(),
+      const sub.ProfileScreen(showBottomNav: false),
     ];
 
     final titles = [

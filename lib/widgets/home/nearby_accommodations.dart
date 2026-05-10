@@ -8,11 +8,13 @@ import 'package:triangle_home/theme/app_theme.dart';
 class NearbyAccommodations extends StatelessWidget {
   final List<Map<String, dynamic>> accommodations;
   final String selectedCity;
+  final String? customTitle;
 
   const NearbyAccommodations({
     super.key,
     required this.accommodations,
     required this.selectedCity,
+    this.customTitle,
   });
 
   @override
@@ -30,6 +32,10 @@ class NearbyAccommodations extends StatelessWidget {
                 )
                 .toList();
 
+    final title = customTitle ?? (selectedCity.toLowerCase() == 'near me'
+                  ? 'PG Accommodations Near You'
+                  : 'PG Accommodations in $selectedCity');
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 24),
@@ -39,11 +45,9 @@ class NearbyAccommodations extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              selectedCity.toLowerCase() == 'near me'
-                  ? 'PG Accommodations Near You'
-                  : 'PG Accommodations in $selectedCity',
+              title,
               style: const TextStyle(
-                fontSize: AppTheme.fontBase,
+                fontSize: 15,
                 fontFamily: AppTheme.fontFamily,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.textDarkColor,
