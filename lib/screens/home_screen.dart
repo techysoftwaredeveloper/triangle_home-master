@@ -18,6 +18,7 @@ import 'package:triangle_home/widgets/home/state_tags.dart';
 import 'package:triangle_home/widgets/home/enrollment_card.dart';
 import 'package:triangle_home/widgets/home/hoster_registration_card.dart';
 import 'package:triangle_home/widgets/home/nearby_accommodations.dart';
+import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/widgets/home/highest_rated_section.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -137,12 +138,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: _buildAppBar(context),
-      body: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            StateTags(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // Hard Reload logic to enter Hoster Page
+          final user = FirebaseAuth.instance.currentUser;
+          if (user != null) {
+            // Check if user is hoster or allow shortcut entry
+            final firebaseService = FirebaseService();
+            final hosterDoc = await FirebaseFirestore.instance.collection('hoster').doc(user.uid).get();
+
+            if (mounted) {
+              if (hosterDoc.exists) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Register as a hoster to access the dashboard.')),
+                );
+              }
+            }
+          } else {
+            if (mounted) {
+              _navigateToProfileOrLogin(context);
+            }
+          }
+        },
+        displacement: 100, // Deep swipe
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              StateTags(
               states: _states,
               selectedState: _currentCity,
               currentLocation: _detectedCity,
@@ -189,6 +219,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 20),
           ],
         ),
+      ),
       ),
       bottomNavigationBar: const HomeBottomNavBar(selectedIndex: 0),
     );
@@ -282,12 +313,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     {
       'name': 'Yenepoya University',
       'location': 'Mangaluru, Karnataka',
-      'logo': 'https://upload.wikimedia.org/wikipedia/en/2/2e/Yenepoya_University_Logo.png',
+      'logo': 'https://www.yenepoya.edu.in/images/logo.png',
     },
     {
       'name': 'Madras Christian College',
       'location': 'Chennai, Tamil Nadu',
-      'logo': 'https://upload.wikimedia.org/wikipedia/en/0/0d/Madras_Christian_College_logo.png',
+      'logo': 'https://mcc.edu.in/wp-content/uploads/2020/07/mcc-logo.png',
     },
   ];
 
@@ -295,12 +326,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     {
       'name': 'Prestige Apartments',
       'location': 'Bangalore, Karnataka',
-      'logo': 'https://logo.clearbit.com/prestigeconstructions.com',
+      'logo': 'https://www.prestigeconstructions.com/images/logo.png',
     },
     {
       'name': 'Brigade Gateway',
       'location': 'Bangalore, Karnataka',
-      'logo': 'https://logo.clearbit.com/brigadegroup.com',
+      'logo': 'https://www.brigadegroup.com/images/logo.png',
     },
   ];
 
@@ -308,12 +339,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     {
       'name': 'Zolo Stay PGs',
       'location': 'Chennai, Tamil Nadu',
-      'logo': 'https://logo.clearbit.com/zolostays.com',
+      'logo': 'https://www.zolostays.com/images/logo.png',
     },
     {
       'name': 'Stanza Living',
       'location': 'Kochi, Kerala',
-      'logo': 'https://logo.clearbit.com/stanzaliving.com',
+      'logo': 'https://www.stanzaliving.com/images/logo.png',
     },
   ];
 }

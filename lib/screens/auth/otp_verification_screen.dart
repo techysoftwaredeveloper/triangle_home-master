@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:triangle_home/services/auth_production_service.dart';
+import 'package:triangle_home/screens/admin/admin_dashboard_screen.dart';
 import 'package:triangle_home/hoster_info_screen.dart';
 import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
@@ -93,87 +95,77 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       final userCredential = await FirebaseAuth.instance.signInWithCredential(
         credential,
       );
-      final uid = userCredential.user?.uid;
-      final phone = userCredential.user?.phoneNumber;
-      if (uid == null || phone == null) throw Exception("User info not found");
 
-      // For hosters: check hoster collection by uid first
-      if (!widget.isStudent) {
-        final hosterDoc =
-            await FirebaseFirestore.instance
-                .collection('hoster')
-                .doc(uid)
-                .get();
+      final user = userCredential.user;
+      if (user == null) throw Exception("User not found");
 
-        if (!mounted) return;
+      // Use the Production Auth Service for role detection
+      final authService = AuthProductionService();
+      final role = await authService.getUserRole(user);
 
-        if (hosterDoc.exists) {
-          // Approved hoster → go to dashboard
+      if (!mounted) return;
+
+      // Production-Grade Redirection Logic
+      switch (role) {
+        case UserRole.superadmin:
+        case UserRole.admin:
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+            (route) => false,
+          );
+          break;
+        case UserRole.hoster:
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
             (route) => false,
           );
-        } else {
-          // Not yet a hoster → go to request form
+          break;
+        case UserRole.student:
+          if (widget.onLoginNavigateTo != null) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => widget.onLoginNavigateTo!),
+              (route) => false,
+            );
+          } else {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => HomeScreen()),
+              (route) => false,
+            );
+          }
+          break;
+        case UserRole.none:
+          // New User Onboarding
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const BecomeHosterScreen()),
+            MaterialPageRoute(
+              builder: (_) => widget.isStudent
+                  ? StudentInfoScreen(
+                      phoneNumber: user.phoneNumber ?? '',
+                      onCompleteNavigateTo: widget.onLoginNavigateTo,
+                    )
+                  : HosterInfoScreen(
+                      phoneNumber: user.phoneNumber ?? '',
+                      onCompleteNavigateTo: widget.onLoginNavigateTo,
+                    ),
+            ),
             (route) => false,
           );
-        }
-        return;
+          break;
       }
+    } on FirebaseAuthException catch (e) {
+      String message = 'Verification failed';
+      if (e.code == 'invalid-verification-code') message = 'Invalid OTP. Please try again.';
+      if (e.code == 'session-expired') message = 'OTP expired. Please resend.';
 
-      // For students: existing flow
-      final collection = 'student';
-      final docSnapshot =
-          await FirebaseFirestore.instance
-              .collection(collection)
-              .doc(phone)
-              .get();
-
-      if (!mounted) return;
-
-      if (docSnapshot.exists) {
-        if (widget.onLoginNavigateTo != null) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => widget.onLoginNavigateTo!),
-            (route) => false,
-          );
-        } else {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => HomeScreen()),
-            (route) => false,
-          );
-        }
-      } else {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) =>
-                    widget.isStudent
-                        ? StudentInfoScreen(
-                          phoneNumber: phone,
-                          onCompleteNavigateTo: widget.onLoginNavigateTo,
-                        )
-                        : HosterInfoScreen(
-                          phoneNumber: phone,
-                          onCompleteNavigateTo: widget.onLoginNavigateTo,
-                        ),
-          ),
-          (route) => false,
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Invalid OTP')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('An unexpected error occurred')));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

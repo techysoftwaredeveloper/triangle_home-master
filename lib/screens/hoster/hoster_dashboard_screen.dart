@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
 import 'package:triangle_home/screens/profile/profile_screen.dart' as sub;
+import 'package:triangle_home/services/firebase_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/hoster/hoster_bottom_nav.dart';
 
@@ -16,6 +17,7 @@ class HosterDashboardScreen extends StatefulWidget {
 
 class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
   int _selectedIndex = 0;
+  final FirebaseService _firebaseService = FirebaseService();
 
   String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
 
@@ -24,14 +26,14 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final tabs = [
-      _DashboardTab(uid: _uid),
-      _PropertiesTab(uid: _uid),
-      _BookingsTab(uid: _uid),
+      _DashboardTab(uid: _uid, service: _firebaseService),
+      _PropertiesTab(uid: _uid, service: _firebaseService),
+      _BookingsTab(uid: _uid, service: _firebaseService),
       const sub.ProfileScreen(showBottomNav: false),
     ];
 
     final titles = [
-      'Dashboard',
+      'Hoster Dashboard',
       'My Properties',
       'Bookings Received',
       'Profile',
@@ -45,11 +47,15 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
               : AppBar(
                 backgroundColor: AppTheme.primaryColor,
                 automaticallyImplyLeading: false,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                  onPressed: () => Navigator.pop(context),
+                ),
                 title: Text(
                   titles[_selectedIndex],
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: AppTheme.fontLG,
+                    fontSize: AppTheme.fontMD,
                     fontWeight: FontWeight.w600,
                     fontFamily: AppTheme.fontFamily,
                   ),
@@ -58,7 +64,7 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
                     _selectedIndex == 1
                         ? [
                           IconButton(
-                            icon: const Icon(Icons.add, color: Colors.white),
+                            icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white),
                             onPressed:
                                 () => Navigator.push(
                                   context,
@@ -76,28 +82,6 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
         selectedIndex: _selectedIndex,
         onTap: _onNavTap,
       ),
-      floatingActionButton:
-          _selectedIndex == 1
-              ? FloatingActionButton.extended(
-                onPressed:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ListPropertyScreen(),
-                      ),
-                    ),
-                backgroundColor: AppTheme.primaryColor,
-                icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text(
-                  'List Property',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontFamily: AppTheme.fontFamily,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ).animate().scale(delay: 300.ms)
-              : null,
     );
   }
 }
@@ -105,46 +89,124 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
 // ── Dashboard Tab ────────────────────────────────────────────────────────────
 class _DashboardTab extends StatelessWidget {
   final String uid;
-  const _DashboardTab({required this.uid});
+  final FirebaseService service;
+  const _DashboardTab({required this.uid, required this.service});
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppTheme.spaceMD),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Welcome card
-          _WelcomeCard(uid: uid),
-          const SizedBox(height: AppTheme.spaceMD),
+    return FutureBuilder<Map<String, dynamic>>(
+      future: service.getHosterStats(uid),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          // Stats row
-          Row(
+        final stats = snapshot.data ?? {
+          'totalProperties': 0,
+          'totalBookings': 0,
+          'totalEarnings': 0.0,
+          'pendingBookings': 0,
+        };
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _StatCard(uid: uid, type: 'properties')),
-              const SizedBox(width: AppTheme.spaceSM),
-              Expanded(child: _StatCard(uid: uid, type: 'bookings')),
-              const SizedBox(width: AppTheme.spaceSM),
-              Expanded(child: _StatCard(uid: uid, type: 'earnings')),
+              _WelcomeCard(uid: uid),
+              const SizedBox(height: 24),
+
+              Text(
+                'Performance Overview',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: AppTheme.fontFamily,
+                  color: AppTheme.textDarkColor,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 1.4,
+                children: [
+                  _buildStatCard('Properties', stats['totalProperties'].toString(), Icons.home_work_rounded, Colors.blue),
+                  _buildStatCard('Total Bookings', stats['totalBookings'].toString(), Icons.book_rounded, Colors.green),
+                  _buildStatCard('Earnings', '₹${stats['totalEarnings'].toStringAsFixed(0)}', Icons.payments_rounded, Colors.purple),
+                  _buildStatCard('Pending', stats['pendingBookings'].toString(), Icons.pending_actions_rounded, Colors.orange),
+                ],
+              ),
+
+              const SizedBox(height: 32),
+              const Text(
+                'Recent Activity',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: AppTheme.fontFamily,
+                  color: AppTheme.textDarkColor,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _RecentBookings(uid: uid, service: service),
             ],
           ),
-          const SizedBox(height: AppTheme.spaceMD),
+        );
+      }
+    );
+  }
 
-          // Recent bookings
-          const Text(
-            'Recent Bookings',
-            style: TextStyle(
-              fontSize: AppTheme.fontLG,
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: AppTheme.textDarkColor,
+            ),
+          ),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppTheme.textLightColor,
               fontFamily: AppTheme.fontFamily,
             ),
           ),
-          const SizedBox(height: AppTheme.spaceSM),
-          _RecentBookings(uid: uid),
         ],
       ),
-    );
+    ).animate().fadeIn().scale(delay: 200.ms);
   }
 }
 
@@ -162,50 +224,57 @@ class _WelcomeCard extends StatelessWidget {
         final name = info['name'] as String? ?? 'Hoster';
 
         return Container(
-          padding: const EdgeInsets.all(AppTheme.spaceMD),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [AppTheme.primaryColor, AppTheme.primaryDark],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(AppTheme.radiusLG),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryColor.withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Row(
             children: [
               CircleAvatar(
-                radius: 28,
-                backgroundColor: Colors.white.withValues(alpha: 0.2),
+                radius: 30,
+                backgroundColor: Colors.white.withOpacity(0.2),
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : 'H',
                   style: const TextStyle(
-                    fontSize: AppTheme.font2XL,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     fontFamily: AppTheme.fontFamily,
                   ),
                 ),
               ),
-              const SizedBox(width: AppTheme.spaceMD),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Welcome back, $name!',
+                      'Hello, $name!',
                       style: const TextStyle(
-                        fontSize: AppTheme.fontLG,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                         fontFamily: AppTheme.fontFamily,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Manage your properties and bookings',
+                    Text(
+                      'Ready to manage your properties today?',
                       style: TextStyle(
-                        fontSize: AppTheme.fontSM,
-                        color: Colors.white70,
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.8),
                         fontFamily: AppTheme.fontFamily,
                       ),
                     ),
@@ -220,248 +289,67 @@ class _WelcomeCard extends StatelessWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final String uid;
-  final String type; // 'properties' | 'bookings' | 'earnings'
-  const _StatCard({required this.uid, required this.type});
-
-  @override
-  Widget build(BuildContext context) {
-    Stream<QuerySnapshot> stream;
-    String label;
-    IconData icon;
-    Color color;
-
-    switch (type) {
-      case 'bookings':
-        stream =
-            FirebaseFirestore.instance
-                .collection('bookings')
-                .where('hosterId', isEqualTo: uid)
-                .snapshots();
-        label = 'Bookings';
-        icon = Icons.book_rounded;
-        color = AppTheme.accentColor;
-        break;
-      case 'earnings':
-        stream =
-            FirebaseFirestore.instance
-                .collection('payments')
-                .where('hosterId', isEqualTo: uid)
-                .snapshots();
-        label = 'Earnings';
-        icon = Icons.currency_rupee_rounded;
-        color = AppTheme.successColor;
-        break;
-      default: // 'properties'
-        stream =
-            FirebaseFirestore.instance
-                .collection('properties')
-                .where('hosterId', isEqualTo: uid)
-                .snapshots();
-        label = 'Properties';
-        icon = Icons.apartment_rounded;
-        color = AppTheme.primaryColor;
-    }
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: stream,
-      builder: (context, snapshot) {
-        String value = '...';
-        if (snapshot.hasData) {
-          if (type == 'earnings') {
-            final total = snapshot.data!.docs.fold<num>(0, (acc, doc) {
-              final d = doc.data() as Map<String, dynamic>;
-              return acc + ((d['amount'] as num?) ?? 0);
-            });
-            value = '₹$total';
-          } else {
-            value = snapshot.data!.docs.length.toString();
-          }
-        }
-
-        return Container(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppTheme.spaceMD,
-            horizontal: AppTheme.spaceSM,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: color, size: 24),
-              const SizedBox(height: 6),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: AppTheme.fontLG,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                  fontFamily: AppTheme.fontFamily,
-                ),
-              ),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: AppTheme.fontXS,
-                  color: AppTheme.textMutedColor,
-                  fontFamily: AppTheme.fontFamily,
-                ),
-              ),
-            ],
-          ),
-        ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.9, 0.9));
-      },
-    );
-  }
-}
-
 class _RecentBookings extends StatelessWidget {
   final String uid;
-  const _RecentBookings({required this.uid});
+  final FirebaseService service;
+  const _RecentBookings({required this.uid, required this.service});
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream:
-          FirebaseFirestore.instance
-              .collection('bookings')
-              .where('hosterId', isEqualTo: uid)
-              .orderBy('createdAt', descending: true)
-              .limit(5)
-              .snapshots(),
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: service.getHosterBookings(uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(AppTheme.spaceLG),
-              child: CircularProgressIndicator(),
-            ),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
-        final docs = snapshot.data?.docs ?? [];
+        final docs = snapshot.data?.docs.take(3).toList() ?? [];
 
         if (docs.isEmpty) {
           return Container(
-            padding: const EdgeInsets.all(AppTheme.spaceLG),
+            width: double.infinity,
+            padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(AppTheme.radiusMD),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: const Center(
               child: Text(
-                'No bookings yet',
-                style: TextStyle(
-                  color: AppTheme.textMutedColor,
-                  fontFamily: AppTheme.fontFamily,
-                ),
+                'No recent activity',
+                style: TextStyle(color: AppTheme.textMutedColor),
               ),
             ),
           );
         }
 
         return Column(
-          children:
-              docs.asMap().entries.map((entry) {
-                final i = entry.key;
-                final data = entry.value.data() as Map<String, dynamic>;
-                final status = data['status'] as String? ?? 'pending';
-                final studentName = data['studentName'] as String? ?? 'Student';
-                final propertyName =
-                    data['propertyName'] as String? ?? 'Property';
-                final amount = data['amount'];
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: AppTheme.spaceSM),
-                  padding: const EdgeInsets.all(AppTheme.spaceMD),
+          children: docs.map((doc) {
+            final data = doc.data();
+            final status = data['status'] as String? ?? 'pending';
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 0,
+              color: Colors.white,
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(12),
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            studentName.isNotEmpty
-                                ? studentName[0].toUpperCase()
-                                : 'S',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryColor,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppTheme.spaceSM),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              studentName,
-                              style: const TextStyle(
-                                fontSize: AppTheme.fontBase,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textDarkColor,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                            ),
-                            Text(
-                              propertyName,
-                              style: const TextStyle(
-                                fontSize: AppTheme.fontSM,
-                                color: AppTheme.textLightColor,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          if (amount != null)
-                            Text(
-                              '₹$amount',
-                              style: const TextStyle(
-                                fontSize: AppTheme.fontBase,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.successColor,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                            ),
-                          _StatusChip(status: status),
-                        ],
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(delay: Duration(milliseconds: 100 * i));
-              }).toList(),
+                  child: const Icon(Icons.person_rounded, color: AppTheme.primaryColor, size: 20),
+                ),
+                title: Text(
+                  data['studentName'] ?? 'Guest Student',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                subtitle: Text(data['propertyName'] ?? 'Property'),
+                trailing: _StatusChip(status: status),
+              ),
+            );
+          }).toList(),
         );
       },
     );
@@ -475,7 +363,7 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Color color;
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'confirmed':
         color = AppTheme.successColor;
         break;
@@ -488,17 +376,17 @@ class _StatusChip extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        status[0].toUpperCase() + status.substring(1),
+        status.toUpperCase(),
         style: TextStyle(
-          fontSize: AppTheme.fontXS,
+          fontSize: 10,
           color: color,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.bold,
           fontFamily: AppTheme.fontFamily,
         ),
       ),
@@ -509,16 +397,13 @@ class _StatusChip extends StatelessWidget {
 // ── Properties Tab ────────────────────────────────────────────────────────────
 class _PropertiesTab extends StatelessWidget {
   final String uid;
-  const _PropertiesTab({required this.uid});
+  final FirebaseService service;
+  const _PropertiesTab({required this.uid, required this.service});
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream:
-          FirebaseFirestore.instance
-              .collection('properties')
-              .where('hosterId', isEqualTo: uid)
-              .snapshots(),
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: service.getHosterProperties(uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -528,71 +413,94 @@ class _PropertiesTab extends StatelessWidget {
 
         if (docs.isEmpty) {
           return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppTheme.spaceLG),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.apartment_outlined,
-                    size: 64,
-                    color: AppTheme.primaryColor.withValues(alpha: 0.4),
-                  ),
-                  const SizedBox(height: AppTheme.spaceMD),
-                  const Text(
-                    'No properties listed yet',
-                    style: TextStyle(
-                      fontSize: AppTheme.fontLG,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textDarkColor,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
-                  const SizedBox(height: AppTheme.spaceSM),
-                  const Text(
-                    'Tap the + button to list your first property',
-                    style: TextStyle(
-                      fontSize: AppTheme.fontBase,
-                      color: AppTheme.textLightColor,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.home_work_outlined, size: 64, color: AppTheme.primaryColor.withOpacity(0.2)),
+                const SizedBox(height: 16),
+                const Text('No properties listed yet', style: TextStyle(fontWeight: FontWeight.bold)),
+                TextButton(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ListPropertyScreen())),
+                  child: const Text('Add Your First Property'),
+                ),
+              ],
             ),
           );
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.all(AppTheme.spaceMD),
+          padding: const EdgeInsets.all(16),
           itemCount: docs.length,
           itemBuilder: (context, index) {
-            final data = docs[index].data() as Map<String, dynamic>;
+            final data = docs[index].data();
             final basic = data['basicInfo'] as Map<String, dynamic>? ?? {};
-            final property =
-                data['propertyInfo'] as Map<String, dynamic>? ?? {};
-            final name =
-                basic['collegeName'] as String? ??
-                data['collegeName'] as String? ??
-                'Unnamed Property';
-            final address =
-                basic['addressLine1'] as String? ??
-                data['addressLine1'] as String? ??
-                '';
-            final type =
-                basic['type'] as String? ??
-                data['type'] as String? ??
-                'Property';
-            final imageUrl =
-                (property['images'] as List?)?.firstOrNull as String?;
+            final images = data['images'] as List? ?? [];
 
-            return _PropertyCard(
-              name: name,
-              address: address,
-              type: type,
-              imageUrl: imageUrl,
-              index: index,
+            return Card(
+              margin: const EdgeInsets.only(bottom: 16),
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: InkWell(
+                onTap: () {},
+                child: Column(
+                  children: [
+                    Stack(
+                      children: [
+                        Container(
+                          height: 160,
+                          width: double.infinity,
+                          color: Colors.grey[200],
+                          child: images.isNotEmpty
+                            ? Image.network(images.first, fit: BoxFit.cover)
+                            : const Icon(Icons.image_not_supported, size: 40),
+                        ),
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              basic['type'] ?? 'PG',
+                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  basic['collegeName'] ?? 'Unnamed Property',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.location_on_rounded, size: 14, color: AppTheme.textMutedColor),
+                                    const SizedBox(width: 4),
+                                    Text(data['city'] ?? 'Location', style: const TextStyle(color: AppTheme.textMutedColor, fontSize: 12)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded, color: Color(0xFFCBD5E1)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             );
           },
         );
@@ -601,157 +509,16 @@ class _PropertiesTab extends StatelessWidget {
   }
 }
 
-class _PropertyCard extends StatelessWidget {
-  final String name;
-  final String address;
-  final String type;
-  final String? imageUrl;
-  final int index;
-
-  const _PropertyCard({
-    required this.name,
-    required this.address,
-    required this.type,
-    this.imageUrl,
-    required this.index,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-          margin: const EdgeInsets.only(bottom: AppTheme.spaceMD),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppTheme.radiusLG),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(AppTheme.radiusLG),
-                  bottomLeft: Radius.circular(AppTheme.radiusLG),
-                ),
-                child:
-                    imageUrl != null
-                        ? Image.network(
-                          imageUrl!,
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _placeholder(),
-                        )
-                        : _placeholder(),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppTheme.spaceMD),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontSize: AppTheme.fontBase,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textDarkColor,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      if (address.isNotEmpty)
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on_outlined,
-                              size: 12,
-                              color: AppTheme.textMutedColor,
-                            ),
-                            const SizedBox(width: 2),
-                            Expanded(
-                              child: Text(
-                                address,
-                                style: const TextStyle(
-                                  fontSize: AppTheme.fontXS,
-                                  color: AppTheme.textLightColor,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(
-                            AppTheme.radiusFull,
-                          ),
-                        ),
-                        child: Text(
-                          type,
-                          style: const TextStyle(
-                            fontSize: AppTheme.fontXS,
-                            color: AppTheme.primaryColor,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        )
-        .animate()
-        .fadeIn(delay: Duration(milliseconds: 80 * index))
-        .slideX(begin: 0.05, end: 0);
-  }
-
-  Widget _placeholder() {
-    return Container(
-      width: 100,
-      height: 100,
-      color: AppTheme.primaryColor.withValues(alpha: 0.08),
-      child: const Icon(
-        Icons.apartment_outlined,
-        color: AppTheme.primaryColor,
-        size: 32,
-      ),
-    );
-  }
-}
-
 // ── Bookings Tab ──────────────────────────────────────────────────────────────
 class _BookingsTab extends StatelessWidget {
   final String uid;
-  const _BookingsTab({required this.uid});
+  final FirebaseService service;
+  const _BookingsTab({required this.uid, required this.service});
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream:
-          FirebaseFirestore.instance
-              .collection('bookings')
-              .where('hosterId', isEqualTo: uid)
-              .orderBy('createdAt', descending: true)
-              .snapshots(),
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: service.getHosterBookings(uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -760,111 +527,62 @@ class _BookingsTab extends StatelessWidget {
         final docs = snapshot.data?.docs ?? [];
 
         if (docs.isEmpty) {
-          return const Center(
-            child: Text(
-              'No bookings received yet',
-              style: TextStyle(
-                color: AppTheme.textMutedColor,
-                fontSize: AppTheme.fontBase,
-                fontFamily: AppTheme.fontFamily,
-              ),
-            ),
-          );
+          return const Center(child: Text('No bookings received yet'));
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.all(AppTheme.spaceMD),
+          padding: const EdgeInsets.all(16),
           itemCount: docs.length,
           itemBuilder: (context, index) {
-            final data = docs[index].data() as Map<String, dynamic>;
+            final data = docs[index].data();
             final status = data['status'] as String? ?? 'pending';
-            final studentName = data['studentName'] as String? ?? 'Student';
-            final propertyName = data['propertyName'] as String? ?? 'Property';
-            final amount = data['amount'];
-            final checkIn = data['checkIn'] as String? ?? '';
 
             return Container(
-              margin: const EdgeInsets.only(bottom: AppTheme.spaceMD),
-              padding: const EdgeInsets.all(AppTheme.spaceMD),
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(AppTheme.radiusLG),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
+                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
                 ],
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        studentName,
-                        style: const TextStyle(
-                          fontSize: AppTheme.fontBase,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textDarkColor,
-                          fontFamily: AppTheme.fontFamily,
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: AppTheme.primaryColor.withOpacity(0.1), shape: BoxShape.circle),
+                        child: const Icon(Icons.bookmark_rounded, color: AppTheme.primaryColor, size: 20),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(data['propertyName'] ?? 'Property', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            Text('For: ${data['studentName'] ?? 'Student'}', style: const TextStyle(color: AppTheme.textMutedColor, fontSize: 12)),
+                          ],
                         ),
                       ),
                       _StatusChip(status: status),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    propertyName,
-                    style: const TextStyle(
-                      fontSize: AppTheme.fontSM,
-                      color: AppTheme.textLightColor,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
-                  const Divider(height: 16),
+                  const Divider(height: 24),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      if (checkIn.isNotEmpty) ...[
-                        const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 14,
-                          color: AppTheme.textMutedColor,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Check-in: $checkIn',
-                          style: const TextStyle(
-                            fontSize: AppTheme.fontXS,
-                            color: AppTheme.textMutedColor,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                        ),
-                        const SizedBox(width: AppTheme.spaceMD),
-                      ],
-                      if (amount != null) ...[
-                        const Icon(
-                          Icons.currency_rupee,
-                          size: 14,
-                          color: AppTheme.successColor,
-                        ),
-                        Text(
-                          '$amount',
-                          style: const TextStyle(
-                            fontSize: AppTheme.fontSM,
-                            color: AppTheme.successColor,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                        ),
-                      ],
+                      Text('Amount: ₹${data['price'] ?? '0'}', style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.successColor)),
+                      TextButton(
+                        onPressed: () {},
+                        child: const Text('View Details'),
+                      ),
                     ],
                   ),
                 ],
               ),
-            ).animate().fadeIn(delay: Duration(milliseconds: 80 * index));
+            );
           },
         );
       },

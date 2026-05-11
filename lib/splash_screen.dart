@@ -1,10 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:triangle_home/screens/home_screen.dart';
-import 'package:triangle_home/screens/admin/admin_dashboard.dart';
+import 'package:triangle_home/screens/admin/admin_dashboard_screen.dart';
+import 'package:triangle_home/services/auth_production_service.dart';
+import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/services/firebase_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -25,19 +30,51 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(seconds: 4));
     if (!mounted) return;
 
-    final firebaseService = FirebaseService();
-    final isAdmin = await firebaseService.isAdmin();
+    final user = FirebaseAuth.instance.currentUser;
 
-    if (isAdmin) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const AdminDashboard()),
-      );
-    } else {
+    if (user == null) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
+      return;
+    }
+
+    try {
+      final authService = AuthProductionService();
+      final role = await authService.getUserRole(user);
+
+      if (!mounted) return;
+
+      switch (role) {
+        case UserRole.superadmin:
+        case UserRole.admin:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+          );
+          break;
+        case UserRole.hoster:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
+          );
+          break;
+        default:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
+          break;
+      }
+    } catch (e) {
+      debugPrint('Splash screen error: $e');
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
     }
   }
 

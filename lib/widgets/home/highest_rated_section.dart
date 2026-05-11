@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 class HighestRatedSection extends StatelessWidget {
@@ -82,7 +83,22 @@ class HighestRatedSection extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: item['logo'] != null
-                  ? Image.network(item['logo'], fit: BoxFit.cover)
+                  ? CachedNetworkImage(
+                      imageUrl: item['logo'],
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => const Icon(
+                        Icons.image_not_supported_outlined,
+                        color: AppTheme.textMutedColor,
+                        size: 20,
+                      ),
+                    )
                   : const Icon(Icons.school_outlined, color: AppTheme.primaryColor),
               ),
             ),

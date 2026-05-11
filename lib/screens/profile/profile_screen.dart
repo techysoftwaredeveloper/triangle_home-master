@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:triangle_home/screens/admin/admin_dashboard_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/screens/home_screen.dart';
 import 'package:triangle_home/screens/profile/about_screen.dart';
@@ -30,6 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? email;
   String? profileImageUrl;
   bool _isHoster = false;
+  bool _isAdmin = false;
   bool _isLoading = true;
 
   @override
@@ -76,6 +78,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   data['profileImage'] as String?;
               _isHoster = (collection == 'hoster');
               _isLoading = false;
+            });
+          }
+
+          // Check for admin role in custom claims
+          final idTokenResult = await user.getIdTokenResult(true);
+          final role = idTokenResult.claims?['role'];
+          if (mounted) {
+            setState(() {
+              _isAdmin = (role == 'admin' || role == 'superadmin');
             });
           }
           return;
@@ -148,6 +159,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               builder: (_) => const EditProfileScreen()),
                         ),
                       ),
+                      if (_isAdmin)
+                        _MenuItem(
+                          icon: Icons.admin_panel_settings_outlined,
+                          title: 'Admin Dashboard',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const AdminDashboardScreen()),
+                          ),
+                        ),
                       if (_isHoster)
                         _MenuItem(
                           icon: Icons.dashboard_outlined,

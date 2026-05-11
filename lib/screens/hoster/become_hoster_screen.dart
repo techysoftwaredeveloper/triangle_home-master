@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 class BecomeHosterScreen extends StatefulWidget {
@@ -17,33 +19,65 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
   final _emailController = TextEditingController();
   final _businessNameController = TextEditingController();
 
-  String _selectedPropertyType = 'Hostel';
+  String _selectedPropertyType = 'PG Accommodation';
   bool _isTermsAccepted = false;
   bool _isLoading = true;
   bool _isSubmitting = false;
 
-  // null = no request; Map = existing request doc data
   Map<String, dynamic>? _existingRequest;
+  StreamSubscription<DocumentSnapshot>? _statusSubscription;
 
   final List<String> _propertyTypes = [
-    'Hostel',
+    'College Hostel',
     'PG Accommodation',
     'Apartment',
-    'Villa',
   ];
 
   @override
   void initState() {
     super.initState();
     _loadExistingRequest();
+    _listenToStatusChanges();
   }
 
   @override
   void dispose() {
+    _statusSubscription?.cancel();
     _nameController.dispose();
     _emailController.dispose();
     _businessNameController.dispose();
     super.dispose();
+  }
+
+  void _listenToStatusChanges() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    _statusSubscription = FirebaseFirestore.instance
+        .collection('hoster')
+        .doc(user.uid)
+        .snapshots()
+        .listen((doc) {
+      if (doc.exists && mounted) {
+        final data = doc.data() as Map<String, dynamic>;
+        if (data['status'] == 'approved') {
+          // Navigate to Hoster Dashboard immediately upon approval
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
+            (route) => false,
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('🎉 Your hoster account has been approved! Welcome aboard.'),
+              backgroundColor: AppTheme.successColor,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    });
   }
 
   Future<void> _loadExistingRequest() async {
@@ -67,7 +101,6 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
         _isLoading = false;
       });
     } else {
-      // Pre-fill name/phone from existing profile if available
       final collections = ['student', 'guest'];
       for (final col in collections) {
         final userDoc =
@@ -76,11 +109,11 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                 .doc(user.uid)
                 .get();
         if (userDoc.exists) {
-          final info =
-              (userDoc.data()?['info'] as Map?)?.cast<String, dynamic>() ?? {};
+          final data = userDoc.data() as Map<String, dynamic>;
+          final info = (data['info'] as Map?)?.cast<String, dynamic>() ?? {};
           if (mounted) {
-            _nameController.text = info['name'] ?? '';
-            _emailController.text = info['email'] ?? '';
+            _nameController.text = info['name'] ?? data['name'] ?? '';
+            _emailController.text = info['email'] ?? data['email'] ?? '';
           }
           break;
         }
@@ -124,18 +157,17 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Request submitted! We will review it shortly.'),
-          backgroundColor: AppTheme.successColor,
+          content: Text('Application submitted! Our team will review it soon.'),
+          backgroundColor: AppTheme.primaryColor,
         ),
       );
 
-      // Reload to show pending state
       await _loadExistingRequest();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to submit request: $e')));
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -160,27 +192,63 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.scaffoldBgColor,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Become a Hoster',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: AppTheme.fontLG,
-            fontWeight: FontWeight.w600,
-            fontFamily: AppTheme.fontFamily,
-          ),
+      backgroundColor: Colors.white,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                _buildHeader(),
+                Expanded(child: _buildBody()),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 60, 24, 32),
+      decoration: const BoxDecoration(
+        color: AppTheme.primaryColor,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
         ),
       ),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _buildBody(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Become a Hoster',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Outfit',
+            ),
+          ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1, end: 0),
+          const Text(
+            'Start hosting your properties today',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 16,
+              fontFamily: 'Outfit',
+            ),
+          ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1, end: 0),
+        ],
+      ),
     );
   }
 
@@ -192,498 +260,294 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
     return _buildForm();
   }
 
-  // ── Pending State ────────────────────────────────────────────────────────────
   Widget _buildPendingState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spaceLG),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(AppTheme.spaceXL),
+              padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: AppTheme.warningColor.withValues(alpha: 0.1),
+                color: AppTheme.warningColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons.hourglass_top_rounded,
+                Icons.hourglass_empty_rounded,
                 size: 64,
                 color: AppTheme.warningColor,
               ),
-            ).animate().scale(duration: 600.ms),
-            const SizedBox(height: AppTheme.spaceLG),
+            ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
+            const SizedBox(height: 32),
             const Text(
-              'Request Under Review',
+              'Application Pending',
               style: TextStyle(
-                fontSize: AppTheme.font2XL,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
-                fontFamily: AppTheme.fontFamily,
+                fontFamily: 'Outfit',
                 color: AppTheme.textDarkColor,
               ),
-              textAlign: TextAlign.center,
-            ).animate().fadeIn(delay: 200.ms),
-            const SizedBox(height: AppTheme.spaceMD),
+            ),
+            const SizedBox(height: 12),
             const Text(
-              'Your request to become a hoster has been submitted. Our team will review it and notify you within 24–48 hours.',
-              style: TextStyle(
-                fontSize: AppTheme.fontBase,
-                color: AppTheme.textLightColor,
-                fontFamily: AppTheme.fontFamily,
-                height: 1.6,
-              ),
+              'Your hoster application is under review. Our team will verify your details and get back to you within 48 hours.',
               textAlign: TextAlign.center,
-            ).animate().fadeIn(delay: 400.ms),
-            const SizedBox(height: AppTheme.spaceXL),
-            Container(
-              padding: const EdgeInsets.all(AppTheme.spaceMD),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textLightColor,
+                fontFamily: 'Outfit',
+                height: 1.5,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _infoRow(
-                    Icons.person_outline,
-                    'Name',
-                    _existingRequest?['name'] ?? '',
-                  ),
-                  const Divider(height: 24),
-                  _infoRow(
-                    Icons.phone_outlined,
-                    'Phone',
-                    _existingRequest?['phone'] ?? '',
-                  ),
-                  const Divider(height: 24),
-                  _infoRow(
-                    Icons.home_outlined,
-                    'Property Type',
-                    _existingRequest?['propertyType'] ?? '',
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.1, end: 0),
+            ),
+            const SizedBox(height: 40),
+            _buildReviewInfoCard(),
           ],
         ),
       ),
     );
   }
 
-  Widget _infoRow(IconData icon, String label, String value) {
+  Widget _buildReviewInfoCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          _summaryRow(Icons.person_outline, 'Name', _existingRequest?['name'] ?? ''),
+          const Divider(height: 24),
+          _summaryRow(Icons.business_outlined, 'Type', _existingRequest?['propertyType'] ?? ''),
+          const Divider(height: 24),
+          _summaryRow(Icons.phone_android_outlined, 'Contact', _existingRequest?['phone'] ?? ''),
+        ],
+      ),
+    ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1, end: 0);
+  }
+
+  Widget _summaryRow(IconData icon, String label, String value) {
     return Row(
       children: [
         Icon(icon, size: 20, color: AppTheme.primaryColor),
-        const SizedBox(width: AppTheme.spaceSM),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: AppTheme.fontXS,
-                color: AppTheme.textMutedColor,
-                fontFamily: AppTheme.fontFamily,
-              ),
-            ),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: AppTheme.fontBase,
-                fontWeight: FontWeight.w500,
-                color: AppTheme.textDarkColor,
-                fontFamily: AppTheme.fontFamily,
-              ),
-            ),
-          ],
+        const SizedBox(width: 12),
+        Text(
+          '$label:',
+          style: const TextStyle(fontSize: 13, color: AppTheme.textLightColor, fontFamily: 'Outfit'),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.textDarkColor),
         ),
       ],
     );
   }
 
-  // ── Rejected State ───────────────────────────────────────────────────────────
   Widget _buildRejectedState() {
     final note = _existingRequest?['reviewNote'] as String? ?? '';
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spaceLG),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppTheme.spaceXL),
-              decoration: BoxDecoration(
-                color: AppTheme.errorColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.cancel_outlined,
-                size: 64,
-                color: AppTheme.errorColor,
-              ),
-            ).animate().scale(duration: 600.ms),
-            const SizedBox(height: AppTheme.spaceLG),
-            const Text(
-              'Request Rejected',
-              style: TextStyle(
-                fontSize: AppTheme.font2XL,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppTheme.fontFamily,
-                color: AppTheme.textDarkColor,
-              ),
-            ).animate().fadeIn(delay: 200.ms),
-            const SizedBox(height: AppTheme.spaceMD),
-            if (note.isNotEmpty) ...[
-              Container(
-                padding: const EdgeInsets.all(AppTheme.spaceMD),
-                decoration: BoxDecoration(
-                  color: AppTheme.errorColor.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-                  border: Border.all(
-                    color: AppTheme.errorColor.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Text(
-                  note,
-                  style: const TextStyle(
-                    fontSize: AppTheme.fontBase,
-                    color: AppTheme.textDarkColor,
-                    fontFamily: AppTheme.fontFamily,
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ).animate().fadeIn(delay: 400.ms),
-              const SizedBox(height: AppTheme.spaceLG),
-            ],
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _reApply,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-                  ),
-                ),
-                child: const Text(
-                  'Re-Apply',
-                  style: TextStyle(
-                    fontSize: AppTheme.fontMD,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-              ),
-            ).animate().fadeIn(delay: 600.ms),
-          ],
-        ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: AppTheme.errorColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.error_outline_rounded, size: 64, color: AppTheme.errorColor),
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            'Application Rejected',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Unfortunately, your application was not approved at this time. Reason: ${note.isEmpty ? "Does not meet requirements." : note}',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 14, color: AppTheme.textLightColor, fontFamily: 'Outfit', height: 1.5),
+          ),
+          const SizedBox(height: 40),
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: _reApply,
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
+              child: const Text('Re-Apply Now', style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ── Form State ───────────────────────────────────────────────────────────────
   Widget _buildForm() {
     final phone = FirebaseAuth.instance.currentUser?.phoneNumber ?? '';
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppTheme.spaceMD),
+      padding: const EdgeInsets.all(24),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header card
-            Container(
-              padding: const EdgeInsets.all(AppTheme.spaceMD),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.primaryColor.withValues(alpha: 0.08),
-                    Colors.white,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(AppTheme.radiusLG),
-                border: Border.all(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.12),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppTheme.spaceMD),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.add_business_rounded,
-                      color: AppTheme.primaryColor,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: AppTheme.spaceMD),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Join as a Hoster',
-                          style: TextStyle(
-                            fontSize: AppTheme.fontLG,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryColor,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Fill in your details. Our team will review and approve your request.',
-                          style: TextStyle(
-                            fontSize: AppTheme.fontSM,
-                            color: AppTheme.textLightColor,
-                            fontFamily: AppTheme.fontFamily,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn().slideY(begin: -0.1, end: 0),
-
-            const SizedBox(height: AppTheme.spaceMD),
-
-            // Form fields
-            _buildLabel('Full Name'),
+            _buildSectionTitle('Personal Information'),
+            const SizedBox(height: 16),
             _buildTextField(
               controller: _nameController,
-              hint: 'Your full name',
-              icon: Icons.person_outline,
-              validator:
-                  (v) =>
-                      (v == null || v.isEmpty)
-                          ? 'Please enter your name'
-                          : null,
+              label: 'Full Name',
+              hint: 'Enter your legal name',
+              icon: Icons.person_outline_rounded,
             ),
-            const SizedBox(height: AppTheme.spaceMD),
-
-            _buildLabel('Phone Number'),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppTheme.spaceMD,
-                vertical: 16,
-              ),
-              decoration: BoxDecoration(
-                color: AppTheme.dividerColor,
-                borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.phone_outlined,
-                    color: AppTheme.textMutedColor,
-                    size: 20,
-                  ),
-                  const SizedBox(width: AppTheme.spaceSM),
-                  Text(
-                    phone.isEmpty ? 'Not available' : phone,
-                    style: const TextStyle(
-                      fontSize: AppTheme.fontBase,
-                      color: AppTheme.textLightColor,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppTheme.spaceMD),
-
-            _buildLabel('Email Address'),
+            const SizedBox(height: 20),
             _buildTextField(
               controller: _emailController,
-              hint: 'your@email.com',
+              label: 'Email Address',
+              hint: 'yourname@example.com',
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Please enter your email';
-                if (!v.contains('@')) return 'Please enter a valid email';
-                return null;
-              },
             ),
-            const SizedBox(height: AppTheme.spaceMD),
+            const SizedBox(height: 20),
+            _buildReadOnlyField('Phone Number', phone, Icons.phone_android_rounded),
 
-            _buildLabel('Business Name (Optional)'),
+            const SizedBox(height: 32),
+            _buildSectionTitle('Business Details'),
+            const SizedBox(height: 16),
             _buildTextField(
               controller: _businessNameController,
-              hint: 'e.g. Sunrise PG & Hostel',
+              label: 'Business/Property Name',
+              hint: 'e.g. Sunrise Hostels',
               icon: Icons.business_outlined,
-              required: false,
             ),
-            const SizedBox(height: AppTheme.spaceMD),
+            const SizedBox(height: 20),
+            _buildDropdown('Property Category', _selectedPropertyType, _propertyTypes),
 
-            _buildLabel('Property Type'),
-            DropdownButtonFormField<String>(
-              value: _selectedPropertyType,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                prefixIcon: const Icon(
-                  Icons.home_outlined,
-                  color: AppTheme.primaryColor,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              items:
-                  _propertyTypes
-                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                      .toList(),
-              onChanged: (v) => setState(() => _selectedPropertyType = v!),
-            ),
-            const SizedBox(height: AppTheme.spaceMD),
+            const SizedBox(height: 32),
+            _buildTermsCheckbox(),
 
-            // Terms
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-              ),
-              child: CheckboxListTile(
-                value: _isTermsAccepted,
-                onChanged: (v) => setState(() => _isTermsAccepted = v!),
-                title: const Text(
-                  'I agree to the Terms & Conditions and Privacy Policy',
-                  style: TextStyle(
-                    fontSize: AppTheme.fontSM,
-                    color: AppTheme.textDarkColor,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                activeColor: AppTheme.primaryColor,
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spaceSM,
-                ),
-              ),
-            ),
-            const SizedBox(height: AppTheme.spaceLG),
-
+            const SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
+              height: 56,
               child: ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitRequest,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
                 ),
-                child:
-                    _isSubmitting
-                        ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                        : const Text(
-                          'Submit Request',
-                          style: TextStyle(
-                            fontSize: AppTheme.fontMD,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: AppTheme.fontFamily,
-                            color: Colors.white,
-                          ),
-                        ),
+                child: _isSubmitting
+                    ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Submit Application', style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Outfit', fontSize: 16)),
               ),
             ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1, end: 0),
-
-            const SizedBox(height: AppTheme.spaceLG),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: AppTheme.fontSM,
-          fontWeight: FontWeight.w600,
-          color: AppTheme.textDarkColor,
-          fontFamily: AppTheme.fontFamily,
-        ),
-      ),
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.textDarkColor),
     );
   }
 
   Widget _buildTextField({
     required TextEditingController controller,
+    required String label,
     required String hint,
     required IconData icon,
     TextInputType? keyboardType,
-    bool required = true,
-    String? Function(String?)? validator,
   }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      style: const TextStyle(
-        fontSize: AppTheme.fontBase,
-        fontFamily: AppTheme.fontFamily,
-        color: AppTheme.textDarkColor,
-      ),
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: Colors.white,
-        prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 20),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-          borderSide: BorderSide.none,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textLightColor, fontFamily: 'Outfit')),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          style: const TextStyle(fontFamily: 'Outfit', fontSize: 14),
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 22),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+          validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-          borderSide: const BorderSide(
-            color: AppTheme.primaryColor,
-            width: 1.5,
+      ],
+    );
+  }
+
+  Widget _buildReadOnlyField(String label, String value, IconData icon) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textLightColor, fontFamily: 'Outfit')),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          decoration: BoxDecoration(color: const Color(0xFFF1F5F9).withOpacity(0.5), borderRadius: BorderRadius.circular(16)),
+          child: Row(
+            children: [
+              Icon(icon, color: AppTheme.primaryColor, size: 22),
+              const SizedBox(width: 12),
+              Text(value, style: const TextStyle(fontFamily: 'Outfit', fontSize: 14, color: AppTheme.textLightColor)),
+            ],
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildDropdown(String label, String value, List<String> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textLightColor, fontFamily: 'Outfit')),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(16)),
+          child: DropdownButtonFormField<String>(
+            value: value,
+            style: const TextStyle(fontFamily: 'Outfit', fontSize: 14, color: AppTheme.textColor),
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.category_outlined, color: AppTheme.primaryColor, size: 22),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            items: items.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+            onChanged: (v) => setState(() => _selectedPropertyType = v!),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTermsCheckbox() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(16)),
+      child: CheckboxListTile(
+        value: _isTermsAccepted,
+        onChanged: (v) => setState(() => _isTermsAccepted = v!),
+        title: const Text('I agree to the Terms & Conditions and Privacy Policy of Triangle Homes.', style: TextStyle(fontSize: 12, fontFamily: 'Outfit')),
+        activeColor: AppTheme.primaryColor,
+        controlAffinity: ListTileControlAffinity.leading,
+        contentPadding: EdgeInsets.zero,
       ),
-      validator:
-          validator ??
-          (required
-              ? (v) =>
-                  (v == null || v.isEmpty) ? 'This field is required' : null
-              : null),
     );
   }
 }

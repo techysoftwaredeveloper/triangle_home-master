@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:triangle_home/screens/admin/admin_login_screen.dart';
 import 'package:triangle_home/screens/auth/otp_verification_screen.dart';
 import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
@@ -31,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   int _currentPage = 0;
   bool _isLoading = false;
+  int _logoTapCount = 0;
 
   final List<String> _contentItems = [
     'Apartments? PG Accommodations? We\'ve got you!',
@@ -254,30 +256,43 @@ class _LoginScreenState extends State<LoginScreen> {
       color: AppTheme.primaryColor,
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SvgPicture.asset(
-                'assets/images/Logo.svg',
-                height: 32,
-                width: 32,
-                colorFilter: const ColorFilter.mode(
-                  Colors.white,
-                  BlendMode.srcIn,
+          GestureDetector(
+            onTap: () {
+              setState(() => _logoTapCount++);
+              if (_logoTapCount >= 7) {
+                _logoTapCount = 0;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
+                );
+              }
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset(
+                  'assets/images/Logo.svg',
+                  height: 32,
+                  width: 32,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              const Text(
-                'TRIANGLE HOMES',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'outfit',
-                  letterSpacing: 2.0,
+                const SizedBox(width: 10),
+                const Text(
+                  'TRIANGLE HOMES',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'outfit',
+                    letterSpacing: 2.0,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ).animate().fadeIn(duration: 800.ms),
 
           const SizedBox(height: 24),
