@@ -23,6 +23,58 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
 
   void _onNavTap(int index) => setState(() => _selectedIndex = index);
 
+  Future<void> _handleNewListing(BuildContext context) async {
+    // 1. Get current approval status from Firestore
+    try {
+      final doc = await FirebaseFirestore.instance.collection('hoster').doc(_uid).get();
+      final status = doc.data()?['status'] ?? 'pending';
+
+      if (status != 'approved') {
+        if (!context.mounted) return;
+        _showNotApprovedDialog(context);
+        return;
+      }
+
+      if (!context.mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error verifying approval: $e')),
+        );
+      }
+    }
+  }
+
+  void _showNotApprovedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.verified_user_outlined, color: Colors.orange),
+            SizedBox(width: 10),
+            Text('Verification Pending', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Your hoster account is currently under review. You can start listing properties once an administrator approves your profile.',
+          style: TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('I Understand', style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tabs = [
@@ -65,13 +117,7 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
                         ? [
                           IconButton(
                             icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white),
-                            onPressed:
-                                () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const ListPropertyScreen(),
-                                  ),
-                                ),
+                            onPressed: () => _handleNewListing(context),
                             tooltip: 'List New Property',
                           ),
                         ]
@@ -91,6 +137,58 @@ class _DashboardTab extends StatelessWidget {
   final String uid;
   final FirebaseService service;
   const _DashboardTab({required this.uid, required this.service});
+
+  Future<void> _handleNewListing(BuildContext context) async {
+    // 1. Get current approval status from Firestore
+    try {
+      final doc = await FirebaseFirestore.instance.collection('hoster').doc(_uid).get();
+      final status = doc.data()?['status'] ?? 'pending';
+
+      if (status != 'approved') {
+        if (!context.mounted) return;
+        _showNotApprovedDialog(context);
+        return;
+      }
+
+      if (!context.mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error verifying approval: $e')),
+        );
+      }
+    }
+  }
+
+  void _showNotApprovedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.verified_user_outlined, color: Colors.orange),
+            SizedBox(width: 10),
+            Text('Verification Pending', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Your hoster account is currently under review. You can start listing properties once an administrator approves your profile.',
+          style: TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('I Understand', style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -214,6 +312,58 @@ class _WelcomeCard extends StatelessWidget {
   final String uid;
   const _WelcomeCard({required this.uid});
 
+  Future<void> _handleNewListing(BuildContext context) async {
+    // 1. Get current approval status from Firestore
+    try {
+      final doc = await FirebaseFirestore.instance.collection('hoster').doc(_uid).get();
+      final status = doc.data()?['status'] ?? 'pending';
+
+      if (status != 'approved') {
+        if (!context.mounted) return;
+        _showNotApprovedDialog(context);
+        return;
+      }
+
+      if (!context.mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error verifying approval: $e')),
+        );
+      }
+    }
+  }
+
+  void _showNotApprovedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.verified_user_outlined, color: Colors.orange),
+            SizedBox(width: 10),
+            Text('Verification Pending', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Your hoster account is currently under review. You can start listing properties once an administrator approves your profile.',
+          style: TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('I Understand', style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<DocumentSnapshot>(
@@ -294,6 +444,58 @@ class _RecentBookings extends StatelessWidget {
   final FirebaseService service;
   const _RecentBookings({required this.uid, required this.service});
 
+  Future<void> _handleNewListing(BuildContext context) async {
+    // 1. Get current approval status from Firestore
+    try {
+      final doc = await FirebaseFirestore.instance.collection('hoster').doc(_uid).get();
+      final status = doc.data()?['status'] ?? 'pending';
+
+      if (status != 'approved') {
+        if (!context.mounted) return;
+        _showNotApprovedDialog(context);
+        return;
+      }
+
+      if (!context.mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error verifying approval: $e')),
+        );
+      }
+    }
+  }
+
+  void _showNotApprovedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.verified_user_outlined, color: Colors.orange),
+            SizedBox(width: 10),
+            Text('Verification Pending', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Your hoster account is currently under review. You can start listing properties once an administrator approves your profile.',
+          style: TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('I Understand', style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -360,6 +562,58 @@ class _StatusChip extends StatelessWidget {
   final String status;
   const _StatusChip({required this.status});
 
+  Future<void> _handleNewListing(BuildContext context) async {
+    // 1. Get current approval status from Firestore
+    try {
+      final doc = await FirebaseFirestore.instance.collection('hoster').doc(_uid).get();
+      final status = doc.data()?['status'] ?? 'pending';
+
+      if (status != 'approved') {
+        if (!context.mounted) return;
+        _showNotApprovedDialog(context);
+        return;
+      }
+
+      if (!context.mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error verifying approval: $e')),
+        );
+      }
+    }
+  }
+
+  void _showNotApprovedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.verified_user_outlined, color: Colors.orange),
+            SizedBox(width: 10),
+            Text('Verification Pending', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Your hoster account is currently under review. You can start listing properties once an administrator approves your profile.',
+          style: TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('I Understand', style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     Color color;
@@ -399,6 +653,58 @@ class _PropertiesTab extends StatelessWidget {
   final String uid;
   final FirebaseService service;
   const _PropertiesTab({required this.uid, required this.service});
+
+  Future<void> _handleNewListing(BuildContext context) async {
+    // 1. Get current approval status from Firestore
+    try {
+      final doc = await FirebaseFirestore.instance.collection('hoster').doc(_uid).get();
+      final status = doc.data()?['status'] ?? 'pending';
+
+      if (status != 'approved') {
+        if (!context.mounted) return;
+        _showNotApprovedDialog(context);
+        return;
+      }
+
+      if (!context.mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error verifying approval: $e')),
+        );
+      }
+    }
+  }
+
+  void _showNotApprovedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.verified_user_outlined, color: Colors.orange),
+            SizedBox(width: 10),
+            Text('Verification Pending', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Your hoster account is currently under review. You can start listing properties once an administrator approves your profile.',
+          style: TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('I Understand', style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -514,6 +820,58 @@ class _BookingsTab extends StatelessWidget {
   final String uid;
   final FirebaseService service;
   const _BookingsTab({required this.uid, required this.service});
+
+  Future<void> _handleNewListing(BuildContext context) async {
+    // 1. Get current approval status from Firestore
+    try {
+      final doc = await FirebaseFirestore.instance.collection('hoster').doc(_uid).get();
+      final status = doc.data()?['status'] ?? 'pending';
+
+      if (status != 'approved') {
+        if (!context.mounted) return;
+        _showNotApprovedDialog(context);
+        return;
+      }
+
+      if (!context.mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error verifying approval: $e')),
+        );
+      }
+    }
+  }
+
+  void _showNotApprovedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.verified_user_outlined, color: Colors.orange),
+            SizedBox(width: 10),
+            Text('Verification Pending', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Your hoster account is currently under review. You can start listing properties once an administrator approves your profile.',
+          style: TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('I Understand', style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

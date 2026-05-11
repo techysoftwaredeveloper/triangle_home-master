@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:triangle_home/theme/app_theme.dart';
 
 class InputField extends StatelessWidget {
   final String label;
@@ -9,6 +10,8 @@ class InputField extends StatelessWidget {
   final String? Function(String?)? validator;
   final TextCapitalization textCapitalization;
   final String? prefix;
+  final int maxLines;
+  final String? hintText;
 
   const InputField({
     super.key,
@@ -20,45 +23,75 @@ class InputField extends StatelessWidget {
     this.validator,
     this.textCapitalization = TextCapitalization.none,
     this.prefix,
-    required int maxLines,
+    this.maxLines = 1,
+    this.hintText,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '$label${required ? '*' : ''}',
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: RichText(
+              text: TextSpan(
+                text: label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textDarkColor,
+                  fontFamily: AppTheme.fontFamily,
+                ),
+                children: [
+                  if (required)
+                    const TextSpan(
+                      text: ' *',
+                      style: TextStyle(color: AppTheme.errorColor),
+                    ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 8),
           TextFormField(
             controller: controller,
             keyboardType: keyboardType,
             obscureText: obscureText,
             textCapitalization: textCapitalization,
+            maxLines: maxLines,
+            style: const TextStyle(
+              fontSize: 15,
+              color: AppTheme.textColor,
+              fontFamily: AppTheme.fontFamily,
+            ),
             decoration: InputDecoration(
+              hintText: hintText ?? 'Enter $label',
+              hintStyle: const TextStyle(color: AppTheme.textMutedColor, fontSize: 14),
               filled: true,
               fillColor: Colors.white,
               prefixText: prefix,
+              prefixStyle: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade200),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade200),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFF1E3A8A)),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.errorColor, width: 1),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
-                vertical: 12,
+                vertical: 16,
               ),
             ),
             validator:

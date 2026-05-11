@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import 'package:triangle_home/theme/app_theme.dart';
 
 class CustomToggleButtons extends StatelessWidget {
   final List<String> options;
@@ -19,8 +19,8 @@ class CustomToggleButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     if (wrap) {
       return Wrap(
-        spacing: 8,
-        runSpacing: 8,
+        spacing: 12,
+        runSpacing: 12,
         children: options.map((option) => _buildButton(context, option)).toList(),
       );
     }
@@ -28,12 +28,14 @@ class CustomToggleButtons extends StatelessWidget {
     return Row(
       children: options.map((option) {
         final button = _buildButton(context, option);
-        return Expanded(child: Padding(
-          padding: EdgeInsets.only(
-            right: option != options.last ? 8 : 0,
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              right: option != options.last ? 12 : 0,
+            ),
+            child: button,
           ),
-          child: button,
-        ));
+        );
       }).toList(),
     );
   }
@@ -42,24 +44,35 @@ class CustomToggleButtons extends StatelessWidget {
     final isSelected = selectedOption == option;
     return InkWell(
       onTap: () => onOptionSelected(option),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1E3A8A) : Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          color: isSelected ? AppTheme.primaryColor : Colors.white,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFF1E3A8A) : Colors.grey[300]!,
+            color: isSelected ? AppTheme.primaryColor : Colors.grey.shade200,
+            width: 1.5,
           ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            )
+          ] : null,
         ),
         child: Center(
           child: Text(
             option,
             style: TextStyle(
-              color: isSelected ? Colors.white : Colors.black87,
-              fontWeight: FontWeight.w500,
+              color: isSelected ? Colors.white : AppTheme.textLightColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              fontFamily: AppTheme.fontFamily,
             ),
           ),
-        
         ),
       ),
     );

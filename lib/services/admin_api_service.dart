@@ -4,8 +4,17 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 
 class AdminApiService {
-  // Use 10.0.2.2 for Android Emulator, localhost for Web/Desktop
-  final String baseUrl = Platform.isAndroid ? 'http://10.0.2.2:5000/api' : 'http://localhost:5000/api';
+  /**
+   * STRICT NETWORK CONFIGURATION
+   *
+   * FOR PHYSICAL DEVICES (USB): Use 'localhost' and run:
+   * adb reverse tcp:5000 tcp:5000
+   *
+   * FOR EMULATORS: Use '10.0.2.2'
+   */
+  static const String _host = 'localhost'; // Change to '10.0.2.2' ONLY if using emulator
+
+  final String baseUrl = Platform.isAndroid ? 'http://$_host:5000/api' : 'http://localhost:5000/api';
 
   Future<String?> _getToken() async {
     return await FirebaseAuth.instance.currentUser?.getIdToken();

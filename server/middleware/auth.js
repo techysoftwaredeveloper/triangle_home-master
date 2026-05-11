@@ -1,4 +1,4 @@
-const { auth } = require('../firebase-config');
+const { auth } = require('../config/firebase-config');
 
 /**
  * Production-grade middleware to verify Firebase ID tokens

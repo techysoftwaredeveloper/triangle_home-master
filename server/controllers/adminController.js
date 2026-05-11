@@ -1,4 +1,4 @@
-const { db, auth } = require('../firebase-config');
+const { db, auth } = require('../config/firebase-config');
 
 // Get statistics for the dashboard
 exports.getStats = async (req, res) => {
@@ -43,12 +43,29 @@ exports.getAllUsers = async (req, res) => {
       db.collection('hoster_requests').get()
     ]);
 
-    const hosters = hostersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), role: 'hoster' }));
+    // 1. Get explicitly approved hosters
+    const hosters = hostersSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      role: 'hoster',
+      status: 'approved' // If they are in the 'hoster' collection, they are approved
+    }));
 
+    // 2. Add pending/rejected requests from hoster_requests
     requestsSnapshot.forEach(doc => {
       const data = doc.data();
+      // Only add if not already in the approved list
       if (!hosters.some(h => h.id === doc.id)) {
-        hosters.push({ id: doc.id, ...data, role: 'hoster', status: data.status || 'pending' });
+        hosters.push({
+          id: doc.id,
+          ...data,
+          role: 'hoster',
+          status: data.status || 'pending'
+        });
+      } else {
+        // If they are in both, ensure the one in the list reflects 'approved'
+        const index = hosters.findIndex(h => h.id === doc.id);
+        hosters[index].status = 'approved';
       }
     });
 
@@ -56,6 +73,7 @@ exports.getAllUsers = async (req, res) => {
 
     res.json({ success: true, students, hosters });
   } catch (error) {
+    console.error('All Users Error:', error);
     res.status(500).json({ success: false, error: 'Failed to retrieve user list' });
   }
 };

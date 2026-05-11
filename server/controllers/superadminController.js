@@ -1,4 +1,4 @@
-const { auth, db } = require('../firebase-config');
+const { auth, db } = require('../config/firebase-config');
 
 // Create a new admin
 exports.createAdmin = async (req, res) => {
@@ -23,9 +23,9 @@ exports.createAdmin = async (req, res) => {
       createdAt: new Date().toISOString()
     });
 
-    res.status(201).json({ message: 'Admin created successfully', uid: userRecord.uid });
+    res.status(201).json({ success: true, message: 'Admin created successfully', uid: userRecord.uid });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -35,9 +35,9 @@ exports.getAllAdmins = async (req, res) => {
     const adminsSnapshot = await db.collection('admins').get();
     const admins = [];
     adminsSnapshot.forEach(doc => admins.push({ id: doc.id, ...doc.data() }));
-    res.json(admins);
+    res.json({ success: true, admins });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -51,8 +51,8 @@ exports.removeAdmin = async (req, res) => {
     // Delete from Firestore
     await db.collection('admins').doc(adminId).delete();
 
-    res.json({ message: 'Admin removed successfully' });
+    res.json({ success: true, message: 'Admin removed successfully' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 };

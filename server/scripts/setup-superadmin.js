@@ -1,4 +1,4 @@
-const { auth, db } = require('../firebase-config');
+const { auth, db } = require('../config/firebase-config');
 
 const promoteToSuperAdmin = async (uid, email) => {
   try {
@@ -10,11 +10,13 @@ const promoteToSuperAdmin = async (uid, email) => {
       email: email,
       role: 'superadmin',
       updatedAt: new Date().toISOString()
-    });
+    }, { merge: true });
 
     console.log(`Successfully promoted ${email} to superadmin`);
+    process.exit(0);
   } catch (error) {
     console.error('Error promoting to superadmin:', error);
+    process.exit(1);
   }
 };
 
