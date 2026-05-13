@@ -2,8 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/splash_screen.dart';
-import 'package:triangle_home/services/admin_api_service.dart';
+import 'package:triangle_home/services/admin_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -14,7 +15,7 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  final AdminApiService _apiService = AdminApiService();
+  final AdminService _adminService = AdminService();
   int _selectedIndex = 0;
   Timer? _refreshTimer;
 
@@ -173,15 +174,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     switch (_selectedIndex) {
       case 0:
         return _StatsView(
-          apiService: _apiService,
+          adminService: _adminService,
           onTabSwitch: (index) => setState(() => _selectedIndex = index),
         );
       case 1:
-        return _UsersView(apiService: _apiService);
+        return _UsersView(adminService: _adminService);
       case 2:
-        return _PropertiesView(apiService: _apiService);
+        return _PropertiesView(adminService: _adminService);
       case 3:
-        return _BookingsView(apiService: _apiService);
+        return _BookingsView(adminService: _adminService);
       default:
         return const Center(child: Text('Select an option'));
     }
@@ -190,14 +191,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
 // ── Overview View ────────────────────────────────────────────────────────────
 class _StatsView extends StatelessWidget {
-  final AdminApiService apiService;
+  final AdminService adminService;
   final Function(int) onTabSwitch;
-  const _StatsView({required this.apiService, required this.onTabSwitch});
+  const _StatsView({required this.adminService, required this.onTabSwitch});
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>>(
-      future: apiService.getStats(),
+      future: adminService.getStats(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
@@ -452,8 +453,8 @@ class _ActionTile extends StatelessWidget {
 
 // ── Users View ──────────────────────────────────────────────────────────────
 class _UsersView extends StatefulWidget {
-  final AdminApiService apiService;
-  const _UsersView({required this.apiService});
+  final AdminService adminService;
+  const _UsersView({required this.adminService});
 
   @override
   State<_UsersView> createState() => _UsersViewState();
@@ -500,7 +501,7 @@ class _UsersViewState extends State<_UsersView> with SingleTickerProviderStateMi
         _buildSearchBar('Search by name, email or phone...'),
         Expanded(
           child: FutureBuilder<Map<String, dynamic>>(
-            future: widget.apiService.getAllUsers(),
+            future: widget.adminService.getAllUsers(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
               if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
@@ -591,14 +592,14 @@ class _UsersViewState extends State<_UsersView> with SingleTickerProviderStateMi
             ),
             trailing: isHoster && !isApproved
               ? _ApproveButton(onPressed: () async {
-                  await widget.apiService.approveHoster(user['id']);
+                  await widget.adminService.approveHoster(user['id']);
                   setState(() {});
                 })
               : _UserActionIcon(
                   isBanned: isBanned,
                   onTap: () async {
                     final newStatus = isBanned ? 'active' : 'banned';
-                    await widget.apiService.toggleUserStatus(user['id'], isHoster ? 'hoster' : 'student', newStatus);
+                    await widget.adminService.toggleUserStatus(user['id'], isHoster ? 'hoster' : 'student', newStatus);
                     setState(() {});
                   },
                 ),
@@ -611,8 +612,8 @@ class _UsersViewState extends State<_UsersView> with SingleTickerProviderStateMi
 
 // ── Listings View ────────────────────────────────────────────────────────────
 class _PropertiesView extends StatefulWidget {
-  final AdminApiService apiService;
-  const _PropertiesView({required this.apiService});
+  final AdminService adminService;
+  const _PropertiesView({required this.adminService});
 
   @override
   State<_PropertiesView> createState() => _PropertiesViewState();
@@ -661,7 +662,7 @@ class _PropertiesViewState extends State<_PropertiesView> with SingleTickerProvi
         _buildSearchBar('Search properties by title, address, or type...'),
         Expanded(
           child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: widget.apiService.getAllProperties(),
+            future: widget.adminService.getAllProperties(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
               if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
@@ -678,9 +679,9 @@ class _PropertiesViewState extends State<_PropertiesView> with SingleTickerProvi
                 controller: _tabController,
                 children: [
                   _buildPropertyList(filtered),
-                  _buildPropertyList(filtered.where((p) => p['status'] == 'pending').toList()),
-                  _buildPropertyList(filtered.where((p) => p['status'] == 'approved').toList()),
-                  _buildPropertyList(filtered.where((p) => p['status'] == 'rejected').toList()),
+                  _buildPropertyList(filtered.where((p) => p['status'] == PropertyStatus.pending.name).toList()),
+                  _buildPropertyList(filtered.where((p) => p['status'] == PropertyStatus.approved.name).toList()),
+                  _buildPropertyList(filtered.where((p) => p['status'] == PropertyStatus.rejected.name).toList()),
                 ],
               );
             },
@@ -782,9 +783,9 @@ class _PropertiesViewState extends State<_PropertiesView> with SingleTickerProvi
                         if (isPending)
                           Row(
                             children: [
-                              _CircleActionButton(icon: Icons.close_rounded, color: Colors.red, onTap: () => _updateStatus(p['id'], 'rejected')),
+                              _CircleActionButton(icon: Icons.close_rounded, color: Colors.red, onTap: () => _updateStatus(p['id'], PropertyStatus.rejected)),
                               const SizedBox(width: 12),
-                              _CircleActionButton(icon: Icons.check_rounded, color: Colors.green, onTap: () => _updateStatus(p['id'], 'approved')),
+                              _CircleActionButton(icon: Icons.check_rounded, color: Colors.green, onTap: () => _updateStatus(p['id'], PropertyStatus.approved)),
                             ],
                           ),
                       ],
@@ -799,11 +800,11 @@ class _PropertiesViewState extends State<_PropertiesView> with SingleTickerProvi
     );
   }
 
-  Future<void> _updateStatus(String id, String status) async {
+  Future<void> _updateStatus(String id, PropertyStatus status) async {
     try {
-      await widget.apiService.updatePropertyStatus(id, status);
+      await widget.adminService.updatePropertyStatus(id, status);
       setState(() {});
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Property $status successfully')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Property ${status.name} successfully')));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
@@ -812,8 +813,8 @@ class _PropertiesViewState extends State<_PropertiesView> with SingleTickerProvi
 
 // ── Bookings View ────────────────────────────────────────────────────────────
 class _BookingsView extends StatefulWidget {
-  final AdminApiService apiService;
-  const _BookingsView({required this.apiService});
+  final AdminService adminService;
+  const _BookingsView({required this.adminService});
 
   @override
   State<_BookingsView> createState() => _BookingsViewState();
@@ -831,7 +832,7 @@ class _BookingsViewState extends State<_BookingsView> {
         ),
         Expanded(
           child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: widget.apiService.getAllBookings(),
+            future: widget.adminService.getAllBookings(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
               if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));

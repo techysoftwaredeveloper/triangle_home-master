@@ -10,7 +10,7 @@ import 'package:triangle_home/providers/property_provider.dart';
 import 'package:triangle_home/screens/auth/login_screen.dart';
 import 'package:triangle_home/screens/profile/profile_screen.dart';
 import 'package:triangle_home/screens/search_screen.dart';
-import 'package:triangle_home/services/firebase_service.dart';
+import 'package:triangle_home/services/property_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/home/accommodation_types.dart';
 import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
@@ -31,6 +31,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final PropertyService _propertyService = PropertyService();
 
   List<String> _states = [];
   String _currentCity = '';
@@ -60,16 +61,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _fetchCitiesFromFirestore() async {
     try {
-      final snapshot =
-          await FirebaseFirestore.instance.collection('cities').get();
-      final List<String> cities =
-          snapshot.docs.map((doc) => doc['name'].toString()).toList();
+      final List<String> cities = await _propertyService.getCities();
+
+      if (!mounted) return;
       setState(() {
         _states = cities;
       });
     } catch (e) {
       debugPrint('❌ Error fetching cities: $e');
+      if (mounted && e.toString().contains('permission-denied')) {
+        _showAppCheckErrorDialog();
+      }
     }
+  }
+
+  void _showAppCheckErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Access Denied'),
+        content: const Text(
+          'This device is not authorized to access Triangle Home data. '
+          'During development, your debug secret must be registered in the Firebase Console under App Check settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _getCurrentCityFromLocation() async {
@@ -144,7 +166,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           final user = FirebaseAuth.instance.currentUser;
           if (user != null) {
             // Check if user is hoster or allow shortcut entry
-            final firebaseService = FirebaseService();
             final hosterDoc = await FirebaseFirestore.instance.collection('hoster').doc(user.uid).get();
 
             if (mounted) {

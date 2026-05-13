@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:triangle_home/search_results_screen.dart';
+import 'package:triangle_home/services/property_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 class AccommodationSearchScreen extends StatefulWidget {
@@ -12,6 +13,7 @@ class AccommodationSearchScreen extends StatefulWidget {
 }
 
 class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
+  final PropertyService _propertyService = PropertyService();
   List<String> _cities = [];
   String _selectedCity = '';
 
@@ -29,9 +31,8 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
 
   Future<void> _fetchCitiesFromFirestore() async {
     try {
-      final snapshot =
-          await FirebaseFirestore.instance.collection('cities').get();
-      final cityList = snapshot.docs.map((doc) => doc.id).toList();
+      final cityList = await _propertyService.getCities();
+      if (!mounted) return;
 
       if (cityList.isNotEmpty) {
         setState(() {
@@ -42,6 +43,11 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
       }
     } catch (e) {
       debugPrint('Error fetching cities: $e');
+      if (mounted && e.toString().contains('permission-denied')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Permission denied by Firestore. Please check security rules.')),
+        );
+      }
     }
   }
 

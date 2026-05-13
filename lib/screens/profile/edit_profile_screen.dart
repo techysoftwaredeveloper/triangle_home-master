@@ -136,7 +136,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'email': _emailController.text.trim(),
         'profileImage': imageUrl,
         'gender': _selectedGender,
-        'college': _collegeController.text.trim(),
+        'collegeName': _collegeController.text.trim(),
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
@@ -459,9 +459,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildGenderOption('Man', Icons.male_rounded),
+            _buildGenderOption('Male', Icons.male_rounded),
             const SizedBox(width: 12),
-            _buildGenderOption('Woman', Icons.female_rounded),
+            _buildGenderOption('Female', Icons.female_rounded),
             const SizedBox(width: 12),
             _buildGenderOption('Other', Icons.person_outline_rounded),
           ],

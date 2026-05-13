@@ -3,9 +3,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:triangle_home/screens/room_details_screen.dart';
-import 'package:triangle_home/services/firebase_service.dart';
+import 'package:triangle_home/services/property_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SearchResultsScreen extends StatefulWidget {
   final String searchQuery;
@@ -36,7 +37,8 @@ class SearchResultsScreen extends StatefulWidget {
 }
 
 class _SearchResultsScreenState extends State<SearchResultsScreen> {
-  final FirebaseService _firebaseService = FirebaseService();
+  final PropertyService _propertyService = PropertyService();
+  final ScrollController _scrollController = ScrollController();
 
   String _sortBy = 'Price: Low to High';
   String _propertyType = 'All';
@@ -45,31 +47,57 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
   List<Map<String, dynamic>> _allResults = [];
   List<Map<String, dynamic>> _filteredResults = [];
   bool _isLoading = true;
+  bool _isFetchingMore = false;
+  bool _hasMore = true;
+  DocumentSnapshot? _lastDocument;
 
   @override
   void initState() {
     super.initState();
     _fetchSearchResults();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_isFetchingMore &&
+        _hasMore) {
+      _fetchMoreResults();
+    }
   }
 
   Future<void> _fetchSearchResults() async {
     setState(() {
       _isLoading = true;
+      _allResults = [];
+      _lastDocument = null;
+      _hasMore = true;
     });
 
     try {
-      final results = await _firebaseService.getFilteredProperties(
+      final results = await _propertyService.getFilteredProperties(
         city: widget.selectedCity,
         localities: widget.selectedLocalities,
         college: widget.selectedCollege,
         accommodationType: widget.accommodationType,
         tenantType: widget.tenantType,
         roomType: widget.roomType,
+        limit: 10,
       );
 
       setState(() {
         _allResults = results;
-        _filteredResults = results;
+        if (results.isNotEmpty) {
+          _lastDocument = results.last['doc'] as DocumentSnapshot;
+        }
+        _hasMore = results.length == 10;
         _isLoading = false;
       });
 
@@ -78,6 +106,57 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
       debugPrint('Error fetching search results: $e');
       setState(() {
         _isLoading = false;
+      });
+      if (mounted && e.toString().contains('permission-denied')) {
+        _showSearchErrorSnackBar('Access denied. Please check your App Check registration.');
+      } else if (mounted) {
+        _showSearchErrorSnackBar('Failed to load properties. Please try again.');
+      }
+    }
+  }
+
+  void _showSearchErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: SnackBarAction(label: 'Retry', onPressed: _fetchSearchResults),
+      ),
+    );
+  }
+
+  Future<void> _fetchMoreResults() async {
+    if (_isFetchingMore || !_hasMore) return;
+
+    setState(() {
+      _isFetchingMore = true;
+    });
+
+    try {
+      final results = await _propertyService.getFilteredProperties(
+        city: widget.selectedCity,
+        localities: widget.selectedLocalities,
+        college: widget.selectedCollege,
+        accommodationType: widget.accommodationType,
+        tenantType: widget.tenantType,
+        roomType: widget.roomType,
+        limit: 10,
+        startAfter: _lastDocument,
+      );
+
+      setState(() {
+        _allResults.addAll(results);
+        if (results.isNotEmpty) {
+          _lastDocument = results.last['doc'] as DocumentSnapshot;
+        }
+        _hasMore = results.length == 10;
+        _isFetchingMore = false;
+      });
+
+      _applyFilters();
+    } catch (e) {
+      debugPrint('Error fetching more results: $e');
+      setState(() {
+        _isFetchingMore = false;
       });
     }
   }
@@ -196,13 +275,20 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                         : _filteredResults.isEmpty
                         ? _buildEmptyState()
                         : ListView.builder(
+                          controller: _scrollController,
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                          itemCount: _filteredResults.length,
+                          itemCount: _filteredResults.length + (_isFetchingMore ? 1 : 0),
                           itemBuilder: (context, index) {
+                            if (index == _filteredResults.length) {
+                              return const Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: Center(child: CircularProgressIndicator()),
+                              );
+                            }
                             return _buildPropertyCard(_filteredResults[index])
                                 .animate()
-                                .fadeIn(delay: Duration(milliseconds: 100 * index))
-                                .slideY(begin: 0.2, end: 0);
+                                .fadeIn(delay: Duration(milliseconds: 50))
+                                .slideY(begin: 0.1, end: 0);
                           },
                         ),
               ),
@@ -696,7 +782,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                           return;
                         }
                         try {
-                          await _firebaseService.addToWishlist(
+                          await _propertyService.addToWishlist(
                             propertyId: propertyId,
                             propertyData: property,
                           );

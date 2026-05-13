@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/screens/home_screen.dart';
@@ -239,6 +240,13 @@ class _HosterInfoScreenState extends State<HosterInfoScreen> {
 
   void _handleSubmit() async {
     if (_formKey.currentState?.validate() ?? false) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error: User not authenticated')));
+        return;
+      }
+      final uid = user.uid;
+
       try {
         final hosterData = {
           'name': _nameController.text.trim(),
@@ -248,12 +256,14 @@ class _HosterInfoScreenState extends State<HosterInfoScreen> {
           'email': _emailController.text.trim(),
           'propertyType': _selectedPropertyType,
           'createdAt': FieldValue.serverTimestamp(),
+          'status': 'pending', // Default status for moderation
         };
 
+        // ✅ FIX: Use UID as document ID to satisfy Firestore Rules [request.auth.uid == userId]
         await FirebaseFirestore.instance
             .collection('hoster')
-            .doc(widget.phoneNumber)
-            .set({'info': hosterData});
+            .doc(uid)
+            .set({'info': hosterData}, SetOptions(merge: true));
 
         if (!mounted) return;
 

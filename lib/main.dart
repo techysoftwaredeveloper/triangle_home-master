@@ -22,12 +22,18 @@ void main() async {
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // ✅ Fixed Firebase App Check Initialization
-  // Force debug provider for current testing session to bypass 403 error
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug,
-    appleProvider: AppleProvider.debug,
-  );
+  // ✅ Robust App Check Initialization
+  try {
+    // 💡 Tip: In development, if you get PERMISSION_DENIED even with correct rules,
+    // ensure your debug token is registered in the Firebase Console.
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug,
+      appleProvider: AppleProvider.debug,
+    );
+    debugPrint('🚀 Firebase App Check activated.');
+  } catch (e) {
+    debugPrint('⚠️ Firebase App Check activation warning: $e');
+  }
 
   runApp(const ProviderScope(child: TriangleHomes()));
 }

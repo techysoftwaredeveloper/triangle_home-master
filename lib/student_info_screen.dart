@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import 'package:triangle_home/screens/home_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/college_search_popup.dart';
@@ -23,10 +27,12 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
   final _nameController = TextEditingController();
   final _collegeController = TextEditingController();
   final _courseController = TextEditingController();
+  final _emailController = TextEditingController();
 
   String _selectedYear = '1st Year';
   String _selectedGender = 'Male';
   bool _isSaving = false;
+  File? _profileImage;
 
   final List<String> _years = [
     '1st Year',
@@ -41,7 +47,28 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
     _nameController.dispose();
     _collegeController.dispose();
     _courseController.dispose();
+    _emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() => _profileImage = File(pickedFile.path));
+    }
+  }
+
+  Future<String?> _uploadImage(String uid) async {
+    if (_profileImage == null) return null;
+    try {
+      final ref = FirebaseStorage.instance.ref().child('profile_images/$uid.jpg');
+      await ref.putFile(_profileImage!);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      debugPrint('Error uploading image: $e');
+      return null;
+    }
   }
 
   void _showCollegePicker() {
@@ -69,33 +96,15 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
           _buildHeader(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Welcome to Triangle Homes!',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Outfit',
-                        color: AppTheme.textDarkColor,
-                      ),
-                    ).animate().fadeIn().slideY(begin: 0.1, end: 0),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Please provide your details to help us find the best accommodation for you.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.textLightColor,
-                        fontFamily: 'Outfit',
-                      ),
-                    ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1, end: 0),
-
-                    const SizedBox(height: 32),
-
+                    const SizedBox(height: 24),
+                    _buildSectionTitle('Basic Information'),
+                    const SizedBox(height: 16),
                     _buildTextField(
                       label: 'Full Name',
                       controller: _nameController,
@@ -104,6 +113,18 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
                     ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1, end: 0),
 
                     const SizedBox(height: 20),
+
+                    _buildTextField(
+                      label: 'Email Address',
+                      controller: _emailController,
+                      icon: Icons.email_outlined,
+                      hint: 'yourname@example.com',
+                      keyboardType: TextInputType.emailAddress,
+                    ).animate().fadeIn(delay: 250.ms).slideX(begin: -0.1, end: 0),
+
+                    const SizedBox(height: 32),
+                    _buildSectionTitle('Academic Details'),
+                    const SizedBox(height: 16),
 
                     _buildTextField(
                       label: 'College/University',
@@ -134,8 +155,9 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
                     ).animate().fadeIn(delay: 500.ms).slideX(begin: -0.1, end: 0),
 
                     const SizedBox(height: 32),
-
-                    _buildGenderSelection().animate().fadeIn(delay: 600.ms).slideY(begin: 0.1, end: 0),
+                    _buildSectionTitle('Identity'),
+                    const SizedBox(height: 16),
+                    _buildGenderSelector().animate().fadeIn(delay: 600.ms).slideY(begin: 0.1, end: 0),
 
                     const SizedBox(height: 48),
 
@@ -168,13 +190,25 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
                               ),
                       ),
                     ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.2, end: 0),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.bold,
+        fontFamily: 'Outfit',
+        color: AppTheme.textDarkColor,
       ),
     );
   }
@@ -191,40 +225,87 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                ),
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
-            ),
+              const Text(
+                'Student Profile',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Outfit',
+                ),
+              ),
+              const SizedBox(width: 40), // Balance
+            ],
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Student Profile',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Outfit',
-            ),
-          ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1, end: 0),
+          _buildImagePicker(),
+          const SizedBox(height: 16),
           const Text(
             'Tell us about your student life',
             style: TextStyle(
               color: Colors.white70,
-              fontSize: 16,
+              fontSize: 14,
               fontFamily: 'Outfit',
             ),
-          ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1, end: 0),
+          ).animate().fadeIn(delay: 300.ms),
         ],
       ),
     );
+  }
+
+  Widget _buildImagePicker() {
+    return Stack(
+      alignment: Alignment.bottomRight,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: CircleAvatar(
+            radius: 50,
+            backgroundColor: Colors.white.withOpacity(0.2),
+            backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+            child: _profileImage == null
+                ? const Icon(Icons.person_rounded, size: 50, color: Colors.white)
+                : null,
+          ),
+        ),
+        GestureDetector(
+          onTap: _pickImage,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: AppTheme.accentColor,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+          ),
+        ),
+      ],
+    ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack);
   }
 
   Widget _buildTextField({
@@ -233,6 +314,7 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
     required IconData icon,
     required String hint,
     bool readOnly = false,
+    TextInputType? keyboardType,
     VoidCallback? onTap,
   }) {
     return Column(
@@ -241,7 +323,7 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppTheme.textLightColor,
             fontFamily: 'Outfit',
@@ -250,14 +332,15 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
-          readOnly: readOnly,
+          readOnly: readOnly || onTap != null,
           onTap: onTap,
-          style: const TextStyle(fontFamily: 'Outfit', fontSize: 15),
+          keyboardType: keyboardType,
+          style: const TextStyle(fontFamily: 'Outfit', fontSize: 14, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             hintText: hint,
             prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 22),
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: (readOnly || onTap != null) ? const Color(0xFFF1F5F9).withOpacity(0.5) : const Color(0xFFF8FAFC),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,
@@ -283,7 +366,7 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppTheme.textLightColor,
             fontFamily: 'Outfit',
@@ -298,7 +381,7 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
           ),
           child: DropdownButtonFormField<String>(
             value: value,
-            style: const TextStyle(fontFamily: 'Outfit', fontSize: 15, color: AppTheme.textColor),
+            style: const TextStyle(fontFamily: 'Outfit', fontSize: 14, color: AppTheme.textColor, fontWeight: FontWeight.w500),
             decoration: InputDecoration(
               prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 22),
               border: InputBorder.none,
@@ -312,14 +395,14 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
     );
   }
 
-  Widget _buildGenderSelection() {
+  Widget _buildGenderSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           'Gender',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppTheme.textLightColor,
             fontFamily: 'Outfit',
@@ -328,9 +411,11 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _buildGenderOption('Male', Icons.male_rounded)),
-            const SizedBox(width: 16),
-            Expanded(child: _buildGenderOption('Female', Icons.female_rounded)),
+            _buildGenderOption('Male', Icons.male_rounded),
+            const SizedBox(width: 12),
+            _buildGenderOption('Female', Icons.female_rounded),
+            const SizedBox(width: 12),
+            _buildGenderOption('Other', Icons.person_outline_rounded),
           ],
         ),
       ],
@@ -339,79 +424,101 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
 
   Widget _buildGenderOption(String gender, IconData icon) {
     final isSelected = _selectedGender == gender;
-    return InkWell(
-      onTap: () => setState(() => _selectedGender = gender),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor.withOpacity(0.08) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: isSelected ? AppTheme.primaryColor : Colors.grey, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              gender,
-              style: TextStyle(
-                color: isSelected ? AppTheme.primaryColor : AppTheme.textLightColor,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                fontFamily: 'Outfit',
-              ),
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _selectedGender = gender),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.primaryColor.withOpacity(0.08) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
+              width: isSelected ? 1.5 : 1,
             ),
-          ],
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: isSelected ? AppTheme.primaryColor : Colors.grey, size: 20),
+              const SizedBox(height: 4),
+              Text(
+                gender,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isSelected ? AppTheme.primaryColor : Colors.grey[700],
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontFamily: 'Outfit',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   void _handleSubmit() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isSaving = true);
-      try {
-        final studentData = {
-          'name': _nameController.text.trim(),
-          'collegeName': _collegeController.text.trim(),
-          'course': _courseController.text.trim(),
-          'year': _selectedYear,
-          'gender': _selectedGender,
-          'phoneNumber': widget.phoneNumber,
-          'updatedAt': FieldValue.serverTimestamp(),
-        };
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-        await FirebaseFirestore.instance
-            .collection('student')
-            .doc(widget.phoneNumber)
-            .set({'info': studentData}, SetOptions(merge: true));
+    setState(() => _isSaving = true);
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error: User not authenticated')));
+      return;
+    }
 
-        if (!mounted) return;
+    final uid = user.uid;
+    debugPrint('💾 Attempting to save student profile for UID: $uid');
 
-        if (widget.onCompleteNavigateTo != null) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => widget.onCompleteNavigateTo!),
-            (route) => false,
-          );
-        } else {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-            (route) => false,
-          );
-        }
-      } catch (e) {
-        if (!mounted) return;
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save profile: $e')),
+    try {
+      // 1. Upload Image if any
+      String? imageUrl;
+      if (_profileImage != null) {
+        imageUrl = await _uploadImage(uid);
+      }
+
+      // 2. Prepare Data
+      final studentData = {
+        'name': _nameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'collegeName': _collegeController.text.trim(),
+        'course': _courseController.text.trim(),
+        'year': _selectedYear,
+        'gender': _selectedGender,
+        'phoneNumber': widget.phoneNumber,
+        'profileImage': imageUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      // ✅ FIX: Use UID as document ID to satisfy Firestore Rules [request.auth.uid == userId]
+      await FirebaseFirestore.instance
+          .collection('student')
+          .doc(uid)
+          .set({'info': studentData}, SetOptions(merge: true));
+
+      if (!mounted) return;
+
+      if (widget.onCompleteNavigateTo != null) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => widget.onCompleteNavigateTo!),
+          (route) => false,
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (route) => false,
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save profile: $e')),
+      );
     }
   }
 }

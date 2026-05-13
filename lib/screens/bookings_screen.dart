@@ -2,8 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/screens/home_screen.dart';
-import 'package:triangle_home/services/firebase_service.dart';
+import 'package:triangle_home/services/booking_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/bookingscreen/booking_card.dart';
 import 'package:triangle_home/widgets/bookingscreen/booking_tabs.dart';
@@ -21,6 +22,7 @@ class BookingsScreen extends StatefulWidget {
 class _BookingsScreenState extends State<BookingsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final BookingService _bookingService = BookingService();
 
   @override
   void initState() {
@@ -69,17 +71,20 @@ class _BookingsScreenState extends State<BookingsScreen>
               : TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildBookingsList(status: 'confirmed'),
-                  _buildBookingsList(status: 'pending'),
+                  _buildBookingsList(status: BookingStatus.confirmed),
+                  _buildBookingsList(status: BookingStatus.pending),
                 ],
               ),
       bottomNavigationBar: const HomeBottomNavBar(selectedIndex: 2),
     );
   }
 
-  Widget _buildBookingsList({required String status}) {
+  Widget _buildBookingsList({required BookingStatus status}) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return _buildEmptyState('Please login');
+
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseService().getBookings(),
+      stream: _bookingService.getStudentBookings(user.uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -95,12 +100,12 @@ class _BookingsScreenState extends State<BookingsScreen>
         final filteredDocs =
             allDocs.where((doc) {
               final data = doc.data();
-              return data['status'] == status;
+              return data['status'] == status.name;
             }).toList();
 
         if (filteredDocs.isEmpty) {
           return _buildEmptyState(
-            status == 'confirmed'
+            status == BookingStatus.confirmed
                 ? 'No confirmed bookings'
                 : 'No pending bookings',
           );

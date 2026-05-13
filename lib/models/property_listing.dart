@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:triangle_home/core/constants/enums.dart';
 
 class PropertyListing {
   final String id;
@@ -13,6 +14,7 @@ class PropertyListing {
   final int bathrooms;
   final List<String> amenities;
   final String ownerId;
+  final PropertyStatus status;
   final DateTime availableFrom;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -30,6 +32,7 @@ class PropertyListing {
     required this.bathrooms,
     required this.amenities,
     required this.ownerId,
+    this.status = PropertyStatus.pending,
     required this.availableFrom,
     required this.createdAt,
     required this.updatedAt,
@@ -50,6 +53,10 @@ class PropertyListing {
       bathrooms: data['bathrooms'] ?? 0,
       amenities: List<String>.from(data['amenities'] ?? []),
       ownerId: data['ownerId'] ?? '',
+      status: PropertyStatus.values.firstWhere(
+        (e) => e.name == (data['status'] ?? 'pending'),
+        orElse: () => PropertyStatus.pending,
+      ),
       availableFrom: (data['availableFrom'] as Timestamp).toDate(),
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
@@ -69,6 +76,7 @@ class PropertyListing {
       'bathrooms': bathrooms,
       'amenities': amenities,
       'ownerId': ownerId,
+      'status': status.name,
       'availableFrom': Timestamp.fromDate(availableFrom),
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
