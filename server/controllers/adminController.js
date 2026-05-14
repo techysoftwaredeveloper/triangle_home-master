@@ -1,8 +1,8 @@
 const { db, auth } = require('../config/firebase-config');
+const asyncHandler = require('../utils/asyncHandler');
 
 // Get statistics for the dashboard
-exports.getStats = async (req, res) => {
-  try {
+exports.getStats = asyncHandler(async (req, res) => {
     const [usersSnapshot, hostersSnapshot, requestsSnapshot, propertiesSnapshot, bookingsSnapshot, paymentsSnapshot] = await Promise.all([
       db.collection('student').get(),
       db.collection('hoster').get(),
@@ -28,15 +28,10 @@ exports.getStats = async (req, res) => {
       pendingProperties: propertiesSnapshot.docs.filter(doc => doc.data().status === 'pending').length,
       pendingHosters: requestsSnapshot.size
     });
-  } catch (error) {
-    console.error('Stats Error:', error);
-    res.status(500).json({ success: false, error: 'Failed to retrieve dashboard statistics' });
-  }
-};
+});
 
 // List all users
-exports.getAllUsers = async (req, res) => {
-  try {
+exports.getAllUsers = asyncHandler(async (req, res) => {
     const [studentsSnapshot, hostersSnapshot, requestsSnapshot] = await Promise.all([
       db.collection('student').get(),
       db.collection('hoster').get(),
@@ -48,13 +43,12 @@ exports.getAllUsers = async (req, res) => {
       id: doc.id,
       ...doc.data(),
       role: 'hoster',
-      status: 'approved' // If they are in the 'hoster' collection, they are approved
+      status: 'approved'
     }));
 
     // 2. Add pending/rejected requests from hoster_requests
     requestsSnapshot.forEach(doc => {
       const data = doc.data();
-      // Only add if not already in the approved list
       if (!hosters.some(h => h.id === doc.id)) {
         hosters.push({
           id: doc.id,
@@ -63,7 +57,6 @@ exports.getAllUsers = async (req, res) => {
           status: data.status || 'pending'
         });
       } else {
-        // If they are in both, ensure the one in the list reflects 'approved'
         const index = hosters.findIndex(h => h.id === doc.id);
         hosters[index].status = 'approved';
       }
@@ -72,99 +65,70 @@ exports.getAllUsers = async (req, res) => {
     const students = studentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), role: 'student' }));
 
     res.json({ success: true, students, hosters });
-  } catch (error) {
-    console.error('All Users Error:', error);
-    res.status(500).json({ success: false, error: 'Failed to retrieve user list' });
-  }
-};
+});
 
 // List all properties
-exports.getAllProperties = async (req, res) => {
-  try {
+exports.getAllProperties = asyncHandler(async (req, res) => {
     const propertiesSnapshot = await db.collection('properties').orderBy('createdAt', 'desc').get();
     const properties = [];
     propertiesSnapshot.forEach(doc => properties.push({ id: doc.id, ...doc.data() }));
     res.json(properties);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+});
 
 // List all bookings
-exports.getAllBookings = async (req, res) => {
-  try {
+exports.getAllBookings = asyncHandler(async (req, res) => {
     const bookingsSnapshot = await db.collection('bookings').orderBy('createdAt', 'desc').get();
     const bookings = [];
     bookingsSnapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
     res.json(bookings);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+});
 
 // Ban or Unban a user
-exports.toggleUserStatus = async (req, res) => {
+exports.toggleUserStatus = asyncHandler(async (req, res) => {
   const { userId, collection, status } = req.body; // status: 'active' or 'banned'
-  try {
-    await db.collection(collection).doc(userId).update({
-      accountStatus: status,
-      updatedAt: new Date().toISOString()
-    });
+  await db.collection(collection).doc(userId).update({
+    accountStatus: status,
+    updatedAt: new Date().toISOString()
+  });
 
-    // Also update custom claims if needed to prevent login
-    const user = await auth.getUser(userId);
-    await auth.setCustomUserClaims(userId, { ...user.customClaims, banned: status === 'banned' });
+  const user = await auth.getUser(userId);
+  await auth.setCustomUserClaims(userId, { ...user.customClaims, banned: status === 'banned' });
 
-    res.json({ message: `User ${status} successfully` });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+  res.json({ message: `User ${status} successfully` });
+});
 
 // Property Approval
-exports.updatePropertyStatus = async (req, res) => {
+exports.updatePropertyStatus = asyncHandler(async (req, res) => {
   const { propertyId } = req.params;
   const { status } = req.body; // 'approved', 'rejected', 'pending'
-  try {
-    await db.collection('properties').doc(propertyId).update({
-      status: status,
-      updatedAt: new Date().toISOString()
-    });
-    res.json({ message: `Property ${status} successfully` });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+  await db.collection('properties').doc(propertyId).update({
+    status: status,
+    updatedAt: new Date().toISOString()
+  });
+  res.json({ message: `Property ${status} successfully` });
+});
 
 // Hoster Approval
-exports.approveHoster = async (req, res) => {
+exports.approveHoster = asyncHandler(async (req, res) => {
   const { hosterId } = req.params;
-  try {
-    // 1. Get the request data
-    const requestDoc = await db.collection('hoster_requests').doc(hosterId).get();
-    let hosterData = {};
+  const requestDoc = await db.collection('hoster_requests').doc(hosterId).get();
+  let hosterData = {};
 
-    if (requestDoc.exists) {
-      hosterData = requestDoc.data();
-      // Update request status
-      await db.collection('hoster_requests').doc(hosterId).update({
-        status: 'approved',
-        updatedAt: new Date().toISOString()
-      });
-    }
-
-    // 2. Create/Update in hoster collection
-    await db.collection('hoster').doc(hosterId).set({
-      ...hosterData,
+  if (requestDoc.exists) {
+    hosterData = requestDoc.data();
+    await db.collection('hoster_requests').doc(hosterId).update({
       status: 'approved',
       updatedAt: new Date().toISOString()
-    }, { merge: true });
-
-    // 3. Set custom claim for hoster
-    await auth.setCustomUserClaims(hosterId, { role: 'hoster' });
-
-    res.json({ message: 'Hoster approved successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    });
   }
-};
+
+  await db.collection('hoster').doc(hosterId).set({
+    ...hosterData,
+    status: 'approved',
+    updatedAt: new Date().toISOString()
+  }, { merge: true });
+
+  await auth.setCustomUserClaims(hosterId, { role: 'hoster' });
+
+  res.json({ message: 'Hoster approved successfully' });
+});

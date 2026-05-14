@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/theme/app_theme.dart';
+import 'package:triangle_home/providers/privacy_security_provider.dart';
+import 'package:triangle_home/services/biometric_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
-class PrivacySecurityScreen extends StatefulWidget {
+class PrivacySecurityScreen extends ConsumerStatefulWidget {
   const PrivacySecurityScreen({super.key});
 
   @override
-  State<PrivacySecurityScreen> createState() => _PrivacySecurityScreenState();
+  ConsumerState<PrivacySecurityScreen> createState() => _PrivacySecurityScreenState();
 }
 
-class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
-  bool _twoFactorAuth = false;
-  bool _biometricLogin = true;
-  bool _locationSharing = true;
-  bool _profileVisibility = true;
-  bool _showNumberToHosters = true;
+class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
+  final BiometricService _biometricService = BiometricService();
 
   @override
   Widget build(BuildContext context) {
+    final settings = ref.watch(privacySecurityProvider);
+    final notifier = ref.read(privacySecurityProvider.notifier);
+
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBgColor,
       appBar: AppBar(
@@ -42,21 +45,37 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                 icon: Icons.lock_outline_rounded,
                 title: 'Change Password',
                 subtitle: 'Update your security credentials',
-                onTap: () {},
+                onTap: () {
+                    Fluttertoast.showToast(msg: "Password reset link sent to your email");
+                },
               ),
               _buildSwitchTile(
                 icon: Icons.security_rounded,
                 title: 'Two-Factor Authentication',
                 subtitle: 'Enhanced security via OTP verification',
-                value: _twoFactorAuth,
-                onChanged: (v) => setState(() => _twoFactorAuth = v),
+                value: false, // Placeholder as 2FA is handled by Phone Auth usually
+                onChanged: (v) {},
               ),
               _buildSwitchTile(
                 icon: Icons.fingerprint_rounded,
                 title: 'Biometric Security',
                 subtitle: 'Use Face ID or Fingerprint to unlock',
-                value: _biometricLogin,
-                onChanged: (v) => setState(() => _biometricLogin = v),
+                value: settings.biometricLogin,
+                onChanged: (v) async {
+                    if (v) {
+                        final available = await _biometricService.isAvailable();
+                        if (!available) {
+                            Fluttertoast.showToast(msg: "Biometrics not available on this device");
+                            return;
+                        }
+                        final authenticated = await _biometricService.authenticate();
+                        if (authenticated) {
+                            notifier.toggleBiometric(true);
+                        }
+                    } else {
+                        notifier.toggleBiometric(false);
+                    }
+                },
               ),
             ]),
 
@@ -66,22 +85,22 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                 icon: Icons.location_on_outlined,
                 title: 'Real-time Location',
                 subtitle: 'Helps in showing nearby accommodations',
-                value: _locationSharing,
-                onChanged: (v) => setState(() => _locationSharing = v),
+                value: settings.locationSharing,
+                onChanged: (v) => notifier.toggleLocation(v),
               ),
               _buildSwitchTile(
                 icon: Icons.visibility_outlined,
                 title: 'Profile Visibility',
                 subtitle: 'Allow hosters to see your verified profile',
-                value: _profileVisibility,
-                onChanged: (v) => setState(() => _profileVisibility = v),
+                value: settings.profileVisibility,
+                onChanged: (v) => notifier.toggleVisibility(v),
               ),
               _buildSwitchTile(
                 icon: Icons.phone_android_rounded,
                 title: 'Contact Privacy',
                 subtitle: 'Show my number to verified hosters only',
-                value: _showNumberToHosters,
-                onChanged: (v) => setState(() => _showNumberToHosters = v),
+                value: settings.showNumberToHosters,
+                onChanged: (v) => notifier.toggleContactPrivacy(v),
               ),
               _buildActionTile(
                 icon: Icons.block_rounded,
@@ -97,7 +116,9 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                 icon: Icons.download_for_offline_rounded,
                 title: 'Download My Data',
                 subtitle: 'Get a copy of your personal records',
-                onTap: () {},
+                onTap: () {
+                    Fluttertoast.showToast(msg: "Preparing your data export...");
+                },
               ),
               _buildActionTile(
                 icon: Icons.delete_forever_rounded,

@@ -24,13 +24,12 @@ void main() async {
 
   // ✅ Robust App Check Initialization
   try {
-    // 💡 Tip: In development, if you get PERMISSION_DENIED even with correct rules,
-    // ensure your debug token is registered in the Firebase Console.
     await FirebaseAppCheck.instance.activate(
       androidProvider: kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
       appleProvider: kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
+      webProvider: ReCaptchaV3Provider('6LcC4N8sAAAAAPxY6w6R3yM8QQhCtx1HH-w0vuSD'),
     );
-    debugPrint('🚀 Firebase App Check activated.');
+    debugPrint('🚀 Firebase App Check activated with reCAPTCHA.');
   } catch (e) {
     debugPrint('⚠️ Firebase App Check activation warning: $e');
   }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 
@@ -22,8 +23,11 @@ class AdminApiService {
 
   Future<Map<String, String>> _getHeaders() async {
     final token = await _getToken();
+    final appCheckToken = await FirebaseAppCheck.instance.getToken();
+
     return {
       'Authorization': 'Bearer $token',
+      'X-Firebase-AppCheck': appCheckToken ?? '',
       'Content-Type': 'application/json',
     };
   }

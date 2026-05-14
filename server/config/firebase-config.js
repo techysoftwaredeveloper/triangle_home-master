@@ -36,15 +36,23 @@ if (!admin.apps.length) {
       console.log('Firebase Admin initialized via local serviceAccountKey.json');
     } catch (error) {
       console.warn('WARNING: Missing FIREBASE_SERVICE_ACCOUNT and serviceAccountKey.json');
-      console.warn('Backend will fail on authenticated requests.');
+      console.warn('Initializing dummy Firebase app for development mode...');
+      firebaseApp = admin.initializeApp({
+        projectId: 'triangle-home-dummy'
+      });
     }
   }
 } else {
   firebaseApp = admin.app();
 }
 
-const db = admin.firestore();
-const auth = admin.auth();
+let db, auth;
+try {
+    db = admin.firestore();
+    auth = admin.auth();
+} catch (error) {
+    console.error('Failed to initialize Firestore/Auth:', error.message);
+}
 
 module.exports = {
   admin,

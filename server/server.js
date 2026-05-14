@@ -7,6 +7,9 @@ try {
   // Validate infrastructure before starting
   validateEnv();
 
+  // Initialize cron jobs
+  require('./scripts/cron');
+
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`
 🚀 Backend Server Ready
