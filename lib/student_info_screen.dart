@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
@@ -190,7 +191,7 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
                               ),
                       ),
                     ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.2, end: 0),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -472,6 +473,14 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
     final uid = user.uid;
     debugPrint('💾 Attempting to save student profile for UID: $uid');
 
+    // 🔍 Diagnostic: Check App Check Token
+    try {
+      final token = await FirebaseAppCheck.instance.getToken();
+      debugPrint('🛡️ App Check Token Status: ${token != null ? 'Valid' : 'Missing'}');
+    } catch (e) {
+      debugPrint('🛡️ App Check Token Error: $e');
+    }
+
     try {
       // 1. Upload Image if any
       String? imageUrl;
@@ -488,15 +497,26 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
         'year': _selectedYear,
         'gender': _selectedGender,
         'phoneNumber': widget.phoneNumber,
+        'uid': uid,
         'profileImage': imageUrl,
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      // ✅ FIX: Use UID as document ID to satisfy Firestore Rules [request.auth.uid == userId]
+      // ✅ FIX: Use "users" collection and include required fields to satisfy Security Rules
       await FirebaseFirestore.instance
-          .collection('student')
+          .collection('users')
           .doc(uid)
-          .set({'info': studentData}, SetOptions(merge: true));
+          .set({
+            'role': 'student',
+            'info': studentData,
+            'permissions': {
+              'is_admin': false,
+            },
+            'is_active': true,
+            'createdAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+
+      debugPrint('✅ Write to "users" collection successful.');
 
       if (!mounted) return;
 
@@ -516,9 +536,58 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
+
+      debugPrint('❌ Firestore Save Error: $e');
+
+      String errorMessage = 'Failed to save profile: $e';
+      bool isPermissionDenied = e.toString().contains('permission-denied');
+
+      if (isPermissionDenied) {
+        errorMessage = 'Access Denied: Please register your debug secret in the Firebase Console under App Check.';
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save profile: $e')),
+        SnackBar(
+          content: Text(errorMessage),
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(
+            label: 'Report Info',
+            onPressed: () => _showDetailedDiagnosticDialog(uid, e.toString()),
+          ),
+        ),
       );
     }
+  }
+
+  void _showDetailedDiagnosticDialog(String uid, String error) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Security Diagnostic'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('This device is blocked by Firebase Security.', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              const Text('1. Logged in UID:'),
+              SelectableText(uid, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              const Text('2. Error:'),
+              SelectableText(error, style: const TextStyle(fontSize: 12, color: Colors.red)),
+              const SizedBox(height: 12),
+              const Text('Fix Checklist:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('• Register Debug Token in Console'),
+              const Text('• Ensure Firestore Rules allow write to /users/UID'),
+              const Text('• Check if App Check Enforcement is ON'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+        ],
+      ),
+    );
   }
 }

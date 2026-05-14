@@ -51,9 +51,9 @@ class BookingService {
         final newBookingRef = _firestore.collection('bookings').doc();
         transaction.set(newBookingRef, {
           ...bookingData,
-          'propertyId': propertyId,
-          'studentId': studentId,
-          'requestId': requestId,
+          'property_id': propertyId,
+          'user_id': studentId,
+          'request_id': requestId,
           'status': BookingStatus.pending.name,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
@@ -88,7 +88,7 @@ class BookingService {
         }
 
         // 2. Handle Occupancy Side Effects
-        final propertyId = bookingDoc.data()?['propertyId'] as String?;
+        final propertyId = bookingDoc.data()?['property_id'] as String?;
         if (propertyId != null) {
           final propertyRef = _firestore.collection('properties').doc(propertyId);
 
@@ -149,7 +149,7 @@ class BookingService {
   Stream<QuerySnapshot<Map<String, dynamic>>> getHosterBookings(String hosterId) {
     return _firestore
         .collection('bookings')
-        .where('hosterId', isEqualTo: hosterId)
+        .where('hoster_id', isEqualTo: hosterId)
         .orderBy('createdAt', descending: true)
         .snapshots();
   }

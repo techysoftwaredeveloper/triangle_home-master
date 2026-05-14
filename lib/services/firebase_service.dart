@@ -67,7 +67,7 @@ class FirebaseService {
       final List<String> imageUrls = await uploadImages(images);
 
       await _firestore.collection('properties').add({
-        'ownerId': userId,
+        'hoster_id': userId,
         'title': title,
         'description': description,
         'type': type,
@@ -91,16 +91,16 @@ class FirebaseService {
 
   // ==================== WISHLIST ====================
 
-  String? get _userPhone => _auth.currentUser?.phoneNumber;
+  String? get _userId => _auth.currentUser?.uid;
 
   /// Get user's wishlist
   Stream<QuerySnapshot<Map<String, dynamic>>> getWishlist() {
-    if (_userPhone == null) {
+    if (_userId == null) {
       return const Stream.empty();
     }
     return _firestore
         .collection('wishlists')
-        .where('userPhone', isEqualTo: _userPhone)
+        .where('user_id', isEqualTo: _userId)
         .orderBy('addedAt', descending: true)
         .snapshots();
   }
@@ -110,21 +110,21 @@ class FirebaseService {
     required String propertyId,
     required Map<String, dynamic> propertyData,
   }) async {
-    if (_userPhone == null) throw 'User not authenticated';
+    if (_userId == null) throw 'User not authenticated';
 
     // Check if already in wishlist
     final existing =
         await _firestore
             .collection('wishlists')
-            .where('userPhone', isEqualTo: _userPhone)
-            .where('propertyId', isEqualTo: propertyId)
+            .where('user_id', isEqualTo: _userId)
+            .where('property_id', isEqualTo: propertyId)
             .get();
 
     if (existing.docs.isNotEmpty) return; // Already in wishlist
 
     await _firestore.collection('wishlists').add({
-      'userPhone': _userPhone,
-      'propertyId': propertyId,
+      'user_id': _userId,
+      'property_id': propertyId,
       'propertyData': propertyData,
       'addedAt': Timestamp.now(),
     });
@@ -137,13 +137,13 @@ class FirebaseService {
 
   /// Remove from wishlist by property ID
   Future<void> removeFromWishlistByPropertyId(String propertyId) async {
-    if (_userPhone == null) return;
+    if (_userId == null) return;
 
     final snapshot =
         await _firestore
             .collection('wishlists')
-            .where('userPhone', isEqualTo: _userPhone)
-            .where('propertyId', isEqualTo: propertyId)
+            .where('user_id', isEqualTo: _userId)
+            .where('property_id', isEqualTo: propertyId)
             .get();
 
     for (final doc in snapshot.docs) {
@@ -153,13 +153,13 @@ class FirebaseService {
 
   /// Check if property is in wishlist
   Future<bool> isInWishlist(String propertyId) async {
-    if (_userPhone == null) return false;
+    if (_userId == null) return false;
 
     final snapshot =
         await _firestore
             .collection('wishlists')
-            .where('userPhone', isEqualTo: _userPhone)
-            .where('propertyId', isEqualTo: propertyId)
+            .where('user_id', isEqualTo: _userId)
+            .where('property_id', isEqualTo: propertyId)
             .get();
 
     return snapshot.docs.isNotEmpty;
@@ -169,12 +169,12 @@ class FirebaseService {
 
   /// Get user's bookings stream
   Stream<QuerySnapshot<Map<String, dynamic>>> getBookings() {
-    if (_userPhone == null) {
+    if (_userId == null) {
       return const Stream.empty();
     }
     return _firestore
         .collection('bookings')
-        .where('userPhone', isEqualTo: _userPhone)
+        .where('user_id', isEqualTo: _userId)
         .orderBy('createdAt', descending: true)
         .snapshots();
   }
@@ -183,12 +183,12 @@ class FirebaseService {
   Stream<QuerySnapshot<Map<String, dynamic>>> getBookingsByStatus(
     String status,
   ) {
-    if (_userPhone == null) {
+    if (_userId == null) {
       return const Stream.empty();
     }
     return _firestore
         .collection('bookings')
-        .where('userPhone', isEqualTo: _userPhone)
+        .where('user_id', isEqualTo: _userId)
         .where('status', isEqualTo: status)
         .orderBy('createdAt', descending: true)
         .snapshots();
@@ -202,11 +202,11 @@ class FirebaseService {
     required String type,
     required List<Map<String, String>> tenantDetails,
   }) async {
-    if (_userPhone == null) throw 'User not authenticated';
+    if (_userId == null) throw 'User not authenticated';
 
     final docRef = await _firestore.collection('bookings').add({
-      'userPhone': _userPhone,
-      'propertyId': propertyId,
+      'user_id': _userId,
+      'property_id': propertyId,
       'propertyData': propertyData,
       'price': price,
       'type': type,
@@ -486,12 +486,12 @@ class FirebaseService {
 
   /// Get user's payment history
   Stream<QuerySnapshot<Map<String, dynamic>>> getPayments() {
-    if (_userPhone == null) {
+    if (_userId == null) {
       return const Stream.empty();
     }
     return _firestore
         .collection('payments')
-        .where('userPhone', isEqualTo: _userPhone)
+        .where('user_id', isEqualTo: _userId)
         .orderBy('createdAt', descending: true)
         .snapshots();
   }
@@ -507,12 +507,12 @@ class FirebaseService {
     String? razorpayPaymentId,
     String? razorpayOrderId,
   }) async {
-    if (_userPhone == null) throw 'User not authenticated';
+    if (_userId == null) throw 'User not authenticated';
 
     final docRef = await _firestore.collection('payments').add({
-      'userPhone': _userPhone,
-      'bookingId': bookingId,
-      'propertyId': propertyId,
+      'user_id': _userId,
+      'booking_id': bookingId,
+      'property_id': propertyId,
       'amount': amount,
       'paymentMethod': paymentMethod,
       'paymentType': paymentType, // 'rent' or 'deposit'
@@ -532,7 +532,7 @@ class FirebaseService {
   ) {
     return _firestore
         .collection('payments')
-        .where('propertyId', isEqualTo: propertyId)
+        .where('property_id', isEqualTo: propertyId)
         .orderBy('createdAt', descending: true)
         .snapshots();
   }
@@ -545,12 +545,12 @@ class FirebaseService {
     required double rating,
     String? review,
   }) async {
-    if (_userPhone == null) throw 'User not authenticated';
+    if (_userId == null) throw 'User not authenticated';
 
     // Add review
     await _firestore.collection('reviews').add({
-      'propertyId': propertyId,
-      'userPhone': _userPhone,
+      'property_id': propertyId,
+      'user_id': _userId,
       'rating': rating,
       'review': review,
       'createdAt': Timestamp.now(),
@@ -560,7 +560,7 @@ class FirebaseService {
     final reviewsSnapshot =
         await _firestore
             .collection('reviews')
-            .where('propertyId', isEqualTo: propertyId)
+            .where('property_id', isEqualTo: propertyId)
             .get();
 
     if (reviewsSnapshot.docs.isNotEmpty) {
@@ -610,12 +610,12 @@ class FirebaseService {
 
   /// Get user's notifications
   Stream<QuerySnapshot<Map<String, dynamic>>> getNotifications() {
-    if (_userPhone == null) {
+    if (_userId == null) {
       return const Stream.empty();
     }
     return _firestore
         .collection('notifications')
-        .where('userPhone', isEqualTo: _userPhone)
+        .where('user_id', isEqualTo: _userId)
         .orderBy('createdAt', descending: true)
         .limit(50)
         .snapshots();
@@ -624,63 +624,60 @@ class FirebaseService {
   /// Mark notification as read
   Future<void> markNotificationRead(String notificationId) async {
     await _firestore.collection('notifications').doc(notificationId).update({
-      'isRead': true,
+      'is_read': true,
     });
   }
 
   /// Create notification
   Future<void> createNotification({
-    required String userPhone,
+    required String user_id,
     required String title,
     required String body,
     String? type,
     Map<String, dynamic>? data,
   }) async {
     await _firestore.collection('notifications').add({
-      'userPhone': userPhone,
+      'user_id': user_id,
       'title': title,
       'body': body,
       'type': type,
       'data': data,
-      'isRead': false,
+      'is_read': false,
       'createdAt': Timestamp.now(),
     });
   }
 
   // ==================== USER PROFILE ====================
 
-  /// Get user profile from any collection
+  /// Get user profile from unified users collection
   Future<Map<String, dynamic>?> getUserProfile() async {
-    if (_userPhone == null) return null;
+    if (_userId == null) return null;
 
-    final collections = ['student', 'hoster', 'guest'];
-    for (final collection in collections) {
-      final doc = await _firestore.collection(collection).doc(_userPhone).get();
-      if (doc.exists) {
-        return {'id': doc.id, 'collection': collection, ...?doc.data()};
-      }
+    final doc = await _firestore.collection('users').doc(_userId).get();
+    if (doc.exists) {
+      return {'id': doc.id, ...?doc.data()};
     }
     return null;
   }
 
   /// Update user profile
   Future<void> updateUserProfile({
-    required String collection,
+    required String collection, // Ignored now as we use unified 'users'
     required Map<String, dynamic> data,
   }) async {
-    if (_userPhone == null) throw 'User not authenticated';
+    if (_userId == null) throw 'User not authenticated';
 
     await _firestore
-        .collection(collection)
-        .doc(_userPhone)
+        .collection('users')
+        .doc(_userId)
         .set(data, SetOptions(merge: true));
   }
 
   /// Upload profile image
   Future<String> uploadProfileImage(File image) async {
-    if (_userPhone == null) throw 'User not authenticated';
+    if (_userId == null) throw 'User not authenticated';
 
-    final fileName = '$_userPhone.jpg';
+    final fileName = '$_userId.jpg';
     final ref = _storage.ref().child('profile_images/$fileName');
     final uploadTask = ref.putFile(image);
     final snapshot = await uploadTask;
@@ -691,17 +688,19 @@ class FirebaseService {
 
   /// Check if current user is admin
   Future<bool> isAdmin() async {
-    if (_userPhone == null) return false;
-    final doc = await _firestore.collection('admins').doc(_userPhone).get();
-    return doc.exists;
+    if (_userId == null) return false;
+    final doc = await _firestore.collection('users').doc(_userId).get();
+    if (doc.exists) {
+      return doc.data()?['role'] == 'admin';
+    }
+    return false;
   }
 
   /// Get stats for admin dashboard
   Future<Map<String, dynamic>> getAdminStats() async {
     final properties = await _firestore.collection('properties').get();
     final bookings = await _firestore.collection('bookings').get();
-    final students = await _firestore.collection('student').get();
-    final hosters = await _firestore.collection('hoster').get();
+    final users = await _firestore.collection('users').get();
     final payments = await _firestore.collection('payments').get();
 
     double totalRevenue = 0;
@@ -712,7 +711,7 @@ class FirebaseService {
     return {
       'totalProperties': properties.docs.length,
       'totalBookings': bookings.docs.length,
-      'totalUsers': students.docs.length + hosters.docs.length,
+      'totalUsers': users.docs.length,
       'totalRevenue': totalRevenue,
       'pendingProperties': properties.docs
           .where((doc) => doc.data()['status'] == 'pending')
@@ -741,19 +740,14 @@ class FirebaseService {
 
   /// Get all users from all roles
   Future<List<Map<String, dynamic>>> getAllUsersAdmin() async {
-    final List<Map<String, dynamic>> users = [];
+    final List<Map<String, dynamic>> usersList = [];
 
-    final students = await _firestore.collection('student').get();
-    for (var doc in students.docs) {
-      users.add({...doc.data(), 'role': 'student', 'id': doc.id});
+    final usersSnapshot = await _firestore.collection('users').get();
+    for (var doc in usersSnapshot.docs) {
+      usersList.add({...doc.data(), 'id': doc.id});
     }
 
-    final hosters = await _firestore.collection('hoster').get();
-    for (var doc in hosters.docs) {
-      users.add({...doc.data(), 'role': 'hoster', 'id': doc.id});
-    }
-
-    return users;
+    return usersList;
   }
 
   /// Get all bookings for admin
@@ -770,17 +764,17 @@ class FirebaseService {
   Future<Map<String, dynamic>> getHosterStats(String hosterId) async {
     final properties = await _firestore
         .collection('properties')
-        .where('hosterId', isEqualTo: hosterId)
+        .where('hoster_id', isEqualTo: hosterId)
         .get();
 
     final bookings = await _firestore
         .collection('bookings')
-        .where('hosterId', isEqualTo: hosterId)
+        .where('hoster_id', isEqualTo: hosterId)
         .get();
 
     final payments = await _firestore
         .collection('payments')
-        .where('hosterId', isEqualTo: hosterId)
+        .where('hoster_id', isEqualTo: hosterId)
         .get();
 
     double totalEarnings = 0;
@@ -800,7 +794,7 @@ class FirebaseService {
   Stream<QuerySnapshot<Map<String, dynamic>>> getHosterProperties(String hosterId) {
     return _firestore
         .collection('properties')
-        .where('hosterId', isEqualTo: hosterId)
+        .where('hoster_id', isEqualTo: hosterId)
         .orderBy('createdAt', descending: true)
         .snapshots();
   }
@@ -809,7 +803,7 @@ class FirebaseService {
   Stream<QuerySnapshot<Map<String, dynamic>>> getHosterBookings(String hosterId) {
     return _firestore
         .collection('bookings')
-        .where('hosterId', isEqualTo: hosterId)
+        .where('hoster_id', isEqualTo: hosterId)
         .orderBy('createdAt', descending: true)
         .snapshots();
   }

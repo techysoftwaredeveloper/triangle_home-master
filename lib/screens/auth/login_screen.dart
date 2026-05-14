@@ -34,12 +34,23 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   int _logoTapCount = 0;
 
-  final List<String> _contentItems = [
+  final List<String> _studentContent = [
     'Apartments? PG Accommodations? We\'ve got you!',
     'Find your perfect home away from home',
     'Easy booking process with secure payments',
     'Verified listings with real photos and reviews',
   ];
+
+  final List<String> _hosterContent = [
+    'List your property & reach thousands of students',
+    'Manage bookings effortlessly in one place',
+    'Fast payouts & secure business growth',
+    'Verified tenants for your peace of mind',
+  ];
+
+  List<String> get _contentItems => widget.isStudent ? _studentContent : _hosterContent;
+
+  Color get _themeColor => widget.isStudent ? AppTheme.primaryColor : AppTheme.successColor;
 
   @override
   void initState() {
@@ -106,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final displayName = user.displayName ?? '';
       final uid = user.uid;
 
-      final collections = ['student', 'hoster', 'guest'];
+      final collections = ['users', 'guest'];
       bool found = false;
       for (final col in collections) {
         final doc =
@@ -118,15 +129,22 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (!found) {
-        // Create a new guest record
-        await FirebaseFirestore.instance.collection('guest').doc(uid).set({
+        // Create a new record in the unified users collection
+        // Rule: request.resource.data.role in ['student', 'hoster'] &&
+        //       (request.resource.data.permissions == null || request.resource.data.permissions.is_admin == false)
+        await FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'role': 'student', // Default role
           'info': {
             'name': displayName,
             'email': email,
             'profileImage': user.photoURL,
           },
+          'permissions': {
+            'is_admin': false,
+          },
+          'is_active': true,
           'createdAt': FieldValue.serverTimestamp(),
-        });
+        }, SetOptions(merge: true));
       }
 
       if (!mounted) return;
@@ -253,7 +271,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 20),
-      color: AppTheme.primaryColor,
+      color: _themeColor,
       child: Column(
         children: [
           GestureDetector(
@@ -349,24 +367,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        color: _themeColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Icon(
-                        Icons.home_outlined,
+                      child: Icon(
+                        widget.isStudent ? Icons.home_outlined : Icons.business_center_outlined,
                         size: 14,
-                        color: AppTheme.primaryColor,
+                        color: _themeColor,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
                         _contentItems[index],
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.normal,
                           fontFamily: 'outfit',
-                          color: AppTheme.primaryColor,
+                          color: _themeColor,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -441,8 +459,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppTheme.primaryColor,
+                  borderSide: BorderSide(
+                    color: _themeColor,
                     width: 1.5,
                   ),
                 ),
@@ -491,7 +509,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ? null
                         : _verifyPhone,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: _themeColor,
                   disabledBackgroundColor: const Color(0xFFE0E0E0),
                   disabledForegroundColor: AppTheme.textMutedColor,
                   padding: const EdgeInsets.symmetric(vertical: 16),

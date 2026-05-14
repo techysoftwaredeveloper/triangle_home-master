@@ -54,13 +54,13 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
     if (user == null) return;
 
     _statusSubscription = FirebaseFirestore.instance
-        .collection('hoster')
+        .collection('users')
         .doc(user.uid)
         .snapshots()
         .listen((doc) {
       if (doc.exists && mounted) {
         final data = doc.data() as Map<String, dynamic>;
-        if (data['status'] == 'approved') {
+        if (data['role'] == 'hoster' && data['status'] == 'approved') {
           // Navigate to Hoster Dashboard immediately upon approval
           Navigator.pushAndRemoveUntil(
             context,
@@ -101,21 +101,16 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
         _isLoading = false;
       });
     } else {
-      final collections = ['student', 'guest'];
-      for (final col in collections) {
-        final userDoc =
-            await FirebaseFirestore.instance
-                .collection(col)
-                .doc(user.uid)
-                .get();
-        if (userDoc.exists) {
-          final data = userDoc.data() as Map<String, dynamic>;
-          final info = (data['info'] as Map?)?.cast<String, dynamic>() ?? {};
-          if (mounted) {
-            _nameController.text = info['name'] ?? data['name'] ?? '';
-            _emailController.text = info['email'] ?? data['email'] ?? '';
-          }
-          break;
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>;
+        final info = (data['info'] as Map?)?.cast<String, dynamic>() ?? {};
+        if (mounted) {
+          _nameController.text = info['name'] ?? data['name'] ?? '';
+          _emailController.text = info['email'] ?? data['email'] ?? '';
         }
       }
       if (!mounted) return;

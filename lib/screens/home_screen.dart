@@ -165,11 +165,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Hard Reload logic to enter Hoster Page
           final user = FirebaseAuth.instance.currentUser;
           if (user != null) {
-            // Check if user is hoster or allow shortcut entry
-            final hosterDoc = await FirebaseFirestore.instance.collection('hoster').doc(user.uid).get();
+            // Check if user is hoster in the unified users collection
+            final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
 
             if (mounted) {
-              if (hosterDoc.exists) {
+              if (userDoc.exists && userDoc.data()?['role'] == 'hoster') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),

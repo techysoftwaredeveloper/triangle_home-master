@@ -31,11 +31,11 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
   Future<void> _handleNewListing(BuildContext context) async {
     // 1. Get current approval status from Firestore
     try {
-      // TODO: Move this to a UserService/HosterService method
-      final doc = await FirebaseFirestore.instance.collection('hoster').doc(_uid).get();
-      final status = doc.data()?['status'] ?? 'pending';
+      final doc = await FirebaseFirestore.instance.collection('users').doc(_uid).get();
+      final data = doc.data();
+      final status = data?['status'] ?? 'pending';
 
-      if (status != HosterStatus.approved.name) {
+      if (data?['role'] != 'hoster' || status != HosterStatus.approved.name) {
         if (!context.mounted) return;
         _showNotApprovedDialog(context);
         return;
@@ -274,7 +274,7 @@ class _WelcomeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('hoster').doc(uid).get(),
+      future: FirebaseFirestore.instance.collection('users').doc(uid).get(),
       builder: (context, snapshot) {
         final data = snapshot.data?.data() as Map<String, dynamic>?;
         final info = data?['info'] as Map<String, dynamic>? ?? {};

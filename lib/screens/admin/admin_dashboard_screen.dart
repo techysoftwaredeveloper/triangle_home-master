@@ -599,7 +599,7 @@ class _UsersViewState extends State<_UsersView> with SingleTickerProviderStateMi
                   isBanned: isBanned,
                   onTap: () async {
                     final newStatus = isBanned ? 'active' : 'banned';
-                    await widget.adminService.toggleUserStatus(user['id'], isHoster ? 'hoster' : 'student', newStatus);
+                    await widget.adminService.toggleUserStatus(user['id'], newStatus);
                     setState(() {});
                   },
                 ),

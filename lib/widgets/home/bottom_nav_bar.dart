@@ -97,14 +97,14 @@ class HomeBottomNavBar extends StatelessWidget {
   }
 
   Future<Widget> _resolvePropertyScreen() async {
-    final phone = FirebaseAuth.instance.currentUser?.phoneNumber;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
 
-    if (phone == null) return const ListPropertyScreen();
+    if (uid == null) return const ListPropertyScreen();
 
     final snapshot =
         await FirebaseFirestore.instance
             .collection('properties')
-            .where('hosterPhoneNumber', isEqualTo: phone)
+            .where('hoster_id', isEqualTo: uid)
             .limit(1)
             .get();
 
@@ -135,34 +135,17 @@ class HomeBottomNavBar extends StatelessWidget {
       return;
     }
 
-    // Check if user is an approved hoster
-    final hosterDoc =
+    // Check if user is an approved hoster in the unified 'users' collection
+    final userDoc =
         await FirebaseFirestore.instance
-            .collection('hoster')
+            .collection('users')
             .doc(user.uid)
             .get();
 
-    // If not found by uid, try by phone number
-    Map<String, dynamic>? hosterData;
-    if (!hosterDoc.exists) {
-      final phone = user.phoneNumber;
-      if (phone != null) {
-        final phoneDoc =
-            await FirebaseFirestore.instance
-                .collection('hoster')
-                .doc(phone)
-                .get();
-
-        if (phoneDoc.exists) {
-          hosterData = phoneDoc.data();
-        }
-      }
-    } else {
-      hosterData = hosterDoc.data();
-    }
+    Map<String, dynamic>? userData = userDoc.data();
 
     // Not a hoster at all → go to become hoster screen
-    if (hosterData == null) {
+    if (userData == null || userData['role'] != 'hoster') {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -180,8 +163,10 @@ class HomeBottomNavBar extends StatelessWidget {
       return;
     }
 
-    // Check approval status
-    final status = hosterData['status'] as String?;
+    // Check approval status (legacy field 'status' or new logic)
+    // Note: If you don't have a status field yet, you might want to default to 'approved'
+    // or 'pending' depending on your requirements.
+    final status = userData['status'] as String? ?? 'approved';
 
     if (status == 'approved') {
       // Approved hoster → resolve to appropriate screen

@@ -29,13 +29,13 @@ class HosterRegistrationCard extends StatelessWidget {
 
     final uid = user.uid;
 
-    // 2. Check if already an approved hoster
-    final hosterDoc =
-        await FirebaseFirestore.instance.collection('hoster').doc(uid).get();
+    // 2. Check if already an approved hoster in unified users collection
+    final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
     if (!context.mounted) return;
 
-    if (hosterDoc.exists) {
+    if (userDoc.exists && userDoc.data()?['role'] == 'hoster') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),

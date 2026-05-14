@@ -27,8 +27,8 @@ void main() async {
     // 💡 Tip: In development, if you get PERMISSION_DENIED even with correct rules,
     // ensure your debug token is registered in the Firebase Console.
     await FirebaseAppCheck.instance.activate(
-      androidProvider: AndroidProvider.debug,
-      appleProvider: AppleProvider.debug,
+      androidProvider: kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
+      appleProvider: kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
     );
     debugPrint('🚀 Firebase App Check activated.');
   } catch (e) {

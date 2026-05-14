@@ -20,7 +20,7 @@ class PaymentService {
       // 1. Idempotency Check
       final existing = await _firestore
           .collection('payments')
-          .where('requestId', isEqualTo: requestId)
+          .where('request_id', isEqualTo: requestId)
           .limit(1)
           .get();
 
@@ -41,8 +41,8 @@ class PaymentService {
 
         // Record Payment
         transaction.set(paymentDocRef, {
-          'bookingId': bookingId,
-          'requestId': requestId,
+          'booking_id': bookingId,
+          'request_id': requestId,
           'amount': amount,
           'type': type.name,
           'method': paymentMethod,
@@ -64,7 +64,7 @@ class PaymentService {
             'updatedAt': FieldValue.serverTimestamp(),
           });
 
-          final propertyId = bookingDoc.data()?['propertyId'] as String?;
+          final propertyId = bookingDoc.data()?['property_id'] as String?;
           if (propertyId != null) {
             transaction.update(_firestore.collection('properties').doc(propertyId), {
               'currentOccupancy': FieldValue.increment(1),
@@ -84,7 +84,7 @@ class PaymentService {
   Stream<QuerySnapshot<Map<String, dynamic>>> getBookingPayments(String bookingId) {
     return _firestore
         .collection('payments')
-        .where('bookingId', isEqualTo: bookingId)
+        .where('booking_id', isEqualTo: bookingId)
         .orderBy('createdAt', descending: true)
         .snapshots();
   }

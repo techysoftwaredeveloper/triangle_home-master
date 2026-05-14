@@ -9,8 +9,7 @@ class AdminService {
   Future<Map<String, dynamic>> getStats() async {
     final properties = await _firestore.collection('properties').get();
     final bookings = await _firestore.collection('bookings').get();
-    final students = await _firestore.collection('student').get();
-    final hosters = await _firestore.collection('hoster').get();
+    final users = await _firestore.collection('users').get();
     final payments = await _firestore.collection('payments').get();
 
     double totalRevenue = 0;
@@ -21,25 +20,23 @@ class AdminService {
     return {
       'totalProperties': properties.docs.length,
       'totalBookings': bookings.docs.length,
-      'totalStudents': students.docs.length,
-      'totalHosters': hosters.docs.length,
+      'totalUsers': users.docs.length,
       'totalRevenue': totalRevenue,
       'pendingProperties': properties.docs
           .where((doc) => doc.data()['status'] == PropertyStatus.pending.name)
           .length,
-      'pendingHosters': hosters.docs
-          .where((doc) => doc.data()['status'] == HosterStatus.pending.name)
+      'pendingHosters': users.docs
+          .where((doc) => doc.data()['role'] == 'hoster' && doc.data()['status'] == HosterStatus.pending.name)
           .length,
     };
   }
 
   Future<Map<String, dynamic>> getAllUsers() async {
-    final students = await _firestore.collection('student').get();
-    final hosters = await _firestore.collection('hoster').get();
+    final users = await _firestore.collection('users').get();
 
     return {
-      'students': students.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList(),
-      'hosters': hosters.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList(),
+      'students': users.docs.where((doc) => doc.data()['role'] == 'student').map((doc) => {'id': doc.id, ...doc.data()}).toList(),
+      'hosters': users.docs.where((doc) => doc.data()['role'] == 'hoster').map((doc) => {'id': doc.id, ...doc.data()}).toList(),
     };
   }
 
@@ -69,7 +66,7 @@ class AdminService {
   }
 
   Future<void> approveHoster(String hosterId, {String? reason}) async {
-    await _firestore.collection('hoster').doc(hosterId).update({
+    await _firestore.collection('users').doc(hosterId).update({
       'status': HosterStatus.approved.name,
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -82,8 +79,8 @@ class AdminService {
     );
   }
 
-  Future<void> toggleUserStatus(String userId, String collection, String status, {String? reason}) async {
-    await _firestore.collection(collection).doc(userId).update({
+  Future<void> toggleUserStatus(String userId, String status, {String? reason}) async {
+    await _firestore.collection('users').doc(userId).update({
       'accountStatus': status,
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -91,7 +88,7 @@ class AdminService {
     await _auditService.logAction(
       action: 'user_status_toggle',
       targetId: userId,
-      targetType: collection,
+      targetType: 'users',
       reason: reason ?? 'Changed account status to $status',
       extraData: {'newAccountStatus': status},
     );
@@ -110,7 +107,7 @@ class AdminService {
       // Count actual confirmed/checked-in bookings
       final bookingsSnapshot = await _firestore
           .collection('bookings')
-          .where('propertyId', isEqualTo: propertyId)
+          .where('property_id', isEqualTo: propertyId)
           .where('status', whereIn: [BookingStatus.confirmed.name, BookingStatus.checkedIn.name])
           .get();
 

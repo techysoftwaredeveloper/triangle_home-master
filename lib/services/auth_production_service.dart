@@ -45,21 +45,15 @@ class AuthProductionService {
       if (roleClaim == 'admin') return UserRole.admin;
       if (roleClaim == 'hoster') return UserRole.hoster;
 
-      // Priority 2: Firestore Verification (Database-based)
-      // Check Hoster collection
-      final hosterDoc = await _firestore.collection('hoster').doc(user.uid).get();
-      if (hosterDoc.exists) return UserRole.hoster;
-
-      // Check Student collection
-      // Note: Project uses phone as ID in some places, UID in others. Checking both for safety.
-      final studentDoc = await _firestore.collection('student').doc(user.uid).get();
-      if (studentDoc.exists) return UserRole.student;
-
-      if (user.phoneNumber != null) {
-        final studentPhoneDoc = await _firestore.collection('student').doc(user.phoneNumber).get();
-        if (studentPhoneDoc.exists) return UserRole.student;
+      // Priority 2: Check standard "users" collection (Security Rule compliant)
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (userDoc.exists) {
+        final role = userDoc.data()?['role'];
+        if (role == 'student') return UserRole.student;
+        if (role == 'hoster') return UserRole.hoster;
       }
 
+      // Priority 3: No fallback to legacy collections (Rules compliant)
       return UserRole.none;
     } catch (e) {
       debugPrint('Error detecting role: $e');

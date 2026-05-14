@@ -40,37 +40,51 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (user == null) return;
 
     final uid = user.uid;
-    final phone = user.phoneNumber;
-    final collections = ['student', 'hoster', 'guest'];
 
-    for (final collection in collections) {
-      DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection(collection)
-          .doc(uid)
-          .get();
+    try {
+      // ✅ Migration: Always prioritize the "users" collection (Security Rule standard)
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
-      if (!doc.exists && phone != null) {
-        doc = await FirebaseFirestore.instance
-            .collection(collection)
-            .doc(phone)
-            .get();
-      }
-
-      if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
+      if (userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>;
+        final role = data['role'] ?? 'guest';
         final info = data['info'] as Map<String, dynamic>? ?? {};
+
         setState(() {
-          _userCollection = collection;
-          _isStudent = collection == 'student';
+          _userCollection = 'users';
+          _isStudent = role == 'student';
           _nameController.text = info['name'] ?? data['name'] ?? '';
           _emailController.text = info['email'] ?? data['email'] ?? '';
-          _phoneController.text = phone ?? uid;
-          _collegeController.text = info['college'] ?? info['collegeName'] ?? data['college'] ?? '';
-          _selectedGender = info['gender'] ?? data['gender'];
-          _profileImageUrl = info['profileImage'] ?? data['profileImage'];
+          _phoneController.text = user.phoneNumber ?? info['phoneNumber'] ?? '';
+          _collegeController.text = info['collegeName'] ?? info['college'] ?? '';
+          _selectedGender = info['gender'];
+          _profileImageUrl = info['profileImage'];
         });
-        break;
+        return;
       }
+
+      // Legacy fallback (to be deprecated)
+      final collections = ['student', 'hoster', 'guest'];
+      for (final collection in collections) {
+        final doc = await FirebaseFirestore.instance.collection(collection).doc(uid).get();
+        if (doc.exists) {
+          final data = doc.data() as Map<String, dynamic>;
+          final info = data['info'] as Map<String, dynamic>? ?? {};
+          setState(() {
+            _userCollection = collection;
+            _isStudent = collection == 'student';
+            _nameController.text = info['name'] ?? data['name'] ?? '';
+            _emailController.text = info['email'] ?? data['email'] ?? '';
+            _phoneController.text = user.phoneNumber ?? '';
+            _collegeController.text = info['collegeName'] ?? info['college'] ?? '';
+            _selectedGender = info['gender'];
+            _profileImageUrl = info['profileImage'];
+          });
+          break;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
     }
   }
 

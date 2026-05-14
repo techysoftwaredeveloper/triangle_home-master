@@ -32,7 +32,7 @@ class BookingRepository {
     try {
       return await _firestore
           .collection('bookings')
-          .where('requestId', isEqualTo: requestId)
+          .where('request_id', isEqualTo: requestId)
           .limit(1)
           .get();
     } on FirebaseException catch (e) {
@@ -42,10 +42,10 @@ class BookingRepository {
     }
   }
 
-  Query<Map<String, dynamic>> getStudentBookingsQuery(String studentId) {
+  Query<Map<String, dynamic>> getStudentBookingsQuery(String userId) {
     return _firestore
         .collection('bookings')
-        .where('studentId', isEqualTo: studentId)
+        .where('user_id', isEqualTo: userId)
         .orderBy('createdAt', descending: true);
   }
 }
