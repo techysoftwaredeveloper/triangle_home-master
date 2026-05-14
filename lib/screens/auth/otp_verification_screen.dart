@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -7,7 +6,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:triangle_home/services/auth_production_service.dart';
 import 'package:triangle_home/screens/admin/admin_dashboard_screen.dart';
 import 'package:triangle_home/hoster_info_screen.dart';
-import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/student_info_screen.dart';
 import 'package:triangle_home/screens/home_screen.dart';

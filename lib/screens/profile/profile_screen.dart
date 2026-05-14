@@ -6,7 +6,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/screens/admin/admin_dashboard_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
-import 'package:triangle_home/screens/home_screen.dart';
 import 'package:triangle_home/screens/profile/about_screen.dart';
 import 'package:triangle_home/screens/profile/edit_profile_screen.dart';
 import 'package:triangle_home/screens/profile/help_support_screen.dart';
@@ -273,9 +272,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileHeader() {
+    final phone = FirebaseAuth.instance.currentUser?.phoneNumber ?? '';
+    final initial = (name?.isNotEmpty == true) ? name![0].toUpperCase() : 'U';
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
       decoration: const BoxDecoration(
         color: AppTheme.primaryColor,
         borderRadius: BorderRadius.only(
@@ -288,12 +290,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Stack(
             children: [
               Container(
+                width: 100,
+                height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 3),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 5),
                     ),
@@ -301,59 +305,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: CircleAvatar(
                   radius: 50,
-                  backgroundColor: Colors.white,
+                  backgroundColor: const Color(0xFFE879F9), // Design-matched pink
                   child: ClipOval(
-                    child: CachedNetworkImage(
-                      imageUrl: profileImageUrl ??
-                          'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name ?? "U")}&background=random',
-                      placeholder: (context, url) =>
-                          const CircularProgressIndicator(),
-                      errorWidget: (context, url, error) =>
-                          const Icon(Icons.person, size: 50, color: AppTheme.primaryColor),
-                      fit: BoxFit.cover,
-                      width: 100,
-                      height: 100,
-                    ),
+                    child: profileImageUrl != null
+                        ? CachedNetworkImage(
+                            imageUrl: profileImageUrl!,
+                            placeholder: (context, url) => const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            errorWidget: (context, url, error) => Text(
+                              initial,
+                              style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.black87, fontFamily: 'Outfit'),
+                            ),
+                            fit: BoxFit.cover,
+                            width: 100,
+                            height: 100,
+                          )
+                        : Text(
+                            initial,
+                            style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.black87, fontFamily: 'Outfit'),
+                          ),
                   ),
                 ),
               ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
               Positioned(
-                bottom: 0,
-                right: 0,
+                bottom: 2,
+                right: 2,
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: const BoxDecoration(
-                    color: AppTheme.accentColor,
+                    color: AppTheme.accentColor, // Bright blue
                     shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
                   ),
                   child: const Icon(
                     Icons.edit_rounded,
                     color: Colors.white,
-                    size: 18,
+                    size: 16,
                   ),
                 ),
               ).animate().scale(delay: 400.ms),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
             name ?? 'Guest User',
             style: const TextStyle(
-              fontSize: AppTheme.font2XL,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
               color: Colors.white,
-              fontFamily: AppTheme.fontFamily,
+              fontFamily: 'Outfit',
             ),
-          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
-          const SizedBox(height: 4),
+          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0),
+          const SizedBox(height: 6),
           Text(
-            email ?? (FirebaseAuth.instance.currentUser?.phoneNumber ?? ''),
+            phone.isNotEmpty ? phone : (email ?? 'No contact info'),
             style: TextStyle(
-              fontSize: AppTheme.fontMD,
-              color: Colors.white.withOpacity(0.8),
-              fontFamily: AppTheme.fontFamily,
+              fontSize: 15,
+              color: Colors.white.withValues(alpha: 0.8),
+              fontFamily: 'Outfit',
+              letterSpacing: 0.5,
             ),
-          ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
+          ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1, end: 0),
         ],
       ),
     );
@@ -364,30 +375,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required List<_MenuItem> items,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
             child: Text(
               title,
               style: const TextStyle(
-                fontSize: AppTheme.fontMD,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.textDarkColor,
-                fontFamily: AppTheme.fontFamily,
+                fontFamily: 'Outfit',
               ),
             ),
-          ).animate().fadeIn().slideX(begin: -0.1, end: 0),
+          ).animate().fadeIn().slideX(begin: -0.05, end: 0),
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 10,
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 15,
                   offset: const Offset(0, 4),
                 ),
               ],
@@ -399,34 +410,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 return Column(
                   children: [
                     ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                       leading: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(10),
+                          color: const Color(0xFFF1F5F9), // DESIGN: light blue/gray tint
+                          shape: BoxShape.circle,
                         ),
-                        child: Icon(item.icon, color: AppTheme.primaryColor, size: 22),
+                        child: Icon(item.icon, color: AppTheme.primaryColor, size: 20),
                       ),
                       title: Text(
                         item.title,
                         style: const TextStyle(
-                          fontSize: AppTheme.fontBase,
+                          fontSize: 15,
                           fontWeight: FontWeight.w500,
                           color: AppTheme.textColor,
-                          fontFamily: AppTheme.fontFamily,
+                          fontFamily: 'Outfit',
                         ),
                       ),
-                      trailing: const Icon(Icons.chevron_right_rounded, color: AppTheme.textMutedColor),
+                      trailing: Icon(Icons.chevron_right_rounded, color: Colors.grey.shade400, size: 20),
                       onTap: item.onTap,
                     ),
                     if (index < items.length - 1)
-                      const Divider(height: 1, indent: 56, endIndent: 16, color: AppTheme.dividerColor),
+                      const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFF1F5F9)),
                   ],
                 );
               }).toList(),
             ),
-          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0),
+          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.05, end: 0),
         ],
       ),
     );

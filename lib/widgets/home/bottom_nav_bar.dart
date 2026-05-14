@@ -9,6 +9,7 @@ import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
 import 'package:triangle_home/screens/list_property/my_property_info_screen.dart';
 import 'package:triangle_home/screens/wishlist_screen.dart';
+import 'package:triangle_home/screens/suggest_property/suggest_property_intro_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/splash_screen.dart';
 
@@ -144,19 +145,13 @@ class HomeBottomNavBar extends StatelessWidget {
 
     Map<String, dynamic>? userData = userDoc.data();
 
-    // Not a hoster at all → go to become hoster screen
+    // Not a hoster at all → go to Suggest Property Intro
     if (userData == null || userData['role'] != 'hoster') {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please register as a hoster first'),
-            duration: Duration(seconds: 2),
-          ),
-        );
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const BecomeHosterScreen(),
+            builder: (_) => const SuggestPropertyIntroScreen(),
           ),
         );
       }

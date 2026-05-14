@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "318624228870",
+    "firebase_url": "https://trianglehome-default-rtdb.firebaseio.com",
     "project_id": "trianglehome",
     "storage_bucket": "trianglehome.firebasestorage.app"
   },

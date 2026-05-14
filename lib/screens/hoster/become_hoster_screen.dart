@@ -265,7 +265,7 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: AppTheme.warningColor.withOpacity(0.1),
+                color: AppTheme.warningColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -350,7 +350,7 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: AppTheme.errorColor.withOpacity(0.1),
+              color: AppTheme.errorColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.error_outline_rounded, size: 64, color: AppTheme.errorColor),
@@ -493,7 +493,7 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-          decoration: BoxDecoration(color: const Color(0xFFF1F5F9).withOpacity(0.5), borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(color: const Color(0xFFF1F5F9).withValues(alpha: 0.5), borderRadius: BorderRadius.circular(16)),
           child: Row(
             children: [
               Icon(icon, color: AppTheme.primaryColor, size: 22),
@@ -516,7 +516,7 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(16)),
           child: DropdownButtonFormField<String>(
-            value: value,
+            initialValue: value,
             style: const TextStyle(fontFamily: 'Outfit', fontSize: 14, color: AppTheme.textColor),
             decoration: InputDecoration(
               prefixIcon: const Icon(Icons.category_outlined, color: AppTheme.primaryColor, size: 22),
