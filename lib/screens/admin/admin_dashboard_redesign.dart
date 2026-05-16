@@ -154,7 +154,9 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
 
         return _activeNavIndex == 1
             ? _ApprovalsView(adminService: _adminService, isNarrow: isNarrow)
-            : StreamBuilder<Map<String, dynamic>>(
+            : _activeNavIndex == 2
+                ? _ListingsView(adminService: _adminService, isNarrow: isNarrow)
+                : StreamBuilder<Map<String, dynamic>>(
           stream: _adminService.getStatsStream(),
           builder: (context, snapshot) {
             return CustomScrollView(
@@ -927,3 +929,440 @@ class _ApprovalsViewState extends State<_ApprovalsView> with SingleTickerProvide
     );
   }
 }
+
+// ── Listings View (NEW) ──────────────────────────────────────────────────────
+class _ListingsView extends StatefulWidget {
+  final AdminService adminService;
+  final bool isNarrow;
+  const _ListingsView({required this.adminService, required this.isNarrow});
+
+  @override
+  State<_ListingsView> createState() => _ListingsViewState();
+}
+
+class _ListingsViewState extends State<_ListingsView> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 5, vsync: this);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: EdgeInsets.all(widget.isNarrow ? 16 : 32),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              _buildTopSection(),
+              const SizedBox(height: 32),
+              _buildSummaryCards(),
+              const SizedBox(height: 32),
+              _buildTabSection(),
+              const SizedBox(height: 24),
+              _buildFilterRow(),
+              const SizedBox(height: 24),
+              if (!widget.isNarrow) _buildTableHeader(),
+              const SizedBox(height: 12),
+              _buildListingsList(),
+              const SizedBox(height: 32),
+              _buildPagination(),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopSection() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Listings', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+              const SizedBox(height: 4),
+              Text(
+                widget.isNarrow ? 'Manage properties' : 'Manage all properties listed on the platform',
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(color: const Color(0xFF2563EB), borderRadius: BorderRadius.circular(10)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.add, color: Colors.white, size: 16),
+              const SizedBox(width: 4),
+              if (!widget.isNarrow)
+                const Text('Add New Listing', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+              if (!widget.isNarrow) const SizedBox(width: 4),
+              const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 16),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCards() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _buildSummaryCard('1,076', 'Total Listings', const Color(0xFFEFF6FF), const Color(0xFF2563EB), percentage: '12.5%', isUp: true),
+          const SizedBox(width: 16),
+          _buildSummaryCard('896', 'Active Listings', const Color(0xFFF0FDF4), const Color(0xFF16A34A), sub: '83.3% of total'),
+          const SizedBox(width: 16),
+          _buildSummaryCard('68', 'Under Review', const Color(0xFFFFFBEB), const Color(0xFFD97706), sub: '6.3% of total'),
+          const SizedBox(width: 16),
+          _buildSummaryCard('112', 'Inactive/Rejected', const Color(0xFFFEF2F2), const Color(0xFFDC2626), sub: '10.4% of total'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(String count, String label, Color bg, Color color, {String? percentage, bool isUp = true, String? sub}) {
+    return Container(
+      width: 200,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+                child: Icon(Icons.business_rounded, color: color, size: 20),
+              ),
+              if (percentage != null)
+                Row(
+                  children: [
+                    Icon(isUp ? Icons.arrow_upward : Icons.arrow_downward, color: Colors.green, size: 12),
+                    Text(percentage, style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(count, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+          if (sub != null) ...[
+            const SizedBox(height: 4),
+            Text(sub, style: TextStyle(fontSize: 10, color: const Color(0xFF94A3B8))),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabSection() {
+    return Container(
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0)))),
+      child: TabBar(
+        controller: _tabController,
+        isScrollable: true,
+        labelColor: const Color(0xFF2563EB),
+        indicatorColor: const Color(0xFF2563EB),
+        indicatorWeight: 3,
+        tabs: const [
+          Tab(text: 'All Listings (1,076)'),
+          Tab(text: 'Active (896)'),
+          Tab(text: 'Under Review (68)'),
+          Tab(text: 'Inactive (112)'),
+          Tab(text: 'Rejected (48)'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE2E8F0))),
+            child: const Row(
+              children: [
+                Icon(Icons.search, color: Colors.grey, size: 18),
+                SizedBox(width: 8),
+                Expanded(child: TextField(decoration: InputDecoration(hintText: 'Search properties...', border: InputBorder.none, hintStyle: TextStyle(fontSize: 12)))),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        _buildFilterAction(Icons.tune, widget.isNarrow ? '' : 'Filter'),
+        if (!widget.isNarrow) ...[
+            const SizedBox(width: 12),
+            _buildFilterAction(null, 'More Filters', hasDropdown: true),
+            const SizedBox(width: 12),
+            _buildFilterAction(null, 'Newest First', hasDropdown: true),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFilterAction(IconData? icon, String label, {bool hasDropdown = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE2E8F0))),
+      child: Row(
+        children: [
+          if (icon != null) ...[Icon(icon, size: 16, color: const Color(0xFF64748B)), const SizedBox(width: 8)],
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+          if (hasDropdown) ...[const SizedBox(width: 8), const Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF64748B))],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTableHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Expanded(flex: 3, child: _tableLabel('PROPERTY')),
+          Expanded(flex: 2, child: _tableLabel('HOSTER & DETAILS')),
+          Expanded(flex: 2, child: _tableLabel('STATS')),
+          Expanded(flex: 2, child: _tableLabel('STATUS')),
+          const SizedBox(width: 40), // Space for action dots
+        ],
+      ),
+    );
+  }
+
+  Widget _tableLabel(String text) {
+    return Text(text, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8), letterSpacing: 0.5));
+  }
+
+  Widget _buildListingsList() {
+    return Column(
+      children: List.generate(3, (index) => _buildListingCard(index)),
+    );
+  }
+
+  Widget _buildListingCard(int index) {
+    // Mock data for high-fidelity card
+    final titles = ['Sunrise Hostels', 'Green Valley PG', 'Comfort Living PG'];
+    final locs = ['Kozhikode, Kerala', 'Kozhikode, Kerala', 'Thrissur, Kerala'];
+    final types = ['PG Hostel', 'PG Accommodation', 'PG Accommodation'];
+    final rooms = ['15 Rooms • 3 Sharing', '20 Rooms • 2 & 3 Sharing', '12 Rooms • 3 Sharing'];
+    final hosters = ['John Doe', 'Mike Johnson', 'Aman Singh'];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                // 1. Property Column
+                Expanded(
+                  flex: widget.isNarrow ? 1 : 3,
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(width: 50, height: 50, color: const Color(0xFFF1F5F9), child: const Icon(Icons.business_rounded, color: Colors.grey, size: 20)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(child: Text(titles[index], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.check_circle, color: Color(0xFF22C55E), size: 12),
+                              ],
+                            ),
+                            Text(types[index], style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                            if (!widget.isNarrow) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                    children: [
+                                        const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF64748B)),
+                                        const SizedBox(width: 4),
+                                        Text(locs[index], style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                                    ],
+                                ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 2. Hoster Column (Hidden on mobile)
+                if (!widget.isNarrow)
+                  Expanded(
+                    flex: 2,
+                    child: Row(
+                      children: [
+                        CircleAvatar(radius: 16, backgroundColor: const Color(0xFFF5F3FF), child: Text(hosters[index][0], style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED)))),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(hosters[index], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
+                              const Text('Verified Hoster', style: TextStyle(fontSize: 10, color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // 3. Stats Column (Hidden on mobile)
+                if (!widget.isNarrow)
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _miniStat('Views', '1,245'),
+                        _miniStat('Bookings', '32'),
+                      ],
+                    ),
+                  ),
+
+                // 4. Status Column
+                Expanded(
+                  flex: widget.isNarrow ? 0 : 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: const Color(0xFFF0FDF4), borderRadius: BorderRadius.circular(10)),
+                        child: const Text('Active', style: TextStyle(color: Color(0xFF16A34A), fontSize: 9, fontWeight: FontWeight.bold)),
+                      ),
+                      if (!widget.isNarrow) ...[
+                        const SizedBox(height: 8),
+                        const Text('10 May 2025', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                      ],
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+                const Icon(Icons.more_vert, color: Color(0xFFCBD5E1), size: 18),
+              ],
+            ),
+            if (widget.isNarrow) ...[
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                const SizedBox(height: 12),
+                Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                        Row(
+                            children: [
+                                const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF64748B)),
+                                const SizedBox(width: 4),
+                                Text(locs[index], style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                            ],
+                        ),
+                        Text(rooms[index], style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+                    ],
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _miniStat(String label, String value, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Text('$label ', style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+          Text(value, style: TextStyle(fontSize: 11, fontWeight: isBold ? FontWeight.bold : FontWeight.w600, color: const Color(0xFF1E293B))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPagination() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Text(
+            widget.isNarrow ? '1-10 of 1,076' : 'Showing 1 to 10 of 1,076 listings',
+            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Row(
+          children: [
+            _pageBtn(Icons.chevron_left, false),
+            _pageBtn(null, true, label: '1'),
+            if (!widget.isNarrow) _pageBtn(null, false, label: '2'),
+            if (!widget.isNarrow) _pageBtn(null, false, label: '3'),
+            if (!widget.isNarrow) ...[
+                const Text('...', style: TextStyle(color: Colors.grey)),
+                _pageBtn(null, false, label: '108'),
+            ],
+            _pageBtn(Icons.chevron_right, false),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _pageBtn(IconData? icon, bool active, {String? label}) {
+    return Container(
+      width: 28,
+      height: 28,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFF2563EB) : Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Center(
+        child: icon != null
+          ? Icon(icon, size: 16, color: const Color(0xFF64748B))
+          : Text(label!, style: TextStyle(color: active ? Colors.white : const Color(0xFF1E293B), fontSize: 11, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+}
+
