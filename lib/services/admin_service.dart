@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/services/audit_service.dart';
 
@@ -6,49 +7,85 @@ class AdminService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AuditService _auditService = AuditService();
 
-  Future<Map<String, dynamic>> getStats() async {
-    final properties = await _firestore.collection('properties').get();
-    final bookings = await _firestore.collection('bookings').get();
-    final users = await _firestore.collection('users').get();
-    final payments = await _firestore.collection('payments').get();
+  // ==================== REAL-TIME STREAMS ====================
 
-    double totalRevenue = 0;
-    for (var doc in payments.docs) {
-      totalRevenue += (doc.data()['amount'] as num?)?.toDouble() ?? 0;
-    }
+  Stream<Map<String, dynamic>> getStatsStream() {
+    // We listen to multiple collections and merge them for a real-time dashboard
+    return _firestore.collection('users').snapshots().asyncMap((usersSnapshot) async {
+      try {
+        final propertiesSnapshot = await _firestore.collection('properties').get();
+        final bookingsSnapshot = await _firestore.collection('bookings').get();
+        final paymentsSnapshot = await _firestore.collection('payments').get();
 
-    return {
-      'totalProperties': properties.docs.length,
-      'totalBookings': bookings.docs.length,
-      'totalUsers': users.docs.length,
-      'totalRevenue': totalRevenue,
-      'pendingProperties': properties.docs
-          .where((doc) => doc.data()['status'] == PropertyStatus.pending.name)
-          .length,
-      'pendingHosters': users.docs
-          .where((doc) => doc.data()['role'] == 'hoster' && doc.data()['status'] == HosterStatus.pending.name)
-          .length,
-    };
+        double totalRevenue = 0;
+        for (var doc in paymentsSnapshot.docs) {
+          totalRevenue += (doc.data()['amount'] as num?)?.toDouble() ?? 0;
+        }
+
+        final students = usersSnapshot.docs.where((doc) {
+          final data = doc.data();
+          return data['role'] == 'student' || data['role'] == 'user';
+        }).length;
+
+        final hosters = usersSnapshot.docs.where((doc) {
+          final data = doc.data();
+          return data['role'] == 'hoster';
+        }).length;
+
+        return {
+          'totalProperties': propertiesSnapshot.docs.length,
+          'totalBookings': bookingsSnapshot.docs.length,
+          'totalUsers': usersSnapshot.docs.length,
+          'totalStudents': students,
+          'totalHosters': hosters,
+          'totalRevenue': totalRevenue,
+          'pendingProperties': propertiesSnapshot.docs
+              .where((doc) => doc.data()['status'] == 'pending')
+              .length,
+          'pendingHosters': usersSnapshot.docs
+              .where((doc) => doc.data()['role'] == 'hoster' && doc.data()['status'] == 'pending')
+              .length,
+        };
+      } catch (e) {
+        print('Error in getStatsStream: $e');
+        return {
+          'error': e.toString(),
+          'totalProperties': 0,
+          'totalBookings': 0,
+          'totalUsers': 0,
+          'totalStudents': 0,
+          'totalHosters': 0,
+          'totalRevenue': 0,
+          'pendingProperties': 0,
+          'pendingHosters': 0,
+        };
+      }
+    });
   }
 
-  Future<Map<String, dynamic>> getAllUsers() async {
-    final users = await _firestore.collection('users').get();
-
-    return {
-      'students': users.docs.where((doc) => doc.data()['role'] == 'student').map((doc) => {'id': doc.id, ...doc.data()}).toList(),
-      'hosters': users.docs.where((doc) => doc.data()['role'] == 'hoster').map((doc) => {'id': doc.id, ...doc.data()}).toList(),
-    };
+  Stream<Map<String, List<Map<String, dynamic>>>> getUsersStream() {
+    return _firestore.collection('users').snapshots().map((snapshot) {
+      final users = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+      return {
+        'students': users.where((u) => u['role'] == 'student' || u['role'] == 'user').toList(),
+        'hosters': users.where((u) => u['role'] == 'hoster').toList(),
+      };
+    });
   }
 
-  Future<List<Map<String, dynamic>>> getAllProperties() async {
-    final snapshot = await _firestore.collection('properties').get();
-    return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+  Stream<List<Map<String, dynamic>>> getPropertiesStream() {
+    return _firestore.collection('properties').orderBy('createdAt', descending: true).snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+    });
   }
 
-  Future<List<Map<String, dynamic>>> getAllBookings() async {
-    final snapshot = await _firestore.collection('bookings').get();
-    return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+  Stream<List<Map<String, dynamic>>> getBookingsStream() {
+    return _firestore.collection('bookings').orderBy('createdAt', descending: true).snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+    });
   }
+
+  // ==================== MODERATION ACTIONS ====================
 
   Future<void> updatePropertyStatus(String propertyId, PropertyStatus status, {String? reason}) async {
     await _firestore.collection('properties').doc(propertyId).update({
@@ -65,9 +102,9 @@ class AdminService {
     );
   }
 
-  Future<void> approveHoster(String hosterId, {String? reason}) async {
+  Future<void> approveHoster(String hosterId) async {
     await _firestore.collection('users').doc(hosterId).update({
-      'status': HosterStatus.approved.name,
+      'status': 'approved',
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
@@ -75,11 +112,11 @@ class AdminService {
       action: 'hoster_approval',
       targetId: hosterId,
       targetType: 'hoster',
-      reason: reason ?? 'Approved by admin',
+      reason: 'Approved by superadmin',
     );
   }
 
-  Future<void> toggleUserStatus(String userId, String status, {String? reason}) async {
+  Future<void> toggleUserStatus(String userId, String status) async {
     await _firestore.collection('users').doc(userId).update({
       'accountStatus': status,
       'updatedAt': FieldValue.serverTimestamp(),
@@ -89,49 +126,21 @@ class AdminService {
       action: 'user_status_toggle',
       targetId: userId,
       targetType: 'users',
-      reason: reason ?? 'Changed account status to $status',
+      reason: 'Account status changed to $status',
       extraData: {'newAccountStatus': status},
     );
   }
 
-  // ==================== RECONCILIATION & INTEGRITY ====================
+  // ==================== SUPERADMIN OPS ====================
 
-  /// Verifies that the property's occupancy count matches the actual number of confirmed bookings
-  Future<Map<String, int>> runOccupancyReconciliation(String propertyId) async {
-    try {
-      final propertyDoc = await _firestore.collection('properties').doc(propertyId).get();
-      if (!propertyDoc.exists) throw Exception('Property not found');
+  Future<void> deleteListing(String propertyId) async {
+    await _firestore.collection('properties').doc(propertyId).delete();
+  }
 
-      final reportedOccupancy = propertyDoc.data()?['currentOccupancy'] as int? ?? 0;
-
-      // Count actual confirmed/checked-in bookings
-      final bookingsSnapshot = await _firestore
-          .collection('bookings')
-          .where('property_id', isEqualTo: propertyId)
-          .where('status', whereIn: [BookingStatus.confirmed.name, BookingStatus.checkedIn.name])
-          .get();
-
-      final actualOccupancy = bookingsSnapshot.docs.length;
-
-      if (reportedOccupancy != actualOccupancy) {
-        // Auto-repair
-        await _firestore.collection('properties').doc(propertyId).update({
-          'currentOccupancy': actualOccupancy,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-
-        await _auditService.logAction(
-          action: 'occupancy_reconciliation_repair',
-          targetId: propertyId,
-          targetType: 'property',
-          reason: 'Mismatch detected: Reported $reportedOccupancy, Actual $actualOccupancy',
-          extraData: {'oldValue': reportedOccupancy, 'newValue': actualOccupancy},
-        );
-      }
-
-      return {'reported': reportedOccupancy, 'actual': actualOccupancy};
-    } catch (e) {
-      rethrow;
-    }
+  Future<void> promoteToAdmin(String userId) async {
+    await _firestore.collection('users').doc(userId).update({
+      'role': 'admin',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 }

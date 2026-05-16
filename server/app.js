@@ -11,6 +11,7 @@ const superadminRoutes = require('./routes/superadmin');
 const bookingRoutes = require('./routes/booking');
 const propertyRoutes = require('./routes/property');
 const suggestionRoutes = require('./routes/suggestion');
+const locationRoutes = require('./routes/location');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/superadmin', superadminRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/suggestions', suggestionRoutes);
+app.use('/api/locations', locationRoutes);
 
 app.get('/', (req, res) => {
   res.send('Triangle Home Admin API is running...');

@@ -1,155 +1,3 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_animate/flutter_animate.dart';
-
-// class CityTags extends StatelessWidget {
-//   final List<String> cities;
-
-//   const CityTags({
-//     super.key,
-//     required this.cities,
-//     required String selectedCity,
-//     required void Function(String city) onCitySelected,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return SingleChildScrollView(
-//       scrollDirection: Axis.horizontal,
-//       padding: const EdgeInsets.all(12),
-//       child: Row(
-//         children: [
-//           Text(
-//             'Jump To State:  ',
-//             style: TextStyle(
-//               color: Colors.grey[800],
-//               fontWeight: FontWeight.w600,
-//               fontSize: 12,
-//               fontFamily: 'outfit',
-//             ),
-//           ),
-//           ...List.generate(
-//             cities.length,
-//             (index) => Padding(
-//               padding: const EdgeInsets.only(right: 8),
-//               child: ActionChip(
-//                 backgroundColor: Colors.white,
-//                 side: const BorderSide(
-//                   color: Color.fromARGB(255, 255, 255, 255),
-//                   width: 0.9,
-//                 ),
-//                 labelStyle: TextStyle(
-//                   color: Colors.grey[600],
-//                   fontWeight: FontWeight.w500,
-//                   fontSize: 10,
-//                   fontFamily: 'outfit',
-//                 ),
-//                 shape: RoundedRectangleBorder(
-//                   borderRadius: BorderRadius.circular(10),
-//                 ),
-//                 label: Text(cities[index]),
-//                 onPressed: () {},
-//               ),
-//             ),
-//           ),
-//         ],
-//       ),
-//     ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.2, end: 0);
-//   }
-// }
-
-// import 'package:flutter/material.dart';
-// import 'package:flutter_animate/flutter_animate.dart';
-
-// class StateTags extends StatelessWidget {
-//   final List<String> states;
-//   final String selectedState;
-//   final String currentLocation; // 👈 added separately
-//   final void Function(String state) onStateSelected;
-
-//   const StateTags({
-//     super.key,
-//     required this.states,
-//     required this.selectedState,
-//     required this.currentLocation,
-//     required this.onStateSelected,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return SingleChildScrollView(
-//       scrollDirection: Axis.horizontal,
-//       padding: const EdgeInsets.all(12),
-//       child: Row(
-//         children: [
-//           Text(
-//             'Jump to State:  ',
-//             style: TextStyle(
-//               color: Colors.grey[800],
-//               fontWeight: FontWeight.w600,
-//               fontSize: 12,
-//               fontFamily: 'outfit',
-//             ),
-//           ),
-
-//           /// ➕ NEAR ME BUTTON
-//           Padding(
-//             padding: const EdgeInsets.only(right: 8),
-//             child: TextButton.icon(
-//               style: TextButton.styleFrom(
-//                 padding: const EdgeInsets.symmetric(
-//                   horizontal: 10,
-//                   vertical: 0,
-//                 ),
-//                 backgroundColor: Colors.blue.shade50,
-//                 shape: RoundedRectangleBorder(
-//                   borderRadius: BorderRadius.circular(10),
-//                   side: BorderSide(color: Colors.blue.shade200),
-//                 ),
-//               ),
-//               icon: const Icon(Icons.my_location, size: 16, color: Colors.blue),
-//               label: Text(
-//                 'Near Me: $currentLocation', // 👈 uses actual current location
-//                 style: const TextStyle(
-//                   fontSize: 10,
-//                   color: Colors.blue,
-//                   fontWeight: FontWeight.w500,
-//                   fontFamily: 'outfit',
-//                 ),
-//               ),
-//               onPressed: () => onStateSelected(currentLocation),
-//             ),
-//           ),
-
-//           ...states.map((state) {
-//             final bool isSelected = state == selectedState;
-//             return Padding(
-//               padding: const EdgeInsets.only(right: 8),
-//               child: ActionChip(
-//                 backgroundColor: isSelected ? Colors.blue[100] : Colors.white,
-//                 side: BorderSide(
-//                   color: isSelected ? Colors.blue : Colors.grey.shade300,
-//                   width: 0.9,
-//                 ),
-//                 labelStyle: TextStyle(
-//                   color: isSelected ? Colors.blue[800] : Colors.grey[600],
-//                   fontWeight: FontWeight.w500,
-//                   fontSize: 10,
-//                   fontFamily: 'outfit',
-//                 ),
-//                 shape: RoundedRectangleBorder(
-//                   borderRadius: BorderRadius.circular(10),
-//                 ),
-//                 label: Text(state),
-//                 onPressed: () => onStateSelected(state),
-//               ),
-//             );
-//           }).toList(),
-//         ],
-//       ),
-//     ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.2, end: 0);
-//   }
-// }
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/theme/app_theme.dart';
@@ -170,52 +18,151 @@ class StateTags extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Text('Jump To City:  ', style: _labelStyle(context)),
-
-          /// ➕ STATE CHIPS
-          ...states.map((state) {
-            final bool isSelected = state == selectedState;
-            return Padding(
-              key: ValueKey(state),
-              padding: const EdgeInsets.only(right: 8),
-              child: ActionChip(
-                backgroundColor: isSelected ? AppTheme.primaryColor : Colors.white,
-                side: BorderSide(
-                  color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
-                  width: 1,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                label: Text(
-                  state,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : const Color(0xFF475569),
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    fontSize: 12,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                onPressed: () => onStateSelected(state),
-              ),
-            );
-          }),
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.only(left: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
-    ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.2, end: 0);
+      child: Row(
+        children: [
+          // 1. FIXED LABEL: "Jump To City"
+          _buildFixedLabel(),
+
+          const SizedBox(width: 8),
+
+          // 2. SCROLLABLE CONTENT: "Near Me" + Cities
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.only(right: 16),
+              child: Row(
+                children: [
+                  if (currentLocation.isNotEmpty)
+                    _buildNearMeButton(),
+
+                  ...states.map((state) => _buildCityChip(state)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0);
   }
 
-  TextStyle _labelStyle(BuildContext context) {
-    return TextStyle(
-      color: Colors.grey[800],
-      fontWeight: FontWeight.w600,
-      fontSize: AppTheme.fontSM,
-      fontFamily: AppTheme.fontFamily,
+  Widget _buildFixedLabel() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.near_me_outlined, size: 14, color: AppTheme.primaryColor),
+        const SizedBox(width: 6),
+        Text(
+          'Jump To City',
+          style: TextStyle(
+            color: AppTheme.primaryColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            letterSpacing: 0.5,
+            fontFamily: AppTheme.fontFamily,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Container(
+          width: 1,
+          height: 20,
+          color: const Color(0xFFE2E8F0),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNearMeButton() {
+    final bool isSelected = selectedState == currentLocation || selectedState == 'Detecting...';
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: InkWell(
+        onTap: () => onStateSelected('near_me_trigger'),
+        borderRadius: BorderRadius.circular(20),
+        child: AnimatedContainer(
+          duration: 300.ms,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.accentColor : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? AppTheme.accentColor : const Color(0xFFE2E8F0),
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            children: [
+              if (selectedState == 'Detecting...')
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              else
+                Icon(
+                  Icons.my_location_rounded,
+                  size: 14,
+                  color: isSelected ? Colors.white : AppTheme.accentColor
+                ),
+              const SizedBox(width: 6),
+              Text(
+                selectedState == 'Detecting...' ? 'Locating...' : 'Near Me',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isSelected ? Colors.white : AppTheme.accentColor,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: AppTheme.fontFamily,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCityChip(String state) {
+    final bool isSelected = state == selectedState;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(state),
+        selected: isSelected,
+        onSelected: (bool selected) {
+          if (selected) onStateSelected(state);
+        },
+        backgroundColor: Colors.white,
+        selectedColor: AppTheme.primaryColor,
+        labelStyle: TextStyle(
+          color: isSelected ? Colors.white : const Color(0xFF475569),
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          fontSize: 12,
+          fontFamily: AppTheme.fontFamily,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
+            width: 1.2,
+          ),
+        ),
+        elevation: isSelected ? 2 : 0,
+        pressElevation: 4,
+      ),
     );
   }
 }

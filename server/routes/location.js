@@ -1,0 +1,9 @@
+const express = require('express');
+const router = express.Router();
+const locationController = require('../controllers/locationController');
+
+// Public routes (no token required for city browsing)
+router.get('/all', locationController.getAllLocations);
+router.get('/major-cities', locationController.getMajorCities);
+
+module.exports = router;

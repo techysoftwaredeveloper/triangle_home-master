@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:triangle_home/screens/home_screen.dart';
-import 'package:triangle_home/screens/admin/admin_dashboard_screen.dart';
+import 'package:triangle_home/screens/admin/admin_dashboard_redesign.dart';
 import 'package:triangle_home/services/auth_production_service.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/services/firebase_service.dart';
@@ -58,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen> {
         case UserRole.admin:
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+            MaterialPageRoute(builder: (_) => const AdminDashboardRedesign()),
           );
           break;
         case UserRole.hoster:

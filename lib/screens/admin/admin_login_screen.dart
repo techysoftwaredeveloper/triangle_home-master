@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:triangle_home/screens/admin/admin_dashboard_screen.dart';
+import 'package:triangle_home/screens/admin/admin_dashboard_redesign.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 class AdminLoginScreen extends StatefulWidget {
@@ -40,7 +40,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           if (!mounted) return;
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+            MaterialPageRoute(builder: (_) => const AdminDashboardRedesign()),
             (route) => false,
           );
         } else {

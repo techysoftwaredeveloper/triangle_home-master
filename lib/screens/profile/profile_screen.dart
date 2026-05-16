@@ -4,7 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:triangle_home/screens/admin/admin_dashboard_screen.dart';
+import 'package:triangle_home/screens/admin/admin_dashboard_redesign.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/screens/profile/about_screen.dart';
 import 'package:triangle_home/screens/profile/edit_profile_screen.dart';
@@ -17,6 +17,8 @@ import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
 import 'package:triangle_home/widgets/logout_confirmation_dialog.dart';
 import 'package:triangle_home/splash_screen.dart';
+import 'package:triangle_home/models/local_user.dart';
+import 'package:triangle_home/services/isar_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final bool showBottomNav;
@@ -42,6 +44,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? activeStay;
   Map<String, dynamic>? latestPayment;
 
+  final IsarService _isarService = IsarService();
+
   @override
   void initState() {
     super.initState();
@@ -56,12 +60,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     final uid = user.uid;
+
+    // 1. CACHE-FIRST: Load from Isar immediately
+    final localData = await _isarService.getLocalUser(uid);
+    if (localData != null && mounted) {
+      setState(() {
+        name = localData.name;
+        email = localData.email;
+        profileImageUrl = localData.profilePicture;
+        _isHoster = localData.role == 'hoster';
+        _isLoading = false; // Show cached data immediately
+      });
+    }
+
     final phone = user.phoneNumber;
     final collectionNames = ['users', 'hoster', 'student', 'guest'];
 
     try {
-      // 1. Fetch Basic Profile
+      // 2. BACKGROUND SYNC: Fetch from Firestore
       bool profileFound = false;
+      Map<String, dynamic>? firestoreData;
+      String? matchedCollection;
+
       for (final collection in collectionNames) {
         DocumentSnapshot doc = await FirebaseFirestore.instance
             .collection(collection)
@@ -76,31 +96,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
 
         if (doc.exists) {
-          final data = doc.data()! as Map<String, dynamic>;
-          final info = (data['info'] as Map?)?.cast<String, dynamic>() ?? {};
-
-          String? foundName = info['name'] as String? ??
-                             info['fullName'] as String? ??
-                             data['name'] as String? ??
-                             data['fullName'] as String? ??
-                             data['displayName'] as String? ??
-                             user.displayName;
-
-          if (mounted) {
-            setState(() {
-              name = foundName;
-              email = info['email'] as String? ?? data['email'] as String? ?? user.email;
-              profileImageUrl = info['profileImage'] as String? ??
-                  data['profileImage'] as String? ?? user.photoURL;
-              _isHoster = (collection == 'hoster' || data['role'] == 'hoster');
-            });
-          }
+          firestoreData = doc.data()! as Map<String, dynamic>;
+          matchedCollection = collection;
           profileFound = true;
           break;
         }
       }
 
-      if (!profileFound && mounted) {
+      if (profileFound && firestoreData != null) {
+        final info = (firestoreData['info'] as Map?)?.cast<String, dynamic>() ?? {};
+
+        String? foundName = info['name'] as String? ??
+                           info['fullName'] as String? ??
+                           firestoreData['name'] as String? ??
+                           firestoreData['fullName'] as String? ??
+                           firestoreData['displayName'] as String? ??
+                           user.displayName;
+
+        final fetchedName = foundName;
+        final fetchedEmail = info['email'] as String? ?? firestoreData['email'] as String? ?? user.email;
+        final fetchedImage = info['profileImage'] as String? ?? firestoreData['profileImage'] as String? ?? user.photoURL;
+        final isHosterRole = (matchedCollection == 'hoster' || firestoreData['role'] == 'hoster');
+
+        // Update UI with fresh data
+        if (mounted) {
+          setState(() {
+            name = fetchedName;
+            email = fetchedEmail;
+            profileImageUrl = fetchedImage;
+            _isHoster = isHosterRole;
+          });
+        }
+
+        // Save to Isar for next time
+        await _isarService.saveLocalUser(LocalUser(
+          uid: uid,
+          name: fetchedName,
+          email: fetchedEmail,
+          phoneNumber: phone,
+          profilePicture: fetchedImage,
+          role: isHosterRole ? 'hoster' : 'user',
+          lastUpdated: DateTime.now(),
+        ));
+      } else if (mounted) {
+          // Fallback to Auth only
           setState(() {
               name = user.displayName;
               email = user.email;
@@ -258,7 +297,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const AdminDashboardScreen()),
+                                builder: (_) => const AdminDashboardRedesign()),
                           ),
                         ),
                       if (_isHoster)

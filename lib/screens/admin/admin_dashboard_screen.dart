@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/splash_screen.dart';
 import 'package:triangle_home/services/admin_service.dart';
@@ -17,22 +18,6 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final AdminService _adminService = AdminService();
   int _selectedIndex = 0;
-  Timer? _refreshTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    // Auto-refresh stats every 60 seconds
-    _refreshTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,12 +43,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-            onPressed: () => setState(() {}),
-            tooltip: 'Refresh Data',
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.circle, color: Colors.greenAccent, size: 8),
+                const SizedBox(width: 8),
+                const Text('LIVE', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+              ],
+            ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
       body: Row(
@@ -189,7 +183,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 }
 
-// ── Overview View ────────────────────────────────────────────────────────────
+// ── Overview View (REALTIME) ──────────────────────────────────────────────────
 class _StatsView extends StatelessWidget {
   final AdminService adminService;
   final Function(int) onTabSwitch;
@@ -197,14 +191,14 @@ class _StatsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: adminService.getStats(),
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: adminService.getStatsStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
         }
         if (snapshot.hasError) {
-          return _ErrorState(error: snapshot.error.toString());
+          return Center(child: Text('Error: ${snapshot.error}'));
         }
 
         final stats = snapshot.data!;
@@ -213,23 +207,14 @@ class _StatsView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Platform Overview',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                  color: AppTheme.textDarkColor,
-                ),
+              const Text(
+                'Live Overview',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily, color: AppTheme.textDarkColor),
               ).animate().fadeIn().slideX(begin: -0.1),
               const SizedBox(height: 8),
-              Text(
-                'Monitor and manage your property ecosystem',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.textLightColor,
-                  fontFamily: AppTheme.fontFamily,
-                ),
+              const Text(
+                'Real-time metrics for your property ecosystem',
+                style: TextStyle(fontSize: 14, color: AppTheme.textLightColor, fontFamily: AppTheme.fontFamily),
               ).animate().fadeIn(delay: 100.ms),
               const SizedBox(height: 32),
 
@@ -251,7 +236,7 @@ class _StatsView extends StatelessWidget {
                       index: 0,
                     ),
                     _StatCard(
-                      title: 'Active Students',
+                      title: 'Students',
                       value: stats['totalStudents'].toString(),
                       icon: Icons.school_rounded,
                       gradient: const [Color(0xFF6366F1), Color(0xFF818CF8)],
@@ -259,7 +244,7 @@ class _StatsView extends StatelessWidget {
                       onTap: () => onTabSwitch(1),
                     ),
                     _StatCard(
-                      title: 'Total Hosters',
+                      title: 'Hosters',
                       value: stats['totalHosters'].toString(),
                       icon: Icons.person_pin_rounded,
                       gradient: const [Color(0xFF10B981), Color(0xFF34D399)],
@@ -293,19 +278,6 @@ class _StatsView extends StatelessWidget {
                   ],
                 );
               }),
-
-              const SizedBox(height: 40),
-              const Text(
-                'Quick Actions',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                  color: AppTheme.textDarkColor
-                ),
-              ),
-              const SizedBox(height: 16),
-              _QuickActionsSection(),
             ],
           ),
         );
@@ -322,14 +294,7 @@ class _StatCard extends StatelessWidget {
   final int index;
   final VoidCallback? onTap;
 
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.gradient,
-    required this.index,
-    this.onTap,
-  });
+  const _StatCard({required this.title, required this.value, required this.icon, required this.gradient, required this.index, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -340,13 +305,7 @@ class _StatCard extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
           borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: gradient[0].withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: gradient[0].withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,38 +316,17 @@ class _StatCard extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(14)),
                   child: Icon(icon, color: Colors.white, size: 24),
                 ),
-                if (onTap != null)
-                  const Icon(Icons.open_in_new_rounded, color: Colors.white70, size: 16),
+                if (onTap != null) const Icon(Icons.open_in_new_rounded, color: Colors.white70, size: 16),
               ],
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                Text(
-                  title.toUpperCase(),
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 10,
-                    letterSpacing: 1.0,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
+                Text(value, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: AppTheme.fontFamily)),
+                Text(title.toUpperCase(), style: TextStyle(color: Colors.white.withOpacity(0.8), fontWeight: FontWeight.w600, fontSize: 10, letterSpacing: 1.0, fontFamily: AppTheme.fontFamily)),
               ],
             ),
           ],
@@ -398,60 +336,7 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _QuickActionsSection extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final actions = [
-      {'label': 'Add Admin', 'icon': Icons.admin_panel_settings_rounded, 'color': Colors.blueGrey},
-      {'label': 'Global Mail', 'icon': Icons.mail_outline_rounded, 'color': Colors.indigo},
-      {'label': 'Reports', 'icon': Icons.analytics_rounded, 'color': Colors.teal},
-      {'label': 'Settings', 'icon': Icons.settings_suggest_rounded, 'color': Colors.orange},
-    ];
-
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: actions.map((action) => _ActionTile(
-        label: action['label'] as String,
-        icon: action['icon'] as IconData,
-        color: action['color'] as Color,
-      )).toList(),
-    );
-  }
-}
-
-class _ActionTile extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-
-  const _ActionTile({required this.label, required this.icon, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 140,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, fontFamily: AppTheme.fontFamily),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Users View ──────────────────────────────────────────────────────────────
+// ── Users View (REALTIME) ─────────────────────────────────────────────────────
 class _UsersView extends StatefulWidget {
   final AdminService adminService;
   const _UsersView({required this.adminService});
@@ -472,13 +357,6 @@ class _UsersViewState extends State<_UsersView> with SingleTickerProviderStateMi
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
@@ -491,23 +369,22 @@ class _UsersViewState extends State<_UsersView> with SingleTickerProviderStateMi
             unselectedLabelColor: AppTheme.textMutedColor,
             indicatorColor: AppTheme.primaryColor,
             indicatorWeight: 4,
-            indicatorPadding: const EdgeInsets.symmetric(horizontal: 20),
             tabs: const [
               Tab(height: 60, child: Text('Hosters', style: TextStyle(fontWeight: FontWeight.bold))),
               Tab(height: 60, child: Text('Students', style: TextStyle(fontWeight: FontWeight.bold))),
             ],
           ),
         ),
-        _buildSearchBar('Search by name, email or phone...'),
+        _buildSearchBar('Search live users...'),
         Expanded(
-          child: FutureBuilder<Map<String, dynamic>>(
-            future: widget.adminService.getAllUsers(),
+          child: StreamBuilder<Map<String, List<Map<String, dynamic>>>>(
+            stream: widget.adminService.getUsersStream(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
               if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
 
-              final students = (snapshot.data!['students'] as List).where(_filterUser).toList();
-              final hosters = (snapshot.data!['hosters'] as List).where(_filterUser).toList();
+              final students = (snapshot.data!['students'] ?? []).where(_filterUser).toList();
+              final hosters = (snapshot.data!['hosters'] ?? []).where(_filterUser).toList();
 
               return TabBarView(
                 controller: _tabController,
@@ -523,7 +400,7 @@ class _UsersViewState extends State<_UsersView> with SingleTickerProviderStateMi
     );
   }
 
-  bool _filterUser(dynamic u) {
+  bool _filterUser(Map<String, dynamic> u) {
     final query = _searchQuery.toLowerCase();
     final name = (u['name'] ?? '').toString().toLowerCase();
     final email = (u['email'] ?? '').toString().toLowerCase();
@@ -535,11 +412,7 @@ class _UsersViewState extends State<_UsersView> with SingleTickerProviderStateMi
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
       child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
-        ),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]),
         child: TextField(
           controller: _searchController,
           onChanged: (v) => setState(() => _searchQuery = v),
@@ -556,7 +429,7 @@ class _UsersViewState extends State<_UsersView> with SingleTickerProviderStateMi
   }
 
   Widget _buildUserList(List users, {required bool isHoster}) {
-    if (users.isEmpty) return _EmptyState(message: 'No users found matching your search');
+    if (users.isEmpty) return const Center(child: Text('No users found'));
 
     return ListView.builder(
       padding: const EdgeInsets.all(20),
@@ -568,49 +441,46 @@ class _UsersViewState extends State<_UsersView> with SingleTickerProviderStateMi
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.grey.shade100),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 4))],
-          ),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 4))]),
           child: ListTile(
             contentPadding: const EdgeInsets.all(16),
-            leading: _UserAvatar(name: user['name'] ?? 'U'),
-            title: Text(
-              user['name'] ?? 'Anonymous User',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: AppTheme.fontFamily),
-            ),
+            leading: CircleAvatar(backgroundColor: AppTheme.primaryColor.withOpacity(0.1), child: Text(user['name']?[0].toUpperCase() ?? 'U', style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold))),
+            title: Text(user['name'] ?? 'Anonymous User', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: AppTheme.fontFamily)),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Text(user['email'] ?? 'No email provided', style: const TextStyle(fontSize: 13)),
+                Text(user['email'] ?? 'No email', style: const TextStyle(fontSize: 13)),
                 const SizedBox(height: 8),
-                _UserBadgeRow(isBanned: isBanned, isHoster: isHoster, isApproved: isApproved),
+                Row(
+                  children: [
+                    if (isBanned) _Badge(text: 'Banned', color: Colors.red)
+                    else ...[
+                      if (isHoster) _Badge(text: isApproved ? 'Approved' : 'Pending', color: isApproved ? Colors.green : Colors.orange)
+                      else const _Badge(text: 'Active', color: Colors.blue),
+                    ]
+                  ],
+                ),
               ],
             ),
             trailing: isHoster && !isApproved
-              ? _ApproveButton(onPressed: () async {
-                  await widget.adminService.approveHoster(user['id']);
-                  setState(() {});
-                })
-              : _UserActionIcon(
-                  isBanned: isBanned,
-                  onTap: () async {
-                    final newStatus = isBanned ? 'active' : 'banned';
-                    await widget.adminService.toggleUserStatus(user['id'], newStatus);
-                    setState(() {});
-                  },
+              ? ElevatedButton(
+                  onPressed: () => widget.adminService.approveHoster(user['id']),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                  child: const Text('Approve', style: TextStyle(fontSize: 11, color: Colors.white)),
+                )
+              : IconButton(
+                  icon: Icon(isBanned ? Icons.settings_backup_restore_rounded : Icons.block_flipped, color: isBanned ? Colors.green : Colors.red.withOpacity(0.6)),
+                  onPressed: () => widget.adminService.toggleUserStatus(user['id'], isBanned ? 'active' : 'banned'),
                 ),
           ),
-        ).animate().fadeIn(delay: (50 * index).ms).slideY(begin: 0.1);
+        ).animate().fadeIn(delay: (50 * index).ms);
       },
     );
   }
 }
 
-// ── Listings View ────────────────────────────────────────────────────────────
+// ── Listings View (REALTIME) ──────────────────────────────────────────────────
 class _PropertiesView extends StatefulWidget {
   final AdminService adminService;
   const _PropertiesView({required this.adminService});
@@ -621,20 +491,12 @@ class _PropertiesView extends StatefulWidget {
 
 class _PropertiesViewState extends State<_PropertiesView> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _tabController.dispose();
-    super.dispose();
   }
 
   @override
@@ -648,40 +510,22 @@ class _PropertiesViewState extends State<_PropertiesView> with SingleTickerProvi
             controller: _tabController,
             isScrollable: true,
             labelColor: AppTheme.primaryColor,
-            unselectedLabelColor: AppTheme.textMutedColor,
-            indicatorColor: AppTheme.primaryColor,
-            indicatorWeight: 4,
-            tabs: const [
-              Tab(height: 60, child: Text('All Listings', style: TextStyle(fontWeight: FontWeight.bold))),
-              Tab(height: 60, child: Text('Pending', style: TextStyle(fontWeight: FontWeight.bold))),
-              Tab(height: 60, child: Text('Approved', style: TextStyle(fontWeight: FontWeight.bold))),
-              Tab(height: 60, child: Text('Rejected', style: TextStyle(fontWeight: FontWeight.bold))),
-            ],
+            tabs: const [Tab(height: 60, text: 'All'), Tab(height: 60, text: 'Pending'), Tab(height: 60, text: 'Approved'), Tab(height: 60, text: 'Rejected')],
           ),
         ),
-        _buildSearchBar('Search properties by title, address, or type...'),
         Expanded(
-          child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: widget.adminService.getAllProperties(),
+          child: StreamBuilder<List<Map<String, dynamic>>>(
+            stream: widget.adminService.getPropertiesStream(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-              if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
-
               final all = snapshot.data ?? [];
-              final filtered = all.where((p) {
-                final q = _searchQuery.toLowerCase();
-                final title = (p['title'] ?? p['name'] ?? '').toString().toLowerCase();
-                final addr = (p['address'] ?? '').toString().toLowerCase();
-                return title.contains(q) || addr.contains(q);
-              }).toList();
-
               return TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildPropertyList(filtered),
-                  _buildPropertyList(filtered.where((p) => p['status'] == PropertyStatus.pending.name).toList()),
-                  _buildPropertyList(filtered.where((p) => p['status'] == PropertyStatus.approved.name).toList()),
-                  _buildPropertyList(filtered.where((p) => p['status'] == PropertyStatus.rejected.name).toList()),
+                  _buildList(all),
+                  _buildList(all.where((p) => p['status'] == 'pending').toList()),
+                  _buildList(all.where((p) => p['status'] == 'approved').toList()),
+                  _buildList(all.where((p) => p['status'] == 'rejected').toList()),
                 ],
               );
             },
@@ -691,245 +535,61 @@ class _PropertiesViewState extends State<_PropertiesView> with SingleTickerProvi
     );
   }
 
-  Widget _buildSearchBar(String hint) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
-        ),
-        child: TextField(
-          controller: _searchController,
-          onChanged: (v) => setState(() => _searchQuery = v),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-            prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.primaryColor),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 15),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPropertyList(List<Map<String, dynamic>> properties) {
-    if (properties.isEmpty) return _EmptyState(message: 'No property listings found');
-
+  Widget _buildList(List<Map<String, dynamic>> props) {
     return ListView.builder(
       padding: const EdgeInsets.all(20),
-      itemCount: properties.length,
+      itemCount: props.length,
       itemBuilder: (context, index) {
-        final p = properties[index];
-        final String status = p['status'] ?? 'pending';
-        final bool isPending = status == 'pending';
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.grey.shade100),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 12, offset: const Offset(0, 6))],
+        final p = props[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: ListTile(
+            title: Text(p['title'] ?? 'Untitled'),
+            subtitle: Text(p['address'] ?? 'No address'),
+            trailing: p['status'] == 'pending' ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(icon: const Icon(Icons.check, color: Colors.green), onPressed: () => widget.adminService.updatePropertyStatus(p['id'], PropertyStatus.approved)),
+                IconButton(icon: const Icon(Icons.close, color: Colors.red), onPressed: () => widget.adminService.updatePropertyStatus(p['id'], PropertyStatus.rejected)),
+              ],
+            ) : Text(p['status'].toString().toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                child: Stack(
-                  children: [
-                    SizedBox(
-                      height: 180,
-                      width: double.infinity,
-                      child: (p['images'] as List?)?.isNotEmpty == true
-                        ? Image.network(p['images'][0], fit: BoxFit.cover)
-                        : Container(color: Colors.grey.shade200, child: const Icon(Icons.image_not_supported, size: 50)),
-                    ),
-                    Positioned(top: 16, right: 16, child: _PropertyStatusBadge(status: status)),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      p['title'] ?? p['name'] ?? 'Untitled Property',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: AppTheme.fontFamily),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on_rounded, size: 14, color: AppTheme.textMutedColor),
-                        const SizedBox(width: 4),
-                        Expanded(child: Text(p['address'] ?? 'No address', style: const TextStyle(color: AppTheme.textMutedColor, fontSize: 13))),
-                      ],
-                    ),
-                    const Divider(height: 32),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('RENT / MONTH', style: TextStyle(fontSize: 10, color: AppTheme.textLightColor, fontWeight: FontWeight.bold)),
-                            Text('₹${p['price'] ?? p['monthlyRent'] ?? 'N/A'}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor, fontSize: 20)),
-                          ],
-                        ),
-                        if (isPending)
-                          Row(
-                            children: [
-                              _CircleActionButton(icon: Icons.close_rounded, color: Colors.red, onTap: () => _updateStatus(p['id'], PropertyStatus.rejected)),
-                              const SizedBox(width: 12),
-                              _CircleActionButton(icon: Icons.check_rounded, color: Colors.green, onTap: () => _updateStatus(p['id'], PropertyStatus.approved)),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ).animate().fadeIn(delay: (100 * index).ms).slideY(begin: 0.1);
+        );
       },
     );
   }
-
-  Future<void> _updateStatus(String id, PropertyStatus status) async {
-    try {
-      await widget.adminService.updatePropertyStatus(id, status);
-      setState(() {});
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Property ${status.name} successfully')));
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
-  }
 }
 
-// ── Bookings View ────────────────────────────────────────────────────────────
-class _BookingsView extends StatefulWidget {
+// ── Bookings View (REALTIME) ──────────────────────────────────────────────────
+class _BookingsView extends StatelessWidget {
   final AdminService adminService;
   const _BookingsView({required this.adminService});
 
   @override
-  State<_BookingsView> createState() => _BookingsViewState();
-}
-
-class _BookingsViewState extends State<_BookingsView> {
-  @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(24, 24, 24, 0),
-          child: Text('All Platform Bookings', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
-        ),
-        Expanded(
-          child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: widget.adminService.getAllBookings(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-              if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
-
-              final bookings = snapshot.data ?? [];
-              if (bookings.isEmpty) return _EmptyState(message: 'No bookings found on the platform');
-
-              return ListView.builder(
-                padding: const EdgeInsets.all(20),
-                itemCount: bookings.length,
-                itemBuilder: (context, index) {
-                  final b = bookings[index];
-                  final status = b['status'] as String? ?? 'pending';
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.grey.shade100),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: AppTheme.primaryColor.withOpacity(0.1), shape: BoxShape.circle),
-                          child: const Icon(Icons.receipt_long_rounded, color: AppTheme.primaryColor, size: 24),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(b['propertyName'] ?? 'Property', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                              const SizedBox(height: 4),
-                              Text('By ${b['studentName'] ?? 'Student'}', style: const TextStyle(color: AppTheme.textMutedColor, fontSize: 13)),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text('₹${b['price'] ?? '0'}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal, fontSize: 16)),
-                            const SizedBox(height: 4),
-                            _SimpleBadge(status: status),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ).animate().fadeIn(delay: (50 * index).ms);
-                },
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── UI Components ────────────────────────────────────────────────────────────
-
-class _UserAvatar extends StatelessWidget {
-  final String name;
-  const _UserAvatar({required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    return CircleAvatar(
-      radius: 24,
-      backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-      child: Text(
-        name[0].toUpperCase(),
-        style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 18),
-      ),
-    );
-  }
-}
-
-class _UserBadgeRow extends StatelessWidget {
-  final bool isBanned;
-  final bool isHoster;
-  final bool isApproved;
-  const _UserBadgeRow({required this.isBanned, required this.isHoster, required this.isApproved});
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      children: [
-        if (isBanned) _Badge(text: 'Banned', color: Colors.red)
-        else ...[
-          if (isHoster) _Badge(text: isApproved ? 'Approved Hoster' : 'Pending Hoster', color: isApproved ? Colors.green : Colors.orange)
-          else _Badge(text: 'Active Student', color: Colors.blue),
-        ]
-      ],
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: adminService.getBookingsStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+        final bookings = snapshot.data ?? [];
+        return ListView.builder(
+          padding: const EdgeInsets.all(20),
+          itemCount: bookings.length,
+          itemBuilder: (context, index) {
+            final b = bookings[index];
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                leading: const Icon(Icons.receipt_long, color: AppTheme.primaryColor),
+                title: Text(b['propertyName'] ?? 'Booking'),
+                subtitle: Text('By ${b['studentName']}'),
+                trailing: Text('₹${b['price']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -938,137 +598,12 @@ class _Badge extends StatelessWidget {
   final String text;
   final Color color;
   const _Badge({required this.text, required this.color});
-
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
       child: Text(text, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
-    );
-  }
-}
-
-class _ApproveButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  const _ApproveButton({required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-      ),
-      child: const Text('Approve', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-    );
-  }
-}
-
-class _UserActionIcon extends StatelessWidget {
-  final bool isBanned;
-  final VoidCallback onTap;
-  const _UserActionIcon({required this.isBanned, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(isBanned ? Icons.settings_backup_restore_rounded : Icons.block_flipped, color: isBanned ? Colors.green : Colors.red.withOpacity(0.6)),
-      onPressed: onTap,
-    );
-  }
-}
-
-class _PropertyStatusBadge extends StatelessWidget {
-  final String status;
-  const _PropertyStatusBadge({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    Color color = status == 'approved' ? Colors.green : (status == 'rejected' ? Colors.red : Colors.orange);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)]),
-      child: Text(status.toUpperCase(), style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 10)),
-    );
-  }
-}
-
-class _CircleActionButton extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-  const _CircleActionButton({required this.icon, required this.color, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-        child: Icon(icon, color: color, size: 24),
-      ),
-    );
-  }
-}
-
-class _SimpleBadge extends StatelessWidget {
-  final String status;
-  const _SimpleBadge({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    Color color = status == 'confirmed' || status == 'approved' ? Colors.green : (status == 'pending' ? Colors.orange : Colors.red);
-    return Text(status.toUpperCase(), style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 10));
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final String message;
-  const _EmptyState({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.inbox_rounded, size: 60, color: Colors.grey.shade200),
-          const SizedBox(height: 16),
-          Text(message, style: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.w500)),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  final String error;
-  const _ErrorState({required this.error});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline_rounded, color: Colors.red, size: 60),
-            const SizedBox(height: 16),
-            const Text('Oops! Something went wrong', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(error, textAlign: TextAlign.center, style: const TextStyle(color: AppTheme.textMutedColor)),
-            const SizedBox(height: 24),
-            ElevatedButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Go Back')),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -6,10 +6,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:triangle_home/splash_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
+import 'package:triangle_home/services/isar_service.dart';
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Isar Local Database
+  final isarService = IsarService();
+  await isarService.db; // Wait for initialization
 
   // Set transparent status bar
   SystemChrome.setSystemUIOverlayStyle(

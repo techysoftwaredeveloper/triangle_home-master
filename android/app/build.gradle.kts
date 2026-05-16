@@ -10,6 +10,19 @@ plugins {
 
 android {
     namespace = "com.example.triangle_home"
+    
+    // 🔥 Fix for isar_flutter_libs namespace issue
+    project.rootProject.subprojects {
+        if (name == "isar_flutter_libs") {
+            afterEvaluate {
+                val extension = extensions.getByType(com.android.build.gradle.LibraryExtension::class.java)
+                if (extension.namespace == null) {
+                    extension.namespace = "dev.isar.isar_flutter_libs"
+                }
+            }
+        }
+    }
+
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
