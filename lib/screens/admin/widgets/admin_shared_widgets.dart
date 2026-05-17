@@ -94,71 +94,72 @@ class SummaryCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(isSmall ? 6 : 8),
-                    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
-                    child: Icon(icon, color: color, size: isSmall ? 16 : 20),
-                  ),
-                  if (percentage != null && !isSmall)
-                    Row(
-                      children: [
-                        Icon(
-                          isUp == false ? Icons.arrow_downward : Icons.arrow_upward,
-                          color: Colors.green,
-                          size: 12,
-                        ),
-                        Text(
-                          percentage!,
-                          style: const TextStyle(
-                            color: Colors.green,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(isSmall ? 6 : 8),
+                      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+                      child: Icon(icon, color: color, size: isSmall ? 16 : 20),
                     ),
-                ],
-              ),
-              SizedBox(height: isSmall ? 8 : 16),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
+                    if (percentage != null && !isSmall)
+                      Row(
+                        children: [
+                          Icon(
+                            isUp == false ? Icons.arrow_downward : Icons.arrow_upward,
+                            color: Colors.green,
+                            size: 12,
+                          ),
+                          Text(
+                            percentage!,
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+                SizedBox(height: isSmall ? 8 : 16),
+                Text(
                   count,
                   style: TextStyle(
-                    fontSize: isSmall ? 18 : 22,
+                    fontSize: isSmall ? 22 : 24,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF1E293B),
                   ),
                 ),
-              ),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: isSmall ? 9 : 10,
-                  color: const Color(0xFF64748B),
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              if (sub != null && !isSmall) ...[
-                const SizedBox(height: 4),
                 Text(
-                  sub!,
+                  label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8)),
+                  style: TextStyle(
+                    fontSize: isSmall ? 10 : 11,
+                    color: const Color(0xFF64748B),
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
                 ),
+                if (sub != null && !isSmall) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    sub!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         );
       }

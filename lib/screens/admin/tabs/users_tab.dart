@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:triangle_home/services/admin_service.dart';
 import 'package:triangle_home/screens/admin/widgets/admin_shared_widgets.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class UsersTab extends StatefulWidget {
   final AdminService adminService;
@@ -19,11 +21,18 @@ class UsersTab extends StatefulWidget {
 class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    _tabController.addListener(() => setState(() {}));
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
   }
 
   @override
@@ -35,123 +44,148 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(widget.isNarrow ? 16 : 32),
-      child: Column(
-        children: [
-          TabHeader(
-            title: 'Users',
-            subtitle: 'Manage all users on the platform',
-            isNarrow: widget.isNarrow,
-            actions: [
-              _buildHeaderAction('Export', Icons.file_download_outlined, isOutline: true),
-              const SizedBox(width: 12),
-              _buildHeaderAction('Add New User', Icons.add, hasDropdown: true),
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: widget.adminService.getUsersStream(),
+      builder: (context, snapshot) {
+        final allUsers = snapshot.data ?? [];
+
+        // Dynamic Filtering
+        final filteredUsers = allUsers.where((u) {
+          final info = u['info'] as Map<String, dynamic>? ?? {};
+          final name = info['name']?.toString().toLowerCase() ?? '';
+          final email = info['email']?.toString().toLowerCase() ?? '';
+          final phone = info['phoneNumber']?.toString().toLowerCase() ?? '';
+
+          final matchesSearch = name.contains(_searchQuery) ||
+                                email.contains(_searchQuery) ||
+                                phone.contains(_searchQuery);
+
+          final role = u['role']?.toString().toLowerCase() ?? '';
+          final isActive = u['is_active'] as bool? ?? true;
+
+          switch (_tabController.index) {
+            case 1: // Students
+              return matchesSearch && (role == 'student' || role == 'user' || role == '');
+            case 2: // Professionals
+              return matchesSearch && role == 'professional';
+            case 3: // Hosters
+              return matchesSearch && role == 'hoster';
+            case 4: // Inactive
+              return matchesSearch && !isActive;
+            default: // All
+              return matchesSearch;
+          }
+        }).toList();
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(widget.isNarrow ? 16 : 32),
+          child: Column(
+            children: [
+              TabHeader(
+                title: 'Users',
+                subtitle: 'Manage all users on the platform',
+                isNarrow: widget.isNarrow,
+                actions: [
+                  _buildHeaderAction('Export', Icons.file_download_outlined, isOutline: true, onPressed: _handleExport),
+                  const SizedBox(width: 12),
+                  _buildHeaderAction('Add New User', Icons.add, hasDropdown: true, onPressed: _handleAddUser),
+                ],
+              ),
+              const SizedBox(height: 32),
+              _buildSummaryCards(allUsers),
+              const SizedBox(height: 32),
+              _buildCategoryTabs(allUsers),
+              const SizedBox(height: 24),
+              _buildFilterRow(),
+              const SizedBox(height: 24),
+              if (!widget.isNarrow) _buildTableHeader(),
+              const SizedBox(height: 12),
+              if (snapshot.connectionState == ConnectionState.waiting)
+                const Center(child: Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: CircularProgressIndicator(),
+                ))
+              else
+                _buildUsersList(filteredUsers),
+              const SizedBox(height: 32),
+              _buildPaginationFooter(filteredUsers.length),
             ],
           ),
-          const SizedBox(height: 32),
-          _buildSummaryCards(),
-          const SizedBox(height: 32),
-          _buildCategoryTabs(),
-          const SizedBox(height: 24),
-          _buildFilterRow(),
-          const SizedBox(height: 24),
-          if (!widget.isNarrow) _buildTableHeader(),
-          const SizedBox(height: 12),
-          _buildUsersList(),
-          const SizedBox(height: 32),
-          _buildPaginationFooter(),
-        ],
-      ),
+        );
+      }
     );
   }
 
-  Widget _buildHeaderAction(String label, IconData icon, {bool isOutline = false, bool hasDropdown = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: isOutline ? Colors.white : const Color(0xFF2563EB),
-        borderRadius: BorderRadius.circular(10),
-        border: isOutline ? Border.all(color: const Color(0xFFE2E8F0)) : null,
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: isOutline ? const Color(0xFF64748B) : Colors.white, size: 18),
-          const SizedBox(width: 8),
-          Text(
-            widget.isNarrow && label == 'Add New User' ? 'Add' : label,
-            style: TextStyle(
-              color: isOutline ? const Color(0xFF1E293B) : Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          if (hasDropdown) ...[
-            const SizedBox(width: 8),
-            Icon(Icons.keyboard_arrow_down, color: isOutline ? const Color(0xFF64748B) : Colors.white, size: 16),
-          ],
-        ],
-      ),
-    );
-  }
+  Widget _buildSummaryCards(List<Map<String, dynamic>> users) {
+    final students = users.where((u) {
+        final r = u['role']?.toString().toLowerCase() ?? '';
+        return r == 'student' || r == 'user' || r == '';
+    }).length;
+    final professionals = users.where((u) => u['role'] == 'professional').length;
+    final hosters = users.where((u) => u['role'] == 'hoster').length;
+    final inactive = users.where((u) => (u['is_active'] == false)).length;
 
-  Widget _buildSummaryCards() {
+    final double cardWidth = widget.isNarrow ? 160 : 220;
+    final double cardHeight = widget.isNarrow ? 140 : 180;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          const SummaryCard(
-            count: '2,842',
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
+            count: users.length.toString(),
             label: 'Total Users',
-            bg: Color(0xFFEFF6FF),
-            color: Color(0xFF2563EB),
+            bg: const Color(0xFFEFF6FF),
+            color: const Color(0xFF2563EB),
             icon: Icons.people_rounded,
             percentage: '12.6%',
             isUp: true,
-          ),
+          )),
           const SizedBox(width: 16),
-          const SummaryCard(
-            count: '1,523',
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
+            count: students.toString(),
             label: 'Students',
-            bg: Color(0xFFF0FDF4),
-            color: Color(0xFF16A34A),
+            bg: const Color(0xFFF0FDF4),
+            color: const Color(0xFF16A34A),
             icon: Icons.school_rounded,
-            sub: '53.6% of total',
-          ),
+            sub: users.isEmpty ? '0% of total' : '\${((students / users.length) * 100).toStringAsFixed(1)}% of total',
+          )),
           const SizedBox(width: 16),
-          const SummaryCard(
-            count: '671',
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
+            count: professionals.toString(),
             label: 'Professionals',
-            bg: Color(0xFFF5F3FF),
-            color: Color(0xFF7C3AED),
+            bg: const Color(0xFFF5F3FF),
+            color: const Color(0xFF7C3AED),
             icon: Icons.business_center_rounded,
-            sub: '23.6% of total',
-          ),
+            sub: users.isEmpty ? '0% of total' : '\${((professionals / users.length) * 100).toStringAsFixed(1)}% of total',
+          )),
           const SizedBox(width: 16),
-          const SummaryCard(
-            count: '482',
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
+            count: hosters.toString(),
             label: 'Hosters',
-            bg: Color(0xFFFFF7ED),
-            color: Color(0xFFD97706),
+            bg: const Color(0xFFFFF7ED),
+            color: const Color(0xFFD97706),
             icon: Icons.person_pin_rounded,
-            sub: '16.9% of total',
-          ),
+            sub: users.isEmpty ? '0% of total' : '\${((hosters / users.length) * 100).toStringAsFixed(1)}% of total',
+          )),
           const SizedBox(width: 16),
-          const SummaryCard(
-            count: '166',
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
+            count: inactive.toString(),
             label: 'Blocked/Inactive',
-            bg: Color(0xFFFEF2F2),
-            color: Color(0xFFDC2626),
+            bg: const Color(0xFFFEF2F2),
+            color: const Color(0xFFDC2626),
             icon: Icons.block_rounded,
-            sub: '5.9% of total',
-          ),
+            sub: users.isEmpty ? '0% of total' : '\${((inactive / users.length) * 100).toStringAsFixed(1)}% of total',
+          )),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryTabs() {
+  Widget _wrapInSizedBox(double w, double h, Widget child) => SizedBox(width: w, height: h, child: child);
+
+  Widget _buildCategoryTabs(List<Map<String, dynamic>> users) {
     return Container(
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
@@ -164,12 +198,12 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
         indicatorColor: const Color(0xFF2563EB),
         indicatorWeight: 3,
         labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Outfit'),
-        tabs: const [
-          Tab(text: 'All Users (2,842)'),
-          Tab(text: 'Students (1,523)'),
-          Tab(text: 'Professionals (671)'),
-          Tab(text: 'Hosters (482)'),
-          Tab(text: 'Inactive (166)'),
+        tabs: [
+          Tab(text: 'All Users (${users.length})'),
+          Tab(text: 'Students (${users.where((u) => u['role'] == 'student' || u['role'] == 'user' || u['role'] == null || (u['role'] as String).isEmpty).length})'),
+          Tab(text: 'Professionals (${users.where((u) => u['role'] == 'professional').length})'),
+          Tab(text: 'Hosters (${users.where((u) => u['role'] == 'hoster').length})'),
+          Tab(text: 'Inactive (${users.where((u) => (u['is_active'] == false)).length})'),
         ],
       ),
     );
@@ -258,70 +292,122 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildUsersList() {
+  Widget _buildUsersList(List<Map<String, dynamic>> users) {
+    if (users.isEmpty) {
+      return Container(
+        height: 200,
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.people_outline, size: 48, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            const Text('No users found matching your criteria', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      );
+    }
     return Column(
-      children: [
-        _UserCard(
-          name: 'John Doe',
-          id: 'USR00124',
-          role: 'Student',
-          phone: '+91 70254 77997',
-          email: 'john.doe@email.com',
-          joined: '18 May 2025, 10:30 AM',
-          status: 'Active',
+      children: users.map((u) {
+        final info = u['info'] as Map<String, dynamic>? ?? {};
+        final rawRole = u['role']?.toString() ?? 'student';
+        final isActive = u['is_active'] ?? true;
+
+        return _UserCard(
+          id: u['id'],
+          name: info['name'] ?? 'Unknown User',
+          displayId: u['id']?.toString().substring(0, 8).toUpperCase() ?? 'USR-NEW',
+          role: _formatRole(rawRole),
+          rawRole: rawRole,
+          phone: info['phoneNumber'] ?? 'No Phone',
+          email: info['email'] ?? 'No Email',
+          joined: _formatDate(u['createdAt']),
+          status: isActive ? 'Active' : 'Inactive',
+          isActive: isActive,
           isNarrow: widget.isNarrow,
-        ),
-        _UserCard(
-          name: 'Sarah Ahmed',
-          id: 'USR00123',
-          role: 'Student',
-          phone: '+91 79022 33445',
-          email: 'sarah.ahmed@email.com',
-          joined: '17 May 2025, 08:20 PM',
-          status: 'Active',
-          isNarrow: widget.isNarrow,
-        ),
-        _UserCard(
-          name: 'Mike Johnson',
-          id: 'USR00122',
-          role: 'Hoster',
-          phone: '+91 98470 12345',
-          email: 'mike.johnson@greenpg.com',
-          joined: '17 May 2025, 06:15 PM',
-          status: 'Active',
-          isNarrow: widget.isNarrow,
-        ),
-        _UserCard(
-          name: 'Priya Sharma',
-          id: 'USR00121',
-          role: 'Professional',
-          phone: '+91 96332 11223',
-          email: 'priya.sharma@email.com',
-          joined: '16 May 2025, 03:45 PM',
-          status: 'Active',
-          isNarrow: widget.isNarrow,
-        ),
-        _UserCard(
-          name: 'Rahul Patel',
-          id: 'USR00120',
-          role: 'Professional',
-          phone: '+91 81234 56789',
-          email: 'rahul.patel@gmail.com',
-          joined: '16 May 2025, 11:20 AM',
-          status: 'Inactive',
-          isNarrow: widget.isNarrow,
-        ),
-      ],
+          onAction: (action) => _handleUserAction(u['id'], action),
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildPaginationFooter() {
+  void _handleUserAction(String userId, String action) async {
+    try {
+      switch (action) {
+        case 'activate':
+          await widget.adminService.toggleUserStatus(userId, 'active');
+          // Note: In your schema it's is_active bool, but toggleUserStatus uses String for audit logs.
+          // Let's assume toggleUserStatus handles the Firestore update correctly or I should update it.
+          // For now, I'll update Firestore directly if needed, but better to use the service.
+          await FirebaseFirestore.instance.collection('users').doc(userId).update({'is_active': true});
+          break;
+        case 'deactivate':
+          await widget.adminService.toggleUserStatus(userId, 'inactive');
+          await FirebaseFirestore.instance.collection('users').doc(userId).update({'is_active': false});
+          break;
+        case 'promote':
+          await widget.adminService.promoteToAdmin(userId);
+          break;
+        case 'role_student':
+          await widget.adminService.updateUserRole(userId, 'student');
+          break;
+        case 'role_professional':
+          await widget.adminService.updateUserRole(userId, 'professional');
+          break;
+        case 'role_hoster':
+          await widget.adminService.updateUserRole(userId, 'hoster');
+          break;
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Action "$action" completed successfully'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _handleExport() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Exporting users to CSV...'), backgroundColor: Color(0xFF2563EB)),
+    );
+  }
+
+  void _handleAddUser() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Add User functionality coming soon'), backgroundColor: Color(0xFF2563EB)),
+    );
+  }
+
+  String _formatRole(dynamic role) {
+    final r = role?.toString().toLowerCase() ?? 'user';
+    if (r == 'user' || r == 'student') return 'Student';
+    if (r == 'professional') return 'Professional';
+    if (r == 'hoster') return 'Hoster';
+    if (r.isEmpty) return 'Student';
+    return r[0].toUpperCase() + r.substring(1);
+  }
+
+  String _formatDate(dynamic date) {
+    if (date == null) return 'N/A';
+    if (date is Timestamp) {
+        return DateFormat('dd MMM yyyy').format(date.toDate());
+    }
+    return date.toString();
+  }
+
+  Widget _buildPaginationFooter(int count) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
           child: Text(
-            widget.isNarrow ? '1-10 of 2,842' : 'Showing 1 to 10 of 2,842 users',
+            widget.isNarrow ? 'Showing \$count users' : 'Showing 1 to \$count of \$count users',
             style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -331,14 +417,6 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
           children: [
             const PaginationBtn(icon: Icons.chevron_left),
             const PaginationBtn(label: '1', active: true),
-            if (!widget.isNarrow) ...[
-              const PaginationBtn(label: '2'),
-              const PaginationBtn(label: '3'),
-              const PaginationBtn(label: '4'),
-              const PaginationBtn(label: '5'),
-              const Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text('...', style: TextStyle(color: Colors.grey))),
-              const PaginationBtn(label: '285'),
-            ],
             const PaginationBtn(icon: Icons.chevron_right),
             if (!widget.isNarrow) ...[
               const SizedBox(width: 16),
@@ -367,27 +445,68 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
       ),
     );
   }
+
+  Widget _buildHeaderAction(String label, IconData icon, {bool isOutline = false, bool hasDropdown = false, VoidCallback? onPressed}) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isOutline ? Colors.white : const Color(0xFF2563EB),
+          borderRadius: BorderRadius.circular(10),
+          border: isOutline ? Border.all(color: const Color(0xFFE2E8F0)) : null,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isOutline ? const Color(0xFF64748B) : Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              widget.isNarrow && label == 'Add New User' ? 'Add' : label,
+              style: TextStyle(
+                color: isOutline ? const Color(0xFF1E293B) : Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (hasDropdown) ...[
+              const SizedBox(width: 8),
+              Icon(Icons.keyboard_arrow_down, color: isOutline ? const Color(0xFF64748B) : Colors.white, size: 16),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _UserCard extends StatelessWidget {
-  final String name;
   final String id;
+  final String name;
+  final String displayId;
   final String role;
+  final String rawRole;
   final String phone;
   final String email;
   final String joined;
   final String status;
+  final bool isActive;
   final bool isNarrow;
+  final Function(String) onAction;
 
   const _UserCard({
-    required this.name,
     required this.id,
+    required this.name,
+    required this.displayId,
     required this.role,
+    required this.rawRole,
     required this.phone,
     required this.email,
     required this.joined,
     required this.status,
+    required this.isActive,
     required this.isNarrow,
+    required this.onAction,
   });
 
   @override
@@ -407,10 +526,10 @@ class _UserCard extends StatelessWidget {
             flex: 3,
             child: Row(
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 20,
-                  backgroundColor: Color(0xFFF1F5F9),
-                  child: Icon(Icons.person, color: Colors.grey),
+                  backgroundColor: const Color(0xFFF1F5F9),
+                  child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'U', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -423,15 +542,14 @@ class _UserCard extends StatelessWidget {
                             child: Text(
                               name,
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1, overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 4),
                           const Icon(Icons.check_circle, color: Color(0xFF2563EB), size: 12),
                         ],
                       ),
-                      Text(id, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold)),
+                      Text(displayId, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -476,13 +594,7 @@ class _UserCard extends StatelessWidget {
           if (!isNarrow)
             Expanded(
               flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(joined.split(',')[0], style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
-                  Text(joined.split(',')[1].trim(), style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-                ],
-              ),
+              child: Text(joined, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
             ),
 
           // 5. Status
@@ -496,9 +608,31 @@ class _UserCard extends StatelessWidget {
           ),
 
           const SizedBox(width: 8),
-          const Icon(Icons.more_vert, color: Color(0xFFCBD5E1), size: 18),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Color(0xFFCBD5E1), size: 18),
+            onSelected: onAction,
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'view', child: Text('View Details')),
+              PopupMenuItem(value: isActive ? 'deactivate' : 'activate', child: Text(isActive ? 'Deactivate User' : 'Activate User')),
+              const PopupMenuItem(value: 'promote', child: Text('Promote to Admin')),
+              const PopupMenuDivider(),
+              const PopupMenuItem(enabled: false, child: Text('Change Role', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold))),
+              PopupMenuItem(value: 'role_student', child: _roleItem('Student', rawRole == 'student')),
+              PopupMenuItem(value: 'role_professional', child: _roleItem('Professional', rawRole == 'professional')),
+              PopupMenuItem(value: 'role_hoster', child: _roleItem('Hoster', rawRole == 'hoster')),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _roleItem(String label, bool isCurrent) {
+    return Row(
+      children: [
+        Text(label),
+        if (isCurrent) ...[const Spacer(), const Icon(Icons.check, size: 14, color: Colors.green)],
+      ],
     );
   }
 

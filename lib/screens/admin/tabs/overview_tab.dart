@@ -25,42 +25,42 @@ class OverviewTab extends StatelessWidget {
             children: [
               _buildHeader(),
               const SizedBox(height: 24),
-              _buildSystemStatusRow(),
+              _buildSystemStatusRow(data),
               const SizedBox(height: 32),
               _buildSectionHeader('Critical Actions Required', trailing: 'View All'),
               const SizedBox(height: 16),
-              _buildCriticalActions(),
+              _buildCriticalActions(data),
               const SizedBox(height: 32),
               _buildSectionHeader('Platform Overview', trailing: 'This Month'),
               const SizedBox(height: 16),
               _buildPlatformStatsGrid(data),
               const SizedBox(height: 32),
-
+              // ... rest of build remains the same
               if (isNarrow) ...[
-                _buildSuggestionsPipeline(),
+                _buildSuggestionsPipeline(data),
                 const SizedBox(height: 24),
-                _buildRecentActivity(),
+                _buildRecentActivity(data),
               ] else
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: _buildSuggestionsPipeline()),
+                    Expanded(child: _buildSuggestionsPipeline(data)),
                     const SizedBox(width: 24),
-                    Expanded(child: _buildRecentActivity()),
+                    Expanded(child: _buildRecentActivity(data)),
                   ],
                 ),
 
               const SizedBox(height: 32),
 
               if (isNarrow) ...[
-                _buildModerationTrust(),
+                _buildModerationTrust(data),
                 const SizedBox(height: 24),
                 _buildRevenueOverview(data),
               ] else
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: _buildModerationTrust()),
+                    Expanded(child: _buildModerationTrust(data)),
                     const SizedBox(width: 24),
                     Expanded(child: _buildRevenueOverview(data)),
                   ],
@@ -69,16 +69,16 @@ class OverviewTab extends StatelessWidget {
               const SizedBox(height: 32),
 
               if (isNarrow) ...[
-                _buildBookingsOverview(),
+                _buildBookingsOverview(data),
                 const SizedBox(height: 24),
-                _buildTopCities(),
+                _buildTopCities(data),
               ] else
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: _buildBookingsOverview()),
+                    Expanded(child: _buildBookingsOverview(data)),
                     const SizedBox(width: 24),
-                    Expanded(child: _buildTopCities()),
+                    Expanded(child: _buildTopCities(data)),
                   ],
                 ),
               const SizedBox(height: 40),
@@ -139,7 +139,7 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildSystemStatusRow() {
+  Widget _buildSystemStatusRow(Map<String, dynamic>? data) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -159,7 +159,7 @@ class OverviewTab extends StatelessWidget {
             _buildVerticalDivider(),
             _buildMiniMetric(Icons.speed_rounded, 'Response', '420ms', Colors.blue),
             _buildVerticalDivider(),
-            _buildMiniMetric(Icons.people_alt_outlined, 'Active', '32', Colors.orange),
+            _buildMiniMetric(Icons.people_alt_outlined, 'Logged In', (data?['activeNow'] ?? 2).toString(), Colors.orange),
           ],
         ),
       ),
@@ -235,21 +235,21 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildCriticalActions() {
+  Widget _buildCriticalActions(Map<String, dynamic>? data) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          _buildActionCard('3', 'Pending Host\nApprovals', const Color(0xFFFEE2E2), const Color(0xFFDC2626), Icons.assignment_ind_outlined),
+          _buildActionCard(data?['pendingHosters']?.toString() ?? '0', 'Pending Host\nApprovals', const Color(0xFFFEE2E2), const Color(0xFFDC2626), Icons.assignment_ind_outlined),
           const SizedBox(width: 16),
-          _buildActionCard('2', 'Reported\nListings', const Color(0xFFFFEDD5), const Color(0xFFD97706), Icons.flag_outlined),
+          _buildActionCard(data?['pendingProperties']?.toString() ?? '0', 'Pending Listing\nApprovals', const Color(0xFFFFEDD5), const Color(0xFFD97706), Icons.home_work_outlined),
           const SizedBox(width: 16),
-          _buildActionCard('5', 'Failed\nPayments', const Color(0xFFF1F5F9), const Color(0xFF475569), Icons.money_off_rounded),
+          _buildActionCard(data?['pendingReports']?.toString() ?? '0', 'Open Incident\nReports', const Color(0xFFFFF1F2), const Color(0xFFE11D48), Icons.flag_outlined),
           const SizedBox(width: 16),
-          _buildActionCard('4', 'Verification\nRequests', const Color(0xFFF5F3FF), const Color(0xFF7C3AED), Icons.verified_user_outlined),
+          _buildActionCard(data?['pendingBookings']?.toString() ?? '0', 'Pending\nBookings', const Color(0xFFF5F3FF), const Color(0xFF7C3AED), Icons.calendar_month_outlined),
           const SizedBox(width: 16),
-          _buildActionCard('1', 'Suspicious\nAccount', const Color(0xFFFFF1F2), const Color(0xFFE11D48), Icons.report_problem_outlined),
+          _buildActionCard('0', 'Failed\nPayments', const Color(0xFFF1F5F9), const Color(0xFF475569), Icons.money_off_rounded),
         ],
       ),
     );
@@ -293,13 +293,13 @@ class OverviewTab extends StatelessWidget {
       crossAxisCount: isNarrow ? 2 : 5,
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
-      childAspectRatio: isNarrow ? 0.9 : 1.1,
+      childAspectRatio: isNarrow ? 0.85 : 1.05,
       children: [
-        _buildStatBox('Students', data?['totalStudents']?.toString() ?? '1,284', '12.5%', true, const Color(0xFFEFF6FF), Colors.blue),
-        _buildStatBox('Hosters', data?['totalHosters']?.toString() ?? '342', '8.3%', true, const Color(0xFFF0FDF4), Colors.green),
-        _buildStatBox('Active Listings', data?['totalProperties']?.toString() ?? '1,076', '15.2%', true, const Color(0xFFEFF6FF), Colors.blue),
-        _buildStatBox('Occupancy Rate', '78.6%', '6.1%', true, const Color(0xFFF5F3FF), Colors.purple),
-        _buildStatBox('Revenue', '₹${data?['totalRevenue'] ?? '4,85,250'}', '18.7%', true, const Color(0xFFFFF7ED), Colors.orange),
+        _buildStatBox('Students', data?['totalStudents']?.toString() ?? '0', '12.5%', true, const Color(0xFFEFF6FF), Colors.blue),
+        _buildStatBox('Hosters', data?['totalHosters']?.toString() ?? '0', '8.3%', true, const Color(0xFFF0FDF4), Colors.green),
+        _buildStatBox('Active Listings', data?['totalProperties']?.toString() ?? '0', '15.2%', true, const Color(0xFFEFF6FF), Colors.blue),
+        _buildStatBox('Occupancy Rate', '${data?['occupancyRate'] ?? 78.6}%', '6.1%', true, const Color(0xFFF5F3FF), Colors.purple),
+        _buildStatBox('Revenue', '₹${NumberFormat.currency(locale: 'en_IN', symbol: '', decimalDigits: 0).format(data?['totalRevenue'] ?? 0)}', '18.7%', true, const Color(0xFFFFF7ED), Colors.orange),
       ],
     );
   }
@@ -348,7 +348,7 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildSuggestionsPipeline() {
+  Widget _buildSuggestionsPipeline(Map<String, dynamic>? data) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -361,11 +361,11 @@ class OverviewTab extends StatelessWidget {
         children: [
           _buildSectionHeader('Suggestions Pipeline', trailing: 'View All'),
           const SizedBox(height: 24),
-          _buildPipelineItem('New Suggestions', '18', Colors.blue, Icons.rocket_launch_outlined),
-          _buildPipelineItem('Under Review', '12', Colors.orange, Icons.timer_outlined),
-          _buildPipelineItem('Contacted', '7', Colors.purple, Icons.phone_in_talk_outlined),
-          _buildPipelineItem('Approved', '6', Colors.green, Icons.check_circle_outline),
-          _buildPipelineItem('Rejected', '3', Colors.red, Icons.cancel_outlined),
+          _buildPipelineItem('New Suggestions', (data?['newSuggestions'] ?? 18).toString(), Colors.blue, Icons.rocket_launch_outlined),
+          _buildPipelineItem('Under Review', (data?['reviewSuggestions'] ?? 12).toString(), Colors.orange, Icons.timer_outlined),
+          _buildPipelineItem('Contacted', (data?['contactedSuggestions'] ?? 7).toString(), Colors.purple, Icons.phone_in_talk_outlined),
+          _buildPipelineItem('Approved', (data?['approvedSuggestions'] ?? 6).toString(), Colors.green, Icons.check_circle_outline),
+          _buildPipelineItem('Rejected', (data?['rejectedSuggestions'] ?? 3).toString(), Colors.red, Icons.cancel_outlined),
         ],
       ),
     );
@@ -397,7 +397,7 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentActivity() {
+  Widget _buildRecentActivity(Map<String, dynamic>? data) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -448,7 +448,7 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildModerationTrust() {
+  Widget _buildModerationTrust(Map<String, dynamic>? data) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -461,10 +461,10 @@ class OverviewTab extends StatelessWidget {
         children: [
           _buildSectionHeader('Moderation & Trust', trailing: 'View All'),
           const SizedBox(height: 24),
-          _buildModerationItem('Flagged Listings', '2', Colors.red, Icons.outlined_flag),
-          _buildModerationItem('Reported Users', '1', Colors.orange, Icons.person_off_outlined),
-          _buildModerationItem('Blocked Accounts', '3', Colors.purple, Icons.block_flipped),
-          _buildModerationItem('Verification Queue', '4', Colors.blue, Icons.verified_user_outlined),
+          _buildModerationItem('Flagged Listings', (data?['pendingProperties'] ?? 0).toString(), Colors.red, Icons.outlined_flag),
+          _buildModerationItem('Reported Users', (data?['pendingReports'] ?? 0).toString(), Colors.orange, Icons.person_off_outlined),
+          _buildModerationItem('Blocked Accounts', (data?['blockedUsers'] ?? 3).toString(), Colors.purple, Icons.block_flipped),
+          _buildModerationItem('Verification Queue', (data?['pendingHosters'] ?? 0).toString(), Colors.blue, Icons.verified_user_outlined),
         ],
       ),
     );
@@ -493,6 +493,7 @@ class OverviewTab extends StatelessWidget {
   }
 
   Widget _buildRevenueOverview(Map<String, dynamic>? data) {
+    final format = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -505,7 +506,7 @@ class OverviewTab extends StatelessWidget {
         children: [
           _buildSectionHeader('Revenue Overview', trailing: 'This Month'),
           const SizedBox(height: 24),
-          Text('₹${data?['totalRevenue'] ?? '4,85,250'}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          Text(format.format(data?['totalRevenue'] ?? 0), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
           const SizedBox(height: 4),
           Row(
             children: const [
@@ -549,9 +550,9 @@ class OverviewTab extends StatelessWidget {
           const SizedBox(height: 24),
           Row(
             children: [
-              _buildBreakdownItem('Paid', '₹3,75,000', Colors.green),
-              _buildBreakdownItem('Pending', '₹75,250', Colors.orange),
-              _buildBreakdownItem('Refunded', '₹35,000', Colors.red),
+              _buildBreakdownItem('Paid', format.format(data?['totalRevenue'] ?? 0), Colors.green),
+              _buildBreakdownItem('Pending', '₹0', Colors.orange),
+              _buildBreakdownItem('Refunded', '₹0', Colors.red),
             ],
           ),
         ],
@@ -566,7 +567,10 @@ class OverviewTab extends StatelessWidget {
         children: [
           Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          ),
           const SizedBox(height: 4),
           Container(height: 4, width: 30, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
         ],
@@ -574,7 +578,7 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildBookingsOverview() {
+  Widget _buildBookingsOverview(Map<String, dynamic>? data) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -587,7 +591,7 @@ class OverviewTab extends StatelessWidget {
         children: [
           _buildSectionHeader('Bookings Overview', trailing: 'This Month'),
           const SizedBox(height: 24),
-          const Text('452', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          Text((data?['totalBookings'] ?? 0).toString(), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
           const SizedBox(height: 4),
           Row(
             children: const [
@@ -624,7 +628,7 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildTopCities() {
+  Widget _buildTopCities(Map<String, dynamic>? data) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(

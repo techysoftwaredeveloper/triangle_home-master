@@ -9,6 +9,11 @@ import 'package:triangle_home/screens/admin/tabs/approvals_tab.dart';
 import 'package:triangle_home/screens/admin/tabs/listings_tab.dart';
 import 'package:triangle_home/screens/admin/tabs/users_tab.dart';
 import 'package:triangle_home/screens/admin/tabs/bookings_tab.dart';
+import 'package:triangle_home/screens/admin/tabs/payments_tab.dart';
+import 'package:triangle_home/screens/admin/tabs/suggestions_tab.dart';
+import 'package:triangle_home/screens/admin/tabs/report_tab.dart';
+import 'package:triangle_home/screens/admin/tabs/moderation_tab.dart';
+import 'package:triangle_home/screens/admin/tabs/settings_tab.dart';
 
 class AdminDashboardRedesign extends StatefulWidget {
   const AdminDashboardRedesign({super.key});
@@ -312,6 +317,16 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
             return UsersTab(adminService: _adminService, isNarrow: isNarrow);
           case 4:
             return BookingsTab(adminService: _adminService, isNarrow: isNarrow);
+          case 5:
+            return PaymentsTab(adminService: _adminService, isNarrow: isNarrow);
+          case 6:
+            return SuggestionsTab(adminService: _adminService, isNarrow: isNarrow);
+          case 7:
+            return ReportTab(adminService: _adminService, isNarrow: isNarrow);
+          case 8:
+            return ModerationTab(adminService: _adminService, isNarrow: isNarrow);
+          case 9:
+            return SettingsTab(adminService: _adminService, isNarrow: isNarrow);
           default:
             return Center(
               child: Text(
