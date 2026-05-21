@@ -87,9 +87,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _getCurrentCityFromLocation() async {
     try {
       LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
+      // Guide: Do NOT request permission on startup.
+      // Only proceed if already granted.
 
       if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
         Position position = await Geolocator.getCurrentPosition(

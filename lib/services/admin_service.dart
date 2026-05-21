@@ -3,14 +3,102 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/services/audit_service.dart';
 import 'package:triangle_home/services/isar_service.dart';
+import 'package:triangle_home/services/admin_api_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:rxdart/rxdart.dart';
 
 class AdminService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AuditService _auditService = AuditService();
   final IsarService _isarService = IsarService();
+  final AdminApiService _apiService = AdminApiService();
+
+  // Helper to recursively sanitize data for JSON encoding
+  dynamic _sanitize(dynamic value) {
+    if (value is Timestamp) return value.toDate().toIso8601String();
+    if (value is Map) return value.map((k, v) => MapEntry(k.toString(), _sanitize(v)));
+    if (value is List) return value.map(_sanitize).toList();
+    return value;
+  }
 
   // ==================== REAL-TIME STREAMS WITH CACHE ====================
+
+  Stream<Map<String, dynamic>> getStatsStream() {
+    // 1. Initial cached emission
+    final cachedStream = Stream.fromFuture(_isarService.getAdminCache('dashboard_stats'))
+        .where((c) => c != null)
+        .map((c) => json.decode(c!) as Map<String, dynamic>);
+
+    // 2. Real-time Firestore aggregation
+    final firestoreStream = Rx.combineLatest7(
+      _firestore.collection('users').snapshots(),
+      _firestore.collection('properties').snapshots(),
+      _firestore.collection('bookings').snapshots(),
+      _firestore.collection('payments').snapshots(),
+      _firestore.collection('property_suggestions').snapshots(),
+      _firestore.collection('reports').snapshots(),
+      _firestore.collection('audit_logs').snapshots(),
+      (users, properties, bookings, payments, suggestions, reports, auditLogs) {
+        double totalRevenue = 0;
+        for (var doc in payments.docs) {
+          totalRevenue += (doc.data()['amount'] as num?)?.toDouble() ?? 0;
+        }
+
+        final students = users.docs.where((doc) {
+          final data = doc.data();
+          return data['role'] == 'student' || data['role'] == 'user';
+        }).length;
+
+        final hosters = users.docs.where((doc) {
+          final data = doc.data();
+          return data['role'] == 'hoster';
+        }).length;
+
+        final pendingProperties = properties.docs
+              .where((doc) => doc.data()['status'] == 'pending')
+              .length;
+
+        final pendingHosters = users.docs
+              .where((doc) => doc.data()['role'] == 'hoster' && (doc.data()['status'] == 'pending' || doc.data()['accountStatus'] == 'pending'))
+              .length;
+
+        final unresolvedReports = reports.docs
+              .where((doc) => (doc.data()['status'] ?? '').toString().toLowerCase() == 'pending')
+              .length;
+
+        final pendingSuggestions = suggestions.docs
+              .where((doc) => (doc.data()['status'] ?? '').toString().toLowerCase() == 'pending' || (doc.data()['status'] ?? '').toString().toLowerCase() == 'under review')
+              .length;
+
+        final pendingModeration = auditLogs.docs
+              .where((doc) => (doc.data()['status'] ?? '').toString().toLowerCase() == 'pending')
+              .length;
+
+        final stats = {
+          'totalProperties': properties.docs.length,
+          'totalBookings': bookings.docs.length,
+          'totalUsers': users.docs.length,
+          'totalStudents': students,
+          'totalHosters': hosters,
+          'totalRevenue': totalRevenue,
+          'pendingProperties': pendingProperties,
+          'pendingHosters': pendingHosters,
+          'pendingApprovals': pendingProperties + pendingHosters,
+          'pendingReports': unresolvedReports,
+          'pendingSuggestions': pendingSuggestions,
+          'pendingModeration': pendingModeration,
+          'totalNotifications': pendingProperties + pendingHosters + unresolvedReports + pendingModeration,
+        };
+
+        // Cache the sanitized result
+        _isarService.saveAdminCache('dashboard_stats', json.encode(_sanitize(stats)));
+
+        return stats;
+      },
+    );
+
+    return Rx.concat([cachedStream, firestoreStream]).asBroadcastStream();
+  }
 
   Stream<List<Map<String, dynamic>>> getPendingApprovalsStream() async* {
     // 1. Emit cached approvals immediately
@@ -62,77 +150,10 @@ class AdminService {
         return bDate.compareTo(aDate);
       });
 
-      // Save to cache
-      final serializable = approvals.map((a) {
-        final map = Map<String, dynamic>.from(a);
-        map.forEach((k, v) {
-          if (v is Timestamp) map[k] = v.toDate().toIso8601String();
-        });
-        return map;
-      }).toList();
-
-      await _isarService.saveAdminCache('admin_pending_approvals', json.encode(serializable));
+      // Save to cache (Sanitized)
+      await _isarService.saveAdminCache('admin_pending_approvals', json.encode(_sanitize(approvals)));
 
       return approvals;
-    });
-  }
-
-  Stream<Map<String, dynamic>> getStatsStream() async* {
-    // 1. Emit cached data immediately if available
-    final cachedData = await _isarService.getAdminCache('dashboard_stats');
-    if (cachedData != null) {
-      yield json.decode(cachedData);
-    }
-
-    // 2. Listen to Firestore and update cache on every change
-    yield* _firestore.collection('users').snapshots().asyncMap((usersSnapshot) async {
-      try {
-        final propertiesSnapshot = await _firestore.collection('properties').get();
-        final bookingsSnapshot = await _firestore.collection('bookings').get();
-        final paymentsSnapshot = await _firestore.collection('payments').get();
-
-        double totalRevenue = 0;
-        for (var doc in paymentsSnapshot.docs) {
-          totalRevenue += (doc.data()['amount'] as num?)?.toDouble() ?? 0;
-        }
-
-        final students = usersSnapshot.docs.where((doc) {
-          final data = doc.data();
-          return data['role'] == 'student' || data['role'] == 'user';
-        }).length;
-
-        final hosters = usersSnapshot.docs.where((doc) {
-          final data = doc.data();
-          return data['role'] == 'hoster';
-        }).length;
-
-        final stats = {
-          'totalProperties': propertiesSnapshot.docs.length,
-          'totalBookings': bookingsSnapshot.docs.length,
-          'totalUsers': usersSnapshot.docs.length,
-          'totalStudents': students,
-          'totalHosters': hosters,
-          'totalRevenue': totalRevenue,
-          'pendingProperties': propertiesSnapshot.docs
-              .where((doc) => doc.data()['status'] == 'pending')
-              .length,
-          'pendingHosters': usersSnapshot.docs
-              .where((doc) => doc.data()['role'] == 'hoster' && (doc.data()['status'] == 'pending' || doc.data()['accountStatus'] == 'pending'))
-              .length,
-        };
-
-        // Save to Local Cache
-        await _isarService.saveAdminCache('dashboard_stats', json.encode(stats));
-
-        return stats;
-      } catch (e) {
-        debugPrint('Error in getStatsStream: $e');
-        return {
-          'totalProperties': 0, 'totalBookings': 0, 'totalUsers': 0,
-          'totalStudents': 0, 'totalHosters': 0, 'totalRevenue': 0,
-          'pendingProperties': 0, 'pendingHosters': 0,
-        };
-      }
     });
   }
 
@@ -140,24 +161,20 @@ class AdminService {
     // 1. Emit cached users immediately
     final cachedUsers = await _isarService.getAdminCache('admin_users_list');
     if (cachedUsers != null) {
-      final List<dynamic> list = json.decode(cachedUsers);
-      yield list.cast<Map<String, dynamic>>();
+      try {
+        final List<dynamic> list = json.decode(cachedUsers);
+        yield list.cast<Map<String, dynamic>>();
+      } catch (e) {
+        debugPrint('Error decoding cached users: $e');
+      }
     }
 
     // 2. Sync with Firestore
     yield* _firestore.collection('users').orderBy('createdAt', descending: true).snapshots().asyncMap((snapshot) async {
       final users = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
 
-      // Save to Local Cache (We filter out any objects that can't be JSON serialized like Timestamps)
-      final serializableUsers = users.map((u) {
-        final map = Map<String, dynamic>.from(u);
-        map.forEach((key, value) {
-          if (value is Timestamp) map[key] = value.toDate().toIso8601String();
-        });
-        return map;
-      }).toList();
-
-      await _isarService.saveAdminCache('admin_users_list', json.encode(serializableUsers));
+      // Save to Local Cache (Sanitized)
+      await _isarService.saveAdminCache('admin_users_list', json.encode(_sanitize(users)));
       return users;
     });
   }
@@ -169,13 +186,7 @@ class AdminService {
     yield* _firestore.collection('properties').orderBy('createdAt', descending: true).snapshots().asyncMap((snapshot) async {
       final properties = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
 
-      final serializable = properties.map((p) {
-        final map = Map<String, dynamic>.from(p);
-        map.forEach((k, v) { if (v is Timestamp) map[k] = v.toDate().toIso8601String(); });
-        return map;
-      }).toList();
-
-      await _isarService.saveAdminCache('admin_properties_list', json.encode(serializable));
+      await _isarService.saveAdminCache('admin_properties_list', json.encode(_sanitize(properties)));
       return properties;
     });
   }
@@ -187,13 +198,7 @@ class AdminService {
     yield* _firestore.collection('bookings').orderBy('createdAt', descending: true).snapshots().asyncMap((snapshot) async {
       final bookings = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
 
-      final serializable = bookings.map((b) {
-        final map = Map<String, dynamic>.from(b);
-        map.forEach((k, v) { if (v is Timestamp) map[k] = v.toDate().toIso8601String(); });
-        return map;
-      }).toList();
-
-      await _isarService.saveAdminCache('admin_bookings_list', json.encode(serializable));
+      await _isarService.saveAdminCache('admin_bookings_list', json.encode(_sanitize(bookings)));
       return bookings;
     });
   }
@@ -205,13 +210,7 @@ class AdminService {
     yield* _firestore.collection('payments').orderBy('createdAt', descending: true).snapshots().asyncMap((snapshot) async {
       final payments = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
 
-      final serializable = payments.map((p) {
-        final map = Map<String, dynamic>.from(p);
-        map.forEach((k, v) { if (v is Timestamp) map[k] = v.toDate().toIso8601String(); });
-        return map;
-      }).toList();
-
-      await _isarService.saveAdminCache('admin_payments_list', json.encode(serializable));
+      await _isarService.saveAdminCache('admin_payments_list', json.encode(_sanitize(payments)));
       return payments;
     });
   }
@@ -220,16 +219,10 @@ class AdminService {
     final cached = await _isarService.getAdminCache('admin_suggestions_list');
     if (cached != null) yield (json.decode(cached) as List).cast<Map<String, dynamic>>();
 
-    yield* _firestore.collection('suggestions').orderBy('createdAt', descending: true).snapshots().asyncMap((snapshot) async {
+    yield* _firestore.collection('property_suggestions').orderBy('createdAt', descending: true).snapshots().asyncMap((snapshot) async {
       final suggestions = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
 
-      final serializable = suggestions.map((s) {
-        final map = Map<String, dynamic>.from(s);
-        map.forEach((k, v) { if (v is Timestamp) map[k] = v.toDate().toIso8601String(); });
-        return map;
-      }).toList();
-
-      await _isarService.saveAdminCache('admin_suggestions_list', json.encode(serializable));
+      await _isarService.saveAdminCache('admin_suggestions_list', json.encode(_sanitize(suggestions)));
       return suggestions;
     });
   }
@@ -241,15 +234,17 @@ class AdminService {
     yield* _firestore.collection('reports').orderBy('createdAt', descending: true).snapshots().asyncMap((snapshot) async {
       final reports = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
 
-      final serializable = reports.map((r) {
-        final map = Map<String, dynamic>.from(r);
-        map.forEach((k, v) { if (v is Timestamp) map[k] = v.toDate().toIso8601String(); });
-        return map;
-      }).toList();
-
-      await _isarService.saveAdminCache('admin_reports_list', json.encode(serializable));
+      await _isarService.saveAdminCache('admin_reports_list', json.encode(_sanitize(reports)));
       return reports;
     });
+  }
+
+  Stream<List<Map<String, dynamic>>> getUserSuggestionsStream(String userId) {
+    return _firestore
+        .collection('property_suggestions')
+        .where('suggester_id', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
   }
 
   Stream<List<Map<String, dynamic>>> getAuditLogsStream() async* {
@@ -259,91 +254,93 @@ class AdminService {
     yield* _firestore.collection('audit_logs').orderBy('timestamp', descending: true).snapshots().asyncMap((snapshot) async {
       final logs = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
 
-      final serializable = logs.map((l) {
-        final map = Map<String, dynamic>.from(l);
-        map.forEach((k, v) { if (v is Timestamp) map[k] = v.toDate().toIso8601String(); });
-        return map;
-      }).toList();
-
-      await _isarService.saveAdminCache('admin_audit_logs', json.encode(serializable));
+      await _isarService.saveAdminCache('admin_audit_logs', json.encode(_sanitize(logs)));
       return logs;
     });
   }
 
-  // ==================== MODERATION ACTIONS ====================
+  Stream<Map<String, dynamic>?> getSuggestionStream(String id) {
+    return _firestore.collection('property_suggestions').doc(id).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return {'id': doc.id, ...doc.data()!};
+    });
+  }
+
+  Future<bool> checkServerConnection() async {
+    try {
+      final response = await _apiService.getStats();
+      return response.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ==================== MODERATION ACTIONS (VIA BACKEND) ====================
 
   Future<void> updatePropertyStatus(String propertyId, PropertyStatus status, {String? reason}) async {
-    await _firestore.collection('properties').doc(propertyId).update({
-      'status': status.name,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    // Route through Backend API for secure state change and custom claims
+    await _apiService.updatePropertyStatus(propertyId, status.name);
 
     await _auditService.logAction(
       action: 'property_status_update',
       targetId: propertyId,
       targetType: 'property',
-      reason: reason ?? 'Updated to \${status.name}',
+      reason: reason ?? 'Updated to ${status.name} via Backend',
       extraData: {'newStatus': status.name},
     );
   }
 
   Future<void> approveHoster(String hosterId) async {
-    await _firestore.collection('users').doc(hosterId).update({
-      'status': 'approved',
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    // Route through Backend API for role elevation and custom claims
+    await _apiService.approveHoster(hosterId);
 
     await _auditService.logAction(
       action: 'hoster_approval',
       targetId: hosterId,
       targetType: 'hoster',
-      reason: 'Approved by superadmin',
+      reason: 'Approved via Backend',
     );
   }
 
-  Future<void> toggleUserStatus(String userId, String status) async {
-    await _firestore.collection('users').doc(userId).update({
-      'accountStatus': status,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+  Future<void> toggleUserStatus(String userId, bool isActive) async {
+    // Route through Backend API for banning/unbanning and claim updates
+    await _apiService.toggleUserStatus(userId, isActive: isActive, status: isActive ? 'active' : 'banned');
 
     await _auditService.logAction(
       action: 'user_status_toggle',
       targetId: userId,
       targetType: 'users',
-      reason: 'Account status changed to \$status',
-      extraData: {'newAccountStatus': status},
+      reason: 'Account status changed to ${isActive ? "Active" : "Inactive"} via Backend',
+      extraData: {'isActive': isActive},
     );
   }
 
   Future<void> updateUserRole(String userId, String role) async {
-    await _firestore.collection('users').doc(userId).update({
-      'role': role,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    // Route through Backend API for role change and custom claims
+    await _apiService.updateUserRole(userId, role);
 
     await _auditService.logAction(
       action: 'user_role_update',
       targetId: userId,
       targetType: 'users',
-      reason: 'Role updated to \$role',
+      reason: 'Role updated to $role via Backend',
       extraData: {'newRole': role},
     );
   }
 
   Future<void> rejectItem(String id, String type, {String? reason}) async {
-    final collection = type == 'hoster' ? 'users' : 'properties';
-    await _firestore.collection(collection).doc(id).update({
-      'status': 'rejected',
-      'rejectionReason': reason,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    if (type == 'hoster') {
+      // Use User Status toggle to mark as banned/inactive if rejected
+      await _apiService.toggleUserStatus(id, status: 'rejected', isActive: false);
+    } else {
+      await _apiService.updatePropertyStatus(id, 'rejected');
+    }
 
     await _auditService.logAction(
       action: 'item_rejection',
       targetId: id,
       targetType: type,
-      reason: reason ?? 'Rejected by superadmin',
+      reason: reason ?? 'Rejected via Backend',
     );
   }
 
@@ -356,11 +353,20 @@ class AdminService {
   }
 
   Future<void> updateSuggestionStatus(String id, String status) async {
-    await _firestore.collection('suggestions').doc(id).update({
-      'status': status,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    try {
+      // 1. Attempt Backend API update (for audit logging, notifications, etc.)
+      await _apiService.updateSuggestionStatus(id, status).timeout(const Duration(seconds: 10));
+    } catch (e) {
+      debugPrint('Backend API update failed, falling back to direct Firestore update: $e');
 
+      // 2. Fallback: Direct Firestore update if backend is unreachable
+      await _firestore.collection('property_suggestions').doc(id).update({
+        'status': status,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    // 3. Log action locally for audit trail consistency
     await _auditService.logAction(
       action: 'suggestion_status_update',
       targetId: id,
@@ -371,17 +377,13 @@ class AdminService {
   }
 
   Future<void> updateReportStatus(String id, String status, {String? resolution}) async {
-    await _firestore.collection('reports').doc(id).update({
-      'status': status,
-      if (resolution != null) 'resolution': resolution,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await _apiService.updateReportStatus(id, status, resolution: resolution);
 
     await _auditService.logAction(
       action: 'report_status_update',
       targetId: id,
       targetType: 'reports',
-      reason: 'Status changed to $status',
+      reason: 'Status changed to $status via Backend',
       extraData: {'newStatus': status, 'resolution': resolution},
     );
   }
@@ -393,9 +395,6 @@ class AdminService {
   }
 
   Future<void> promoteToAdmin(String userId) async {
-    await _firestore.collection('users').doc(userId).update({
-      'role': 'admin',
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await updateUserRole(userId, 'admin');
   }
 }

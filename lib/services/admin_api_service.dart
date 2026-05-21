@@ -3,19 +3,19 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 class AdminApiService {
-  /**
-   * STRICT NETWORK CONFIGURATION
-   *
-   * FOR PHYSICAL DEVICES (USB): Use 'localhost' and run:
-   * adb reverse tcp:5000 tcp:5000
-   *
-   * FOR EMULATORS: Use '10.0.2.2'
-   */
-  static const String _host = 'localhost'; // Change to '10.0.2.2' ONLY if using emulator
+  /// NETWORK CONFIGURATION
+  /// Automatically uses 10.0.2.2 for Emulators and localhost for Web/Desktop
+  /// For physical Android devices via USB, run: adb reverse tcp:5000 tcp:5000
+  static String get _host {
+    if (kIsWeb) return 'localhost';
+    if (Platform.isAndroid) return '192.168.31.25'; // Updated Bridge IP for Physical Device
+    return 'localhost';
+  }
 
-  final String baseUrl = Platform.isAndroid ? 'http://$_host:5000/api' : 'http://localhost:5000/api';
+  final String baseUrl = 'http://$_host:5000/api';
 
   Future<String?> _getToken() async {
     return await FirebaseAuth.instance.currentUser?.getIdToken();
@@ -64,18 +64,30 @@ class AdminApiService {
     throw Exception('Error ${response.statusCode}: Failed to load users');
   }
 
-  Future<void> toggleUserStatus(String userId, String collection, String status) async {
+  Future<void> toggleUserStatus(String userId, {String? status, bool? isActive}) async {
     final response = await http.post(
       Uri.parse('$baseUrl/admin/users/toggle-status'),
       headers: await _getHeaders(),
       body: json.encode({
         'userId': userId,
-        'collection': collection,
-        'status': status,
+        if (status != null) 'status': status,
+        if (isActive != null) 'isActive': isActive,
       }),
     );
     if (response.statusCode != 200) {
-      throw Exception('Failed to update user status');
+      final error = json.decode(response.body)['message'] ?? 'Failed to update user status';
+      throw Exception(error);
+    }
+  }
+
+  Future<void> updateUserRole(String userId, String role) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/admin/users/$userId/role'),
+      headers: await _getHeaders(),
+      body: json.encode({'role': role}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update user role');
     }
   }
 
@@ -92,6 +104,17 @@ class AdminApiService {
     throw Exception('Failed to load properties');
   }
 
+  Future<void> updatePropertyStatus(String propertyId, String status) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/admin/properties/$propertyId/status'),
+      headers: await _getHeaders(),
+      body: json.encode({'status': status}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update property status');
+    }
+  }
+
   // Bookings
   Future<List<Map<String, dynamic>>> getAllBookings() async {
     final response = await http.get(
@@ -105,17 +128,6 @@ class AdminApiService {
     throw Exception('Failed to load bookings');
   }
 
-  Future<void> updatePropertyStatus(String propertyId, String status) async {
-    final response = await http.patch(
-      Uri.parse('$baseUrl/admin/properties/$propertyId/status'),
-      headers: await _getHeaders(),
-      body: json.encode({'status': status}),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update property status');
-    }
-  }
-
   // Hoster Approval
   Future<void> approveHoster(String hosterId) async {
     final response = await http.post(
@@ -124,6 +136,33 @@ class AdminApiService {
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to approve hoster');
+    }
+  }
+
+  // Suggestions
+  Future<void> updateSuggestionStatus(String id, String status) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/admin/suggestions/$id/status'),
+      headers: await _getHeaders(),
+      body: json.encode({'status': status}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update suggestion status');
+    }
+  }
+
+  // Reports
+  Future<void> updateReportStatus(String id, String status, {String? resolution}) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/admin/reports/$id/status'),
+      headers: await _getHeaders(),
+      body: json.encode({
+        'status': status,
+        if (resolution != null) 'resolution': resolution,
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update report status');
     }
   }
 }

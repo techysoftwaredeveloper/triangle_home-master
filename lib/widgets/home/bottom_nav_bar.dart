@@ -285,12 +285,12 @@ class HomeBottomNavBar extends StatelessWidget {
             ),
             _buildNavItem(
               iconPath: 'assets/images/mypgbookings.svg',
-              label: 'My PG Bookings',
+              label: 'My Bookings',
               isActive: selectedIndex == 2,
             ),
             _buildNavItem(
               iconPath: 'assets/images/listmyproperty.svg',
-              label: 'List A Property',
+              label: FirebaseAuth.instance.currentUser == null ? 'List A Property' : 'Suggest',
               isActive: selectedIndex == 3,
             ),
           ],

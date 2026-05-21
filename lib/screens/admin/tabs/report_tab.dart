@@ -202,50 +202,29 @@ class _ReportTabState extends State<ReportTab> with SingleTickerProviderStateMix
     final resolved = reports.where((r) => (r['status'] ?? '').toString().toLowerCase() == 'resolved').length;
     final rejected = reports.where((r) => (r['status'] ?? '').toString().toLowerCase() == 'rejected').length;
 
+    final double cardWidth = widget.isNarrow ? 160 : 220;
+    final double cardHeight = widget.isNarrow ? 140 : 180;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          _buildHealthCard(reports.length.toString(), 'Total Reports', const Color(0xFFFEF2F2), const Color(0xFFEF4444), Icons.flag_rounded, percentage: '12.5%', isUp: false),
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(count: reports.length.toString(), label: 'Total Reports', bg: const Color(0xFFFEF2F2), color: const Color(0xFFEF4444), icon: Icons.flag_rounded, percentage: '12.5%', isUp: false)),
           const SizedBox(width: 16),
-          _buildHealthCard(pending.toString(), 'Pending Review', const Color(0xFFFFFBEB), const Color(0xFFD97706), Icons.timer_outlined, percentage: '10.0%', isUp: false),
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(count: pending.toString(), label: 'Pending Review', bg: const Color(0xFFFFFBEB), color: const Color(0xFFD97706), icon: Icons.timer_outlined, percentage: '10.0%', isUp: false)),
           const SizedBox(width: 16),
-          _buildHealthCard(resolved.toString(), 'Resolved', const Color(0xFFF0FDF4), const Color(0xFF16A34A), Icons.check_circle_outline_rounded, percentage: '21.7%', isUp: true),
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(count: resolved.toString(), label: 'Resolved', bg: const Color(0xFFF0FDF4), color: const Color(0xFF16A34A), icon: Icons.check_circle_outline_rounded, percentage: '21.7%', isUp: true)),
           const SizedBox(width: 16),
-          _buildHealthCard(rejected.toString(), 'Rejected', const Color(0xFFF1F5F9), const Color(0xFF64748B), Icons.cancel_outlined, percentage: '14.2%', isUp: false),
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(count: rejected.toString(), label: 'Rejected', bg: const Color(0xFFF1F5F9), color: const Color(0xFF64748B), icon: Icons.cancel_outlined, percentage: '14.2%', isUp: false)),
           const SizedBox(width: 16),
-          _buildHealthCard('4.8', 'Avg. Resolution (Days)', const Color(0xFFEFF6FF), const Color(0xFF2563EB), Icons.speed_rounded, percentage: '8.6%', isUp: true),
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(count: '4.8', label: 'Avg. Res. (Days)', bg: const Color(0xFFEFF6FF), color: const Color(0xFF2563EB), icon: Icons.speed_rounded, percentage: '8.6%', isUp: true)),
         ],
       ),
     );
   }
 
-  Widget _buildHealthCard(String val, String label, Color bg, Color color, IconData icon, {required String percentage, required bool isUp}) {
-    return Container(
-      width: 220,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0xFFE2E8F0))),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: color, size: 22)),
-          const SizedBox(height: 20),
-          Text(val, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-          Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(isUp ? Icons.arrow_upward : Icons.arrow_downward, color: isUp ? Colors.green : Colors.red, size: 12),
-              const SizedBox(width: 4),
-              Text(percentage, style: TextStyle(color: isUp ? Colors.green : Colors.red, fontSize: 11, fontWeight: FontWeight.bold)),
-              const Text(' this month', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _wrapInSizedBox(double w, double h, Widget child) => SizedBox(width: w, height: h, child: child);
 
   Widget _buildCategoryTabs(List<Map<String, dynamic>> reports) {
     int pending = 0;

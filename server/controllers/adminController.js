@@ -1,15 +1,27 @@
 const { db, auth } = require('../config/firebase-config');
 const asyncHandler = require('../utils/asyncHandler');
 
-// Get statistics for the dashboard
+/**
+ * UPDATED: Dashboard Statistics
+ * Aligned with real-time app needs and correct collection names
+ */
 exports.getStats = asyncHandler(async (req, res) => {
-    const [usersSnapshot, hostersSnapshot, requestsSnapshot, propertiesSnapshot, bookingsSnapshot, paymentsSnapshot] = await Promise.all([
-      db.collection('student').get(),
-      db.collection('hoster').get(),
-      db.collection('hoster_requests').where('status', '==', 'pending').get(),
+    const [
+      usersSnapshot,
+      propertiesSnapshot,
+      bookingsSnapshot,
+      paymentsSnapshot,
+      suggestionsSnapshot,
+      reportsSnapshot,
+      auditLogsSnapshot
+    ] = await Promise.all([
+      db.collection('users').get(),
       db.collection('properties').get(),
       db.collection('bookings').get(),
-      db.collection('payments').get()
+      db.collection('payments').get(),
+      db.collection('property_suggestions').get(), // Corrected collection name
+      db.collection('reports').get(),
+      db.collection('audit_logs').get()
     ]);
 
     let totalRevenue = 0;
@@ -17,118 +29,157 @@ exports.getStats = asyncHandler(async (req, res) => {
       totalRevenue += doc.data().amount || 0;
     });
 
+    const students = usersSnapshot.docs.filter(doc => {
+      const data = doc.data();
+      return data.role === 'student' || data.role === 'user';
+    }).length;
+
+    const hosters = usersSnapshot.docs.filter(doc => doc.data().role === 'hoster').length;
+
+    const pendingProperties = propertiesSnapshot.docs.filter(doc => doc.data().status === 'pending').length;
+
+    // Check for pending hosters in the 'users' collection with status 'pending'
+    const pendingHosters = usersSnapshot.docs.filter(doc =>
+      doc.data().role === 'hoster' &&
+      (doc.data().status === 'pending' || doc.data().accountStatus === 'pending')
+    ).length;
+
+    const pendingReports = reportsSnapshot.docs.filter(doc =>
+      (doc.data().status || '').toLowerCase() === 'pending'
+    ).length;
+
+    const pendingSuggestions = suggestionsSnapshot.docs.filter(doc =>
+      (doc.data().status || '').toLowerCase() === 'pending'
+    ).length;
+
+    const pendingModeration = auditLogsSnapshot.docs.filter(doc =>
+      (doc.data().status || '').toLowerCase() === 'pending'
+    ).length;
+
     res.json({
       success: true,
-      totalUsers: usersSnapshot.size + hostersSnapshot.size,
-      totalHosters: hostersSnapshot.size,
-      totalStudents: usersSnapshot.size,
+      totalUsers: usersSnapshot.size,
+      totalHosters: hosters,
+      totalStudents: students,
       totalProperties: propertiesSnapshot.size,
       totalBookings: bookingsSnapshot.size,
       totalRevenue: totalRevenue,
-      pendingProperties: propertiesSnapshot.docs.filter(doc => doc.data().status === 'pending').length,
-      pendingHosters: requestsSnapshot.size
+      pendingProperties: pendingProperties,
+      pendingHosters: pendingHosters,
+      pendingApprovals: pendingProperties + pendingHosters,
+      pendingReports: pendingReports,
+      pendingSuggestions: pendingSuggestions,
+      pendingModeration: pendingModeration,
+      totalNotifications: pendingProperties + pendingHosters + pendingReports + pendingModeration
     });
 });
 
-// List all users
+/**
+ * UPDATED: User Management
+ * Aligned with 'users' collection and is_active boolean
+ */
 exports.getAllUsers = asyncHandler(async (req, res) => {
-    const [studentsSnapshot, hostersSnapshot, requestsSnapshot] = await Promise.all([
-      db.collection('student').get(),
-      db.collection('hoster').get(),
-      db.collection('hoster_requests').get()
-    ]);
+    const usersSnapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+    const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // 1. Get explicitly approved hosters
-    const hosters = hostersSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      role: 'hoster',
-      status: 'approved'
-    }));
+    const students = users.filter(u => u.role === 'student' || u.role === 'user');
+    const hosters = users.filter(u => u.role === 'hoster');
 
-    // 2. Add pending/rejected requests from hoster_requests
-    requestsSnapshot.forEach(doc => {
-      const data = doc.data();
-      if (!hosters.some(h => h.id === doc.id)) {
-        hosters.push({
-          id: doc.id,
-          ...data,
-          role: 'hoster',
-          status: data.status || 'pending'
-        });
-      } else {
-        const index = hosters.findIndex(h => h.id === doc.id);
-        hosters[index].status = 'approved';
-      }
-    });
-
-    const students = studentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), role: 'student' }));
-
-    res.json({ success: true, students, hosters });
+    res.json({ success: true, students, hosters, total: users.length });
 });
 
-// List all properties
-exports.getAllProperties = asyncHandler(async (req, res) => {
-    const propertiesSnapshot = await db.collection('properties').orderBy('createdAt', 'desc').get();
-    const properties = [];
-    propertiesSnapshot.forEach(doc => properties.push({ id: doc.id, ...doc.data() }));
-    res.json(properties);
-});
-
-// List all bookings
-exports.getAllBookings = asyncHandler(async (req, res) => {
-    const bookingsSnapshot = await db.collection('bookings').orderBy('createdAt', 'desc').get();
-    const bookings = [];
-    bookingsSnapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
-    res.json(bookings);
-});
-
-// Ban or Unban a user
+/**
+ * UPDATED: Status Toggles
+ * Using is_active (bool) and accountStatus (string)
+ */
 exports.toggleUserStatus = asyncHandler(async (req, res) => {
-  const { userId, collection, status } = req.body; // status: 'active' or 'banned'
-  await db.collection(collection).doc(userId).update({
-    accountStatus: status,
+  const { userId, status, isActive } = req.body;
+
+  const updateData = {
     updatedAt: new Date().toISOString()
+  };
+
+  if (isActive !== undefined) updateData.is_active = isActive;
+  if (status) updateData.accountStatus = status;
+
+  await db.collection('users').doc(userId).update(updateData);
+
+  // Set custom claims for security layer
+  const user = await auth.getUser(userId);
+  await auth.setCustomUserClaims(userId, {
+    ...user.customClaims,
+    isActive: isActive !== false,
+    banned: isActive === false || status === 'banned'
   });
 
-  const user = await auth.getUser(userId);
-  await auth.setCustomUserClaims(userId, { ...user.customClaims, banned: status === 'banned' });
-
-  res.json({ message: `User ${status} successfully` });
+  res.json({ success: true, message: `User status updated successfully` });
 });
 
-// Property Approval
+/**
+ * UPDATED: Property Approvals
+ */
 exports.updatePropertyStatus = asyncHandler(async (req, res) => {
   const { propertyId } = req.params;
-  const { status } = req.body; // 'approved', 'rejected', 'pending'
+  const { status } = req.body; // 'active', 'rejected', 'pending'
   await db.collection('properties').doc(propertyId).update({
     status: status,
     updatedAt: new Date().toISOString()
   });
-  res.json({ message: `Property ${status} successfully` });
+  res.json({ success: true, message: `Property ${status} successfully` });
 });
 
-// Hoster Approval
+/**
+ * UPDATED: Hoster Elevation
+ */
 exports.approveHoster = asyncHandler(async (req, res) => {
   const { hosterId } = req.params;
-  const requestDoc = await db.collection('hoster_requests').doc(hosterId).get();
-  let hosterData = {};
 
-  if (requestDoc.exists) {
-    hosterData = requestDoc.data();
-    await db.collection('hoster_requests').doc(hosterId).update({
-      status: 'approved',
-      updatedAt: new Date().toISOString()
-    });
-  }
-
-  await db.collection('hoster').doc(hosterId).set({
-    ...hosterData,
+  await db.collection('users').doc(hosterId).update({
     status: 'approved',
+    accountStatus: 'active',
+    role: 'hoster',
+    is_active: true,
     updatedAt: new Date().toISOString()
-  }, { merge: true });
+  });
 
   await auth.setCustomUserClaims(hosterId, { role: 'hoster' });
 
-  res.json({ message: 'Hoster approved successfully' });
+  res.json({ success: true, message: 'Hoster approved successfully' });
+});
+
+exports.updateUserRole = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const { role } = req.body;
+
+  await db.collection('users').doc(userId).update({
+    role: role,
+    updatedAt: new Date().toISOString()
+  });
+
+  await auth.setCustomUserClaims(userId, { role: role });
+
+  res.json({ success: true, message: `User role updated to ${role}` });
+});
+
+exports.updateSuggestionStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  await db.collection('property_suggestions').doc(id).update({
+    status: status,
+    updatedAt: new Date().toISOString()
+  });
+  res.json({ success: true, message: 'Suggestion status updated' });
+});
+
+exports.updateReportStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status, resolution } = req.body;
+  const updateData = {
+    status: status,
+    updatedAt: new Date().toISOString()
+  };
+  if (resolution) updateData.resolution = resolution;
+
+  await db.collection('reports').doc(id).update(updateData);
+  res.json({ success: true, message: 'Report status updated' });
 });

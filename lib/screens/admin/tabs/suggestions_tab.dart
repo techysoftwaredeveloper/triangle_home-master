@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:triangle_home/screens/admin/suggestion_detail_screen.dart';
 import 'package:triangle_home/services/admin_service.dart';
 import 'package:triangle_home/screens/admin/widgets/admin_shared_widgets.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -50,13 +51,13 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
       builder: (context, snapshot) {
         final allSuggestions = snapshot.data ?? [];
 
-        // Filtering
+        // Filtering based on updated Firestore schema
         final filteredSuggestions = allSuggestions.where((s) {
-          final matchesSearch = (s['propertyName']?.toString().toLowerCase().contains(_searchQuery) ?? false) ||
-                                (s['location']?.toString().toLowerCase().contains(_searchQuery) ?? false) ||
-                                (s['userName']?.toString().toLowerCase().contains(_searchQuery) ?? false);
+          final matchesSearch = (s['business_name']?.toString().toLowerCase().contains(_searchQuery) ?? false) ||
+                                (s['business_address']?.toString().toLowerCase().contains(_searchQuery) ?? false) ||
+                                (s['suggester_name']?.toString().toLowerCase().contains(_searchQuery) ?? false);
 
-          final status = s['status']?.toString().toLowerCase() ?? 'under review';
+          final status = s['status']?.toString().toLowerCase() ?? 'pending';
 
           switch (_tabController.index) {
             case 1: return matchesSearch && (status == 'under review' || status == 'pending');
@@ -77,16 +78,18 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
                 child: Column(
                   children: [
                     TabHeader(
-                      title: 'Suggestions',
-                      subtitle: 'Review and manage property suggestions from users',
+                      title: 'Suggestions Hub',
+                      subtitle: widget.isNarrow ? 'Manage Leads' : 'Review and manage property suggestions from users',
                       isNarrow: widget.isNarrow,
                       actions: [
-                        _buildHeaderAction('Export', Icons.file_download_outlined, isOutline: true, onPressed: _handleExport),
-                        const SizedBox(width: 12),
+                        if (!widget.isNarrow)
+                          _buildHeaderAction('Export', Icons.file_download_outlined, isOutline: true, onPressed: _handleExport),
+                        if (!widget.isNarrow)
+                          const SizedBox(width: 12),
                         _buildHeaderAction('Filters', Icons.tune_rounded, hasDropdown: true),
                       ],
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
                     _buildSummaryCards(allSuggestions),
                     const SizedBox(height: 32),
                     _buildCategoryTabs(allSuggestions),
@@ -96,7 +99,7 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
                     if (!widget.isNarrow) _buildTableHeader(),
                     const SizedBox(height: 12),
                     if (snapshot.connectionState == ConnectionState.waiting && allSuggestions.isEmpty)
-                      const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator()))
+                      const Center(child: Padding(padding: EdgeInsets.all(60), child: CircularProgressIndicator()))
                     else if (filteredSuggestions.isEmpty)
                       _buildEmptyState()
                     else
@@ -118,20 +121,38 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
   Widget _buildEmptyState() {
     return Container(
       height: 300,
+      margin: const EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
       alignment: Alignment.center,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.lightbulb_outline_rounded, size: 64, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.blue.shade50, shape: BoxShape.circle),
+            child: Icon(Icons.lightbulb_outline_rounded, size: 40, color: Colors.blue.shade300),
+          ),
+          const SizedBox(height: 20),
+          const Text(
             'No suggestions found',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Try adjusting your search or filters.',
-            style: TextStyle(color: Colors.grey.shade500),
+          const Text(
+            'Try adjusting your search or resetting filters',
+            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 24),
+          TextButton(
+            onPressed: () {
+              _searchController.clear();
+              _tabController.index = 0;
+            },
+            child: const Text('Reset All Filters', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -184,12 +205,15 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
     final converted = suggestions.where((s) => (s['status'] ?? '').toString().toLowerCase() == 'converted').length;
     final rejected = suggestions.where((s) => (s['status'] ?? '').toString().toLowerCase() == 'rejected').length;
 
+    final double cardWidth = widget.isNarrow ? 160 : 220;
+    final double cardHeight = widget.isNarrow ? 140 : 180;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          SummaryCard(
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
             count: suggestions.length.toString(),
             label: 'Total Suggestions',
             bg: const Color(0xFFEFF6FF),
@@ -197,46 +221,32 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
             icon: Icons.lightbulb_outline_rounded,
             percentage: '16.4%',
             isUp: true,
-          ),
+          )),
           const SizedBox(width: 16),
-          _buildSmallSummaryCard(underReview.toString(), 'Under Review', suggestions.isEmpty ? '0% of total' : '${((underReview/suggestions.length)*100).toStringAsFixed(1)}% of total', const Color(0xFFFFFBEB), const Color(0xFFD97706), Icons.timer_outlined),
+          _wrapInSizedBox(cardWidth, cardHeight, _buildSmallSummaryCard(underReview.toString(), 'Under Review', suggestions.isEmpty ? '0% of total' : '${((underReview/suggestions.length)*100).toStringAsFixed(1)}% of total', const Color(0xFFFFFBEB), const Color(0xFFD97706), Icons.timer_outlined)),
           const SizedBox(width: 16),
-          _buildSmallSummaryCard(contacted.toString(), 'Contacted', suggestions.isEmpty ? '0% of total' : '${((contacted/suggestions.length)*100).toStringAsFixed(1)}% of total', const Color(0xFFEFF6FF), const Color(0xFF2563EB), Icons.phone_in_talk_outlined),
+          _wrapInSizedBox(cardWidth, cardHeight, _buildSmallSummaryCard(contacted.toString(), 'Contacted', suggestions.isEmpty ? '0% of total' : '${((contacted/suggestions.length)*100).toStringAsFixed(1)}% of total', const Color(0xFFEFF6FF), const Color(0xFF2563EB), Icons.phone_in_talk_outlined)),
           const SizedBox(width: 16),
-          _buildSmallSummaryCard(shortlisted.toString(), 'Shortlisted', suggestions.isEmpty ? '0% of total' : '${((shortlisted/suggestions.length)*100).toStringAsFixed(1)}% of total', const Color(0xFFF5F3FF), const Color(0xFF7C3AED), Icons.star_outline_rounded),
+          _wrapInSizedBox(cardWidth, cardHeight, _buildSmallSummaryCard(shortlisted.toString(), 'Shortlisted', suggestions.isEmpty ? '0% of total' : '${((shortlisted/suggestions.length)*100).toStringAsFixed(1)}% of total', const Color(0xFFF5F3FF), const Color(0xFF7C3AED), Icons.star_outline_rounded)),
           const SizedBox(width: 16),
-          _buildSmallSummaryCard(converted.toString(), 'Converted', suggestions.isEmpty ? '0% of total' : '${((converted/suggestions.length)*100).toStringAsFixed(1)}% of total', const Color(0xFFF0FDF4), const Color(0xFF16A34A), Icons.check_circle_outline_rounded),
+          _wrapInSizedBox(cardWidth, cardHeight, _buildSmallSummaryCard(converted.toString(), 'Converted', suggestions.isEmpty ? '0% of total' : '${((converted/suggestions.length)*100).toStringAsFixed(1)}% of total', const Color(0xFFF0FDF4), const Color(0xFF16A34A), Icons.check_circle_outline_rounded)),
           const SizedBox(width: 16),
-          _buildSmallSummaryCard(rejected.toString(), 'Rejected', suggestions.isEmpty ? '0% of total' : '${((rejected/suggestions.length)*100).toStringAsFixed(1)}% of total', const Color(0xFFFEF2F2), const Color(0xFFDC2626), Icons.cancel_outlined),
+          _wrapInSizedBox(cardWidth, cardHeight, _buildSmallSummaryCard(rejected.toString(), 'Rejected', suggestions.isEmpty ? '0% of total' : '${((rejected/suggestions.length)*100).toStringAsFixed(1)}% of total', const Color(0xFFFEF2F2), const Color(0xFFDC2626), Icons.cancel_outlined)),
         ],
       ),
     );
   }
 
+  Widget _wrapInSizedBox(double w, double h, Widget child) => SizedBox(width: w, height: h, child: child);
+
   Widget _buildSmallSummaryCard(String count, String label, String sub, Color bg, Color color, IconData icon) {
-    return Container(
-      width: 160,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(height: 16),
-          Text(count, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(sub, style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
-        ],
-      ),
+    return SummaryCard(
+      count: count,
+      label: label,
+      sub: sub,
+      bg: bg,
+      color: color,
+      icon: icon,
     );
   }
 
@@ -258,8 +268,8 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
         indicatorWeight: 3,
         labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Outfit'),
         tabs: [
-          Tab(text: 'All Suggestions (${suggestions.length})'),
-          Tab(text: 'Under Review ($underReview)'),
+          Tab(text: 'All (${suggestions.length})'),
+          Tab(text: 'Pending ($underReview)'),
           Tab(text: 'Contacted ($contacted)'),
           Tab(text: 'Shortlisted ($shortlisted)'),
           Tab(text: 'Converted ($converted)'),
@@ -285,7 +295,7 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: widget.isNarrow ? 'Search...' : 'Search by property name, location or user...',
+                      hintText: widget.isNarrow ? 'Search leads...' : 'Search by business name, address or suggester...',
                       border: InputBorder.none,
                       hintStyle: const TextStyle(fontSize: 12),
                     ),
@@ -296,17 +306,7 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
           ),
         ),
         const SizedBox(width: 12),
-        _buildSmallFilter(widget.isNarrow ? '' : 'Status', icon: Icons.tune),
-        if (!widget.isNarrow) ...[
-          const SizedBox(width: 12),
-          _buildSmallFilter('Property Type'),
-          const SizedBox(width: 12),
-          _buildSmallFilter('City'),
-          const SizedBox(width: 12),
-          _buildSmallFilter('More Filters'),
-          const SizedBox(width: 12),
-          _buildSmallFilter('Newest First', hasDropdown: true),
-        ],
+        _buildSmallFilter(widget.isNarrow ? '' : 'Filter', icon: Icons.tune),
       ],
     );
   }
@@ -318,7 +318,7 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
       child: Row(
         children: [
           if (icon != null) ...[Icon(icon, size: 16, color: const Color(0xFF64748B)), if (label.isNotEmpty) const SizedBox(width: 8)],
-          if (label.isNotEmpty) Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+          if (label.isNotEmpty) Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
           if (hasDropdown && !widget.isNarrow) ...[const SizedBox(width: 6), const Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF64748B))],
         ],
       ),
@@ -330,9 +330,9 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          Expanded(flex: 3, child: _tableLabel('SUGGESTION')),
+          Expanded(flex: 3, child: _tableLabel('BUSINESS / CATEGORY')),
           Expanded(flex: 2, child: _tableLabel('LOCATION')),
-          Expanded(flex: 2, child: _tableLabel('SUGGESTED BY')),
+          Expanded(flex: 2, child: _tableLabel('SUGGESTER')),
           Expanded(flex: 2, child: _tableLabel('STATUS')),
           Expanded(flex: 2, child: _tableLabel('DATE')),
           const SizedBox(width: 40),
@@ -349,19 +349,34 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
     return Column(
       children: suggestions.map((s) => _SuggestionCard(
         id: s['id'],
-        title: s['propertyName'] ?? 'Untitled Suggestion',
-        type: s['propertyType'] ?? 'Accommodation',
-        rooms: '${s['totalRooms'] ?? 0} Rooms',
-        location: s['location'] ?? 'Location N/A',
-        subLocation: s['landmark'] ?? 'Area N/A',
-        user: s['userName'] ?? 'Unknown User',
-        userType: s['userRole'] ?? 'User',
-        phone: s['userPhone'] ?? 'No Phone',
+        title: s['business_name'] ?? 'Untitled Lead',
+        type: s['category'] ?? 'Lead',
+        rooms: 'Property Lead',
+        location: s['business_address'] ?? 'Location N/A',
+        subLocation: '',
+        user: s['suggester_name'] ?? 'Unknown User',
+        userType: 'Member',
+        phone: s['suggester_phone'] ?? 'No Phone',
         status: _formatStatus(s['status']),
         statusColor: _getStatusColor(s['status']),
         date: _formatDateTime(s['createdAt']),
         isSelected: _selectedSuggestion?['id'] == s['id'],
-        onTap: () => setState(() => _selectedSuggestion = s),
+        onTap: () {
+          if (widget.isNarrow) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SuggestionDetailScreen(
+                  suggestionId: s['id'],
+                  initialData: s,
+                  adminService: widget.adminService,
+                ),
+              ),
+            );
+          } else {
+            setState(() => _selectedSuggestion = s);
+          }
+        },
         isNarrow: widget.isNarrow,
         onAction: (action) => _handleAction(s['id'], action),
       )).toList(),
@@ -369,13 +384,13 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
   }
 
   String _formatStatus(dynamic s) {
-    final status = s?.toString().toLowerCase() ?? 'under review';
-    if (status == 'pending' || status == 'under review') return 'Under Review';
+    final status = s?.toString().toLowerCase() ?? 'pending';
+    if (status == 'pending' || status == 'under review') return 'Pending';
     return status[0].toUpperCase() + status.substring(1);
   }
 
   Color _getStatusColor(dynamic s) {
-    final status = s?.toString().toLowerCase() ?? 'under review';
+    final status = s?.toString().toLowerCase() ?? 'pending';
     switch (status) {
       case 'contacted': return Colors.blue;
       case 'shortlisted': return Colors.purple;
@@ -388,7 +403,7 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
   String _formatDateTime(dynamic date) {
     if (date == null) return 'N/A';
     if (date is Timestamp) {
-      return '${DateFormat('dd MMM yyyy').format(date.toDate())}\n${DateFormat('hh:mm a').format(date.toDate())}';
+      return DateFormat('dd MMM yyyy').format(date.toDate());
     }
     return date.toString();
   }
@@ -398,7 +413,7 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
       await widget.adminService.updateSuggestionStatus(id, action);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Suggestion updated to $action'), backgroundColor: Colors.green),
+          SnackBar(content: Text('Lead updated successfully'), backgroundColor: Colors.green),
         );
       }
     } catch (e) {
@@ -425,49 +440,39 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Suggestion Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                const Text('Lead Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
                 IconButton(icon: const Icon(Icons.close, size: 20), onPressed: () => setState(() => _selectedSuggestion = null)),
               ],
             ),
             const SizedBox(height: 24),
-            ClipRRect(borderRadius: BorderRadius.circular(16), child: Stack(children: [Container(height: 180, width: double.infinity, color: const Color(0xFFF1F5F9), child: const Icon(Icons.image_outlined, color: Colors.grey, size: 40)), Positioned(top: 12, right: 12, child: StatusBadge(text: status, color: _getStatusColor(s['status'])))])),
+            ClipRRect(borderRadius: BorderRadius.circular(16), child: Stack(children: [Container(height: 180, width: double.infinity, color: const Color(0xFFF1F5F9), child: const Icon(Icons.home_work_outlined, color: Colors.grey, size: 40)), Positioned(top: 12, right: 12, child: StatusBadge(text: status, color: _getStatusColor(s['status'])))])),
             const SizedBox(height: 20),
-            Text(s['propertyName'] ?? 'Untitled', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+            Text(s['business_name'] ?? 'Untitled', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
             const SizedBox(height: 4),
-            Row(children: [Text(s['propertyType'] ?? 'Accommodation', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))), const SizedBox(width: 8), const Text('•', style: TextStyle(color: Colors.grey)), const SizedBox(width: 8), Text('${s['totalRooms'] ?? 0} Rooms', style: const TextStyle(fontSize: 12, color: Color(0xFF2563EB), fontWeight: FontWeight.bold))]),
+            Text(s['category'] ?? 'Accommodation', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
 
             const Divider(height: 48),
-            _detailTitle('Location'),
-            _iconDetail(Icons.location_on_outlined, s['location'] ?? 'Location N/A', s['landmark'] ?? 'Area N/A'),
+            _detailTitle('Business Location'),
+            _iconDetail(Icons.location_on_outlined, s['business_address'] ?? 'Location N/A', ''),
+
+            const Divider(height: 48),
+            _detailTitle('Business Owner'),
+            Text(s['owner_name'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            Text(s['owner_phone'] ?? 'N/A', style: const TextStyle(fontSize: 12)),
+            Text(s['owner_email'] ?? 'N/A', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
 
             const Divider(height: 48),
             _detailTitle('Suggested By'),
             Row(
               children: [
-                CircleAvatar(radius: 18, backgroundColor: const Color(0xFFF5F3FF), child: Text(s['userName']?.toString().isNotEmpty == true ? s['userName'][0] : 'U', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED)))),
+                CircleAvatar(radius: 18, backgroundColor: const Color(0xFFF5F3FF), child: Text(s['suggester_name']?.toString().isNotEmpty == true ? s['suggester_name'][0] : 'U', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED)))),
                 const SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(s['userName'] ?? 'Unknown User', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)), Text(s['userRole'] ?? 'User', style: const TextStyle(fontSize: 10, color: Color(0xFF2563EB), fontWeight: FontWeight.bold))])),
-                const Text('View Profile', style: TextStyle(fontSize: 11, color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(s['suggester_name'] ?? 'Unknown User', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)), const Text('Community Member', style: TextStyle(fontSize: 10, color: Color(0xFF2563EB), fontWeight: FontWeight.bold))])),
               ],
             ),
             const SizedBox(height: 12),
-            Text(s['userPhone'] ?? 'No Phone', style: const TextStyle(fontSize: 12)),
-            Text(s['userEmail'] ?? 'No Email', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-
-            const Divider(height: 48),
-            _detailTitle('Property Details'),
-            _keyValueDetail('Property Type', s['propertyType'] ?? 'N/A'),
-            _keyValueDetail('Total Rooms', (s['totalRooms'] ?? 0).toString()),
-            _keyValueDetail('Rent Range', s['rentRange'] ?? 'N/A'),
-            _keyValueDetail('Availability', s['availability'] ?? 'Immediately'),
-
-            const Divider(height: 48),
-            _detailTitle('Description'),
-            Text(s['description'] ?? 'No description provided.', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.5)),
-
-            const Divider(height: 48),
-            _detailTitle('Photos'),
-            const Text('No photos attached', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            Text(s['suggester_phone'] ?? 'No Phone', style: const TextStyle(fontSize: 12)),
+            Text(s['suggester_email'] ?? 'No Email', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
 
             const SizedBox(height: 40),
             _actionBtn('Mark as Contacted', const Color(0xFFF5F3FF), const Color(0xFF7C3AED), Icons.phone_in_talk_outlined, () => _handleAction(s['id'], 'contacted')),
@@ -476,7 +481,7 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
             const SizedBox(height: 12),
             _actionBtn('Mark as Converted', const Color(0xFFF0FDF4), const Color(0xFF16A34A), Icons.check_circle_outline_rounded, () => _handleAction(s['id'], 'converted')),
             const SizedBox(height: 12),
-            _actionBtn('Reject Suggestion', const Color(0xFFFEF2F2), const Color(0xFFDC2626), Icons.cancel_outlined, () => _handleAction(s['id'], 'rejected')),
+            _actionBtn('Reject Lead', const Color(0xFFFEF2F2), const Color(0xFFDC2626), Icons.cancel_outlined, () => _handleAction(s['id'], 'rejected')),
           ],
         ),
       ),
@@ -485,9 +490,7 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
 
   Widget _detailTitle(String t) => Padding(padding: const EdgeInsets.only(bottom: 16), child: Text(t.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8), letterSpacing: 1)));
 
-  Widget _iconDetail(IconData i, String t, String s) => Row(children: [Icon(i, size: 18, color: const Color(0xFF2563EB)), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(t, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)), Text(s, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)))]))]);
-
-  Widget _keyValueDetail(String k, String v) => Padding(padding: const EdgeInsets.only(bottom: 12), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(k, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))), Text(v, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold))]));
+  Widget _iconDetail(IconData i, String t, String s) => Row(children: [Icon(i, size: 18, color: const Color(0xFF2563EB)), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(t, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)), if (s.isNotEmpty) Text(s, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)))]))]);
 
   Widget _actionBtn(String l, Color bg, Color t, IconData i, VoidCallback onTap) => InkWell(onTap: onTap, borderRadius: BorderRadius.circular(10), child: Container(width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(i, size: 16, color: t), const SizedBox(width: 8), Text(l, style: TextStyle(color: t, fontWeight: FontWeight.bold, fontSize: 13))])));
 
@@ -495,7 +498,7 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(widget.isNarrow ? '1-$count of $count' : 'Showing 1 to $count of $count suggestions', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+        Text('Showing $count members', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
         Row(
           children: [
             const PaginationBtn(icon: Icons.chevron_left),
@@ -543,14 +546,14 @@ class _SuggestionCard extends StatelessWidget {
                   children: [
                     Container(width: 40, height: 40, decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.home_work_outlined, color: Colors.grey, size: 18)),
                     const SizedBox(width: 12),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis), Text(type, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)))]))
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis), Text(type, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold))]))
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(location, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                    Expanded(child: Text(location, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569)), maxLines: 1, overflow: TextOverflow.ellipsis)),
                     StatusBadge(text: status, color: statusColor),
                   ],
                 ),
@@ -565,14 +568,14 @@ class _SuggestionCard extends StatelessWidget {
                     children: [
                       Container(width: 48, height: 48, decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.home_work_outlined, color: Colors.grey, size: 20)),
                       const SizedBox(width: 16),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis), Text(type, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))), Text(rooms, style: const TextStyle(fontSize: 10, color: Color(0xFF2563EB), fontWeight: FontWeight.bold))])),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis), Text(type, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)))])),
                     ],
                   ),
                 ),
                 // 2. Location
-                Expanded(flex: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF64748B)), const SizedBox(width: 4), Expanded(child: Text(location, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis))]), Text(subLocation, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)), maxLines: 1, overflow: TextOverflow.ellipsis)])),
+                Expanded(flex: 2, child: Row(children: [const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF64748B)), const SizedBox(width: 4), Expanded(child: Text(location, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis))])),
                 // 3. Suggested By
-                Expanded(flex: 2, child: Row(children: [CircleAvatar(radius: 14, backgroundColor: const Color(0xFFF1F5F9), child: Text(user.isNotEmpty ? user[0] : 'U', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey))), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Text(user, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)), const SizedBox(width: 4), Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1), decoration: BoxDecoration(color: const Color(0xFF2563EB).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)), child: Text(userType, style: const TextStyle(color: Color(0xFF2563EB), fontSize: 8, fontWeight: FontWeight.bold)))]), Text(phone, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)))]))])),
+                Expanded(flex: 2, child: Row(children: [CircleAvatar(radius: 14, backgroundColor: const Color(0xFFF1F5F9), child: Text(user.isNotEmpty ? user[0] : 'U', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey))), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(user, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)), Text(phone, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)))]))])),
                 // 4. Status
                 Expanded(flex: 2, child: Center(child: StatusBadge(text: status, color: statusColor))),
                 // 5. Date
@@ -584,7 +587,7 @@ class _SuggestionCard extends StatelessWidget {
                     const PopupMenuItem(value: 'contacted', child: Text('Mark Contacted')),
                     const PopupMenuItem(value: 'shortlisted', child: Text('Mark Shortlisted')),
                     const PopupMenuItem(value: 'converted', child: Text('Mark Converted')),
-                    const PopupMenuItem(value: 'rejected', child: Text('Reject Suggestion')),
+                    const PopupMenuItem(value: 'rejected', child: Text('Reject Lead')),
                   ],
                 ),
               ],
@@ -593,4 +596,3 @@ class _SuggestionCard extends StatelessWidget {
     );
   }
 }
-

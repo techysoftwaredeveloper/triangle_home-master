@@ -28,50 +28,63 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final bool isMobile = constraints.maxWidth < 600;
-          final double sidebarWidth = isMobile ? 80 : 100;
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: _adminService.getStatsStream(),
+      builder: (context, snapshot) {
+        final data = snapshot.data ?? {};
+        return Scaffold(
+          backgroundColor: const Color(0xFF0F172A),
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              final bool isMobile = constraints.maxWidth < 600;
+              final double sidebarWidth = isMobile ? 80 : 100;
 
-          return Row(
-            children: [
-              _buildSidebar(sidebarWidth),
-              Expanded(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(32),
+              return Row(
+                children: [
+                  _buildSidebar(sidebarWidth, data),
+                  Expanded(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(32),
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.only(topLeft: Radius.circular(32)),
+                        child: Column(
+                          children: [
+                            _buildTopBar(constraints.maxWidth - sidebarWidth, data),
+                            Expanded(child: _buildMainContent()),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(32)),
-                    child: Column(
-                      children: [
-                        _buildTopBar(constraints.maxWidth - sidebarWidth),
-                        Expanded(child: _buildMainContent()),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          );
-        }
-      ),
+                ],
+              );
+            }
+          ),
+        );
+      }
     );
   }
 
-  Widget _buildTopBar(double availableWidth) {
+  Widget _buildTopBar(double availableWidth, Map<String, dynamic> data) {
     final bool isMedium = availableWidth < 700;
     final bool isCompact = availableWidth < 500;
     final bool showSearch = availableWidth > 550;
     final bool showBrand = availableWidth > 500;
 
+    final int notificationCount = data['totalNotifications'] ?? 0;
+
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 24, vertical: 12),
+      padding: EdgeInsets.fromLTRB(
+        isCompact ? 12 : 24,
+        MediaQuery.of(context).padding.top + 8, // Added SafeArea awareness + extra spacing
+        isCompact ? 12 : 24,
+        16
+      ),
       decoration: const BoxDecoration(
         color: Color(0xFF0F172A),
       ),
@@ -82,16 +95,50 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
             const Icon(Icons.change_history_rounded, color: Color(0xFFA855F7), size: 22),
             const SizedBox(width: 12),
             Flexible(
-              child: Text(
-                'Triangle Homes',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: isMedium ? 15 : 17,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Outfit',
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Triangle Homes',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: isMedium ? 14 : 16,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                  FutureBuilder<bool>(
+                    future: _adminService.checkServerConnection(),
+                    builder: (context, snapshot) {
+                      final isConnected = snapshot.data ?? false;
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: isConnected ? Colors.green : Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            isConnected ? 'Server Online' : 'Server Offline',
+                            style: TextStyle(
+                              color: isConnected ? Colors.green.shade300 : Colors.red.shade300,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ],
@@ -131,54 +178,72 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
           SizedBox(width: isCompact ? 16 : 24),
 
           // Notifications
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              Icon(Icons.notifications_outlined, color: Colors.white70, size: isCompact ? 22 : 24),
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(color: Color(0xFFE11D48), shape: BoxShape.circle),
-                  constraints: const BoxConstraints(minWidth: 12, minHeight: 12),
-                  child: const Text('6', style: TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-                ),
-              ),
-            ],
+          GestureDetector(
+            onTap: () {
+              // TODO: Show Notifications Overlay/Panel
+              setState(() => _activeNavIndex = 7); // Switch to Reports as fallback for notifications
+            },
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(Icons.notifications_outlined, color: Colors.white70, size: isCompact ? 22 : 24),
+                if (notificationCount > 0)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(color: Color(0xFFE11D48), shape: BoxShape.circle),
+                      constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                      child: Text(
+                        notificationCount.toString(),
+                        style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
 
           SizedBox(width: isCompact ? 16 : 24),
 
-          // Profile
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircleAvatar(
-                  radius: isCompact ? 12 : 14,
-                  backgroundColor: const Color(0xFF8B5CF6),
-                  child: Text('SA', style: TextStyle(color: Colors.white, fontSize: isCompact ? 8 : 9, fontWeight: FontWeight.bold)),
-                ),
-                if (!isCompact) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    'Admin',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: isMedium ? 11 : 12,
-                        fontWeight: FontWeight.w600
-                    ),
+          // Profile - NOW TAPPABLE
+          InkWell(
+            onTap: () {
+              // TODO: Show Admin Profile Settings / Switch Account
+              setState(() => _activeNavIndex = 9); // Quick jump to Settings
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: isCompact ? 12 : 14,
+                    backgroundColor: const Color(0xFF8B5CF6),
+                    child: Text('SA', style: TextStyle(color: Colors.white, fontSize: isCompact ? 8 : 9, fontWeight: FontWeight.bold)),
                   ),
+                  if (!isCompact) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      'Admin',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isMedium ? 11 : 12,
+                          fontWeight: FontWeight.w600
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.keyboard_arrow_down, color: Colors.white60, size: 14),
+                  ],
                 ],
-                const SizedBox(width: 2),
-                const Icon(Icons.keyboard_arrow_down, color: Colors.white60, size: 14),
-              ],
+              ),
             ),
           ),
         ],
@@ -186,10 +251,15 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
     );
   }
 
-  Widget _buildSidebar(double width) {
+  Widget _buildSidebar(double width, Map<String, dynamic> data) {
+    final int pendingApprovals = data['pendingApprovals'] ?? 0;
+    final int pendingSuggestions = data['pendingSuggestions'] ?? 0;
+    final int pendingReports = data['pendingReports'] ?? 0;
+    final int pendingModeration = data['pendingModeration'] ?? 0;
+
     return Container(
       width: width,
-      padding: const EdgeInsets.symmetric(vertical: 24),
+      padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).padding.top + 16, 0, 24), // Added top spacing for sidebar
       child: Column(
         children: [
           const Icon(Icons.change_history_rounded, color: Colors.white, size: 32),
@@ -199,14 +269,18 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
               child: Column(
                 children: [
                   _buildNavItem(0, Icons.grid_view_rounded, 'Overview', width),
-                  _buildNavItem(1, Icons.assignment_turned_in_outlined, 'Approvals', width, badge: '7'),
+                  _buildNavItem(1, Icons.assignment_turned_in_outlined, 'Approvals', width,
+                      badge: pendingApprovals > 0 ? pendingApprovals.toString() : null),
                   _buildNavItem(2, Icons.business_outlined, 'Listings', width),
                   _buildNavItem(3, Icons.people_outline_rounded, 'Users', width),
                   _buildNavItem(4, Icons.calendar_today_outlined, 'Bookings', width),
                   _buildNavItem(5, Icons.account_balance_wallet_outlined, 'Payments', width),
-                  _buildNavItem(6, Icons.lightbulb_outline_rounded, 'Suggestions', width),
-                  _buildNavItem(7, Icons.analytics_outlined, 'Reports', width),
-                  _buildNavItem(8, Icons.security_outlined, 'Moderation', width),
+                  _buildNavItem(6, Icons.lightbulb_outline_rounded, 'Suggestions', width,
+                      badge: pendingSuggestions > 0 ? pendingSuggestions.toString() : null),
+                  _buildNavItem(7, Icons.analytics_outlined, 'Reports', width,
+                      badge: pendingReports > 0 ? pendingReports.toString() : null),
+                  _buildNavItem(8, Icons.security_outlined, 'Moderation', width,
+                      badge: pendingModeration > 0 ? pendingModeration.toString() : null),
                   _buildNavItem(9, Icons.settings_outlined, 'Settings', width),
                 ],
               ),

@@ -236,52 +236,61 @@ class OverviewTab extends StatelessWidget {
   }
 
   Widget _buildCriticalActions(Map<String, dynamic>? data) {
+    final double cardWidth = isNarrow ? 160 : 220;
+    final double cardHeight = isNarrow ? 140 : 180;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          _buildActionCard(data?['pendingHosters']?.toString() ?? '0', 'Pending Host\nApprovals', const Color(0xFFFEE2E2), const Color(0xFFDC2626), Icons.assignment_ind_outlined),
+          _wrapInSizedBox(cardWidth, cardHeight, _buildActionCard(data?['pendingHosters']?.toString() ?? '0', 'Pending Host\nApprovals', const Color(0xFFFEE2E2), const Color(0xFFDC2626), Icons.assignment_ind_outlined)),
           const SizedBox(width: 16),
-          _buildActionCard(data?['pendingProperties']?.toString() ?? '0', 'Pending Listing\nApprovals', const Color(0xFFFFEDD5), const Color(0xFFD97706), Icons.home_work_outlined),
+          _wrapInSizedBox(cardWidth, cardHeight, _buildActionCard(data?['pendingProperties']?.toString() ?? '0', 'Pending Listing\nApprovals', const Color(0xFFFFEDD5), const Color(0xFFD97706), Icons.home_work_outlined)),
           const SizedBox(width: 16),
-          _buildActionCard(data?['pendingReports']?.toString() ?? '0', 'Open Incident\nReports', const Color(0xFFFFF1F2), const Color(0xFFE11D48), Icons.flag_outlined),
+          _wrapInSizedBox(cardWidth, cardHeight, _buildActionCard(data?['pendingReports']?.toString() ?? '0', 'Open Incident\nReports', const Color(0xFFFFF1F2), const Color(0xFFE11D48), Icons.flag_outlined)),
           const SizedBox(width: 16),
-          _buildActionCard(data?['pendingBookings']?.toString() ?? '0', 'Pending\nBookings', const Color(0xFFF5F3FF), const Color(0xFF7C3AED), Icons.calendar_month_outlined),
+          _wrapInSizedBox(cardWidth, cardHeight, _buildActionCard(data?['pendingBookings']?.toString() ?? '0', 'Pending\nBookings', const Color(0xFFF5F3FF), const Color(0xFF7C3AED), Icons.calendar_month_outlined)),
           const SizedBox(width: 16),
-          _buildActionCard('0', 'Failed\nPayments', const Color(0xFFF1F5F9), const Color(0xFF475569), Icons.money_off_rounded),
+          _wrapInSizedBox(cardWidth, cardHeight, _buildActionCard('0', 'Failed\nPayments', const Color(0xFFF1F5F9), const Color(0xFF475569), Icons.money_off_rounded)),
         ],
       ),
     );
   }
 
+  Widget _wrapInSizedBox(double w, double h, Widget child) => SizedBox(width: w, height: h, child: child);
+
   Widget _buildActionCard(String count, String label, Color bg, Color text, IconData icon) {
     return Container(
-      width: 160,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: text, size: 22),
-          ),
-          const SizedBox(height: 16),
-          Text(count, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-          const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500, height: 1.3)),
-          const SizedBox(height: 20),
-          Text(
-            'Review Now',
-            style: TextStyle(color: text, fontSize: 13, fontWeight: FontWeight.bold, decoration: TextDecoration.underline),
-          ),
-        ],
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: text, size: 22),
+            ),
+            const SizedBox(height: 16),
+            Text(count, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500, height: 1.3)),
+            const SizedBox(height: 20),
+            Text(
+              'Review Now',
+              style: TextStyle(color: text, fontSize: 13, fontWeight: FontWeight.bold, decoration: TextDecoration.underline),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -315,35 +324,37 @@ class OverviewTab extends StatelessWidget {
             BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
-            child: Icon(label.contains('Revenue') ? Icons.payments_outlined : Icons.people_outline, color: color, size: 20),
-          ),
-          const Spacer(),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: isNarrow ? 11 : 12, fontWeight: FontWeight.bold, color: const Color(0xFF64748B))
-          ),
-          const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(value, style: TextStyle(fontSize: isNarrow ? 22 : 24, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(isUp ? Icons.arrow_upward : Icons.arrow_downward, color: Colors.green, size: 12),
-              const SizedBox(width: 2),
-              Text(change, style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ],
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+              child: Icon(label.contains('Revenue') ? Icons.payments_outlined : Icons.people_outline, color: color, size: 20),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: isNarrow ? 11 : 12, fontWeight: FontWeight.bold, color: const Color(0xFF64748B))
+            ),
+            const SizedBox(height: 4),
+            Text(value, style: TextStyle(fontSize: isNarrow ? 22 : 24, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(isUp ? Icons.arrow_upward : Icons.arrow_downward, color: Colors.green, size: 12),
+                const SizedBox(width: 2),
+                Text(change, style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

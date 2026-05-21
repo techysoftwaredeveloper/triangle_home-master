@@ -50,7 +50,7 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: const BoxDecoration(
-                            color: Colors.green,
+                            color: Color(0xFF22C55E),
                             shape: BoxShape.circle,
                             boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
                           ),
@@ -61,49 +61,36 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 32),
                   const Text(
-                    'Suggestion Submitted!',
+                    'Success!',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.primaryColor),
                   ).animate().fadeIn(delay: 200.ms),
                   const SizedBox(height: 12),
                   const Text(
-                    'Thank you for helping us grow our community.\nYour suggestion has been received successfully.',
+                    'Thank you for your suggestion. We\'ll review it and get back to you soon.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, color: AppTheme.textLightColor, fontFamily: 'Outfit', height: 1.6),
                   ).animate().fadeIn(delay: 400.ms),
                 ],
               ),
             ),
-            const SizedBox(height: 48),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'What happens next?',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.textDarkColor),
-              ),
-            ).animate().fadeIn(delay: 500.ms),
+            const SizedBox(height: 40),
+            _buildSectionTitle('What\'s Next?'),
             const SizedBox(height: 24),
             _buildTimelineItem(
               icon: Icons.search_rounded,
-              title: 'We\'ll review your suggestion',
-              subtitle: 'Our team will carefully review the details.',
-              badge: '1-2 Days',
-              color: Colors.green,
-            ).animate().fadeIn(delay: 600.ms).slideX(begin: 0.05, end: 0),
-            _buildTimelineItem(
-              icon: Icons.phone_outlined,
-              title: 'We may contact you',
-              subtitle: 'If needed, we\'ll reach out via email or phone.',
-              badge: 'If Required',
-              color: Colors.blue,
-            ).animate().fadeIn(delay: 700.ms).slideX(begin: 0.05, end: 0),
+              title: 'Review Process',
+              subtitle: 'Our team will verify the property details.',
+              badge: 'Step 1',
+              color: const Color(0xFF22C55E),
+            ).animate().fadeIn(delay: 500.ms).slideX(begin: 0.05, end: 0),
             _buildTimelineItem(
               icon: Icons.notifications_none_rounded,
-              title: 'You\'ll get notified',
-              subtitle: 'We\'ll update you about the status.',
-              badge: 'Stay Tuned',
-              color: Colors.orange,
+              title: 'Verification',
+              subtitle: 'We will reach out if we need more info.',
+              badge: 'Step 2',
+              color: const Color(0xFF3B82F6),
               isLast: true,
-            ).animate().fadeIn(delay: 800.ms).slideX(begin: 0.05, end: 0),
+            ).animate().fadeIn(delay: 600.ms).slideX(begin: 0.05, end: 0),
 
             const SizedBox(height: 32),
             _buildSummaryCard(formattedDate),
@@ -123,12 +110,12 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.home_outlined, color: Colors.white, size: 20),
-                    SizedBox(width: 12),
-                    Text('Back to Home', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+                    const SizedBox(width: 12),
+                    Text('Go to Home', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
                   ],
                 ),
               ),
-            ).animate().fadeIn(delay: 1000.ms).slideY(begin: 0.1, end: 0),
+            ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.1, end: 0),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -139,31 +126,30 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
                   side: const BorderSide(color: AppTheme.primaryColor),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.add_circle_outline_rounded, color: AppTheme.primaryColor, size: 20),
-                    SizedBox(width: 12),
-                    Text('Suggest Another Property', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.primaryColor)),
-                  ],
+                child: const Text(
+                  'Suggest Another',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.primaryColor),
                 ),
               ),
-            ).animate().fadeIn(delay: 1100.ms).slideY(begin: 0.1, end: 0),
-            const SizedBox(height: 32),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.verified_user_outlined, size: 14, color: AppTheme.textLightColor.withValues(alpha: 0.6)),
-                const SizedBox(width: 8),
-                Text(
-                  'Your information is safe and secure',
-                  style: TextStyle(fontSize: 12, color: AppTheme.textLightColor.withValues(alpha: 0.6), fontFamily: 'Outfit'),
-                ),
-              ],
-            ),
+            ).animate().fadeIn(delay: 900.ms).slideY(begin: 0.1, end: 0),
             const SizedBox(height: 48),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        title.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Outfit',
+          color: AppTheme.textLightColor,
+          letterSpacing: 1.2,
         ),
       ),
     );
@@ -222,52 +208,49 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
 
   Widget _buildSummaryCard(String date) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.assignment_outlined, color: Colors.green, size: 20),
+              const Icon(Icons.description_outlined, color: Color(0xFF22C55E), size: 18),
               const SizedBox(width: 12),
-              const Text('Suggestion Summary', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
-              const Spacer(),
-              Icon(Icons.more_horiz_rounded, color: AppTheme.textLightColor.withValues(alpha: 0.4)),
+              const Text('Submission Details', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
             ],
           ),
-          const SizedBox(height: 24),
-          _summaryRow(Icons.business_outlined, 'Property Name', suggestionData['business_name'] ?? ''),
-          const Divider(height: 32, color: Color(0xFFF1F5F9)),
-          _summaryRow(Icons.location_on_outlined, 'Location', suggestionData['business_address'] ?? ''),
-          const Divider(height: 32, color: Color(0xFFF1F5F9)),
-          _summaryRow(Icons.category_outlined, 'Category', suggestionData['category'] ?? ''),
-          const Divider(height: 32, color: Color(0xFFF1F5F9)),
-          _summaryRow(Icons.calendar_today_outlined, 'Submitted On', date),
+          const SizedBox(height: 20),
+          _summaryRow('Property', suggestionData['business_name'] ?? ''),
+          const Divider(height: 24, color: Color(0xFFF1F5F9)),
+          _summaryRow('Address', suggestionData['business_address'] ?? ''),
+          const Divider(height: 24, color: Color(0xFFF1F5F9)),
+          _summaryRow('Status', 'Under Review'),
+          const Divider(height: 24, color: Color(0xFFF1F5F9)),
+          _summaryRow('Date', date),
         ],
       ),
-    ).animate().fadeIn(delay: 900.ms).slideY(begin: 0.05, end: 0);
+    ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.05, end: 0);
   }
 
-  Widget _summaryRow(IconData icon, String label, String value) {
+  Widget _summaryRow(String label, String value) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: AppTheme.textLightColor.withValues(alpha: 0.5)),
-        const SizedBox(width: 16),
-        Text(label, style: const TextStyle(fontSize: 13, color: AppTheme.textLightColor, fontFamily: 'Outfit')),
+        Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textLightColor, fontFamily: 'Outfit')),
         const Spacer(),
         Expanded(
           flex: 2,
           child: Text(
             value,
             textAlign: TextAlign.right,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.textDarkColor),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.textDarkColor),
             overflow: TextOverflow.ellipsis,
+            maxLines: 2,
           ),
         ),
       ],

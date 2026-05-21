@@ -14,9 +14,19 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textDarkColor, size: 20),
           onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Property Suggestion',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Outfit',
+            color: AppTheme.primaryColor,
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -24,21 +34,12 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 12),
             Center(
               child: Column(
                 children: [
                   const Text(
-                    'Suggest a Property',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Outfit',
-                      color: AppTheme.primaryColor,
-                    ),
-                  ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.2, end: 0),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Help others find a great place to live or stay.',
+                    'Help your community grow',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
@@ -53,21 +54,25 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
                     alignment: Alignment.center,
                     children: [
                       Container(
-                        height: 120,
-                        width: 180,
+                        height: 140,
+                        width: 220,
                         decoration: BoxDecoration(
                           color: AppTheme.primaryColor.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(32),
                         ),
-                        child: const Icon(Icons.home_work_rounded, size: 70, color: AppTheme.primaryColor),
+                        child: const Icon(Icons.home_work_rounded, size: 80, color: AppTheme.primaryColor),
                       ),
                       Positioned(
-                        top: 0,
-                        right: 40,
+                        top: 10,
+                        right: 30,
                         child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                          child: const Icon(Icons.location_on_rounded, color: AppTheme.primaryColor, size: 30),
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
+                          ),
+                          child: const Icon(Icons.location_on_rounded, color: AppTheme.primaryColor, size: 24),
                         ).animate().scale(delay: 500.ms, duration: 400.ms, curve: Curves.easeOutBack),
                       ),
                     ],
@@ -76,69 +81,30 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 48),
-            const Center(
-              child: Text(
-                'Why suggest a property?',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Outfit',
-                  color: AppTheme.textDarkColor,
-                ),
-              ),
-            ).animate().fadeIn(delay: 400.ms),
+            _buildSectionTitle('Benefits of suggesting'),
             const SizedBox(height: 24),
             _buildBenefitItem(
               icon: Icons.group_add_outlined,
               title: 'Help the Community',
-              description: 'Your suggestions help students and professionals find verified and reliable accommodations.',
-              color: Colors.green,
+              description: 'Aid students & pros in finding verified, reliable stays.',
+              color: const Color(0xFF22C55E), // Green
             ).animate().fadeIn(delay: 500.ms).slideX(begin: 0.1, end: 0),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildBenefitItem(
               icon: Icons.verified_user_outlined,
               title: 'Trusted & Verified',
-              description: 'We verify every property and business owner to ensure safety and trust for everyone.',
-              color: Colors.blue,
+              description: 'We verify owners to ensure safety and trust for all.',
+              color: const Color(0xFF3B82F6), // Blue
             ).animate().fadeIn(delay: 600.ms).slideX(begin: 0.1, end: 0),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildBenefitItem(
               icon: Icons.card_giftcard_outlined,
               title: 'Appreciation Rewards',
-              description: 'Top suggesters get special rewards, recognition and exclusive benefits.',
-              color: Colors.orange,
+              description: 'Top suggesters get special rewards and recognition.',
+              color: const Color(0xFFF59E0B), // Orange
             ).animate().fadeIn(delay: 700.ms).slideX(begin: 0.1, end: 0),
-            const SizedBox(height: 32),
 
-            // Quote/Highlight box
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.green.withValues(alpha: 0.1)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.format_quote_rounded, color: Colors.green, size: 28),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      'Your suggestion can make someone\'s stay better and stress-free!',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.green,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Outfit',
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(delay: 800.ms),
-
-            const SizedBox(height: 48),
+            const SizedBox(height: 40),
 
             // Action Buttons
             SizedBox(
@@ -160,7 +126,7 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Suggest a Property',
+                      'Get Started',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
                     ),
                     SizedBox(width: 8),
@@ -168,7 +134,7 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
                   ],
                 ),
               ),
-            ).animate().fadeIn(delay: 900.ms).slideY(begin: 0.2, end: 0),
+            ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2, end: 0),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -185,32 +151,45 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: const Text(
-                  'Own a property? Become a Hoster',
+                  'Own a property? Become a Host',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.primaryColor),
                 ),
               ),
-            ).animate().fadeIn(delay: 1000.ms).slideY(begin: 0.2, end: 0),
+            ).animate().fadeIn(delay: 900.ms).slideY(begin: 0.2, end: 0),
             const SizedBox(height: 32),
 
             // Secure Footer
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.shield_outlined, size: 16, color: AppTheme.textLightColor.withValues(alpha: 0.6)),
+                Icon(Icons.shield_outlined, size: 14, color: AppTheme.textLightColor.withValues(alpha: 0.5)),
                 const SizedBox(width: 8),
                 Text(
-                  'Your information is safe and secure',
+                  'Your data is private and encrypted',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textLightColor.withValues(alpha: 0.6),
+                    fontSize: 11,
+                    color: AppTheme.textLightColor.withValues(alpha: 0.5),
                     fontFamily: 'Outfit',
                   ),
                 ),
               ],
-            ).animate().fadeIn(delay: 1100.ms),
+            ).animate().fadeIn(delay: 1000.ms),
             const SizedBox(height: 48),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        fontFamily: 'Outfit',
+        color: AppTheme.textLightColor,
+        letterSpacing: 1.2,
       ),
     );
   }
@@ -222,30 +201,23 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
         border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,21 +231,19 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
                     color: AppTheme.textDarkColor,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   description,
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppTheme.textLightColor,
                     fontFamily: 'Outfit',
-                    height: 1.5,
+                    height: 1.4,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          Icon(Icons.arrow_forward_ios_rounded, color: color.withValues(alpha: 0.3), size: 14),
         ],
       ),
     );
