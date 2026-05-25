@@ -151,6 +151,17 @@ class AdminApiService {
     }
   }
 
+  Future<void> convertSuggestion(String id) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/suggestions/$id/convert'),
+      headers: await _getHeaders(),
+    );
+    if (response.statusCode != 200) {
+      final error = json.decode(response.body)['error'] ?? 'Failed to convert suggestion';
+      throw Exception(error);
+    }
+  }
+
   // Reports
   Future<void> updateReportStatus(String id, String status, {String? resolution}) async {
     final response = await http.patch(

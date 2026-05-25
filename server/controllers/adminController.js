@@ -147,6 +147,18 @@ exports.approveHoster = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Hoster approved successfully' });
 });
 
+exports.getAllProperties = asyncHandler(async (req, res) => {
+  const snapshot = await db.collection('properties').orderBy('createdAt', 'desc').get();
+  const properties = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  res.json(properties);
+});
+
+exports.getAllBookings = asyncHandler(async (req, res) => {
+  const snapshot = await db.collection('bookings').orderBy('createdAt', 'desc').get();
+  const bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  res.json(bookings);
+});
+
 exports.updateUserRole = asyncHandler(async (req, res) => {
   const { userId } = req.params;
   const { role } = req.body;

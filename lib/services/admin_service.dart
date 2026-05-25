@@ -353,26 +353,30 @@ class AdminService {
   }
 
   Future<void> updateSuggestionStatus(String id, String status) async {
-    try {
-      // 1. Attempt Backend API update (for audit logging, notifications, etc.)
-      await _apiService.updateSuggestionStatus(id, status).timeout(const Duration(seconds: 10));
-    } catch (e) {
-      debugPrint('Backend API update failed, falling back to direct Firestore update: $e');
+    // Reverted fallback: All requests must go through backend
+    await _apiService.updateSuggestionStatus(id, status).timeout(const Duration(seconds: 30));
 
-      // 2. Fallback: Direct Firestore update if backend is unreachable
-      await _firestore.collection('property_suggestions').doc(id).update({
-        'status': status,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    }
-
-    // 3. Log action locally for audit trail consistency
+    // Log action locally for audit trail consistency
     await _auditService.logAction(
       action: 'suggestion_status_update',
       targetId: id,
       targetType: 'suggestions',
       reason: 'Status changed to $status',
       extraData: {'newStatus': status},
+    );
+  }
+
+  Future<void> convertSuggestionToApprovals(String id) async {
+    // Removed manual timeout to prevent premature 'Future not completed' errors
+    // The http client has its own internal timeout
+    await _apiService.convertSuggestion(id);
+
+    // Log action
+    await _auditService.logAction(
+      action: 'suggestion_conversion',
+      targetId: id,
+      targetType: 'suggestions',
+      reason: 'Converted to Approvals',
     );
   }
 

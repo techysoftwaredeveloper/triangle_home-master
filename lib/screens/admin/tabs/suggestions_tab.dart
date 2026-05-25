@@ -410,7 +410,11 @@ class _SuggestionsTabState extends State<SuggestionsTab> with SingleTickerProvid
 
   void _handleAction(String id, String action) async {
     try {
-      await widget.adminService.updateSuggestionStatus(id, action);
+      if (action == 'converted') {
+        await widget.adminService.convertSuggestionToApprovals(id);
+      } else {
+        await widget.adminService.updateSuggestionStatus(id, action);
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lead updated successfully'), backgroundColor: Colors.green),

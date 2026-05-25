@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:triangle_home/screens/admin/property_detail_screen.dart';
 import 'package:triangle_home/services/admin_service.dart';
 import 'package:triangle_home/screens/admin/widgets/admin_shared_widgets.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -327,8 +328,44 @@ class _ListingsTabState extends State<ListingsTab> with SingleTickerProviderStat
         statusColor: _getStatusColor(p['status']),
         date: _formatDate(p['createdAt']),
         isNarrow: widget.isNarrow,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PropertyDetailScreen(
+                property: p,
+                adminService: widget.adminService,
+              ),
+            ),
+          );
+        },
+        onAction: (action) => _handleListingAction(p['id'], action),
       )).toList(),
     );
+  }
+
+  void _handleListingAction(String id, String action) async {
+    try {
+      if (action == 'activate') {
+        await widget.adminService.approveItem(id, 'property');
+      } else if (action == 'reject') {
+        await widget.adminService.rejectItem(id, 'property');
+      } else if (action == 'delete') {
+        await widget.adminService.deleteListing(id);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Action completed successfully'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   String _formatStatus(dynamic s) {
@@ -417,6 +454,8 @@ class _ListingCard extends StatelessWidget {
   final Color statusColor;
   final String date;
   final bool isNarrow;
+  final VoidCallback onTap;
+  final Function(String) onAction;
 
   const _ListingCard({
     required this.id,
@@ -433,123 +472,174 @@ class _ListingCard extends StatelessWidget {
     required this.statusColor,
     required this.date,
     required this.isNarrow,
+    required this.onTap,
+    required this.onAction,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
-      child: Row(
-        children: [
-          // 1. Property
-          Expanded(
-            flex: 3,
-            child: Row(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+        ),
+        child: isNarrow
+          ? Column(
               children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.home_work_outlined, color: Colors.grey, size: 20),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.home_work_outlined, color: Colors.grey, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Flexible(
-                            child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.check_circle, color: Color(0xFF22C55E), size: 12),
+                          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(type, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold)),
                         ],
                       ),
-                      Text(type, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-                      if (!isNarrow) ...[
-                        const SizedBox(height: 4),
-                        Row(
+                    ),
+                    StatusBadge(text: status, color: statusColor),
+                    _buildMenu(),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF64748B)),
+                    const SizedBox(width: 4),
+                    Expanded(child: Text(location, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    Text(rooms, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                  ],
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                // 1. Property
+                Expanded(
+                  flex: 3,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.home_work_outlined, color: Colors.grey, size: 20),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF64748B)),
-                            const SizedBox(width: 4),
-                            Text(location, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.check_circle, color: Color(0xFF22C55E), size: 12),
+                              ],
+                            ),
+                            Text(type, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF64748B)),
+                                const SizedBox(width: 4),
+                                Text(location, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                              ],
+                            ),
                           ],
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
+
+                // 2. Hoster
+                Expanded(
+                  flex: 2,
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundColor: const Color(0xFFF1F5F9),
+                        child: Text(hoster.isNotEmpty ? hoster[0] : 'U', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(hoster, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            const Text('Verified Hoster', style: TextStyle(fontSize: 10, color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 3. Stats
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _miniStat('Views', views),
+                      _miniStat('Bookings', bookings),
+                      _miniStat('Occupancy', occupancy, isBold: true),
+                    ],
+                  ),
+                ),
+
+                // 4. Status
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      StatusBadge(text: status, color: statusColor),
+                      const SizedBox(height: 4),
+                      Text(date, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8))),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _buildMenu(),
               ],
             ),
-          ),
-
-          // 2. Hoster
-          if (!isNarrow)
-            Expanded(
-              flex: 2,
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundColor: const Color(0xFFF5F3FF),
-                    child: Text(hoster.isNotEmpty ? hoster[0] : 'U', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED))),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(hoster, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis),
-                        const Text('Verified Hoster', style: TextStyle(fontSize: 10, color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
-                        Text('ID: $hosterId', style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // 3. Stats
-          if (!isNarrow)
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _miniStat('Views', views),
-                  _miniStat('Bookings', bookings),
-                  _miniStat('Occupancy', occupancy, isBold: true),
-                ],
-              ),
-            ),
-
-          // 4. Status
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                StatusBadge(text: status, color: statusColor),
-                const SizedBox(height: 4),
-                Text(status == 'Active' ? 'Listed on' : 'Submitted on', style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
-                Text(date, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          const Icon(Icons.more_vert, color: Color(0xFFCBD5E1), size: 18),
-        ],
       ),
+    );
+  }
+
+  Widget _buildMenu() {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, color: Color(0xFFCBD5E1), size: 18),
+      onSelected: onAction,
+      itemBuilder: (context) => [
+        const PopupMenuItem(value: 'view', child: Text('View Details')),
+        if (status == 'Under Review') const PopupMenuItem(value: 'activate', child: Text('Approve Listing')),
+        if (status == 'Active') const PopupMenuItem(value: 'reject', child: Text('Reject Listing')),
+        const PopupMenuItem(value: 'delete', child: Text('Delete Listing', style: TextStyle(color: Colors.red))),
+      ],
     );
   }
 

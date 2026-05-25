@@ -82,6 +82,59 @@ class _SuggestionDetailScreenState extends State<SuggestionDetailScreen> {
     }
   }
 
+  Future<void> _handleConvert() async {
+    if (_isUpdating) return;
+
+    setState(() => _isUpdating = true);
+    try {
+      await widget.adminService.convertSuggestionToApprovals(widget.suggestionId);
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle_outline_rounded, color: Color(0xFF16A34A)),
+                SizedBox(width: 12),
+                Text('Lead Converted', style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+              ],
+            ),
+            content: const Text(
+              'This lead has been successfully moved to the Approvals Hub. Two new requests have been created:\n\n1. A Hoster Request for the owner.\n2. A Property Listing for the business.\n\nYou can now review and activate them in the Approvals tab.',
+              style: TextStyle(height: 1.5),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context); // Go back to list
+                },
+                child: const Text('Go to Suggestions', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Conversion failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Map<String, dynamic>?>(
@@ -304,7 +357,7 @@ class _SuggestionDetailScreenState extends State<SuggestionDetailScreen> {
                       const Color(0xFFF0FDF4),
                       const Color(0xFF16A34A),
                       Icons.check_circle_outline_rounded,
-                      () => _handleAction('converted'),
+                      _handleConvert,
                       isActive: suggestion['status'] == 'converted'
                     ),
                     const SizedBox(height: 12),

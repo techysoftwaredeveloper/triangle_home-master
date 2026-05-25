@@ -16,5 +16,6 @@ router.post('/', [
 
 // Admin routes
 router.patch('/:suggestionId/status', isAdmin, suggestionController.updateSuggestionStatus);
+router.post('/:suggestionId/convert', isAdmin, suggestionController.convertToApprovals);
 
 module.exports = router;
