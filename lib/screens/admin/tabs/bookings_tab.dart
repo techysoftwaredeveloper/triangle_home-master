@@ -77,15 +77,15 @@ class _BookingsTabState extends State<BookingsTab> with SingleTickerProviderStat
                   children: [
                     TabHeader(
                       title: 'Bookings',
-                      subtitle: 'Manage all booking requests and reservations',
+                      subtitle: widget.isNarrow ? 'Manage reservations' : 'Manage all booking requests and reservations',
                       isNarrow: widget.isNarrow,
                       actions: [
                         _buildHeaderAction('Export', Icons.file_download_outlined, isOutline: true, onPressed: _handleExport),
-                        const SizedBox(width: 12),
+                        if (!widget.isNarrow) const SizedBox(width: 12),
                         _buildHeaderAction('Filters', Icons.tune_rounded, hasDropdown: true),
                       ],
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
                     _buildSummaryCards(allBookings),
                     const SizedBox(height: 32),
                     _buildCategoryTabs(allBookings),
@@ -126,16 +126,16 @@ class _BookingsTabState extends State<BookingsTab> with SingleTickerProviderStat
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.calendar_today_outlined, size: 64, color: Colors.grey.shade300),
+          Icon(Icons.calendar_today_outlined, size: 56, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(
             'No bookings found',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
           ),
           const SizedBox(height: 8),
           Text(
             'Try adjusting your search or filters.',
-            style: TextStyle(color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           ),
         ],
       ),
@@ -187,12 +187,15 @@ class _BookingsTabState extends State<BookingsTab> with SingleTickerProviderStat
       }
     }
 
+    final double cardWidth = widget.isNarrow ? 160 : 220;
+    final double cardHeight = widget.isNarrow ? 140 : 180;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          SummaryCard(
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
             count: bookings.length.toString(),
             label: 'Total Bookings',
             bg: const Color(0xFFEFF6FF),
@@ -200,36 +203,36 @@ class _BookingsTabState extends State<BookingsTab> with SingleTickerProviderStat
             icon: Icons.calendar_today_rounded,
             percentage: '14.6%',
             isUp: true,
-          ),
+          )),
           const SizedBox(width: 16),
-          SummaryCard(
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
             count: confirmed.toString(),
             label: 'Confirmed',
             bg: const Color(0xFFF0FDF4),
             color: const Color(0xFF16A34A),
             icon: Icons.check_circle_rounded,
             sub: bookings.isEmpty ? '0% of total' : '${((confirmed/bookings.length)*100).toStringAsFixed(1)}% of total',
-          ),
+          )),
           const SizedBox(width: 16),
-          SummaryCard(
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
             count: pending.toString(),
             label: 'Pending',
             bg: const Color(0xFFFFFBEB),
             color: const Color(0xFFD97706),
             icon: Icons.hourglass_top_rounded,
             sub: bookings.isEmpty ? '0% of total' : '${((pending/bookings.length)*100).toStringAsFixed(1)}% of total',
-          ),
+          )),
           const SizedBox(width: 16),
-          SummaryCard(
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
             count: cancelled.toString(),
             label: 'Cancelled',
             bg: const Color(0xFFFEF2F2),
             color: const Color(0xFFDC2626),
             icon: Icons.cancel_outlined,
             sub: bookings.isEmpty ? '0% of total' : '${((cancelled/bookings.length)*100).toStringAsFixed(1)}% of total',
-          ),
+          )),
           const SizedBox(width: 16),
-          SummaryCard(
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
             count: '₹${NumberFormat.currency(locale: 'en_IN', symbol: '', decimalDigits: 0).format(totalRevenue)}',
             label: 'Total Revenue',
             bg: const Color(0xFFFFF1F2),
@@ -237,11 +240,13 @@ class _BookingsTabState extends State<BookingsTab> with SingleTickerProviderStat
             icon: Icons.payments_outlined,
             percentage: '18.3%',
             isUp: true,
-          ),
+          )),
         ],
       ),
     );
   }
+
+  Widget _wrapInSizedBox(double w, double h, Widget child) => SizedBox(width: w, height: h, child: child);
 
   Widget _buildCategoryTabs(List<Map<String, dynamic>> bookings) {
     final pending = bookings.where((b) => b['status'] == 'pending').length;
@@ -262,7 +267,7 @@ class _BookingsTabState extends State<BookingsTab> with SingleTickerProviderStat
         indicatorWeight: 3,
         labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Outfit'),
         tabs: [
-          Tab(text: 'All Bookings (${bookings.length})'),
+          Tab(text: widget.isNarrow ? 'All (${bookings.length})' : 'All Bookings (${bookings.length})'),
           Tab(text: 'Pending ($pending)'),
           Tab(text: 'Confirmed ($confirmed)'),
           Tab(text: 'Cancelled ($cancelled)'),
@@ -767,126 +772,184 @@ class _BookingCard extends StatelessWidget {
           color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFF1F5F9)),
-          boxShadow: [if (isSelected) BoxShadow(color: const Color(0xFF2563EB).withValues(alpha: 0.05), blurRadius: 10)],
         ),
-        child: Row(
-          children: [
-            // 1. Booking ID
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(id, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
-                  Text(date, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-                  Text(time, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-                ],
-              ),
-            ),
+        child: isNarrow
+          ? Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(id, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
+                        Text('$date • $time', style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                      ],
+                    ),
+                    StatusBadge(text: status, color: statusColor),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Container(width: 40, height: 40, decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.business_rounded, color: Colors.grey, size: 18)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(property, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(location, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(guest, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B))),
+                        Text(phone, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(amount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
+                        Text(isPaid ? 'PAID' : 'PENDING', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: isPaid ? Colors.green : Colors.orange)),
+                      ],
+                    ),
+                    _buildMenu(),
+                  ],
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                // 1. Booking ID
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(id, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
+                      Text(date, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                      Text(time, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                    ],
+                  ),
+                ),
 
-            // 2. Property
-            Expanded(
-              flex: 3,
-              child: Row(
-                children: [
-                  Container(width: 40, height: 40, decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.business_rounded, color: Colors.grey, size: 18)),
-                  const SizedBox(width: 12),
+                // 2. Property
+                Expanded(
+                  flex: 3,
+                  child: Row(
+                    children: [
+                      Container(width: 40, height: 40, decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.business_rounded, color: Colors.grey, size: 18)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(property, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            Text(location, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                            Text(propType, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 3. Guest
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(guest, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B))),
+                      Text(phone, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                    ],
+                  ),
+                ),
+
+                // 4. User Type
+                if (!isNarrow)
                   Expanded(
+                    flex: 2,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: (userType == 'Student' ? const Color(0xFF2563EB) : const Color(0xFF7C3AED)).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(userType == 'Student' ? Icons.school_outlined : Icons.work_outline, size: 12, color: userType == 'Student' ? const Color(0xFF2563EB) : const Color(0xFF7C3AED)),
+                            const SizedBox(width: 4),
+                            Text(userType, style: TextStyle(color: userType == 'Student' ? const Color(0xFF2563EB) : const Color(0xFF7C3AED), fontSize: 9, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // 5. Duration
+                if (!isNarrow)
+                  Expanded(
+                    flex: 2,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(property, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis),
-                        Text(location, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-                        Text(propType, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                        Text(duration, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1E293B))),
+                        Text(stayDates, style: const TextStyle(fontSize: 9, color: Color(0xFF64748B))),
+                        Text('($nights)', style: const TextStyle(fontSize: 9, fontStyle: FontStyle.italic, color: Color(0xFF94A3B8))),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
 
-            // 3. Guest
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(guest, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B))),
-                  Text(phone, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-                ],
-              ),
-            ),
+                // 6. Status
+                Expanded(
+                  flex: 2,
+                  child: StatusBadge(text: status, color: statusColor),
+                ),
 
-            // 4. User Type
-            if (!isNarrow)
-              Expanded(
-                flex: 2,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: (userType == 'Student' ? const Color(0xFF2563EB) : const Color(0xFF7C3AED)).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(userType == 'Student' ? Icons.school_outlined : Icons.work_outline, size: 12, color: userType == 'Student' ? const Color(0xFF2563EB) : const Color(0xFF7C3AED)),
-                        const SizedBox(width: 4),
-                        Text(userType, style: TextStyle(color: userType == 'Student' ? const Color(0xFF2563EB) : const Color(0xFF7C3AED), fontSize: 9, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
+                // 7. Amount
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(amount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
+                      Text(isPaid ? 'Paid' : 'Pending', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: isPaid ? Colors.green : Colors.orange)),
+                    ],
                   ),
                 ),
-              ),
 
-            // 5. Duration
-            if (!isNarrow)
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(duration, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1E293B))),
-                    Text(stayDates, style: const TextStyle(fontSize: 9, color: Color(0xFF64748B))),
-                    Text('($nights)', style: const TextStyle(fontSize: 9, fontStyle: FontStyle.italic, color: Color(0xFF94A3B8))),
-                  ],
-                ),
-              ),
-
-            // 6. Status
-            Expanded(
-              flex: 2,
-              child: StatusBadge(text: status, color: statusColor),
-            ),
-
-            // 7. Amount
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(amount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
-                  Text(isPaid ? 'Paid' : 'Pending', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: isPaid ? Colors.green : Colors.orange)),
-                ],
-              ),
-            ),
-
-            const SizedBox(width: 8),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Color(0xFFCBD5E1), size: 18),
-              onSelected: onAction,
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: 'confirm', child: Text('Confirm Booking')),
-                const PopupMenuItem(value: 'cancel', child: Text('Cancel Booking')),
-                const PopupMenuItem(value: 'checkout', child: Text('Mark Checked Out')),
-                const PopupMenuDivider(),
-                const PopupMenuItem(value: 'invoice', child: Text('View Invoice')),
+                const SizedBox(width: 8),
+                _buildMenu(),
               ],
             ),
-          ],
-        ),
       ),
+    );
+  }
+
+  Widget _buildMenu() {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, color: Color(0xFFCBD5E1), size: 18),
+      onSelected: onAction,
+      itemBuilder: (context) => [
+        const PopupMenuItem(value: 'confirm', child: Text('Confirm Booking')),
+        const PopupMenuItem(value: 'cancel', child: Text('Cancel Booking')),
+        const PopupMenuItem(value: 'checkout', child: Text('Mark Checked Out')),
+        const PopupMenuDivider(),
+        const PopupMenuItem(value: 'invoice', child: Text('View Invoice')),
+      ],
     );
   }
 }

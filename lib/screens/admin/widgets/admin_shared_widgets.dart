@@ -16,35 +16,49 @@ class TabHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
                 title,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1E293B),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+            ),
+            if (actions != null && !isNarrow) ...[
+              const SizedBox(width: 16),
+              Row(children: actions!),
             ],
-          ),
+            if (isNarrow && actions != null && actions!.isNotEmpty) ...[
+              // On mobile, show a simplified menu or the first action if space permits
+              const SizedBox(width: 8),
+              actions!.first,
+            ],
+          ],
         ),
-        if (actions != null) ...[
-          const SizedBox(width: 16),
-          Row(children: actions!),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (isNarrow && actions != null && actions!.length > 1) ...[
+          const SizedBox(height: 16),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(children: actions!.skip(1).toList()),
+          ),
         ],
       ],
     );

@@ -339,7 +339,6 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
   Widget _buildUsersList(List<Map<String, dynamic>> users) {
     if (users.isEmpty) {
       return Container(
-        height: 260,
         margin: const EdgeInsets.symmetric(vertical: 20),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
@@ -347,8 +346,8 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: const Color(0xFFF1F5F9)),
         ),
-        alignment: Alignment.center,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
@@ -357,7 +356,7 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
               child: Icon(Icons.people_outline, size: 40, color: Colors.blue.shade300),
             ),
             const SizedBox(height: 20),
-            const Text('No community members found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
+            const Text('No community members found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)), textAlign: TextAlign.center),
             const SizedBox(height: 8),
             const Text('Try clear all filters or adjust your search to see more results', style: TextStyle(fontSize: 12, color: Color(0xFF64748B)), textAlign: TextAlign.center),
             const SizedBox(height: 24),

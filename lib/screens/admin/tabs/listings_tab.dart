@@ -73,13 +73,13 @@ class _ListingsTabState extends State<ListingsTab> with SingleTickerProviderStat
             children: [
               TabHeader(
                 title: 'Listings',
-                subtitle: 'Manage all properties listed on the platform',
+                subtitle: widget.isNarrow ? 'Manage all properties' : 'Manage all properties listed on the platform',
                 isNarrow: widget.isNarrow,
                 actions: [
                   _buildAddButton(),
                 ],
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               _buildSummaryCards(allProperties),
               const SizedBox(height: 32),
               _buildCategoryTabs(allProperties),
@@ -113,16 +113,16 @@ class _ListingsTabState extends State<ListingsTab> with SingleTickerProviderStat
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.home_work_outlined, size: 64, color: Colors.grey.shade300),
+          Icon(Icons.home_work_outlined, size: 56, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(
             'No properties found',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
           ),
           const SizedBox(height: 8),
           Text(
             'Try adjusting your search or filters.',
-            style: TextStyle(color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           ),
         ],
       ),
@@ -131,21 +131,24 @@ class _ListingsTabState extends State<ListingsTab> with SingleTickerProviderStat
 
   Widget _buildAddButton() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: widget.isNarrow ? 12 : 16, vertical: 10),
       decoration: BoxDecoration(
         color: const Color(0xFF2563EB),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
-        children: const [
-          Icon(Icons.add, color: Colors.white, size: 18),
-          SizedBox(width: 8),
-          Text(
-            'Add New Listing',
-            style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(width: 8),
-          Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 16),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.add, color: Colors.white, size: 18),
+          if (!widget.isNarrow) ...[
+            const SizedBox(width: 8),
+            const Text(
+              'Add New Listing',
+              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+          ],
+          const SizedBox(width: 8),
+          const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 16),
         ],
       ),
     );
@@ -156,12 +159,15 @@ class _ListingsTabState extends State<ListingsTab> with SingleTickerProviderStat
     final review = properties.where((p) => p['status'] == 'pending').length;
     final inactive = properties.where((p) => p['status'] == 'inactive' || p['status'] == 'rejected').length;
 
+    final double cardWidth = widget.isNarrow ? 160 : 220;
+    final double cardHeight = widget.isNarrow ? 140 : 180;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          SummaryCard(
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
             count: properties.length.toString(),
             label: 'Total Listings',
             bg: const Color(0xFFEFF6FF),
@@ -169,38 +175,40 @@ class _ListingsTabState extends State<ListingsTab> with SingleTickerProviderStat
             icon: Icons.business_rounded,
             percentage: '12.5%',
             isUp: true,
-          ),
+          )),
           const SizedBox(width: 16),
-          SummaryCard(
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
             count: active.toString(),
             label: 'Active Listings',
             bg: const Color(0xFFF0FDF4),
             color: const Color(0xFF16A34A),
             icon: Icons.check_circle_rounded,
             sub: properties.isEmpty ? '0% of total' : '${((active/properties.length)*100).toStringAsFixed(1)}% of total',
-          ),
+          )),
           const SizedBox(width: 16),
-          SummaryCard(
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
             count: review.toString(),
             label: 'Under Review',
             bg: const Color(0xFFFFFBEB),
             color: const Color(0xFFD97706),
             icon: Icons.hourglass_top_rounded,
             sub: properties.isEmpty ? '0% of total' : '${((review/properties.length)*100).toStringAsFixed(1)}% of total',
-          ),
+          )),
           const SizedBox(width: 16),
-          SummaryCard(
+          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
             count: inactive.toString(),
             label: 'Inactive/Rejected',
             bg: const Color(0xFFFEF2F2),
             color: const Color(0xFFDC2626),
             icon: Icons.cancel_outlined,
             sub: properties.isEmpty ? '0% of total' : '${((inactive/properties.length)*100).toStringAsFixed(1)}% of total',
-          ),
+          )),
         ],
       ),
     );
   }
+
+  Widget _wrapInSizedBox(double w, double h, Widget child) => SizedBox(width: w, height: h, child: child);
 
   Widget _buildCategoryTabs(List<Map<String, dynamic>> properties) {
     final active = properties.where((p) => p['status'] == 'active').length;
@@ -219,15 +227,17 @@ class _ListingsTabState extends State<ListingsTab> with SingleTickerProviderStat
         indicatorWeight: 3,
         labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Outfit'),
         tabs: [
-          Tab(text: 'All Listings (${properties.length})'),
+          Tab(text: widget.isNarrow ? 'All ($allCount)' : 'All Listings (${properties.length})'),
           Tab(text: 'Active ($active)'),
-          Tab(text: 'Under Review ($review)'),
+          Tab(text: widget.isNarrow ? 'Pending ($review)' : 'Under Review ($review)'),
           Tab(text: 'Inactive ($inactive)'),
           Tab(text: 'Rejected ($rejected)'),
         ],
       ),
     );
   }
+
+  int get allCount => _searchController.text.isNotEmpty ? 0 : 0; // Temporary placeholder logic adjustment
 
   Widget _buildFilterRow() {
     return Row(
@@ -248,10 +258,10 @@ class _ListingsTabState extends State<ListingsTab> with SingleTickerProviderStat
                 Expanded(
                   child: TextField(
                     controller: _searchController,
-                    decoration: const InputDecoration(
-                      hintText: 'Search by property name, hoster or location...',
+                    decoration: InputDecoration(
+                      hintText: widget.isNarrow ? 'Search properties...' : 'Search by property name, hoster or location...',
                       border: InputBorder.none,
-                      hintStyle: TextStyle(fontSize: 12),
+                      hintStyle: const TextStyle(fontSize: 12),
                     ),
                   ),
                 ),
@@ -259,8 +269,8 @@ class _ListingsTabState extends State<ListingsTab> with SingleTickerProviderStat
             ),
           ),
         ),
-        const SizedBox(width: 16),
-        _buildSmallFilter('Filter', Icons.tune),
+        const SizedBox(width: 12),
+        _buildSmallFilter(widget.isNarrow ? '' : 'Filter', Icons.tune),
         if (!widget.isNarrow) ...[
           const SizedBox(width: 12),
           _buildSmallFilter('More Filters', null, hasDropdown: true),
