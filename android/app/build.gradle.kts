@@ -10,19 +10,6 @@ plugins {
 
 android {
     namespace = "com.example.triangle_home"
-    
-    // 🔥 Fix for isar_flutter_libs namespace issue
-    project.rootProject.subprojects {
-        if (name == "isar_flutter_libs") {
-            afterEvaluate {
-                val extension = extensions.getByType(com.android.build.gradle.LibraryExtension::class.java)
-                if (extension.namespace == null) {
-                    extension.namespace = "dev.isar.isar_flutter_libs"
-                }
-            }
-        }
-    }
-
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -30,11 +17,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
-    }
-
-    lint {
-        checkReleaseBuilds = false
-        abortOnError = false
     }
 
     kotlinOptions {
@@ -56,12 +38,6 @@ android {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
-            isMinifyEnabled = true
-            // shrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
             signingConfig = signingConfigs.getByName("debug")
         }
     }
