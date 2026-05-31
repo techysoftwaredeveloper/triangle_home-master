@@ -1,0 +1,86 @@
+name: triangle_home
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  flutter_svg: ^2.1.0
+  dotted_border: ^2.1.0
+  flutter_rating_bar: ^4.0.1
+  http: ^1.4.0
+  shared_preferences: ^2.5.3
+  image_picker: ^1.1.2
+  firebase_core: ^3.13.0
+  firebase_auth: ^5.5.3
+  cloud_firestore: ^5.6.7
+  firebase_storage: ^12.4.5
+  firebase_messaging: ^15.2.5
+  flutter_local_notifications: ^21.0.0
+  google_maps_flutter: ^2.12.2
+  geolocator: ^14.0.0
+  flutter_easyloading: ^3.0.5
+  geocoding: ^3.0.0
+  cached_network_image: ^3.4.1
+  flutter_riverpod: ^2.6.1
+  google_sign_in: ^6.3.0
+  crypto: ^3.0.6
+  razorpay_flutter: ^1.4.0
+  uuid: ^4.5.1
+  fluttertoast: ^8.2.12
+  flutter_animate: ^4.5.2
+  google_fonts: ^6.2.1
+  intl: ^0.20.2
+  package_info_plus: ^8.3.0
+  font_awesome_flutter: ^11.0.0
+  carousel_slider: ^5.0.0
+  convex_bottom_bar: ^3.2.0
+  lottie: ^3.3.1
+  smooth_page_indicator: ^1.2.1
+  file_picker: ^10.1.9
+  permission_handler: ^12.0.0+1
+  local_auth: ^2.3.0
+  firebase_app_check: 0.3.2+10
+  url_launcher: ^6.3.1
+  path: ^1.9.1
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
+  path_provider: ^2.1.2
+  rxdart: ^0.28.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
+  isar_generator: ^3.1.0+1
+  build_runner: ^2.4.8
+
+flutter:
+  assets:
+    - assets/images/splashbackground.svg
+    - assets/images/Logo.svg
+    - assets/images/searchicon.svg
+    - assets/images/Boyface.svg
+    - assets/images/Girlface.svg
+    - assets/images/school.svg
+    - assets/images/home_work.svg
+    - assets/images/sharingicon.svg
+    - assets/images/Logosmall.svg
+    - assets/images/google-login.png
+    - assets/images/logomain.png
+    - assets/images/otp_animation.json
+    - assets/images/logo_white.png
+    - assets/images/Homeicon.svg
+    - assets/images/mywishlisticon.svg
+    - assets/images/mypgbookings.svg
+    - assets/images/listmyproperty.svg
+    - assets/images/backicon.svg
+  uses-material-design: true

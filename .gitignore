@@ -1,9 +1,11 @@
 # Miscellaneous
+
 *.class
 *.log
 *.pyc
 *.swp
 .DS_Store
+Thumbs.db
 .atom/
 .build/
 .buildlog/
@@ -12,34 +14,85 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# IDEs
+
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
+.vscode/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# Flutter / Dart
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
-.pub-cache/
+.packages
 .pub/
-/build/
+.pub-cache/
+build/
+coverage/
 
-# Symbolication related
+# Flutter generated
+
+**/doc/api/
+**/ios/Flutter/.last_build_id
+
+# Android
+
+android/.gradle/
+android/captures/
+android/app/debug/
+android/app/profile/
+android/app/release/
+
+# iOS
+
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/App.framework
+
+# Firebase
+
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Node.js
+
+node_modules/
+**/node_modules/
+
+# Environment files
+
+.env
+.env.*
+!.env.example
+
+# Generated artifacts
+
+.artifacts/
+artifacts/
+tmp/
+temp/
+
+# Logs
+
+logs/
+*.log
+
+# Symbolication
+
 app.*.symbols
 
-# Obfuscation related
+# Obfuscation
+
 app.*.map.json
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# OS files
+
+.DS_Store
+Thumbs.db
+desktop.ini
