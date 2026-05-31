@@ -150,7 +150,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
       ),
       child: Column(
         children: [
-          Icon(Icons.shield_rounded, size: 64, color: Colors.white.withOpacity(0.9)),
+          Icon(Icons.shield_rounded, size: 64, color: Colors.white.withValues(alpha: 0.9)),
           const SizedBox(height: 16),
           const Text(
             'Your Security, Our Priority',
@@ -166,7 +166,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
             'Manage how your information is used and secured',
             style: TextStyle(
               fontSize: 13,
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontFamily: AppTheme.fontFamily,
             ),
           ),
@@ -198,7 +198,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -235,7 +235,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: (iconColor ?? AppTheme.primaryColor).withOpacity(0.08),
+          color: (iconColor ?? AppTheme.primaryColor).withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Icon(icon, color: iconColor ?? AppTheme.primaryColor, size: 22),
@@ -276,7 +276,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
       secondary: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: AppTheme.primaryColor.withOpacity(0.08),
+          color: AppTheme.primaryColor.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Icon(icon, color: AppTheme.primaryColor, size: 22),

@@ -5,13 +5,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:triangle_home/screens/auth/login_screen.dart';
 import 'package:triangle_home/screens/bookings_screen.dart';
 import 'package:triangle_home/screens/home_screen.dart';
-import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
 import 'package:triangle_home/screens/list_property/my_property_info_screen.dart';
 import 'package:triangle_home/screens/wishlist_screen.dart';
 import 'package:triangle_home/screens/suggest_property/suggest_property_intro_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
-import 'package:triangle_home/splash_screen.dart';
 
 class HomeBottomNavBar extends StatelessWidget {
   final int selectedIndex;
@@ -243,7 +241,7 @@ class HomeBottomNavBar extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -259,7 +257,7 @@ class HomeBottomNavBar extends StatelessWidget {
           onTap: (index) => _navigate(context, index),
           backgroundColor: AppTheme.primaryColor,
           selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.white.withOpacity(0.6),
+          unselectedItemColor: Colors.white.withValues(alpha: 0.6),
           type: BottomNavigationBarType.fixed,
           elevation: 0,
           selectedLabelStyle: const TextStyle(
@@ -311,7 +309,7 @@ class HomeBottomNavBar extends StatelessWidget {
           iconPath,
           height: 20,
           colorFilter: ColorFilter.mode(
-            Colors.white.withOpacity(isActive ? 1.0 : 0.6),
+            Colors.white.withValues(alpha: isActive ? 1.0 : 0.6),
             BlendMode.srcIn,
           ),
         ),

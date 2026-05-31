@@ -36,29 +36,33 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
           backgroundColor: const Color(0xFF0F172A),
           body: LayoutBuilder(
             builder: (context, constraints) {
-              final bool isMobile = constraints.maxWidth < 600;
-              final double sidebarWidth = isMobile ? 80 : 100;
+              final bool isNarrow = constraints.maxWidth < 900;
+              final double sidebarWidth = isNarrow ? 80 : 240; // Wider sidebar for desktop
 
               return Row(
                 children: [
-                  _buildSidebar(sidebarWidth, data),
+                  _buildSidebar(sidebarWidth, isNarrow, data),
                   Expanded(
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildTopBar(data),
+                        Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 0, bottom: 0),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(32),
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.only(topLeft: Radius.circular(32)),
+                              child: _buildMainContent(),
+                            ),
+                          ),
                         ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.only(topLeft: Radius.circular(32)),
-                        child: Column(
-                          children: [
-                            _buildTopBar(constraints.maxWidth - sidebarWidth, data),
-                            Expanded(child: _buildMainContent()),
-                          ],
-                        ),
-                      ),
+                      ],
                     ),
                   ),
                 ],
@@ -70,272 +74,223 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
     );
   }
 
-  Widget _buildTopBar(double availableWidth, Map<String, dynamic> data) {
-    final bool isMedium = availableWidth < 700;
-    final bool isCompact = availableWidth < 500;
-    final bool showSearch = availableWidth > 550;
-    final bool showBrand = availableWidth > 500;
-
+  Widget _buildTopBar(Map<String, dynamic> data) {
     final int notificationCount = data['totalNotifications'] ?? 0;
 
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        isCompact ? 12 : 24,
-        MediaQuery.of(context).padding.top + 8, // Added SafeArea awareness + extra spacing
-        isCompact ? 12 : 24,
-        16
-      ),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0F172A),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          if (showBrand) ...[
-            const Icon(Icons.change_history_rounded, color: Color(0xFFA855F7), size: 22),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Triangle Homes',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: isMedium ? 14 : 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Outfit',
-                    ),
-                  ),
-                  FutureBuilder<bool>(
-                    future: _adminService.checkServerConnection(),
-                    builder: (context, snapshot) {
-                      final isConnected = snapshot.data ?? false;
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: isConnected ? Colors.green : Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            isConnected ? 'Server Online' : 'Server Offline',
-                            style: TextStyle(
-                              color: isConnected ? Colors.green.shade300 : Colors.red.shade300,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isSmall = constraints.maxWidth < 700;
+        final bool isVerySmall = constraints.maxWidth < 500;
 
-          const Spacer(),
-
-          // Search Box
-          if (showSearch)
-            Flexible(
-              flex: 4,
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 250),
-                height: 36,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white10),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.search, color: Colors.white60, size: 16),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Search...',
-                        style: TextStyle(color: Colors.white60, fontSize: 12),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-          SizedBox(width: isCompact ? 16 : 24),
-
-          // Notifications
-          GestureDetector(
-            onTap: () {
-              // TODO: Show Notifications Overlay/Panel
-              setState(() => _activeNavIndex = 7); // Switch to Reports as fallback for notifications
-            },
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Icon(Icons.notifications_outlined, color: Colors.white70, size: isCompact ? 22 : 24),
-                if (notificationCount > 0)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(color: Color(0xFFE11D48), shape: BoxShape.circle),
-                      constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
-                      child: Text(
-                        notificationCount.toString(),
-                        style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+        return Container(
+          height: 80,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          decoration: const BoxDecoration(
+            color: Color(0xFF0F172A),
           ),
-
-          SizedBox(width: isCompact ? 16 : 24),
-
-          // Profile - NOW TAPPABLE
-          InkWell(
-            onTap: () {
-              // TODO: Show Admin Profile Settings / Switch Account
-              setState(() => _activeNavIndex = 9); // Quick jump to Settings
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(
-                    radius: isCompact ? 12 : 14,
-                    backgroundColor: const Color(0xFF8B5CF6),
-                    child: Text('SA', style: TextStyle(color: Colors.white, fontSize: isCompact ? 8 : 9, fontWeight: FontWeight.bold)),
-                  ),
-                  if (!isCompact) ...[
-                    const SizedBox(width: 8),
-                    Text(
-                      'Admin',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: isMedium ? 11 : 12,
-                          fontWeight: FontWeight.w600
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.keyboard_arrow_down, color: Colors.white60, size: 14),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSidebar(double width, Map<String, dynamic> data) {
-    final int pendingApprovals = data['pendingApprovals'] ?? 0;
-    final int pendingSuggestions = data['pendingSuggestions'] ?? 0;
-    final int pendingReports = data['pendingReports'] ?? 0;
-    final int pendingModeration = data['pendingModeration'] ?? 0;
-
-    return Container(
-      width: width,
-      padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).padding.top + 16, 0, 24), // Added top spacing for sidebar
-      child: Column(
-        children: [
-          const Icon(Icons.change_history_rounded, color: Colors.white, size: 32),
-          const SizedBox(height: 40),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildNavItem(0, Icons.grid_view_rounded, 'Overview', width),
-                  _buildNavItem(1, Icons.assignment_turned_in_outlined, 'Approvals', width,
-                      badge: pendingApprovals > 0 ? pendingApprovals.toString() : null),
-                  _buildNavItem(2, Icons.business_outlined, 'Listings', width),
-                  _buildNavItem(3, Icons.people_outline_rounded, 'Users', width),
-                  _buildNavItem(4, Icons.calendar_today_outlined, 'Bookings', width),
-                  _buildNavItem(5, Icons.account_balance_wallet_outlined, 'Payments', width),
-                  _buildNavItem(6, Icons.lightbulb_outline_rounded, 'Suggestions', width,
-                      badge: pendingSuggestions > 0 ? pendingSuggestions.toString() : null),
-                  _buildNavItem(7, Icons.analytics_outlined, 'Reports', width,
-                      badge: pendingReports > 0 ? pendingReports.toString() : null),
-                  _buildNavItem(8, Icons.security_outlined, 'Moderation', width,
-                      badge: pendingModeration > 0 ? pendingModeration.toString() : null),
-                  _buildNavItem(9, Icons.settings_outlined, 'Settings', width),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          _buildQuickActionBtn(),
-          const SizedBox(height: 24),
-          _buildLogoutBtn(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData icon, String label, double width, {String? badge}) {
-    bool isActive = _activeNavIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _activeNavIndex = index),
-      child: Container(
-        width: width - 16,
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.center,
-          children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: isActive ? Colors.white : Colors.white60, size: 22),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          child: Row(
+            children: [
+              const Icon(Icons.change_history_rounded, color: Color(0xFFA855F7), size: 28),
+              if (!isVerySmall) ...[
+                const SizedBox(width: 12),
+                const Text(
+                  'Triangle Homes',
                   style: TextStyle(
-                    color: isActive ? Colors.white : Colors.white60,
-                    fontSize: 8,
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                     fontFamily: 'Outfit',
                   ),
                 ),
               ],
+
+              const Spacer(),
+
+              // Search Box - Flexible
+              if (!isVerySmall)
+                Flexible(
+                  flex: 3,
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 300),
+                    height: 40,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.search, color: Colors.white60, size: 18),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Search...',
+                            style: TextStyle(color: Colors.white38, fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                const Icon(Icons.search, color: Colors.white60, size: 24),
+
+              const SizedBox(width: 24),
+
+              // Notifications
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  const Icon(Icons.notifications_outlined, color: Colors.white70, size: 24),
+                  if (notificationCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(color: Color(0xFFE11D48), shape: BoxShape.circle),
+                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                        child: Text(
+                          notificationCount.toString(),
+                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+
+              const SizedBox(width: 24),
+
+              // Profile
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFA855F7),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'SA',
+                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  if (!isSmall) ...[
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Super Admin',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Outfit'
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.keyboard_arrow_down, color: Colors.white60, size: 18),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSidebar(double width, bool isNarrow, Map<String, dynamic> data) {
+    final int pendingApprovals = data['pendingApprovals'] ?? 0;
+
+    return Container(
+      width: width,
+      color: const Color(0xFF0F172A),
+      padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).padding.top + 16, 0, 24),
+      child: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildNavItem(0, Icons.home_rounded, 'Overview', width, isNarrow),
+                  _buildNavItem(1, Icons.assignment_turned_in_rounded, 'Approvals', width, isNarrow,
+                      badge: pendingApprovals > 0 ? pendingApprovals.toString() : null),
+                  _buildNavItem(2, Icons.business_rounded, 'Listings', width, isNarrow),
+                  _buildNavItem(3, Icons.people_rounded, 'Users', width, isNarrow),
+                  _buildNavItem(4, Icons.calendar_today_rounded, 'Bookings', width, isNarrow),
+                  _buildNavItem(5, Icons.account_balance_wallet_rounded, 'Payments', width, isNarrow),
+                  _buildNavItem(6, Icons.lightbulb_rounded, 'Suggestions', width, isNarrow),
+                  _buildNavItem(7, Icons.analytics_rounded, 'Reports', width, isNarrow),
+                  _buildNavItem(8, Icons.security_rounded, 'Moderation', width, isNarrow),
+                  _buildNavItem(9, Icons.settings_rounded, 'Settings', width, isNarrow),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildQuickActionBtn(isNarrow),
+          const SizedBox(height: 32),
+          _buildLogoutBtn(isNarrow),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, String label, double width, bool isNarrow, {String? badge}) {
+    bool isActive = _activeNavIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _activeNavIndex = index),
+      child: Container(
+        width: width - (isNarrow ? 16 : 32),
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: isNarrow ? 0 : 16),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF1E293B) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: isActive ? Border.all(color: Colors.white10) : null,
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: isNarrow ? Alignment.center : Alignment.centerLeft,
+          children: [
+            Row(
+              mainAxisAlignment: isNarrow ? MainAxisAlignment.center : MainAxisAlignment.start,
+              children: [
+                Icon(icon, color: isActive ? const Color(0xFF6366F1) : Colors.white60, size: 22),
+                if (!isNarrow) ...[
+                  const SizedBox(width: 12),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: isActive ? Colors.white : Colors.white60,
+                      fontSize: 14,
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                ],
+              ],
             ),
             if (badge != null)
               Positioned(
-                right: 4,
-                top: -2,
+                right: isNarrow ? -2 : 0,
+                top: isNarrow ? -4 : 0,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                  child: Text(badge, style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold)),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    badge, 
+                    style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)
+                  ),
                 ),
               ),
           ],
@@ -344,32 +299,47 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
     );
   }
 
-  Widget _buildQuickActionBtn() {
+  Widget _buildQuickActionBtn(bool isNarrow) {
     return Container(
-      width: 44,
-      height: 44,
+      width: isNarrow ? 48 : 200,
+      height: 48,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: const Color(0xFF6366F1).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
       ),
-      child: const Icon(Icons.bolt_rounded, color: Color(0xFFA855F7), size: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.auto_awesome_rounded, color: Color(0xFFA855F7), size: 20),
+          if (!isNarrow) ...[
+            const SizedBox(width: 12),
+            const Text(
+              'Quick Actions',
+              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
-  Widget _buildLogoutBtn() {
+  Widget _buildLogoutBtn(bool isNarrow) {
     return InkWell(
       onTap: () async {
         await FirebaseAuth.instance.signOut();
         if (!mounted) return;
         Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const SplashScreen()), (route) => false);
       },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 18),
-          const SizedBox(height: 4),
-          const Text('Logout', style: TextStyle(color: Colors.redAccent, fontSize: 9)),
+          const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+          if (!isNarrow) ...[
+            const SizedBox(width: 12),
+            const Text('Logout', style: TextStyle(color: Colors.redAccent, fontSize: 14, fontWeight: FontWeight.bold)),
+          ],
         ],
       ),
     );
@@ -402,12 +372,7 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
           case 9:
             return SettingsTab(adminService: _adminService, isNarrow: isNarrow);
           default:
-            return Center(
-              child: Text(
-                'Tab \${_activeNavIndex} - Content Coming Soon',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-              ),
-            );
+            return const Center(child: Text('Tab Content Coming Soon'));
         }
       },
     );

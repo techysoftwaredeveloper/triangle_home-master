@@ -110,7 +110,7 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.home_outlined, color: Colors.white, size: 20),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Text('Go to Home', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
                   ],
                 ),

@@ -46,7 +46,7 @@ class _AdminBookingManagementState extends State<AdminBookingManagement> {
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ExpansionTile(
                   leading: CircleAvatar(
-                    backgroundColor: _getStatusColor(status).withOpacity(0.1),
+                    backgroundColor: _getStatusColor(status).withValues(alpha: 0.1),
                     child: Icon(Icons.book, color: _getStatusColor(status)),
                   ),
                   title: Text(
@@ -59,7 +59,7 @@ class _AdminBookingManagementState extends State<AdminBookingManagement> {
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(status).withOpacity(0.1),
+                      color: _getStatusColor(status).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(

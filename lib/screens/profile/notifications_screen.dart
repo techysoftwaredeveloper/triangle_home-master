@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
@@ -69,53 +70,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBgColor,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
-        elevation: 0,
-        centerTitle: false,
-        automaticallyImplyLeading: false,
-        title: Row(
-          children: [
-            GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.arrow_back_ios_new,
-                  color: AppTheme.primaryColor,
-                  size: 16,
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            const Text(
-              'Notifications',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Outfit',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            onPressed: _markAllRead,
-            icon: const Icon(Icons.done_all_rounded, color: Colors.white, size: 22),
-            tooltip: 'Mark all as read',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _firebaseService.getNotifications(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -124,74 +82,123 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           }
 
           final docs = snapshot.data?.docs ?? [];
+          final unreadCount = docs.where((doc) => !(doc.data()['is_read'] as bool? ?? false)).length;
 
-          if (docs.isEmpty) {
-            return _buildEmptyState();
-          }
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeaderSection(docs),
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-                  itemCount: docs.length,
-                  itemBuilder: (context, index) {
-                    final doc = docs[index];
-                    final data = doc.data();
-                    final isRead = data['isRead'] as bool? ?? false;
-                    final type = data['type'] as String? ?? 'general';
-                    final title = data['title'] as String? ?? 'Notification';
-                    final body = data['body'] as String? ?? data['message'] as String? ?? '';
-                    final timestamp = data['createdAt'];
-
-                    return _buildNotificationCard(doc.id, isRead, type, title, body, timestamp, index);
-                  },
+          return CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 180,
+                pinned: true,
+                elevation: 0,
+                backgroundColor: AppTheme.primaryColor,
+                automaticallyImplyLeading: false,
+                centerTitle: false,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                title: const Text(
+                  'Notifications',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Outfit',
+                  ),
+                ),
+                actions: [
+                  if (unreadCount > 0)
+                    IconButton(
+                      onPressed: _markAllRead,
+                      icon: const Icon(Icons.done_all_rounded, color: Colors.white, size: 22),
+                      tooltip: 'Mark all as read',
+                    ),
+                  const SizedBox(width: 8),
+                ],
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
+                  ),
+                ),
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 100, 24, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          unreadCount > 0 
+                            ? 'You have $unreadCount new updates' 
+                            : 'You\'re all caught up!',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                            fontFamily: 'Outfit',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        if (unreadCount > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              'Priority Updates',
+                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
+              if (docs.isEmpty)
+                SliverFillRemaining(child: _buildEmptyState())
+              else
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Recent Activity',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                            color: AppTheme.textDarkColor,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          itemCount: docs.length,
+                          itemBuilder: (context, index) {
+                            final doc = docs[index];
+                            final data = doc.data();
+                            final isRead = data['is_read'] as bool? ?? false;
+                            final type = data['type'] as String? ?? 'general';
+                            final title = data['title'] as String? ?? 'Notification';
+                            final body = data['body'] as String? ?? '';
+                            final timestamp = data['createdAt'];
+
+                            return _buildNotificationCard(doc.id, isRead, type, title, body, timestamp, index);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildHeaderSection(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
-    final unreadCount = docs.where((doc) => !(doc.data()['isRead'] as bool? ?? false)).length;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text(
-            'Recent Updates',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              fontFamily: AppTheme.fontFamily,
-              color: AppTheme.textDarkColor,
-            ),
-          ).animate().fadeIn().slideX(begin: -0.1, end: 0),
-          if (unreadCount > 0)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: AppTheme.accentColor.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '$unreadCount New Messages',
-                style: const TextStyle(
-                  color: AppTheme.accentColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                ),
-              ),
-            ).animate().fadeIn(delay: 200.ms).scale(),
-        ],
       ),
     );
   }
@@ -202,13 +209,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
-        margin: const EdgeInsets.symmetric(vertical: 6),
+        margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.only(right: 24),
         decoration: BoxDecoration(
-          color: AppTheme.errorColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
+          color: AppTheme.errorColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(AppTheme.radiusLG),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Text(
@@ -220,63 +227,49 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 fontFamily: AppTheme.fontFamily,
               ),
             ),
-            SizedBox(width: 8),
-            Icon(Icons.delete_outline_rounded, color: AppTheme.errorColor, size: 24),
+            const SizedBox(width: 8),
+            const Icon(Icons.delete_outline_rounded, color: AppTheme.errorColor, size: 24),
           ],
         ),
       ),
       onDismissed: (_) => _deleteNotification(id),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Material(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          elevation: isRead ? 0 : 4,
-          shadowColor: Colors.black.withOpacity(0.08),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLG),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            border: Border.all(
+              color: isRead ? Colors.transparent : AppTheme.accentColor.withValues(alpha: 0.1),
+              width: 1,
+            ),
+          ),
           child: InkWell(
             onTap: () => _markAsRead(id, isRead),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLG),
+            child: Padding(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isRead ? AppTheme.dividerColor.withOpacity(0.5) : AppTheme.primaryColor.withOpacity(0.1),
-                ),
-              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Branded Status Icon
-                  Stack(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: _getIconColor(type).withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _getIcon(type),
-                          color: _getIconColor(type),
-                          size: 24,
-                        ),
-                      ),
-                      if (!isRead)
-                        Positioned(
-                          top: 2,
-                          right: 2,
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: AppTheme.accentColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                          ),
-                        ),
-                    ],
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _getIconColor(type).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _getIcon(type),
+                      color: _getIconColor(type),
+                      size: 24,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -316,23 +309,33 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           body,
                           style: TextStyle(
                             fontSize: 13,
-                            color: isRead ? AppTheme.textLightColor : AppTheme.textColor.withOpacity(0.9),
+                            color: isRead ? AppTheme.textLightColor : AppTheme.textColor.withValues(alpha: 0.8),
                             fontFamily: AppTheme.fontFamily,
                             height: 1.4,
                           ),
-                          maxLines: 2,
+                          maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
+                  if (!isRead)
+                    Container(
+                      margin: const EdgeInsets.only(left: 8, top: 4),
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: AppTheme.accentColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
                 ],
               ),
             ),
           ),
-        ),
+        ).animate().fadeIn(delay: Duration(milliseconds: 50 * index)).slideX(begin: 0.05, end: 0),
       ),
-    ).animate().fadeIn(delay: Duration(milliseconds: 50 * index)).slideX(begin: 0.05, end: 0);
+    );
   }
 
   Widget _buildEmptyState() {
@@ -343,13 +346,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.05),
+              color: AppTheme.primaryColor.withValues(alpha: 0.05),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.notifications_none_rounded,
               size: 80,
-              color: AppTheme.primaryColor.withOpacity(0.2),
+              color: AppTheme.primaryColor.withValues(alpha: 0.2),
             ),
           ),
           const SizedBox(height: 32),
@@ -414,16 +417,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _markAllRead() async {
     try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
       final snapshot = await FirebaseFirestore.instance
           .collection('notifications')
-          .where('isRead', isEqualTo: false)
+          .where('user_id', isEqualTo: userId)
+          .where('is_read', isEqualTo: false)
           .get();
 
       if (snapshot.docs.isEmpty) return;
 
       final batch = FirebaseFirestore.instance.batch();
       for (final doc in snapshot.docs) {
-        batch.update(doc.reference, {'isRead': true});
+        batch.update(doc.reference, {'is_read': true});
       }
       await batch.commit();
 

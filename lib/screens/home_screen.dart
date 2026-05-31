@@ -1,7 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geocoding/geocoding.dart';
@@ -19,11 +17,9 @@ import 'package:triangle_home/widgets/home/state_tags.dart';
 import 'package:triangle_home/widgets/home/enrollment_card.dart';
 import 'package:triangle_home/widgets/home/hoster_registration_card.dart';
 import 'package:triangle_home/widgets/home/nearby_accommodations.dart';
-import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/widgets/home/highest_rated_section.dart';
 import 'package:triangle_home/services/location_api_service.dart';
 import 'package:triangle_home/services/isar_service.dart';
-import 'package:triangle_home/models/local_location.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});

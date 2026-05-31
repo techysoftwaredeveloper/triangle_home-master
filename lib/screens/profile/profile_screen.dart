@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:triangle_home/screens/admin/admin_dashboard_redesign.dart';
-import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
-import 'package:triangle_home/screens/profile/about_screen.dart';
 import 'package:triangle_home/screens/profile/edit_profile_screen.dart';
-import 'package:triangle_home/screens/profile/help_support_screen.dart';
-import 'package:triangle_home/screens/profile/notifications_screen.dart';
-import 'package:triangle_home/screens/profile/privacy_policy_screen.dart';
-import 'package:triangle_home/screens/profile/privacy_security_screen.dart';
+import 'package:triangle_home/screens/profile/stay_info_screen.dart';
 import 'package:triangle_home/screens/profile/my_suggestions_screen.dart';
-import 'package:triangle_home/theme/app_theme.dart';
+import 'package:triangle_home/screens/profile/notifications_screen.dart';
+import 'package:triangle_home/screens/profile/privacy_security_screen.dart';
+import 'package:triangle_home/screens/profile/help_support_screen.dart';
+import 'package:triangle_home/screens/profile/about_screen.dart';
+import 'package:triangle_home/screens/profile/privacy_policy_screen.dart';
+import 'package:triangle_home/screens/profile/verification_center_screen.dart';
+import 'package:triangle_home/screens/profile/saved_payments_screen.dart';
 import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
 import 'package:triangle_home/widgets/logout_confirmation_dialog.dart';
 import 'package:triangle_home/splash_screen.dart';
-import 'package:triangle_home/models/local_user.dart';
-import 'package:triangle_home/services/isar_service.dart';
+import 'package:triangle_home/theme/app_theme.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
 
 class ProfileScreen extends StatefulWidget {
   final bool showBottomNav;
@@ -29,200 +30,139 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String? name;
-  String? email;
-  String? profileImageUrl;
-  bool _isHoster = false;
-  bool _isAdmin = false;
-  bool _isLoading = true;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  int savedCount = 0;
-  int activeBookingsCount = 0;
-  int suggestionsCount = 0;
-  int pointsEarned = 250; // Mock data
-
+  Stream<DocumentSnapshot<Map<String, dynamic>>>? _userStream;
   Map<String, dynamic>? activeStay;
-  Map<String, dynamic>? latestPayment;
+  int savedCount = 0;
+  int bookingsCount = 0;
 
-  final IsarService _isarService = IsarService();
+  final Color _primaryBlue = AppTheme.primaryColor;
+  final Color _accentBlue = AppTheme.accentColor;
+  final Color _bgGray = AppTheme.scaffoldBgColor;
 
   @override
   void initState() {
     super.initState();
-    fetchUserProfile();
+    final user = _auth.currentUser;
+    if (user != null) {
+      _userStream = _firestore.collection('users').doc(user.uid).snapshots();
+      _loadInitialData();
+    }
   }
 
-  Future<void> fetchUserProfile() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      setState(() => _isLoading = false);
-      return;
-    }
-
-    final uid = user.uid;
-
-    // 1. CACHE-FIRST: Load from Isar immediately
-    final localData = await _isarService.getLocalUser(uid);
-    if (localData != null && mounted) {
-      setState(() {
-        name = localData.name;
-        email = localData.email;
-        profileImageUrl = localData.profilePicture;
-        _isHoster = localData.role == 'hoster';
-        _isLoading = false; // Show cached data immediately
-      });
-    }
-
-    final phone = user.phoneNumber;
-    final collectionNames = ['users', 'hoster', 'student', 'guest'];
+  Future<void> _loadInitialData() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
 
     try {
-      // 2. BACKGROUND SYNC: Fetch from Firestore
-      bool profileFound = false;
-      Map<String, dynamic>? firestoreData;
-      String? matchedCollection;
-
-      for (final collection in collectionNames) {
-        DocumentSnapshot doc = await FirebaseFirestore.instance
-            .collection(collection)
-            .doc(uid)
-            .get();
-
-        if (!doc.exists && phone != null) {
-          doc = await FirebaseFirestore.instance
-              .collection(collection)
-              .doc(phone)
-              .get();
-        }
-
-        if (doc.exists) {
-          firestoreData = doc.data()! as Map<String, dynamic>;
-          matchedCollection = collection;
-          profileFound = true;
-          break;
-        }
-      }
-
-      if (profileFound && firestoreData != null) {
-        final info = (firestoreData['info'] as Map?)?.cast<String, dynamic>() ?? {};
-
-        String? foundName = info['name'] as String? ??
-                           info['fullName'] as String? ??
-                           firestoreData['name'] as String? ??
-                           firestoreData['fullName'] as String? ??
-                           firestoreData['displayName'] as String? ??
-                           user.displayName;
-
-        final fetchedName = foundName;
-        final fetchedEmail = info['email'] as String? ?? firestoreData['email'] as String? ?? user.email;
-        final fetchedImage = info['profileImage'] as String? ?? firestoreData['profileImage'] as String? ?? user.photoURL;
-        final isHosterRole = (matchedCollection == 'hoster' || firestoreData['role'] == 'hoster');
-
-        // Update UI with fresh data
-        if (mounted) {
-          setState(() {
-            name = fetchedName;
-            email = fetchedEmail;
-            profileImageUrl = fetchedImage;
-            _isHoster = isHosterRole;
-          });
-        }
-
-        // Save to Isar for next time
-        await _isarService.saveLocalUser(LocalUser(
-          uid: uid,
-          name: fetchedName,
-          email: fetchedEmail,
-          phoneNumber: phone,
-          profilePicture: fetchedImage,
-          role: isHosterRole ? 'hoster' : 'user',
-          lastUpdated: DateTime.now(),
-        ));
-      } else if (mounted) {
-          // Fallback to Auth only
-          setState(() {
-              name = user.displayName;
-              email = user.email;
-              profileImageUrl = user.photoURL;
-          });
-      }
-
-      // 2. Fetch Stats
-      final wishlistSnapshot = await FirebaseFirestore.instance
-          .collection('wishlists')
-          .where('user_id', isEqualTo: uid)
-          .get();
-
-      final bookingsSnapshot = await FirebaseFirestore.instance
-          .collection('bookings')
-          .where('user_id', isEqualTo: uid)
-          .get();
-
-      // 3. Fetch Active Stay (Confirmed/CheckedIn)
-      final activeStaySnapshot = await FirebaseFirestore.instance
-          .collection('bookings')
-          .where('user_id', isEqualTo: uid)
-          .where('status', whereIn: ['confirmed', 'checkedIn'])
-          .limit(1)
-          .get();
-
-      if (activeStaySnapshot.docs.isNotEmpty) {
-        final bookingData = activeStaySnapshot.docs.first.data();
-        activeStay = {
-          'id': activeStaySnapshot.docs.first.id,
-          ...bookingData,
-        };
-
-        // Fetch latest payment for this booking
-        final paymentSnapshot = await FirebaseFirestore.instance
-            .collection('payments')
-            .where('booking_id', isEqualTo: activeStaySnapshot.docs.first.id)
-            .orderBy('createdAt', descending: true)
-            .limit(1)
-            .get();
-
-        if (paymentSnapshot.docs.isNotEmpty) {
-          latestPayment = paymentSnapshot.docs.first.data();
-        }
-      }
-
-      // Check for admin role in custom claims
-      final idTokenResult = await user.getIdTokenResult(true);
-      final role = idTokenResult.claims?['role'];
+      final uid = user.uid;
+      
+      // Load stay info (one-time or could be stream, keeping fetch for now)
+      final wishlistSnapshot = await _firestore.collection('wishlists').where('user_id', isEqualTo: uid).get();
+      final bookingsSnapshot = await _firestore.collection('bookings').where('user_id', isEqualTo: uid).get();
 
       if (mounted) {
         setState(() {
-          _isAdmin = (role == 'admin' || role == 'superadmin');
           savedCount = wishlistSnapshot.size;
-          activeBookingsCount = bookingsSnapshot.docs
-              .where((doc) => doc.data()['status'] != 'cancelled' && doc.data()['status'] != 'checkedOut')
-              .length;
-          _isLoading = false;
+          bookingsCount = bookingsSnapshot.size;
         });
       }
+
+      // Fetch Active Stay
+      final activeStaySnapshot = await _firestore.collection('bookings')
+          .where('user_id', isEqualTo: uid)
+          .where('status', whereIn: ['confirmed', 'checkedIn'])
+          .limit(1).get();
+
+      if (activeStaySnapshot.docs.isNotEmpty) {
+        activeStay = {'id': activeStaySnapshot.docs.first.id, ...activeStaySnapshot.docs.first.data()};
+      } else {
+        activeStay = {
+          'id': 'MOCK_STAY',
+          'roomNumber': 'A-203',
+          'price': 6500,
+          'status': 'confirmed',
+          'paymentStatus': 'paid',
+          'checkIn': Timestamp.now(),
+          'checkOut': Timestamp.fromDate(DateTime.now().add(const Duration(days: 30))),
+          'propertyData': {
+            'title': 'Sunrise Residency',
+            'location': 'Kozhikode, Kerala',
+            'image': 'https://images.unsplash.com/photo-1580587767303-9f99edb5103a?q=80&w=400&auto=format&fit=crop',
+          }
+        };
+      }
     } catch (e) {
-      debugPrint('Error fetching profile: $e');
-      if (mounted) setState(() => _isLoading = false);
+      debugPrint('Error loading initial profile data: $e');
     }
   }
 
-  void _handleSignOut(BuildContext context) {
+  double _calculateProfileCompletion(Map<String, dynamic>? userData) {
+    if (userData == null) return 0.0;
+    double score = 0;
+
+    final info = userData['info'] as Map? ?? {};
+    final sInfo = userData['student_info'] as Map? ?? {};
+    final pInfo = userData['professional_info'] as Map? ?? {};
+    final prefs = userData['housing_preferences'] as Map? ?? {};
+    final emergency = userData['emergency_contact'] as Map? ?? {};
+    final role = userData['role'] ?? 'student';
+
+    // Personal Info (20%)
+    if (info['name'] != null && info['name'].toString().isNotEmpty) score += 10;
+    if (info['dob'] != null && info['gender'] != null) score += 10;
+
+    // Professional/Student Info (20%)
+    if (role == 'student') {
+      if (sInfo['college'] != null && sInfo['college'].toString().isNotEmpty) score += 10;
+      if (sInfo['course'] != null && sInfo['course'].toString().isNotEmpty) score += 10;
+    } else {
+      if (pInfo['companyName'] != null && pInfo['companyName'].toString().isNotEmpty) score += 10;
+      if (pInfo['jobTitle'] != null && pInfo['jobTitle'].toString().isNotEmpty) score += 10;
+    }
+
+    // Housing Preferences (20%)
+    if (prefs['preferredCity'] != null) score += 5;
+    if (prefs['budgetMax'] != null) score += 5;
+    if (prefs['lookingFor'] != null && (prefs['lookingFor'] as List).isNotEmpty) score += 5;
+    if (prefs['stayDuration'] != null) score += 5;
+
+    // Emergency Contact (20%)
+    if (emergency['name'] != null && emergency['name'].toString().isNotEmpty) score += 10;
+    if (emergency['phone'] != null && emergency['phone'].toString().isNotEmpty) score += 10;
+
+    // Profile Photo (20%)
+    if (info['profileImage'] != null) score += 20;
+
+    return (score / 100).clamp(0.0, 1.0);
+  }
+
+  int _calculateTrustScore(Map<String, dynamic>? userData) {
+    if (userData == null) return 0;
+    double score = 0;
+    final verif = userData['verification'] as Map? ?? {};
+
+    if (verif['govIdVerified'] == true) score += 25;
+    if (verif['roleIdVerified'] == true) score += 20;
+    if (verif['addressVerified'] == true) score += 15;
+    if (verif['emergencyContactVerified'] == true) score += 10;
+    score += _calculateProfileCompletion(userData) * 10;
+    if (bookingsCount > 0) score += 10;
+    score += 10;
+
+    return score.toInt();
+  }
+
+  void _handleSignOut() {
     showDialog(
       context: context,
       builder: (context) => LogoutConfirmationDialog(
         onConfirm: () async {
-          await FirebaseAuth.instance.signOut();
+          await _auth.signOut();
           if (!context.mounted) return;
-          Fluttertoast.showToast(
-            msg: 'Signed out successfully',
-            backgroundColor: AppTheme.textDarkColor,
-            textColor: Colors.white,
-          );
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const SplashScreen()),
-            (route) => false,
-          );
+          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const SplashScreen()), (route) => false);
         },
       ),
     );
@@ -230,416 +170,277 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // DESIGN: Very light blue-gray background
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildProfileHeader(),
-                  const SizedBox(height: 46), // Extra space for the floating card offset
-                  if (activeStay != null) ...[
-                    _buildCurrentlyStaying(),
-                    const SizedBox(height: 16),
-                    _buildPaymentSummary(),
-                    const SizedBox(height: 16),
-                  ],
-                  _buildSection(
-                    title: 'Contributions',
-                    items: [
-                      _MenuItem(
-                        icon: Icons.home_work_outlined,
-                        title: 'Suggest a Property',
-                        subtitle: 'Help others find a great place',
-                        onTap: () {},
-                      ),
-                      _MenuItem(
-                        icon: Icons.lightbulb_outline_rounded,
-                        title: 'My Suggestions',
-                        subtitle: 'Track status of your suggestions',
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const MySuggestionsScreen()),
-                        ),
-                      ),
-                      if (!_isHoster)
-                        _MenuItem(
-                          icon: Icons.person_add_alt_1_outlined,
-                          title: 'Become a Host',
-                          subtitle: 'List your property and earn',
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const HosterDashboardScreen()),
-                          ),
-                        ),
-                    ],
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _userStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+
+        final userData = snapshot.data?.data();
+        final user = _auth.currentUser;
+        final info = userData?['info'] as Map? ?? {};
+        final role = userData?['role'] ?? 'student';
+        final verif = userData?['verification'] as Map? ?? {};
+        
+        final double completion = _calculateProfileCompletion(userData);
+        final int trustScore = _calculateTrustScore(userData);
+
+        return Scaffold(
+          backgroundColor: _bgGray,
+          body: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 220,
+                pinned: true,
+                elevation: 0,
+                backgroundColor: _primaryBlue,
+                automaticallyImplyLeading: false,
+                centerTitle: false,
+                title: const Text('Profile', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
                   ),
-                  _buildSection(
-                    title: 'Account',
-                    items: [
-                      _MenuItem(
-                        icon: Icons.person_outline_rounded,
-                        title: 'Edit Profile',
-                        subtitle: 'Update your personal information',
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const EditProfileScreen()),
-                        ),
-                      ),
-                      if (_isAdmin)
-                        _MenuItem(
-                          icon: Icons.admin_panel_settings_outlined,
-                          title: 'Admin Dashboard',
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const AdminDashboardRedesign()),
-                          ),
-                        ),
-                      if (_isHoster)
-                        _MenuItem(
-                          icon: Icons.dashboard_outlined,
-                          title: 'Hoster Dashboard',
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const HosterDashboardScreen()),
-                          ),
-                        ),
-                      _MenuItem(
-                        icon: Icons.notifications_none_rounded,
-                        title: 'Notifications',
-                        subtitle: 'Manage your preferences',
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const NotificationsScreen()),
-                        ),
-                      ),
-                      _MenuItem(
-                        icon: Icons.shield_outlined,
-                        title: 'Privacy & Security',
-                        subtitle: 'Manage your privacy and security',
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const PrivacySecurityScreen()),
-                        ),
-                      ),
-                    ],
+                ),
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 80, 24, 0),
+                    child: _buildHeaderContent(user, info, role, trustScore),
                   ),
-                  _buildSection(
-                    title: 'Support & About',
-                    items: [
-                      _MenuItem(
-                        icon: Icons.help_outline_rounded,
-                        title: 'Help & Support',
-                        subtitle: 'Get help and contact support',
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const HelpSupportScreen()),
-                        ),
-                      ),
-                      _MenuItem(
-                        icon: Icons.info_outline_rounded,
-                        title: 'About Us',
-                        subtitle: 'Learn more about Triangle Homes',
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const AboutScreen()),
-                        ),
-                      ),
-                      _MenuItem(
-                        icon: Icons.description_outlined,
-                        title: 'Terms & Conditions',
-                        subtitle: 'Read our terms and policies',
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const PrivacyPolicyScreen()),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: InkWell(
-                      onTap: () => _handleSignOut(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEF2F2),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFFEE2E2)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 22),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Logout',
-                                    style: TextStyle(
-                                      color: Color(0xFFDC2626),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                      fontFamily: 'Outfit',
-                                    ),
-                                  ),
-                                  Text(
-                                    'Sign out from your account',
-                                    style: TextStyle(
-                                      color: const Color(0xFFDC2626).withOpacity(0.7),
-                                      fontSize: 13,
-                                      fontFamily: 'Outfit',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(Icons.chevron_right_rounded, color: Color(0xFFDC2626), size: 20),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  const Text(
-                    'Version 1.0.0',
-                    style: TextStyle(
-                      color: AppTheme.textMutedColor,
-                      fontSize: AppTheme.fontSM,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
-                  const SizedBox(height: AppTheme.spaceXL),
-                ],
+                ),
               ),
-            ),
-      bottomNavigationBar:
-          widget.showBottomNav ? const HomeBottomNavBar(selectedIndex: 0) : null,
-    );
-  }
-
-  Widget _buildProfileHeader() {
-    final phone = FirebaseAuth.instance.currentUser?.phoneNumber ?? '';
-    final initial = (name?.isNotEmpty == true) ? name![0].toUpperCase() : 'U';
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        // Background illustration
-        Container(
-          width: double.infinity,
-          height: 280, // Reduced height for tighter fit
-          decoration: const BoxDecoration(
-            color: Color(0xFF0F172A), // Dark navy
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                right: -20,
-                bottom: 20,
-                child: Opacity(
-                  opacity: 0.1,
-                  child: Icon(Icons.home_work_rounded, size: 200, color: Colors.white),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                  child: Column(
+                    children: [
+                      if (completion < 1.0) ...[
+                        const SizedBox(height: 24),
+                        _buildHeaderCompletionCard(completion),
+                      ],
+                      const SizedBox(height: 24),
+                      _buildQuickStatsRow(completion),
+                      if (activeStay != null) ...[
+                        const SizedBox(height: 24),
+                        _buildCurrentlyStaying(),
+                      ],
+                      const SizedBox(height: 24),
+                      _buildBookingReadinessCard(userData, role),
+                      const SizedBox(height: 24),
+                      _buildAboutMeCard(userData, role),
+                      const SizedBox(height: 24),
+                      _buildHousingPreferencesCard(userData),
+                      const SizedBox(height: 24),
+                      _buildEmergencyContactCard(userData, verif),
+                      const SizedBox(height: 24),
+                      _buildVerificationCenterCard(verif),
+                      const SizedBox(height: 24),
+                      _buildContributionsEarningsCard(),
+                      const SizedBox(height: 24),
+                      _buildInviteFriendsCard(),
+                      const SizedBox(height: 24),
+                      _buildAccountCenterCard(),
+                      const SizedBox(height: 24),
+                      _buildSupportAboutCard(),
+                      const SizedBox(height: 32),
+                      _buildLogoutCard(),
+                      const SizedBox(height: 20),
+                      const Text('Version 2.0.0', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontFamily: 'Outfit')),
+                      const SizedBox(height: 80),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-        ),
+          bottomNavigationBar: widget.showBottomNav ? const HomeBottomNavBar(selectedIndex: 3) : null,
+        );
+      }
+    );
+  }
 
-        Column(
+  Widget _buildHeaderContent(User? user, Map info, String role, int trustScore) {
+    return Row(
+      children: [
+        Stack(
           children: [
-            SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.chevron_left_rounded, color: Colors.white, size: 28),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                        const Spacer(),
-                        const Text(
-                          'Profile',
-                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.settings_outlined, color: Colors.white, size: 24),
-                          onPressed: () {},
-                        ),
-                      ],
-                    ),
-                  ),
+            Container(
+              decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.white24, width: 2)),
+              child: CircleAvatar(
+                radius: 40,
+                backgroundImage: info['profileImage'] != null ? CachedNetworkImageProvider(info['profileImage']) : null,
+                child: info['profileImage'] == null ? const Icon(Icons.person, size: 30, color: Colors.white) : null,
+              ),
+            ),
+            Positioned(bottom: 0, right: 0, child: Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle), child: Icon(Icons.camera_alt_rounded, size: 12, color: _primaryBlue))),
+          ],
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(info['name'] ?? user?.displayName ?? 'Guest User', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Outfit')),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(color: _accentBlue, borderRadius: BorderRadius.circular(20)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.verified_user, color: Colors.white, size: 10),
+                    const SizedBox(width: 4),
+                    Text(role[0].toUpperCase() + role.substring(1), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              _buildMiniBadge(Icons.check_circle, 'Verified Mobile', info['phoneNumber'] != null ? AppTheme.successColor : Colors.white24),
+              const SizedBox(height: 2),
+              _buildMiniBadge(Icons.check_circle, 'Verified Email', user?.emailVerified == true ? AppTheme.successColor : Colors.white24),
+            ],
+          ),
+        ),
+        _buildTrustScoreWidget(trustScore),
+      ],
+    );
+  }
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                    child: Row(
-                      children: [
-                        Stack(
-                          children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-                              ),
-                              child: CircleAvatar(
-                                radius: 40,
-                                backgroundColor: const Color(0xFFE879F9),
-                                child: ClipOval(
-                                  child: profileImageUrl != null
-                                      ? CachedNetworkImage(
-                                          imageUrl: profileImageUrl!,
-                                          fit: BoxFit.cover,
-                                          width: 80,
-                                          height: 80,
-                                        )
-                                      : Text(
-                                          initial,
-                                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Outfit'),
-                                        ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                                child: const Icon(Icons.camera_alt_outlined, size: 14, color: Color(0xFF0F172A)),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                name ?? 'Guest User',
-                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Outfit'),
-                              ),
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF22C55E).withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.check_circle, color: Color(0xFF22C55E), size: 14),
-                                    const SizedBox(width: 4),
-                                    const Text(
-                                      'Verified Mobile',
-                                      style: TextStyle(color: Color(0xFF22C55E), fontSize: 11, fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                phone.isNotEmpty ? phone : (email ?? 'No contact info'),
-                                style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+
+  Widget _buildMiniBadge(IconData icon, String label, Color color) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 14),
+        const SizedBox(width: 4),
+        Text(label, style: TextStyle(color: color == Colors.white24 ? Colors.white38 : color, fontSize: 11, fontWeight: FontWeight.w600, fontFamily: 'Outfit')),
+      ],
+    );
+  }
+
+  Widget _buildTrustScoreWidget(int score) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(AppTheme.radiusLG)),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.shield, color: AppTheme.successColor, size: 16),
+                  const SizedBox(width: 4),
+                  Text('Trust\nScore', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // Stats Card (Floating)
-            Transform.translate(
-              offset: const Offset(0, 30),
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildStatItem(Icons.favorite_border_rounded, savedCount.toString(), 'Saved\nProperties', const Color(0xFFEC4899)),
-                    _buildStatItem(Icons.calendar_today_outlined, activeBookingsCount.toString(), 'Bookings\nActive', const Color(0xFF22C55E)),
-                    _buildStatItem(Icons.lightbulb_outline_rounded, suggestionsCount.toString(), 'Suggestions\nSubmitted', const Color(0xFFF59E0B)),
-                    _buildStatItem(Icons.emoji_events_outlined, pointsEarned.toString(), 'Points\nEarned', const Color(0xFF8B5CF6)),
-                  ],
-                ),
+              const SizedBox(height: 4),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('$score', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                  const Text('/100', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                ],
               ),
-            ),
-          ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(color: AppTheme.successColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(AppTheme.radiusSM)),
+          child: Text(score > 80 ? 'Excellent' : score > 60 ? 'Good' : 'Fair', style: TextStyle(color: AppTheme.successColor, fontSize: 10, fontWeight: FontWeight.bold)),
         ),
       ],
     );
   }
 
-  Widget _buildStatItem(IconData icon, String value, String label, Color color) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
+  Widget _buildHeaderCompletionCard(double value) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppTheme.radiusXL), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10))]),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Profile Completion', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textColor)),
+              Text('${(value * 100).toInt()}%', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textColor)),
+            ],
           ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(height: 8),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A), fontFamily: 'Outfit')),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), height: 1.2),
-        ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppTheme.radiusSM),
+            child: LinearProgressIndicator(value: value, minHeight: 8, backgroundColor: AppTheme.secondaryColor, valueColor: AlwaysStoppedAnimation<Color>(_accentBlue)),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: Text('Almost there! Complete your profile to unlock bookings.', style: TextStyle(fontSize: 12, color: AppTheme.textLightColor))),
+              TextButton(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
+                child: Row(
+                  children: [
+                    Text('Complete Now', style: TextStyle(color: AppTheme.accentColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Icon(Icons.arrow_forward, size: 14, color: AppTheme.accentColor),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickStatsRow(double completion) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildStatBox(Icons.favorite_outline, '$savedCount', 'Wishlist', const Color(0xFFEC4899)),
+        const SizedBox(width: 12),
+        _buildStatBox(Icons.calendar_today_outlined, '$bookingsCount', 'Bookings', AppTheme.successColor),
+        const SizedBox(width: 12),
+        _buildStatBox(Icons.verified_user_outlined, '${(completion * 100).toInt()}%', 'Verified', AppTheme.warningColor),
+        const SizedBox(width: 12),
+        _buildStatBox(Icons.emoji_events_outlined, '250', 'Points', const Color(0xFF8B5CF6)),
       ],
+    );
+  }
+
+  Widget _buildStatBox(IconData icon, String val, String label, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppTheme.radiusLG), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))]),
+        child: Column(
+          children: [
+            Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 18)),
+            const SizedBox(height: 8),
+            Text(val, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textColor)),
+            Text(label, style: TextStyle(fontSize: 10, color: AppTheme.textLightColor)),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildCurrentlyStaying() {
     final propertyData = activeStay?['propertyData'] as Map? ?? {};
+    final hosterName = activeStay?['hosterName'] ?? 'Rajesh Kumar'; // Mock or from data
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXL),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 4)),
+        ],
+        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -648,29 +449,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.home_outlined, color: Color(0xFF3B82F6), size: 18),
+                decoration: BoxDecoration(color: AppTheme.primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppTheme.radiusSM)),
+                child: Icon(Icons.home_rounded, color: AppTheme.primaryColor, size: 20),
               ),
               const SizedBox(width: 12),
-              const Text('Currently Staying', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A), fontFamily: 'Outfit')),
+              Text('Your Current Stay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textColor, fontFamily: 'Outfit')),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: const Color(0xFFF0FDF4), borderRadius: BorderRadius.circular(20)),
-                child: const Text('Active Stay', style: TextStyle(color: Color(0xFF16A34A), fontSize: 11, fontWeight: FontWeight.bold)),
+                decoration: BoxDecoration(color: AppTheme.successColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+                child: Text('Active', style: TextStyle(color: AppTheme.successColor, fontSize: 11, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: CachedNetworkImage(
-                  imageUrl: propertyData['image'] ?? 'https://via.placeholder.com/150',
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
+              Hero(
+                tag: 'stay_image',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMD),
+                  child: CachedNetworkImage(
+                    imageUrl: propertyData['image'] ?? 'https://via.placeholder.com/150',
+                    width: 90,
+                    height: 90,
+                    fit: BoxFit.cover,
+                    errorWidget: (context, url, error) => Container(
+                      width: 90,
+                      height: 90,
+                      color: AppTheme.secondaryColor,
+                      child: Icon(Icons.business_rounded, color: AppTheme.textMutedColor),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -679,24 +489,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      propertyData['title'] ?? 'Hostel Name',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF0F172A), fontFamily: 'Outfit'),
+                      propertyData['title'] ?? 'Sunrise Residency',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: AppTheme.textColor, fontFamily: 'Outfit'),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF64748B)),
+                        Icon(Icons.location_on_outlined, size: 14, color: AppTheme.textLightColor),
                         const SizedBox(width: 4),
-                        Text(propertyData['location'] ?? 'Location', style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+                        Flexible(child: Text(propertyData['location'] ?? 'Kozhikode, Kerala', style: TextStyle(color: AppTheme.textLightColor, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis)),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildStayingInfo('Room No.', 'A-203'),
-                        _buildStayingInfo('Monthly Rent', '₹6,500'),
-                        _buildStayingInfo('Next Payment', '18 May 2026', isDate: true),
+                        _buildStayDetail('Room', activeStay?['roomNumber'] ?? 'A-203'),
+                        const SizedBox(width: 24),
+                        _buildStayDetail('Hoster', hosterName),
                       ],
                     ),
                   ],
@@ -708,228 +517,391 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             children: [
               Expanded(
-                flex: 2,
                 child: ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMD)),
                     elevation: 0,
                   ),
-                  child: const Text('Pay Rent', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text('Pay Rent', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFE2E8F0)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Icon(Icons.visibility_outlined, color: Color(0xFF0F172A), size: 20),
+              const SizedBox(width: 12),
+              OutlinedButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => StayInfoScreen(booking: activeStay!)),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFE2E8F0)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Icon(Icons.phone_outlined, color: Color(0xFF0F172A), size: 20),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: AppTheme.dividerColor),
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMD)),
+                  minimumSize: const Size(54, 52),
                 ),
+                child: Icon(Icons.arrow_forward_rounded, color: AppTheme.textColor, size: 20),
               ),
             ],
           ),
         ],
       ),
-    );
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
   }
 
-  Widget _buildStayingInfo(String label, String value, {bool isDate = false}) {
+  Widget _buildStayDetail(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10)),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: TextStyle(
-            color: isDate ? const Color(0xFF16A34A) : const Color(0xFF0F172A),
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-        ),
+        Text(label, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold)),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A))),
       ],
     );
   }
 
-  Widget _buildPaymentSummary() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
+  double _calculateBookingReadiness(Map<String, dynamic>? userData) {
+    if (userData == null) return 0.0;
+    double score = 0;
+
+    // 1. Profile Completion (30% weight)
+    double completion = _calculateProfileCompletion(userData);
+    score += completion * 30;
+
+    // 2. Communication Verification (20% weight)
+    final verif = userData['verification'] as Map? ?? {};
+    if (verif['phoneVerified'] == true) score += 10;
+    if (verif['emailVerified'] == true) score += 10;
+
+    // 3. Document & Identity Verification (50% weight)
+    // Points for having uploaded OR being verified
+    
+    // Gov ID (15 pts)
+    if (verif['govIdVerified'] == true) {
+      score += 15;
+    } else if (verif['govIdFrontUrl'] != null && verif['govIdBackUrl'] != null) {
+      score += 8;
+    }
+    
+    // Role ID (10 pts)
+    if (verif['roleIdVerified'] == true) {
+      score += 10;
+    } else if (verif['roleIdFrontUrl'] != null || verif['roleIdBackUrl'] != null) {
+      score += 5;
+    }
+    
+    // Address Proof (10 pts)
+    if (verif['addressVerified'] == true) {
+      score += 10;
+    } else if (verif['addressFrontUrl'] != null && verif['addressBackUrl'] != null) {
+      score += 5;
+    }
+    
+    // Selfie (15 pts)
+    if (verif['selfieVerified'] == true) {
+      score += 15;
+    } else if (verif['selfieUrl'] != null) {
+      score += 8;
+    }
+
+    return (score / 100).clamp(0.0, 1.0);
+  }
+
+  Widget _buildBookingReadinessCard(Map<String, dynamic>? userData, String role) {
+    final verif = userData?['verification'] as Map? ?? {};
+    double readiness = _calculateBookingReadiness(userData);
+
+    return _buildSectionCard(
+      title: 'Booking Readiness',
       child: Column(
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFF10B981), size: 18),
-              ),
-              const SizedBox(width: 12),
-              const Text('Payment Summary', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A), fontFamily: 'Outfit')),
-              const Spacer(),
-              TextButton(
-                onPressed: () {},
-                child: Row(
-                  children: const [
-                    Text('View History', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
-                    Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF64748B)),
-                  ],
-                ),
+              Expanded(child: Text('Complete remaining steps to start booking.', style: TextStyle(fontSize: 12, color: AppTheme.textLightColor))),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(width: 60, height: 60, child: CircularProgressIndicator(value: readiness, strokeWidth: 5, backgroundColor: AppTheme.secondaryColor, valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentColor))),
+                  Text('${(readiness * 100).toInt()}%', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textColor)),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          const Divider(color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildPaymentDetail('Paid This Month', '₹6,500', icon: Icons.check_circle, iconColor: const Color(0xFF22C55E)),
-              _buildPaymentDetail('Payment Status', 'Paid', isStatus: true),
-              _buildPaymentDetail('Payment Method', 'UPI', isMethod: true),
-            ],
+          const SizedBox(height: 16),
+          _buildReadinessItem(verif['phoneVerified'] ?? false, 'Mobile Verified'),
+          _buildReadinessItem(verif['emailVerified'] ?? false, 'Email Verified'),
+          _buildReadinessItem(verif['roleIdVerified'] ?? false, role == 'student' ? 'Student Verification' : 'Employment Verification'),
+          _buildReadinessItem(verif['govIdVerified'] ?? false, 'Government ID', isPending: verif['govIdStatus'] == 'pending'),
+          _buildReadinessItem(verif['addressVerified'] ?? false, 'Address Verification', isPending: verif['addressStatus'] == 'pending'),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VerificationCenterScreen())),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, minimumSize: const Size(double.infinity, 52), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMD))),
+            child: const Text('Complete Verification', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPaymentDetail(String label, String value, {IconData? icon, Color? iconColor, bool isStatus = false, bool isMethod = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10)),
-        const SizedBox(height: 6),
-        Row(
-          children: [
-            Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A))),
-            if (icon != null) ...[
-              const SizedBox(width: 4),
-              Icon(icon, size: 14, color: iconColor),
-            ],
-            if (isStatus) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(4)),
-                child: const Text('Paid', style: TextStyle(color: Color(0xFF16A34A), fontSize: 9, fontWeight: FontWeight.bold)),
-              ),
-            ],
-            if (isMethod) ...[
-              const SizedBox(width: 6),
-              const Icon(Icons.flash_on_rounded, size: 12, color: Color(0xFFF59E0B)),
-            ],
-          ],
-        ),
-      ],
+  Widget _buildReadinessItem(bool isDone, String label, {bool isPending = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Icon(isDone ? Icons.check_circle : (isPending ? Icons.access_time_filled : Icons.circle_outlined), size: 20, color: isDone ? AppTheme.successColor : (isPending ? AppTheme.warningColor : AppTheme.textMutedColor)),
+          const SizedBox(width: 12),
+          Text(label, style: TextStyle(fontSize: 13, color: AppTheme.textColor)),
+          const Spacer(),
+          if (isPending) Text('Pending', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.warningColor)),
+        ],
+      ),
     );
   }
 
-  Widget _buildSection({
-    required String title,
-    required List<_MenuItem> items,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+  Widget _buildAboutMeCard(Map<String, dynamic>? userData, String role) {
+    final sInfo = userData?['student_info'] as Map? ?? {};
+    final pInfo = userData?['professional_info'] as Map? ?? {};
+
+    return _buildSectionCard(
+      title: 'About Me',
+      trailing: TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())).then((_) => _loadInitialData()), child: const Text('Edit', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold))),
+      child: Column(
+        children: [
+          if (role == 'student') ...[
+            _buildInfoTile(Icons.account_balance_outlined, 'College / University', sInfo['college'] ?? 'N/A'),
+            _buildInfoTile(Icons.book_outlined, 'Course', sInfo['course'] ?? 'N/A'),
+            _buildInfoTile(Icons.timer_outlined, 'Semester', sInfo['semester'] ?? 'N/A'),
+            _buildInfoTile(Icons.badge_outlined, 'Student ID', sInfo['studentId'] ?? 'N/A'),
+          ] else ...[
+            _buildInfoTile(Icons.business_outlined, 'Company', pInfo['companyName'] ?? 'N/A'),
+            _buildInfoTile(Icons.work_outline, 'Designation', pInfo['jobTitle'] ?? 'N/A'),
+            _buildInfoTile(Icons.location_on_outlined, 'Work Location', pInfo['workLocation'] ?? 'N/A'),
+            _buildInfoTile(Icons.history, 'Experience', pInfo['experience'] ?? 'N/A'),
+          ],
+          const SizedBox(height: 16),
+          InkWell(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutScreen())),
+            child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text('View Full Details', style: TextStyle(color: Color(0xFF2563EB), fontSize: 13, fontWeight: FontWeight.bold)), Icon(Icons.chevron_right, size: 16, color: Color(0xFF2563EB))]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHousingPreferencesCard(Map<String, dynamic>? userData) {
+    final prefs = userData?['housing_preferences'] as Map? ?? {};
+    
+    List<String> locations = [];
+    if (prefs['preferredLocations'] is List) {
+      locations = List<String>.from(prefs['preferredLocations']);
+    } else if (prefs['preferredLocations'] is String) {
+      locations = [prefs['preferredLocations']];
+    } else if (prefs['preferredCity'] != null) {
+      locations = [prefs['preferredCity']];
+    }
+    
+    return _buildSectionCard(
+      title: 'Housing Preferences',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 12),
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0F172A),
-                fontFamily: 'Outfit',
-              ),
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFF1F5F9)),
-            ),
+          _buildInfoTile(Icons.home_outlined, 'Looking For', prefs['propertyType'] ?? 'PG'),
+          _buildInfoTile(Icons.payments_outlined, 'Budget Range', '₹${prefs['budgetMin'] ?? 10000} - ₹${prefs['budgetMax'] ?? 20000}'),
+          _buildInfoTile(Icons.location_on_outlined, 'Preferred Locations', locations.isEmpty ? 'N/A' : locations.join(', ')),
+          _buildInfoTile(Icons.people_outline, 'Family Size', prefs['familySize'] == 5 ? '5+' : (prefs['familySize'] ?? 1).toString()),
+          _buildInfoTile(Icons.calendar_today_outlined, 'Move-in Date', prefs['moveInDate'] != null ? DateFormat('MMMM yyyy').format((prefs['moveInDate'] as Timestamp).toDate()) : 'N/A'),
+          _buildInfoTile(Icons.timer_outlined, 'Stay Duration', prefs['stayDuration'] ?? 'N/A'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmergencyContactCard(Map<String, dynamic>? userData, Map verif) {
+    final emergency = userData?['emergency_contact'] as Map? ?? {};
+    return _buildSectionCard(
+      title: 'Emergency Contact',
+      child: Row(
+        children: [
+          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: AppTheme.errorColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppTheme.radiusMD)), child: Icon(Icons.phone_in_talk_outlined, color: AppTheme.errorColor, size: 24)),
+          const SizedBox(width: 16),
+          Expanded(
             child: Column(
-              children: items.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                return Column(
-                  children: [
-                    ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(item.icon, color: const Color(0xFF64748B), size: 20),
-                      ),
-                      title: Text(
-                        item.title,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F172A),
-                          fontFamily: 'Outfit',
-                        ),
-                      ),
-                      subtitle: item.subtitle != null
-                        ? Text(item.subtitle!, style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)))
-                        : null,
-                      trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFFCBD5E1), size: 20),
-                      onTap: item.onTap,
-                    ),
-                    if (index < items.length - 1)
-                      const Divider(height: 1, indent: 56, endIndent: 16, color: Color(0xFFF1F5F9)),
-                  ],
-                );
-              }).toList(),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [Text(emergency['name'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)), const SizedBox(width: 8), if (verif['emergencyContactVerified'] == true) Text('Verified', style: TextStyle(color: AppTheme.successColor, fontSize: 10, fontWeight: FontWeight.bold))]),
+                Text(emergency['relationship'] ?? 'N/A', style: TextStyle(fontSize: 12, color: AppTheme.textLightColor)),
+                Text(emergency['phone'] ?? 'N/A', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textColor)),
+              ],
             ),
           ),
         ],
       ),
     );
   }
-}
 
-class _MenuItem {
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final VoidCallback onTap;
+  Widget _buildVerificationCenterCard(Map verif) {
+    return _buildSectionCard(
+      title: 'Verification Center',
+      child: Column(
+        children: [
+          _buildVerifLinkTile(Icons.phone_android_outlined, 'Mobile Number', verif['phoneVerified'] == true ? 'Verified' : 'Pending', verif['phoneVerified'] == true ? AppTheme.successColor : AppTheme.warningColor),
+          _buildVerifLinkTile(Icons.email_outlined, 'Email Address', verif['emailVerified'] == true ? 'Verified' : 'Pending', verif['emailVerified'] == true ? AppTheme.successColor : AppTheme.warningColor),
+          _buildVerifLinkTile(Icons.school_outlined, 'Professional ID', verif['roleIdVerified'] == true ? 'Verified' : 'Pending', verif['roleIdVerified'] == true ? AppTheme.successColor : AppTheme.warningColor),
+          _buildVerifLinkTile(Icons.assignment_ind_outlined, 'Government ID', verif['govIdVerified'] == true ? 'Verified' : 'Pending', verif['govIdVerified'] == true ? AppTheme.successColor : AppTheme.warningColor),
+          _buildVerifLinkTile(Icons.location_on_outlined, 'Address Verification', verif['addressVerified'] == true ? 'Verified' : 'Pending', verif['addressVerified'] == true ? AppTheme.successColor : AppTheme.warningColor),
+          const SizedBox(height: 16),
+          OutlinedButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VerificationCenterScreen())),
+            style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 52), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMD)), side: BorderSide(color: AppTheme.dividerColor)),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text('Go to Verification Center', style: TextStyle(color: AppTheme.textColor, fontWeight: FontWeight.bold)), const SizedBox(width: 12), Icon(Icons.arrow_forward, size: 16, color: AppTheme.textColor)]),
+          ),
+        ],
+      ),
+    );
+  }
 
-  const _MenuItem({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    required this.onTap,
-  });
+  Widget _buildContributionsEarningsCard() {
+    return _buildSectionCard(
+      title: 'Contributions & Earnings',
+      child: Column(
+        children: [
+          _buildLinkRow(Icons.person_add_alt_1_outlined, 'Become a Host', 'List your property and earn', const Color(0xFF8B5CF6)),
+          _buildLinkRow(Icons.home_work_outlined, 'Suggest a Property', 'Help others find a great place', const Color(0xFF10B981)),
+          _buildLinkRow(Icons.lightbulb_outline_rounded, 'My Suggestions', 'Track status of your suggestions', const Color(0xFFE11D48), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MySuggestionsScreen()))),
+          _buildLinkRow(Icons.emoji_events_outlined, 'Rewards & Points', 'View points, history & offers', const Color(0xFFF59E0B), trailing: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFF5F3FF), borderRadius: BorderRadius.circular(20)), child: const Text('250 pts', style: TextStyle(color: Color(0xFF8B5CF6), fontSize: 10, fontWeight: FontWeight.bold)))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInviteFriendsCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(color: const Color(0xFFF5F3FF), borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0xFFEDE9FE))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Invite Friends & Earn', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  SizedBox(height: 4),
+                  Text('Earn 100 points for every\nsuccessful booking.', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                ],
+              ),
+              Image.network('https://cdn-icons-png.flaticon.com/512/3233/3233486.png', width: 80, height: 80),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFEDE9FE))),
+            child: Row(
+              children: [
+                const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Referral Code', style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold)), Text('TRIANGLE250', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1))])),
+                IconButton(icon: const Icon(Icons.copy_rounded, color: Color(0xFF8B5CF6), size: 20), onPressed: () { Clipboard.setData(const ClipboardData(text: 'TRIANGLE250')); Fluttertoast.showToast(msg: 'Referral code copied!'); }),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.share_outlined, size: 18, color: Colors.white),
+            label: const Text('Share & Invite Friends', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8B5CF6), minimumSize: const Size(double.infinity, 52), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountCenterCard() {
+    return _buildSectionCard(
+      title: 'Account Center',
+      child: Column(
+        children: [
+          _buildAccountLink(Icons.person_outline_rounded, 'Edit Profile', 'Update your personal information', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen()))),
+          _buildAccountLink(Icons.notifications_none_rounded, 'Notifications', 'Manage your preferences', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()))),
+          _buildAccountLink(Icons.payment_outlined, 'Saved Payments', 'Manage cards & payment methods', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SavedPaymentsScreen()))),
+          _buildAccountLink(Icons.shield_outlined, 'Privacy & Security', 'Manage your privacy and security', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacySecurityScreen()))),
+          _buildAccountLink(Icons.settings_outlined, 'Settings', 'App settings and preferences'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSupportAboutCard() {
+    return _buildSectionCard(
+      title: 'Support & About',
+      child: Column(
+        children: [
+          _buildAccountLink(Icons.help_outline_rounded, 'Help & Support', 'Get help and contact support', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen()))),
+          _buildAccountLink(Icons.info_outline_rounded, 'About Triangle Homes', 'Learn more about us', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutScreen()))),
+          _buildAccountLink(Icons.description_outlined, 'Terms & Conditions', 'Read our terms and policies', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutCard() {
+    return InkWell(
+      onTap: _handleSignOut,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: AppTheme.errorColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppTheme.radiusXL), border: Border.all(color: AppTheme.errorColor.withValues(alpha: 0.2))),
+        child: Row(
+          children: [
+            Container(padding: const EdgeInsets.all(10), decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle), child: Icon(Icons.logout_rounded, color: AppTheme.errorColor, size: 20)),
+            const SizedBox(width: 16),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Logout', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.errorColor)), Text('Sign out from your account', style: TextStyle(fontSize: 12, color: AppTheme.errorColor.withValues(alpha: 0.6)))])) ,
+            Icon(Icons.chevron_right, color: AppTheme.errorColor, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- Helpers ---
+  Widget _buildSectionCard({required String title, required Widget child, Widget? trailing}) {
+    return Container(
+      width: double.infinity, padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppTheme.radiusXL), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 4))]),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textColor, fontFamily: 'Outfit')), if (trailing != null) trailing]), const SizedBox(height: 20), child]),
+    );
+  }
+
+  Widget _buildInfoTile(IconData icon, String label, String val, {Widget? trailing}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(children: [Icon(icon, size: 20, color: AppTheme.textMutedColor), const SizedBox(width: 16), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.textLightColor, fontFamily: 'Outfit')), const SizedBox(height: 2), Row(children: [Text(val, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textColor, fontFamily: 'Outfit')), if (trailing != null) ...[const SizedBox(width: 8), trailing]])]))]),
+    );
+  }
+
+  Widget _buildVerifLinkTile(IconData icon, String label, String status, Color color) {
+    return Padding(padding: const EdgeInsets.only(bottom: 16), child: Row(children: [Icon(icon, size: 20, color: AppTheme.textMutedColor), const SizedBox(width: 16), Expanded(child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textColor))), Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)), const SizedBox(width: 8), Icon(Icons.chevron_right, size: 16, color: color)]));
+  }
+
+  Widget _buildLinkRow(IconData icon, String title, String sub, Color color, {Widget? trailing, VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Row(children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 20)), const SizedBox(width: 16), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textColor)), Text(sub, style: TextStyle(fontSize: 11, color: AppTheme.textLightColor))])) , if (trailing != null) trailing else Icon(Icons.chevron_right, size: 20, color: AppTheme.dividerColor)]),
+      ),
+    );
+  }
+
+  Widget _buildAccountLink(IconData icon, String title, String sub, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Row(children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: AppTheme.secondaryColor, shape: BoxShape.circle), child: Icon(icon, color: AppTheme.textLightColor, size: 20)), const SizedBox(width: 16), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textColor)), Text(sub, style: TextStyle(fontSize: 11, color: AppTheme.textLightColor))])) , Icon(Icons.chevron_right, size: 20, color: AppTheme.dividerColor)]),
+      ),
+    );
+  }
 }

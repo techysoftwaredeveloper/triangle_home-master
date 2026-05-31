@@ -451,24 +451,36 @@ class _AccommodationTypesState extends State<AccommodationTypes> {
   }
 
   Widget _buildTypeCard(String title, String svgAssetPath, VoidCallback onTap) {
-    return Card(
-      elevation: 4,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
-        leading: SvgPicture.asset(svgAssetPath, height: 28, width: 28),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: AppTheme.fontSM,
-            fontFamily: AppTheme.fontFamily,
-            fontWeight: FontWeight.w500,
-            color: AppTheme.textDarkColor,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
+          leading: SvgPicture.asset(svgAssetPath, height: 28, width: 28),
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontSize: AppTheme.fontSM,
+              fontFamily: AppTheme.fontFamily,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textDarkColor,
+            ),
+          ),
+          trailing: const Icon(Icons.chevron_right, color: Colors.black45),
+          onTap: onTap,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.black45),
-        onTap: onTap,
       ),
     ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0);
   }

@@ -6,9 +6,6 @@ import 'package:triangle_home/screens/home_screen.dart';
 import 'package:triangle_home/screens/admin/admin_dashboard_redesign.dart';
 import 'package:triangle_home/services/auth_production_service.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
-import 'package:triangle_home/services/firebase_service.dart';
-import 'package:triangle_home/theme/app_theme.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class SplashScreen extends StatefulWidget {

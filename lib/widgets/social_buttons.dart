@@ -21,7 +21,7 @@ class SocialLoginButtons extends StatelessWidget {
       children: [
         _buildSocialButton(
           context: context,
-          icon: const Icon(
+          icon: const FaIcon(
             FontAwesomeIcons.facebook,
             color: Color(0xFF1877F2),
           ),
@@ -46,7 +46,7 @@ class SocialLoginButtons extends StatelessWidget {
         const SizedBox(width: 16),
         _buildSocialButton(
           context: context,
-          icon: const Icon(
+          icon: const FaIcon(
             FontAwesomeIcons.apple,
             color: Colors.black,
           ),

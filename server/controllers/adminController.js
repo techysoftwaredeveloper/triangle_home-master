@@ -1,5 +1,6 @@
 const { db, auth } = require('../config/firebase-config');
 const asyncHandler = require('../utils/asyncHandler');
+const { cache } = require('../utils/cache');
 
 /**
  * UPDATED: Dashboard Statistics
@@ -34,6 +35,8 @@ exports.getStats = asyncHandler(async (req, res) => {
       return data.role === 'student' || data.role === 'user';
     }).length;
 
+    const professionals = usersSnapshot.docs.filter(doc => doc.data().role === 'professional').length;
+
     const hosters = usersSnapshot.docs.filter(doc => doc.data().role === 'hoster').length;
 
     const pendingProperties = propertiesSnapshot.docs.filter(doc => doc.data().status === 'pending').length;
@@ -56,21 +59,31 @@ exports.getStats = asyncHandler(async (req, res) => {
       (doc.data().status || '').toLowerCase() === 'pending'
     ).length;
 
+    const pendingVerifications = usersSnapshot.docs.filter(doc => {
+      const verif = doc.data().verification || {};
+      return verif.govIdStatus === 'pending' ||
+             verif.roleIdStatus === 'pending' ||
+             verif.addressStatus === 'pending' ||
+             verif.selfieStatus === 'pending';
+    }).length;
+
     res.json({
       success: true,
       totalUsers: usersSnapshot.size,
       totalHosters: hosters,
       totalStudents: students,
+      totalProfessionals: professionals,
       totalProperties: propertiesSnapshot.size,
       totalBookings: bookingsSnapshot.size,
       totalRevenue: totalRevenue,
       pendingProperties: pendingProperties,
       pendingHosters: pendingHosters,
-      pendingApprovals: pendingProperties + pendingHosters,
+      pendingVerifications: pendingVerifications, // Added
+      pendingApprovals: pendingProperties + pendingHosters + pendingVerifications,
       pendingReports: pendingReports,
       pendingSuggestions: pendingSuggestions,
       pendingModeration: pendingModeration,
-      totalNotifications: pendingProperties + pendingHosters + pendingReports + pendingModeration
+      totalNotifications: pendingProperties + pendingHosters + pendingReports + pendingModeration + pendingVerifications
     });
 });
 
@@ -104,6 +117,10 @@ exports.toggleUserStatus = asyncHandler(async (req, res) => {
 
   await db.collection('users').doc(userId).update(updateData);
 
+  // Clear related cache
+  cache.del('/api/admin/stats');
+  cache.del('/api/admin/users');
+
   // Set custom claims for security layer
   const user = await auth.getUser(userId);
   await auth.setCustomUserClaims(userId, {
@@ -125,6 +142,10 @@ exports.updatePropertyStatus = asyncHandler(async (req, res) => {
     status: status,
     updatedAt: new Date().toISOString()
   });
+
+  cache.del('/api/admin/stats');
+  cache.del('/api/admin/properties');
+
   res.json({ success: true, message: `Property ${status} successfully` });
 });
 
@@ -194,4 +215,51 @@ exports.updateReportStatus = asyncHandler(async (req, res) => {
 
   await db.collection('reports').doc(id).update(updateData);
   res.json({ success: true, message: 'Report status updated' });
+});
+
+/**
+ * NEW: Document Verification Management
+ * Aligned with Verification Center Screen
+ */
+exports.getPendingVerifications = asyncHandler(async (req, res) => {
+  const usersSnapshot = await db.collection('users').get();
+  const pendingUsers = usersSnapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter(u => {
+      const verif = u.verification || {};
+      return verif.govIdStatus === 'pending' ||
+             verif.roleIdStatus === 'pending' ||
+             verif.addressStatus === 'pending' ||
+             verif.selfieStatus === 'pending';
+    });
+
+  res.json({ success: true, users: pendingUsers });
+});
+
+exports.updateVerificationStatus = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const { fieldPrefix, status, isVerified, rejectionReason } = req.body;
+
+  const updateData = {
+    updatedAt: new Date().toISOString()
+  };
+
+  // Update status for the specific document type
+  updateData[`verification.${fieldPrefix}Status`] = status;
+
+  // If verifying, set the boolean flag
+  if (isVerified !== undefined) {
+    updateData[`verification.${fieldPrefix}Verified`] = isVerified;
+  }
+
+  // Handle rejection reason if any
+  if (rejectionReason) {
+    updateData[`verification.${fieldPrefix}RejectionReason`] = rejectionReason;
+  }
+
+  await db.collection('users').doc(userId).update(updateData);
+
+  // Recalculate Booking Readiness on server if needed or let client handle on sync
+  // For now, simple update
+  res.json({ success: true, message: `Verification for ${fieldPrefix} updated to ${status}` });
 });

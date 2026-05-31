@@ -235,7 +235,7 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
@@ -279,7 +279,7 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
             border: Border.all(color: Colors.white, width: 3),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -287,7 +287,7 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
           ),
           child: CircleAvatar(
             radius: 50,
-            backgroundColor: Colors.white.withOpacity(0.2),
+            backgroundColor: Colors.white.withValues(alpha: 0.2),
             backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
             child: _profileImage == null
                 ? const Icon(Icons.person_rounded, size: 50, color: Colors.white)
@@ -341,7 +341,7 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
             hintText: hint,
             prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 22),
             filled: true,
-            fillColor: (readOnly || onTap != null) ? const Color(0xFFF1F5F9).withOpacity(0.5) : const Color(0xFFF8FAFC),
+            fillColor: (readOnly || onTap != null) ? const Color(0xFFF1F5F9).withValues(alpha: 0.5) : const Color(0xFFF8FAFC),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,
@@ -381,7 +381,7 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: DropdownButtonFormField<String>(
-            value: value,
+            initialValue: value,
             style: const TextStyle(fontFamily: 'Outfit', fontSize: 14, color: AppTheme.textColor, fontWeight: FontWeight.w500),
             decoration: InputDecoration(
               prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 22),
@@ -432,7 +432,7 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? AppTheme.primaryColor.withOpacity(0.08) : Colors.white,
+            color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.08) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),

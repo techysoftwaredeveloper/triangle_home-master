@@ -104,7 +104,7 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 4,
-                  shadowColor: AppTheme.primaryColor.withOpacity(0.4),
+                  shadowColor: AppTheme.primaryColor.withValues(alpha: 0.4),
                 ),
                 child: const Text(
                   'Continue to Banking',

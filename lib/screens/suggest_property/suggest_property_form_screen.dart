@@ -509,7 +509,7 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
             border: Border.all(color: const Color(0xFFF1F5F9)),
           ),
           child: DropdownButtonFormField<String>(
-            value: value,
+            initialValue: value,
             style: const TextStyle(fontFamily: 'Outfit', fontSize: 14, color: AppTheme.textDarkColor, fontWeight: FontWeight.w500),
             decoration: InputDecoration(
               prefixIcon: Icon(Icons.category_outlined, color: AppTheme.primaryColor.withValues(alpha: 0.6), size: 18),

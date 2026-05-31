@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/models/property_suggestion.dart';
 
 class MySuggestionsScreen extends StatefulWidget {
@@ -173,7 +172,7 @@ class _MySuggestionsScreenState extends State<MySuggestionsScreen> {
           Positioned(
             right: 0,
             top: -10,
-            child: Icon(Icons.location_on, color: Colors.blue.withOpacity(0.1), size: 60),
+            child: Icon(Icons.location_on, color: Colors.blue.withValues(alpha: 0.1), size: 60),
           ),
         ],
       ),
@@ -206,7 +205,7 @@ class _MySuggestionsScreenState extends State<MySuggestionsScreen> {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -443,7 +442,7 @@ class _MySuggestionsScreenState extends State<MySuggestionsScreen> {
             ),
             child: Row(
               children: [
-                Icon(statusIcon, color: statusColor.withOpacity(0.5), size: 16),
+                Icon(statusIcon, color: statusColor.withValues(alpha: 0.5), size: 16),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -459,7 +458,7 @@ class _MySuggestionsScreenState extends State<MySuggestionsScreen> {
                       backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(color: statusColor.withOpacity(0.2)),
+                        side: BorderSide(color: statusColor.withValues(alpha: 0.2)),
                       ),
                     ),
                     child: Text(

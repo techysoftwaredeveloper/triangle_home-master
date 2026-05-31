@@ -34,6 +34,11 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   int _logoTapCount = 0;
 
+  // Static instance to prevent multiple initialization issues
+  static final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+  );
+
   final List<String> _studentContent = [
     'Apartments? PG Accommodations? We\'ve got you!',
     'Find your perfect home away from home',
@@ -92,106 +97,113 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Trigger Google Sign-In flow
-      final googleUser = await GoogleSignIn().signIn();
+      // ✅ 1. Trigger Google Sign-In flow
+      // NOTE: Ensure SHA-1 & SHA-256 fingerprints are added to Firebase Console.
+      // NOTE: Ensure Google Sign-In is enabled in Firebase Authentication methods.
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) {
-        // User cancelled
+        // User cancelled the selection
         setState(() => _isLoading = false);
         return;
       }
 
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // Create a new credential
+      final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+      // Once signed in, return the UserCredential
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(
         credential,
       );
-      final user = userCredential.user;
-      if (user == null || !mounted) return;
+      
+      final User? user = userCredential.user;
+      if (user == null) throw Exception('Firebase User is null after successful Google Sign-In');
 
-      // Check if user exists in Firestore; create if new
-      final email = user.email ?? '';
-      final displayName = user.displayName ?? '';
+      if (!mounted) return;
+
       final uid = user.uid;
+      final String email = user.email ?? '';
+      final String displayName = user.displayName ?? '';
 
-      final collections = ['users', 'guest'];
-      bool found = false;
-      for (final col in collections) {
-        final doc =
-            await FirebaseFirestore.instance.collection(col).doc(uid).get();
-        if (doc.exists) {
-          found = true;
-          break;
-        }
-      }
+      // Sync user data with Firestore
+      final DocumentReference userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+      final DocumentSnapshot userDoc = await userRef.get();
 
-      if (!found) {
-        // Create a new record in the unified users collection
-        // Rule: request.resource.data.role in ['student', 'hoster'] &&
-        //       (request.resource.data.permissions == null || request.resource.data.permissions.is_admin == false)
-        await FirebaseFirestore.instance.collection('users').doc(uid).set({
-          'role': 'student', // Default role
+      if (!userDoc.exists) {
+        // Create new user profile
+        await userRef.set({
+          'role': widget.isStudent ? 'student' : 'hoster',
           'info': {
             'name': displayName,
             'email': email,
             'profileImage': user.photoURL,
+            'phoneNumber': user.phoneNumber,
           },
           'permissions': {
             'is_admin': false,
           },
           'is_active': true,
           'createdAt': FieldValue.serverTimestamp(),
+          'lastLogin': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
+      } else {
+        // Update existing user's last login
+        await userRef.update({
+          'lastLogin': FieldValue.serverTimestamp(),
+        });
       }
 
       if (!mounted) return;
 
-      // For hosters: route to dashboard or request form
+      // Determine the destination screen based on user role and context
       if (!widget.isStudent) {
-        final hosterDoc =
-            await FirebaseFirestore.instance
-                .collection('hoster')
-                .doc(uid)
-                .get();
+        // Hoster Flow
+        final userData = userDoc.exists ? (userDoc.data() as Map<String, dynamic>) : null;
+        final bool isAlreadyHoster = userData != null && userData['role'] == 'hoster';
 
-        if (!mounted) return;
-
-        if (hosterDoc.exists) {
+        if (isAlreadyHoster) {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
             (route) => false,
           );
         } else {
+          // If they chose "List Your Property" but are a new user or not yet marked as hoster
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const BecomeHosterScreen()),
             (route) => false,
           );
         }
-        return;
-      }
-
-      if (widget.onLoginNavigateTo != null) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => widget.onLoginNavigateTo!),
-          (route) => false,
-        );
       } else {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => HomeScreen()),
-          (route) => false,
-        );
+        // Student/Guest Flow
+        if (widget.onLoginNavigateTo != null) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => widget.onLoginNavigateTo!),
+            (route) => false,
+          );
+        } else {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            (route) => false,
+          );
+        }
       }
     } catch (e) {
+      debugPrint('❌ Google Login Error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to login with $provider: $e')),
+          SnackBar(
+            content: Text('Failed to login with Google: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
+          ),
         );
       }
     } finally {

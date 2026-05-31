@@ -32,7 +32,7 @@ class ProgressBar extends StatelessWidget {
                           borderRadius: BorderRadius.circular(3),
                           boxShadow: isActive ? [
                             BoxShadow(
-                              color: AppTheme.primaryColor.withOpacity(0.2),
+                              color: AppTheme.primaryColor.withValues(alpha: 0.2),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             )

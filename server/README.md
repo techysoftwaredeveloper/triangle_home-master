@@ -56,9 +56,12 @@ If you receive `401 Unauthorized: App Check token missing` or `Invalid App Check
 - `POST /api/properties/:propertyId/reconcile`: Reconcile property occupancy.
 
 ### Admin
-- `GET /api/admin/stats`: Get dashboard statistics.
+- `GET /api/admin/stats`: Get dashboard statistics (including Students, Professionals, and Hosters).
 - `GET /api/admin/users`: List all users.
+- `PATCH /api/admin/users/:userId/role`: Change user role.
 - `PATCH /api/admin/properties/:propertyId/status`: Approve/Reject properties.
+- `GET /api/admin/verifications/pending`: List users awaiting document verification.
+- `PATCH /api/admin/users/:userId/verification`: Approve/Reject specific user documents.
 
 ## Testing
 Run the integration test script:

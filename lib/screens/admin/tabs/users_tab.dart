@@ -121,7 +121,7 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
               ),
               const SizedBox(height: 24),
               _buildSummaryCards(allUsers),
-              const SizedBox(height: 32),
+              const SizedBox(height: 64),
               _buildCategoryTabs(allUsers),
               const SizedBox(height: 24),
               _buildFilterRow(),
@@ -352,8 +352,8 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.blue.shade50, shape: BoxShape.circle),
-              child: Icon(Icons.people_outline, size: 40, color: Colors.blue.shade300),
+              decoration: const BoxDecoration(color: Color(0xFFEFF6FF), shape: BoxShape.circle),
+              child: const Icon(Icons.people_outline, size: 40, color: Color(0xFF3B82F6)),
             ),
             const SizedBox(height: 20),
             const Text('No community members found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)), textAlign: TextAlign.center),

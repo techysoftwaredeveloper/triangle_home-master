@@ -183,7 +183,7 @@ class _HosterInfoScreenState extends State<HosterInfoScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
@@ -315,7 +315,7 @@ class _HosterInfoScreenState extends State<HosterInfoScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: DropdownButtonFormField<String>(
-            value: value,
+            initialValue: value,
             style: const TextStyle(fontFamily: 'Outfit', fontSize: 14, color: AppTheme.textColor, fontWeight: FontWeight.w500),
             decoration: InputDecoration(
               prefixIcon: Icon(icon, color: AppTheme.successColor, size: 22),
@@ -334,7 +334,7 @@ class _HosterInfoScreenState extends State<HosterInfoScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: AppTheme.successColor.withOpacity(0.05),
+        color: AppTheme.successColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
       ),
       child: CheckboxListTile(

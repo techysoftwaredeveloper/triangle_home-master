@@ -74,7 +74,7 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.primaryColor.withOpacity(0.2), width: 1.5, style: BorderStyle.solid),
+          border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2), width: 1.5, style: BorderStyle.solid),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -82,7 +82,7 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
+                color: AppTheme.primaryColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.add_a_photo_rounded, color: AppTheme.primaryColor, size: 24),
@@ -115,7 +115,7 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),

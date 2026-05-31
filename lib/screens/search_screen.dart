@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/search_results_screen.dart';
 import 'package:triangle_home/services/firebase_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
@@ -180,48 +179,51 @@ class _SearchScreenState extends State<SearchScreen> {
                                 locality,
                               );
 
-                              return ListTile(
-                                title: Text(
-                                  locality,
-                                  style: TextStyle(
-                                    color:
-                                        isSelected
-                                            ? AppTheme.primaryColor
-                                            : const Color(0xFF334155),
-                                    fontWeight:
-                                        isSelected
-                                            ? FontWeight.w600
-                                            : FontWeight.w400,
-                                    fontFamily: 'Outfit',
+                              return Material(
+                                color: Colors.transparent,
+                                child: ListTile(
+                                  title: Text(
+                                    locality,
+                                    style: TextStyle(
+                                      color:
+                                          isSelected
+                                              ? AppTheme.primaryColor
+                                              : const Color(0xFF334155),
+                                      fontWeight:
+                                          isSelected
+                                              ? FontWeight.w600
+                                              : FontWeight.w400,
+                                      fontFamily: 'Outfit',
+                                    ),
                                   ),
-                                ),
-                                trailing:
-                                    isSelected
-                                        ? const Icon(
-                                          Icons.check_circle,
-                                          color: AppTheme.primaryColor,
-                                        )
-                                        : null,
-                                onTap: () {
-                                  setState(() {
-                                    if (isSelected) {
-                                      _selectedLocalities.remove(locality);
-                                    } else if (_selectedLocalities.length < 5) {
-                                      _selectedLocalities.add(locality);
-                                    } else {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'You can select up to 5 localities',
+                                  trailing:
+                                      isSelected
+                                          ? const Icon(
+                                            Icons.check_circle,
+                                            color: AppTheme.primaryColor,
+                                          )
+                                          : null,
+                                  onTap: () {
+                                    setState(() {
+                                      if (isSelected) {
+                                        _selectedLocalities.remove(locality);
+                                      } else if (_selectedLocalities.length < 5) {
+                                        _selectedLocalities.add(locality);
+                                      } else {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'You can select up to 5 localities',
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                    }
-                                  });
-                                  Navigator.pop(context);
-                                },
+                                        );
+                                      }
+                                    });
+                                    Navigator.pop(context);
+                                  },
+                                ),
                               );
                             },
                           ),
@@ -593,7 +595,7 @@ class _SearchScreenState extends State<SearchScreen> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -634,7 +636,7 @@ class _SearchScreenState extends State<SearchScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -887,7 +889,7 @@ class _SearchScreenState extends State<SearchScreen> {
         decoration: BoxDecoration(
           color:
               isSelected
-                  ? AppTheme.primaryColor.withOpacity(0.05)
+                  ? AppTheme.primaryColor.withValues(alpha: 0.05)
                   : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
@@ -919,7 +921,7 @@ class _SearchScreenState extends State<SearchScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -1049,7 +1051,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppTheme.primaryColor.withOpacity(0.08)
+                            ? AppTheme.primaryColor.withValues(alpha: 0.08)
                             : Colors.white,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
@@ -1089,7 +1091,7 @@ class _SearchScreenState extends State<SearchScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor.withOpacity(0.05) : Colors.white,
+          color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.05) : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),

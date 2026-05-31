@@ -149,7 +149,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                           right: 16,
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), borderRadius: BorderRadius.circular(20)),
+                            decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(20)),
                             child: Text('+${images.length - 1} Photos', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                           ),
                         ),
@@ -299,7 +299,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
           ),
           if (_isUpdating)
             Container(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               child: const Center(child: CircularProgressIndicator()),
             ),
         ],

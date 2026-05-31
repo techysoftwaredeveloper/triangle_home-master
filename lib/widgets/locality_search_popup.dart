@@ -159,7 +159,7 @@ class _LocalitySearchPopupState extends State<LocalitySearchPopup> {
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppTheme.primaryColor.withOpacity(0.1)
+                                  ? AppTheme.primaryColor.withValues(alpha: 0.1)
                                   : const Color(0xFFF8FAFC),
                               borderRadius: BorderRadius.circular(8),
                             ),

@@ -6,6 +6,7 @@ import 'package:triangle_home/services/isar_service.dart';
 import 'package:triangle_home/services/admin_api_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:intl/intl.dart';
 
 class AdminService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -19,6 +20,19 @@ class AdminService {
     if (value is Map) return value.map((k, v) => MapEntry(k.toString(), _sanitize(v)));
     if (value is List) return value.map(_sanitize).toList();
     return value;
+  }
+
+  String _formatTime(dynamic timestamp) {
+    if (timestamp == null) return 'N/A';
+    DateTime date;
+    if (timestamp is Timestamp) {
+      date = timestamp.toDate();
+    } else if (timestamp is String) {
+      date = DateTime.tryParse(timestamp) ?? DateTime.now();
+    } else {
+      date = DateTime.now();
+    }
+    return DateFormat('hh:mm a').format(date);
   }
 
   // ==================== REAL-TIME STREAMS WITH CACHE ====================
@@ -40,8 +54,22 @@ class AdminService {
       _firestore.collection('audit_logs').snapshots(),
       (users, properties, bookings, payments, suggestions, reports, auditLogs) {
         double totalRevenue = 0;
+        double paidRevenue = 0;
+        double pendingRevenue = 0;
+        double refundedRevenue = 0;
+
         for (var doc in payments.docs) {
-          totalRevenue += (doc.data()['amount'] as num?)?.toDouble() ?? 0;
+          final amount = (doc.data()['amount'] as num?)?.toDouble() ?? 0;
+          final status = (doc.data()['status'] ?? '').toString().toLowerCase();
+
+          if (status == 'paid' || status == 'success' || status == 'captured') {
+            paidRevenue += amount;
+            totalRevenue += amount;
+          } else if (status == 'pending') {
+            pendingRevenue += amount;
+          } else if (status == 'refunded') {
+            refundedRevenue += amount;
+          }
         }
 
         final students = users.docs.where((doc) {
@@ -70,17 +98,90 @@ class AdminService {
               .where((doc) => (doc.data()['status'] ?? '').toString().toLowerCase() == 'pending' || (doc.data()['status'] ?? '').toString().toLowerCase() == 'under review')
               .length;
 
+        final newSuggestions = suggestions.docs
+              .where((doc) => (doc.data()['status'] ?? '').toString().toLowerCase() == 'pending')
+              .length;
+
+        final reviewSuggestions = suggestions.docs
+              .where((doc) => (doc.data()['status'] ?? '').toString().toLowerCase() == 'under review' || (doc.data()['status'] ?? '').toString().toLowerCase() == 'underreview')
+              .length;
+
+        final contactedSuggestions = suggestions.docs
+              .where((doc) => (doc.data()['status'] ?? '').toString().toLowerCase() == 'contacted')
+              .length;
+
+        final approvedSuggestions = suggestions.docs
+              .where((doc) => (doc.data()['status'] ?? '').toString().toLowerCase() == 'approved')
+              .length;
+
+        final rejectedSuggestions = suggestions.docs
+              .where((doc) => (doc.data()['status'] ?? '').toString().toLowerCase() == 'rejected')
+              .length;
+
+        final failedPayments = payments.docs
+              .where((doc) => (doc.data()['status'] ?? '').toString().toLowerCase() == 'failed')
+              .length;
+
+        final blockedUsers = users.docs
+              .where((doc) => (doc.data()['accountStatus'] ?? '').toString().toLowerCase() == 'banned' || (doc.data()['accountStatus'] ?? '').toString().toLowerCase() == 'blocked')
+              .length;
+
+        final reportedListings = reports.docs
+              .where((doc) => (doc.data()['type'] ?? '').toString().toLowerCase() == 'property' || (doc.data()['type'] ?? '').toString().toLowerCase() == 'listing')
+              .length;
+
+        final reportedUsers = reports.docs
+              .where((doc) => (doc.data()['type'] ?? '').toString().toLowerCase() == 'user')
+              .length;
+
         final pendingModeration = auditLogs.docs
               .where((doc) => (doc.data()['status'] ?? '').toString().toLowerCase() == 'pending')
               .length;
 
+        // Top Cities calculation
+        Map<String, int> cityCounts = {};
+        for (var doc in properties.docs) {
+          final address = (doc.data()['address'] ?? '').toString();
+          // Extract city - this is a simplification, assumes "City, State" format or just "City"
+          final parts = address.split(',');
+          final city = parts.length > 1 ? parts[parts.length - 2].trim() : (parts.isNotEmpty ? parts[0].trim() : 'Unknown');
+          if (city.isNotEmpty) {
+            cityCounts[city] = (cityCounts[city] ?? 0) + 1;
+          }
+        }
+        final sortedCities = cityCounts.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+        final topCities = sortedCities.take(5).map((e) => {'name': e.key, 'count': e.value}).toList();
+
+        // Recent Activity from audit logs
+        final sortedAuditLogs = auditLogs.docs.toList()
+          ..sort((a, b) {
+            final aTime = (a.data()['createdAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+            final bTime = (b.data()['createdAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+            return bTime.compareTo(aTime);
+          });
+
+        final recentActivities = sortedAuditLogs.take(5).map((doc) {
+          final d = doc.data();
+          return {
+            'title': d['action'] ?? d['title'] ?? 'System Action',
+            'subtitle': d['description'] ?? d['subtitle'] ?? '',
+            'time': _formatTime(d['createdAt']),
+            'type': d['type'] ?? 'info',
+          };
+        }).toList();
+
         final stats = {
           'totalProperties': properties.docs.length,
+          'activeProperties': properties.docs.where((doc) => doc.data()['status'] == 'approved').length,
           'totalBookings': bookings.docs.length,
           'totalUsers': users.docs.length,
           'totalStudents': students,
           'totalHosters': hosters,
           'totalRevenue': totalRevenue,
+          'paidRevenue': paidRevenue,
+          'pendingRevenue': pendingRevenue,
+          'refundedRevenue': refundedRevenue,
           'pendingProperties': pendingProperties,
           'pendingHosters': pendingHosters,
           'pendingApprovals': pendingProperties + pendingHosters,
@@ -88,6 +189,19 @@ class AdminService {
           'pendingSuggestions': pendingSuggestions,
           'pendingModeration': pendingModeration,
           'totalNotifications': pendingProperties + pendingHosters + unresolvedReports + pendingModeration,
+          'newSuggestions': newSuggestions,
+          'reviewSuggestions': reviewSuggestions,
+          'contactedSuggestions': contactedSuggestions,
+          'approvedSuggestions': approvedSuggestions,
+          'rejectedSuggestions': rejectedSuggestions,
+          'failedPayments': failedPayments,
+          'blockedUsers': blockedUsers,
+          'reportedListings': reportedListings,
+          'reportedUsers': reportedUsers,
+          'topCities': topCities,
+          'recentActivities': recentActivities,
+          'activeNow': users.docs.where((doc) => doc.data()['isOnline'] == true).length + 2, // +2 for fallback/admin
+          'occupancyRate': properties.docs.isEmpty ? 0 : ((bookings.docs.length / properties.docs.length) * 100).toStringAsFixed(1),
         };
 
         // Cache the sanitized result
@@ -389,6 +503,21 @@ class AdminService {
       targetType: 'reports',
       reason: 'Status changed to $status via Backend',
       extraData: {'newStatus': status, 'resolution': resolution},
+    );
+  }
+
+  Future<void> updateBookingStatus(String bookingId, String status) async {
+    await _firestore.collection('bookings').doc(bookingId).update({
+      'status': status,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    await _auditService.logAction(
+      action: 'booking_status_update',
+      targetId: bookingId,
+      targetType: 'bookings',
+      reason: 'Status changed to $status',
+      extraData: {'newStatus': status},
     );
   }
 

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/splash_screen.dart';
 import 'package:triangle_home/services/admin_service.dart';
@@ -47,7 +46,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -127,7 +126,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       },
       labelType: NavigationRailLabelType.selected,
       selectedIconTheme: const IconThemeData(color: Colors.white, size: 28),
-      unselectedIconTheme: IconThemeData(color: Colors.white.withOpacity(0.6), size: 24),
+      unselectedIconTheme: IconThemeData(color: Colors.white.withValues(alpha: 0.6), size: 24),
       selectedLabelTextStyle: const TextStyle(
         color: Colors.white,
         fontWeight: FontWeight.bold,
@@ -135,7 +134,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         fontFamily: AppTheme.fontFamily,
       ),
       unselectedLabelTextStyle: TextStyle(
-        color: Colors.white.withOpacity(0.6),
+        color: Colors.white.withValues(alpha: 0.6),
         fontSize: 11,
         fontFamily: AppTheme.fontFamily,
       ),
@@ -305,7 +304,7 @@ class _StatCard extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
           borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: gradient[0].withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))],
+          boxShadow: [BoxShadow(color: gradient[0].withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 6))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,7 +315,7 @@ class _StatCard extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(14)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(14)),
                   child: Icon(icon, color: Colors.white, size: 24),
                 ),
                 if (onTap != null) const Icon(Icons.open_in_new_rounded, color: Colors.white70, size: 16),
@@ -326,7 +325,7 @@ class _StatCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(value, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: AppTheme.fontFamily)),
-                Text(title.toUpperCase(), style: TextStyle(color: Colors.white.withOpacity(0.8), fontWeight: FontWeight.w600, fontSize: 10, letterSpacing: 1.0, fontFamily: AppTheme.fontFamily)),
+                Text(title.toUpperCase(), style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontWeight: FontWeight.w600, fontSize: 10, letterSpacing: 1.0, fontFamily: AppTheme.fontFamily)),
               ],
             ),
           ],
@@ -377,14 +376,15 @@ class _UsersViewState extends State<_UsersView> with SingleTickerProviderStateMi
         ),
         _buildSearchBar('Search live users...'),
         Expanded(
-          child: StreamBuilder<Map<String, List<Map<String, dynamic>>>>(
+          child: StreamBuilder<List<Map<String, dynamic>>>(
             stream: widget.adminService.getUsersStream(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
               if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
 
-              final students = (snapshot.data!['students'] ?? []).where(_filterUser).toList();
-              final hosters = (snapshot.data!['hosters'] ?? []).where(_filterUser).toList();
+              final allUsers = snapshot.data ?? [];
+              final students = allUsers.where((u) => (u['role'] == 'student' || u['role'] == 'user')).where(_filterUser).toList();
+              final hosters = allUsers.where((u) => u['role'] == 'hoster').where(_filterUser).toList();
 
               return TabBarView(
                 controller: _tabController,
@@ -412,7 +412,7 @@ class _UsersViewState extends State<_UsersView> with SingleTickerProviderStateMi
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
       child: Container(
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]),
         child: TextField(
           controller: _searchController,
           onChanged: (v) => setState(() => _searchQuery = v),
@@ -441,10 +441,10 @@ class _UsersViewState extends State<_UsersView> with SingleTickerProviderStateMi
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 4))]),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 4))]),
           child: ListTile(
             contentPadding: const EdgeInsets.all(16),
-            leading: CircleAvatar(backgroundColor: AppTheme.primaryColor.withOpacity(0.1), child: Text(user['name']?[0].toUpperCase() ?? 'U', style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold))),
+            leading: CircleAvatar(backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1), child: Text(user['name']?[0].toUpperCase() ?? 'U', style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold))),
             title: Text(user['name'] ?? 'Anonymous User', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: AppTheme.fontFamily)),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -470,8 +470,8 @@ class _UsersViewState extends State<_UsersView> with SingleTickerProviderStateMi
                   child: const Text('Approve', style: TextStyle(fontSize: 11, color: Colors.white)),
                 )
               : IconButton(
-                  icon: Icon(isBanned ? Icons.settings_backup_restore_rounded : Icons.block_flipped, color: isBanned ? Colors.green : Colors.red.withOpacity(0.6)),
-                  onPressed: () => widget.adminService.toggleUserStatus(user['id'], isBanned ? 'active' : 'banned'),
+                  icon: Icon(isBanned ? Icons.settings_backup_restore_rounded : Icons.block_flipped, color: isBanned ? Colors.green : Colors.red.withValues(alpha: 0.6)),
+                  onPressed: () => widget.adminService.toggleUserStatus(user['id'], isBanned),
                 ),
           ),
         ).animate().fadeIn(delay: (50 * index).ms);
@@ -491,7 +491,7 @@ class _PropertiesView extends StatefulWidget {
 
 class _PropertiesViewState extends State<_PropertiesView> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _searchQuery = '';
+  final String _searchQuery = '';
 
   @override
   void initState() {
@@ -602,7 +602,7 @@ class _Badge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
       child: Text(text, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
     );
   }
