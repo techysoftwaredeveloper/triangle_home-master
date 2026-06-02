@@ -18,37 +18,52 @@ class HosterBottomNav extends StatelessWidget {
       onTap: onTap,
       type: BottomNavigationBarType.fixed,
       backgroundColor: Colors.white,
-      selectedItemColor: AppTheme.primaryColor,
+      selectedItemColor: AppTheme.successColor,
       unselectedItemColor: AppTheme.textMutedColor,
       selectedLabelStyle: const TextStyle(
-        fontSize: AppTheme.fontXS,
-        fontWeight: FontWeight.w600,
-        fontFamily: AppTheme.fontFamily,
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        fontFamily: 'Outfit',
       ),
       unselectedLabelStyle: const TextStyle(
-        fontSize: AppTheme.fontXS,
-        fontFamily: AppTheme.fontFamily,
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        fontFamily: 'Outfit',
       ),
-      elevation: 8,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard_outlined),
-          activeIcon: Icon(Icons.dashboard_rounded),
+      elevation: 20,
+      items: [
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.grid_view_rounded),
           label: 'Dashboard',
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.apartment_outlined),
-          activeIcon: Icon(Icons.apartment_rounded),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.apartment_rounded),
           label: 'Properties',
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.book_outlined),
-          activeIcon: Icon(Icons.book_rounded),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.calendar_today_rounded),
           label: 'Bookings',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person_rounded),
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              const Icon(Icons.people_outline_rounded),
+              Positioned(
+                top: -4,
+                right: -4,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle),
+                  child: const Text('4', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+          label: 'Leads',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.person_outline_rounded),
           label: 'Profile',
         ),
       ],

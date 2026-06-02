@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:triangle_home/services/admin_service.dart';
-import 'package:triangle_home/screens/admin/widgets/admin_shared_widgets.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
@@ -930,7 +929,7 @@ class _PaymentsTabState extends State<PaymentsTab> with SingleTickerProviderStat
             ],
           ),
           const SizedBox(height: 24),
-          Container(
+          SizedBox(
             height: 100,
             width: double.infinity,
             child: CustomPaint(painter: _MiniSparklinePainter(color: isUp ? const Color(0xFF6366F1) : Colors.red)),

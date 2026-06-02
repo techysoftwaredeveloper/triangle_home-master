@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
@@ -18,10 +19,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _isProcessing = false;
   late Razorpay _razorpay;
   final _firebaseService = FirebaseService();
+  late Timer _timer;
+  late Duration _remaining;
 
   @override
   void initState() {
     super.initState();
+    _remaining = widget.booking['lockExpiry'] != null 
+        ? (widget.booking['lockExpiry'] as DateTime).difference(DateTime.now())
+        : const Duration(minutes: 15);
+    
+    _startTimer();
     _razorpay = Razorpay();
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _onPaymentSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _onPaymentError);
@@ -30,8 +38,50 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   void dispose() {
+    _timer.cancel();
     _razorpay.clear();
     super.dispose();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remaining.inSeconds <= 0) {
+        timer.cancel();
+        _handleLockExpiry();
+      } else {
+        setState(() {
+          _remaining = _remaining - const Duration(seconds: 1);
+        });
+      }
+    });
+  }
+
+  void _handleLockExpiry() {
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Reservation Expired'),
+          content: const Text('Your bed reservation has expired. Please start again to select an available bed.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              },
+              child: const Text('Return to Home'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  String _formatDuration(Duration d) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(d.inMinutes.remainder(60));
+    final seconds = twoDigits(d.inSeconds.remainder(60));
+    return "$minutes:$seconds";
   }
 
   int get _amount {
@@ -229,6 +279,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       'Security Deposit',
                       '₹${widget.booking['deposit'] ?? 0}',
                     ),
+                    if (widget.booking['bedId'] != null) ...[
+                      const Divider(height: 24),
+                      _buildInfoRow(
+                        'Assigned Bed',
+                        '${widget.booking['selectedRoomNumber'] ?? ''} - Bed ${widget.booking['selectedBedNumber'] ?? ''}',
+                      ),
+                      _buildInfoRow(
+                        'Hold Expires In',
+                        _formatDuration(_remaining),
+                        valueColor: _remaining.inMinutes < 2 ? Colors.red : Colors.orange,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -381,14 +443,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String value, {Color? valueColor}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: Colors.grey[600])),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: valueColor ?? AppTheme.textDarkColor,
+            ),
+          ),
         ],
       ),
     );

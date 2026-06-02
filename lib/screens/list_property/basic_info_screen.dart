@@ -6,7 +6,9 @@ import 'package:triangle_home/widgets/list_property/input_field.dart';
 
 class BasicInfoScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onContinue;
-  const BasicInfoScreen({super.key, required this.onContinue});
+  final Map<String, dynamic>? initialData;
+
+  const BasicInfoScreen({super.key, required this.onContinue, this.initialData});
 
   @override
   State<BasicInfoScreen> createState() => _BasicInfoScreenState();
@@ -14,11 +16,32 @@ class BasicInfoScreen extends StatefulWidget {
 
 class _BasicInfoScreenState extends State<BasicInfoScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _propertyTypeController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _wardenController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _emailController = TextEditingController();
+  late TextEditingController _propertyTypeController;
+  late TextEditingController _nameController;
+  late TextEditingController _wardenController;
+  late TextEditingController _phoneController;
+  late TextEditingController _emailController;
+
+  @override
+  void initState() {
+    super.initState();
+    final basic = widget.initialData?['basicInfo'] ?? {};
+    _propertyTypeController = TextEditingController(text: widget.initialData?['propertyType'] ?? '');
+    _nameController = TextEditingController(text: basic['name'] ?? '');
+    _wardenController = TextEditingController(text: basic['wardenName'] ?? '');
+    _phoneController = TextEditingController(text: basic['phone'] ?? '');
+    _emailController = TextEditingController(text: basic['email'] ?? '');
+  }
+
+  @override
+  void dispose() {
+    _propertyTypeController.dispose();
+    _nameController.dispose();
+    _wardenController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

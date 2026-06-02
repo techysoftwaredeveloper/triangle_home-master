@@ -6,7 +6,9 @@ import 'package:triangle_home/widgets/list_property/input_field.dart';
 
 class BankingInfoScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onContinue;
-  const BankingInfoScreen({super.key, required this.onContinue});
+  final Map<String, dynamic>? initialData;
+
+  const BankingInfoScreen({super.key, required this.onContinue, this.initialData});
 
   @override
   State<BankingInfoScreen> createState() => _BankingInfoScreenState();
@@ -14,11 +16,32 @@ class BankingInfoScreen extends StatefulWidget {
 
 class _BankingInfoScreenState extends State<BankingInfoScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _accountNameController = TextEditingController();
-  final _bankNameController = TextEditingController();
-  final _accountNumberController = TextEditingController();
-  final _ifscController = TextEditingController();
-  final _upiController = TextEditingController();
+  late TextEditingController _accountNameController;
+  late TextEditingController _bankNameController;
+  late TextEditingController _accountNumberController;
+  late TextEditingController _ifscController;
+  late TextEditingController _upiController;
+
+  @override
+  void initState() {
+    super.initState();
+    final data = widget.initialData ?? {};
+    _accountNameController = TextEditingController(text: data['accountName'] ?? '');
+    _bankNameController = TextEditingController(text: data['bankName'] ?? '');
+    _accountNumberController = TextEditingController(text: data['accountNumber'] ?? '');
+    _ifscController = TextEditingController(text: data['ifsc'] ?? '');
+    _upiController = TextEditingController(text: data['upiId'] ?? '');
+  }
+
+  @override
+  void dispose() {
+    _accountNameController.dispose();
+    _bankNameController.dispose();
+    _accountNumberController.dispose();
+    _ifscController.dispose();
+    _upiController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

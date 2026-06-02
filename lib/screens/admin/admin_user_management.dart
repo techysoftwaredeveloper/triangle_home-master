@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:triangle_home/services/firebase_service.dart';
+import 'package:triangle_home/services/admin_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 class AdminUserManagement extends StatefulWidget {
@@ -140,49 +141,100 @@ class _AdminUserManagementState extends State<AdminUserManagement> {
   }
 
   void _showUserDetails(Map<String, dynamic> user) {
+    final bool isHoster = user['role'] == 'hoster';
+    final adminService = AdminService();
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          maxChildSize: 0.9,
+          minChildSize: 0.4,
+          expand: false,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'User Details',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      const Text('User Details', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+                      const Spacer(),
+                      IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                    ],
                   ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
+                  const Divider(),
+                  _detailRow('Name', user['name'] ?? 'N/A'),
+                  _detailRow('Phone', user['phone'] ?? user['id'] ?? 'N/A'),
+                  _detailRow('Email', user['email'] ?? 'N/A'),
+                  _detailRow('Role', user['role']?.toString().toUpperCase() ?? 'N/A'),
+                  
+                  if (isHoster) ...[
+                    const SizedBox(height: 24),
+                    const Text('Hoster Performance', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+                    const SizedBox(height: 16),
+                    FutureBuilder<Map<String, dynamic>>(
+                      future: adminService.getHosterDashboardSummary(user['id']),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: LinearProgressIndicator());
+                        }
+                        if (snapshot.hasError) return const Text('Error loading stats');
+                        
+                        final stats = snapshot.data ?? {};
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(16)),
+                          child: Column(
+                            children: [
+                              _statRow('Total Properties', stats['properties']?.length?.toString() ?? '0'),
+                              _statRow('Active Residents', stats['activeResidents']?.toString() ?? '0'),
+                              _statRow('Occupancy', '${stats['occupancy']}%'),
+                              _statRow('Monthly Revenue', '₹${stats['monthlyRevenue']}'),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                  
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      child: const Text('Close', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
                   ),
                 ],
               ),
-              const Divider(),
-              _detailRow('Name', user['name'] ?? 'N/A'),
-              _detailRow('Phone', user['phone'] ?? user['id'] ?? 'N/A'),
-              _detailRow('Email', user['email'] ?? 'N/A'),
-              _detailRow('Role', user['role']?.toString().toUpperCase() ?? 'N/A'),
-              if (user['gender'] != null) _detailRow('Gender', user['gender']),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Close'),
-                ),
-              ),
-            ],
-          ),
+            );
+          }
         );
       },
+    );
+  }
+
+  Widget _statRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+        ],
+      ),
     );
   }
 

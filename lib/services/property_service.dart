@@ -4,6 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/core/errors/failures.dart';
+import 'package:triangle_home/models/property_private_details.dart';
 import 'package:uuid/uuid.dart';
 
 class PropertyService {
@@ -78,6 +79,37 @@ class PropertyService {
 
   Future<void> updateStatus(String id, PropertyStatus status) async {
     await updateProperty(id, {'status': status.name});
+  }
+
+  // ==================== PRIVATE VAULT ====================
+
+  Future<PropertyPrivateDetails?> getPrivateDetails(String propertyId) async {
+    try {
+      final doc = await _firestore
+          .collection('properties')
+          .doc(propertyId)
+          .collection('private')
+          .doc('details')
+          .get();
+      
+      if (!doc.exists) return null;
+      return PropertyPrivateDetails.fromFirestore(propertyId, doc.data()!);
+    } catch (e) {
+      throw PropertyFailure('Access Denied: Confirmed booking required to view private details.');
+    }
+  }
+
+  Future<void> savePrivateDetails(String propertyId, PropertyPrivateDetails details) async {
+    try {
+      await _firestore
+          .collection('properties')
+          .doc(propertyId)
+          .collection('private')
+          .doc('details')
+          .set(details.toFirestore());
+    } catch (e) {
+      throw PropertyFailure('Failed to save private details: $e');
+    }
   }
 
   // ==================== SEARCH & PAGINATION ====================
@@ -235,7 +267,7 @@ class PropertyService {
   Stream<QuerySnapshot<Map<String, dynamic>>> getHosterProperties(String hosterId) {
     return _firestore
         .collection('properties')
-        .where('hosterId', isEqualTo: hosterId)
+        .where('hoster_id', isEqualTo: hosterId)
         .orderBy('createdAt', descending: true)
         .snapshots();
   }

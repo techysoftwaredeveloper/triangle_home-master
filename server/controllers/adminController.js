@@ -151,21 +151,52 @@ exports.updatePropertyStatus = asyncHandler(async (req, res) => {
 
 /**
  * UPDATED: Hoster Elevation
+ * Copies info from hoster_requests to user profile info
  */
 exports.approveHoster = asyncHandler(async (req, res) => {
   const { hosterId } = req.params;
 
-  await db.collection('users').doc(hosterId).update({
+  // 1. Get the hoster request details
+  const requestDoc = await db.collection('hoster_requests').doc(hosterId).get();
+  let hosterInfo = {};
+
+  if (requestDoc.exists) {
+    const data = requestDoc.data();
+    hosterInfo = {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      businessName: data.businessName,
+      address: data.businessAddress,
+      propertyType: data.propertyType,
+      createdAt: data.requestedAt || new Date()
+    };
+
+    // Mark request as approved
+    await db.collection('hoster_requests').doc(hosterId).update({
+      status: 'approved',
+      reviewedAt: new Date()
+    });
+  }
+
+  // 2. Update the user document
+  const userUpdate = {
     status: 'approved',
     accountStatus: 'active',
     role: 'hoster',
     is_active: true,
     updatedAt: new Date().toISOString()
-  });
+  };
+
+  if (Object.keys(hosterInfo).length > 0) {
+    userUpdate.info = hosterInfo;
+  }
+
+  await db.collection('users').doc(hosterId).update(userUpdate);
 
   await auth.setCustomUserClaims(hosterId, { role: 'hoster' });
 
-  res.json({ success: true, message: 'Hoster approved successfully' });
+  res.json({ success: true, message: 'Hoster approved successfully and info migrated' });
 });
 
 exports.getAllProperties = asyncHandler(async (req, res) => {

@@ -5,6 +5,10 @@ import 'package:triangle_home/screens/auth/login_screen.dart';
 import 'package:triangle_home/screens/booking_summary_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
+import 'package:triangle_home/widgets/inventory/bed_selection_sheet.dart';
+import 'package:triangle_home/models/room_model.dart';
+import 'package:triangle_home/models/bed_model.dart';
+
 /// CTA flow for Hostel/PG:
 ///   Step 0 (no selection)  → "Check Availability" (disabled, or shows picker prompt)
 ///   Step 1 (selection made, not confirmed) → "Check Availability" (enabled)
@@ -63,7 +67,26 @@ class _BottomBarState extends State<BottomBar> {
 
   void _handleCheckAvailability() {
     if (!_hasSelection) return;
-    setState(() => _step = _CtaStep.availabilityConfirmed);
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BedSelectionSheet(
+        propertyId: widget.accommodation['id'] ?? '',
+        onSelected: (room, bed) {
+          Navigator.pop(context);
+          setState(() {
+            _step = _CtaStep.availabilityConfirmed;
+            // Store selection in accommodation map for flow continuity
+            widget.accommodation['selectedRoomId'] = room.id;
+            widget.accommodation['selectedBedId'] = bed.id;
+            widget.accommodation['selectedRoomNumber'] = room.roomNumber;
+            widget.accommodation['selectedBedNumber'] = bed.bedNumber;
+          });
+        },
+      ),
+    );
   }
 
   void _handleApply(BuildContext context) {

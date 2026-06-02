@@ -6,6 +6,7 @@ class CustomToggleButtons extends StatelessWidget {
   final String selectedOption;
   final Function(String) onOptionSelected;
   final bool wrap;
+  final Color? activeColor;
 
   const CustomToggleButtons({
     super.key,
@@ -13,6 +14,7 @@ class CustomToggleButtons extends StatelessWidget {
     required this.selectedOption,
     required this.onOptionSelected,
     this.wrap = false,
+    this.activeColor,
   });
 
   @override
@@ -42,6 +44,7 @@ class CustomToggleButtons extends StatelessWidget {
 
   Widget _buildButton(BuildContext context, String option) {
     final isSelected = selectedOption == option;
+    final color = activeColor ?? AppTheme.primaryColor;
     return InkWell(
       onTap: () => onOptionSelected(option),
       borderRadius: BorderRadius.circular(12),
@@ -49,15 +52,15 @@ class CustomToggleButtons extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor : Colors.white,
+          color: isSelected ? color : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : Colors.grey.shade200,
+            color: isSelected ? color : Colors.grey.shade200,
             width: 1.5,
           ),
           boxShadow: isSelected ? [
             BoxShadow(
-              color: AppTheme.primaryColor.withValues(alpha: 0.2),
+              color: color.withOpacity(0.2),
               blurRadius: 8,
               offset: const Offset(0, 4),
             )

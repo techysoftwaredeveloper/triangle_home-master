@@ -113,10 +113,11 @@ class _AdminPropertyManagementState extends State<AdminPropertyManagement>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          basicInfo['collegeName'] ?? 'Unnamed Property',
+                          basicInfo['name'] ?? basicInfo['collegeName'] ?? 'Unnamed Property',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            fontFamily: 'Outfit',
                           ),
                         ),
                         const SizedBox(height: 4),

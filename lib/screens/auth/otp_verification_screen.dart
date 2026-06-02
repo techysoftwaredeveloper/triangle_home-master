@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:triangle_home/services/auth_production_service.dart';
 import 'package:triangle_home/screens/admin/admin_dashboard_redesign.dart';
 import 'package:triangle_home/hoster_info_screen.dart';
+import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/student_info_screen.dart';
 import 'package:triangle_home/screens/home_screen.dart';
@@ -99,7 +100,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
       // Use the Production Auth Service for role detection
       final authService = AuthProductionService();
-      final role = await authService.getUserRole(user);
+      final authDetails = await authService.getUserAuthDetails(user);
+      final role = authDetails['role'] as UserRole;
+      final status = authDetails['status'] as String;
 
       if (!mounted) return;
 
@@ -109,16 +112,24 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         case UserRole.admin:
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const AdminDashboardRedesign()),
+            MaterialPageRoute(builder: (_) => AdminDashboardRedesign()),
             (route) => false,
           );
           break;
         case UserRole.hoster:
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
-            (route) => false,
-          );
+          if (status == 'approved') {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => HosterDashboardScreen()),
+              (route) => false,
+            );
+          } else {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const BecomeHosterScreen()),
+              (route) => false,
+            );
+          }
           break;
         case UserRole.student:
           if (widget.onLoginNavigateTo != null) {
@@ -145,10 +156,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       phoneNumber: user.phoneNumber ?? '',
                       onCompleteNavigateTo: widget.onLoginNavigateTo,
                     )
-                  : HosterInfoScreen(
-                      phoneNumber: user.phoneNumber ?? '',
-                      onCompleteNavigateTo: widget.onLoginNavigateTo,
-                    ),
+                  : const BecomeHosterScreen(),
             ),
             (route) => false,
           );

@@ -2,14 +2,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
-import 'package:triangle_home/screens/profile/profile_screen.dart' as sub;
+import 'package:triangle_home/screens/hoster/hoster_profile_screen.dart';
 import 'package:triangle_home/services/property_service.dart';
 import 'package:triangle_home/services/booking_service.dart';
 import 'package:triangle_home/services/hoster_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/hoster/hoster_bottom_nav.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class HosterDashboardScreen extends StatefulWidget {
   const HosterDashboardScreen({super.key});
@@ -28,112 +29,30 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
 
   void _onNavTap(int index) => setState(() => _selectedIndex = index);
 
-  Future<void> _handleNewListing(BuildContext context) async {
-    // 1. Get current approval status from Firestore
-    try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(_uid).get();
-      final data = doc.data();
-      final status = data?['status'] ?? 'pending';
-
-      if (data?['role'] != 'hoster' || status != HosterStatus.approved.name) {
-        if (!context.mounted) return;
-        _showNotApprovedDialog(context);
-        return;
-      }
-
-      if (!context.mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
-      );
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error verifying approval: $e')),
-        );
-      }
-    }
-  }
-
-  void _showNotApprovedDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.verified_user_outlined, color: Colors.orange),
-            SizedBox(width: 10),
-            Text('Verification Pending', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: const Text(
-          'Your hoster account is currently under review. You can start listing properties once an administrator approves your profile.',
-          style: TextStyle(height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('I Understand', style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final tabs = [
-      _DashboardTab(uid: _uid, hosterService: _hosterService, bookingService: _bookingService),
+      _DashboardTab(uid: _uid, hosterService: _hosterService),
       _PropertiesTab(uid: _uid, propertyService: _propertyService),
       _BookingsTab(uid: _uid, bookingService: _bookingService),
-      const sub.ProfileScreen(showBottomNav: false),
-    ];
-
-    final titles = [
-      'Hoster Dashboard',
-      'My Properties',
-      'Bookings Received',
-      'Profile',
+      _LeadsTab(uid: _uid),
+      const HosterProfileScreen(),
     ];
 
     return Scaffold(
-      backgroundColor: AppTheme.scaffoldBgColor,
-      appBar:
-          _selectedIndex == 3
-              ? null
-              : AppBar(
-                backgroundColor: AppTheme.primaryColor,
-                automaticallyImplyLeading: false,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                title: Text(
-                  titles[_selectedIndex],
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: AppTheme.fontMD,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                actions:
-                    _selectedIndex == 1
-                        ? [
-                          IconButton(
-                            icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white),
-                            onPressed: () => _handleNewListing(context),
-                            tooltip: 'List New Property',
-                          ),
-                        ]
-                        : null,
-              ),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: tabs[_selectedIndex],
       bottomNavigationBar: HosterBottomNav(
         selectedIndex: _selectedIndex,
         onTap: _onNavTap,
       ),
+      floatingActionButton: _selectedIndex == 0 ? FloatingActionButton.extended(
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ListPropertyScreen())),
+        backgroundColor: AppTheme.successColor,
+        icon: const Icon(Icons.add_rounded, color: Colors.white),
+        label: const Text('Add Property', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+        elevation: 10,
+      ) : null,
     );
   }
 }
@@ -142,311 +61,515 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
 class _DashboardTab extends StatelessWidget {
   final String uid;
   final HosterService hosterService;
-  final BookingService bookingService;
-  const _DashboardTab({
-    required this.uid,
-    required this.hosterService,
-    required this.bookingService,
-  });
+  const _DashboardTab({required this.uid, required this.hosterService});
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: hosterService.getHosterStats(uid),
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: hosterService.getDetailedHosterStatsStream(uid),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final stats = snapshot.data ?? {
-          'totalProperties': 0,
-          'totalBookings': 0,
-          'totalEarnings': 0.0,
-          'pendingBookings': 0,
-        };
+        final data = snapshot.data ?? {};
+        final properties = data['properties'] as List? ?? [];
+        final recentActivity = data['recentActivity'] as List? ?? [];
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _WelcomeCard(uid: uid),
-              const SizedBox(height: 24),
-
-              Text(
-                'Performance Overview',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                  color: AppTheme.textDarkColor,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 1.4,
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8FAFC),
+          appBar: _buildHeader(context, data),
+          body: RefreshIndicator(
+            onRefresh: () async => hosterService.getDetailedHosterStatsStream(uid),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildStatCard('Properties', stats['totalProperties'].toString(), Icons.home_work_rounded, Colors.blue),
-                  _buildStatCard('Total Bookings', stats['totalBookings'].toString(), Icons.book_rounded, Colors.green),
-                  _buildStatCard('Earnings', '₹${stats['totalEarnings'].toStringAsFixed(0)}', Icons.payments_rounded, Colors.purple),
-                  _buildStatCard('Pending', stats['pendingBookings'].toString(), Icons.pending_actions_rounded, Colors.orange),
+                  const SizedBox(height: 24),
+                  _buildPropertyStatusCard(properties.isNotEmpty ? properties.first : null),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader('Today\'s Actions'),
+                  _buildActionCards(data),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader('Overview'),
+                  _buildOverviewGrid(data),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader('My Properties', onViewAll: () {}),
+                  _buildPropertiesCarousel(properties),
+                  const SizedBox(height: 32),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _buildRevenueInsight(data)),
+                      const SizedBox(width: 16),
+                      Expanded(child: _buildHostManagement()),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader('Recent Activity'),
+                  _buildRecentActivity(recentActivity),
+                  const SizedBox(height: 100),
                 ],
               ),
-
-              const SizedBox(height: 32),
-              const Text(
-                'Recent Activity',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                  color: AppTheme.textDarkColor,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _RecentBookings(uid: uid, bookingService: bookingService),
-            ],
+            ),
           ),
         );
-      }
+      },
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  PreferredSizeWidget _buildHeader(BuildContext context, Map data) {
+    final name = data['hosterName'] ?? 'Jibin';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'J';
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      leading: const Icon(Icons.menu_rounded, color: Color(0xFF1E293B)),
+      title: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: const Color(0xFFDCFCE7),
+            child: Text(initial, style: const TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.bold, fontSize: 14)),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Good Morning, $name 👋', style: const TextStyle(color: Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+              Text(data['hosterRole'] ?? 'Host & Property Manager', style: const TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1E293B))),
+            Positioned(
+              top: 12, right: 12,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle),
+                child: const Text('5', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(width: 8),
+      ],
+    );
+  }
+
+  Widget _buildPropertyStatusCard(Map? property) {
+    if (property == null) return const SizedBox.shrink();
+    final images = property['images'] as List? ?? [];
+    final name = property['basicInfo']?['name'] ?? 'Sunrise PG';
+    final occupancy = 92; 
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20, offset: const Offset(0, 10))],
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: images.isNotEmpty 
+              ? CachedNetworkImage(imageUrl: images.first, width: 80, height: 80, fit: BoxFit.cover)
+              : Container(width: 80, height: 80, color: Colors.grey[200], child: const Icon(Icons.apartment)),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B), fontFamily: 'Outfit')),
+                    const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B), size: 18),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(8)),
+                      child: const Text('Active', style: TextStyle(color: Color(0xFF16A34A), fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('${property['city'] ?? "Kochi"}, ${property['locality'] ?? "Kerala"}', style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                const SizedBox(height: 4),
+                const Text('Since Jan 2024', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          _buildCircularOccupancy(occupancy),
+          const Icon(Icons.chevron_right_rounded, color: Color(0xFFCBD5E1)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCircularOccupancy(int value) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        SizedBox(
+          width: 50, height: 50,
+          child: CircularProgressIndicator(
+            value: value / 100,
+            strokeWidth: 4,
+            backgroundColor: const Color(0xFFF1F5F9),
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF16A34A)),
+          ),
+        ),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('$value%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+            const Text('Occupancy', style: TextStyle(fontSize: 6, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionCards(Map data) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _actionCard('New Inquiries', data['newInquiries']?.toString() ?? '0', Icons.chat_bubble_rounded, const Color(0xFF3B82F6)),
+          _actionCard('Pending Check-ins', data['pendingCheckins']?.toString() ?? '0', Icons.calendar_today_rounded, const Color(0xFFF59E0B)),
+          _actionCard('Rent Payments Due', data['paymentsDue']?.toString() ?? '0', Icons.currency_rupee_rounded, const Color(0xFFF97316)),
+          _actionCard('Bookings Confirmed', data['bookingsConfirmed']?.toString() ?? '0', Icons.check_circle_rounded, const Color(0xFF16A34A)),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionCard(String title, String count, IconData icon, Color color) {
+    return Container(
+      width: 130, height: 160,
+      margin: const EdgeInsets.only(right: 12, top: 16, bottom: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.2), shape: BoxShape.circle),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const Spacer(),
+          Text(count, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          const SizedBox(height: 4),
+          Text(title, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500, height: 1.2)),
+          const SizedBox(height: 8),
+          const Align(alignment: Alignment.bottomRight, child: Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFF94A3B8))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOverviewGrid(Map data) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.5,
+      children: [
+        _overviewCard('Active Residents', data['activeResidents']?.toString() ?? '0', '6 vs last month', true),
+        _overviewCard('Vacant Beds', data['vacantBeds']?.toString() ?? '0', '2 vs last month', false),
+        _overviewCard('Occupancy', '${data['occupancy']}%', '8% vs last month', true),
+        _overviewCard('Monthly Revenue', '₹${(data['monthlyRevenue'] ?? 0).toString()}', '12% vs last month', true),
+      ],
+    );
+  }
+
+  Widget _overviewCard(String title, String value, String change, bool isPositive) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 20),
+          Row(
+            children: [
+              Icon(
+                title.contains('Residents') ? Icons.people_rounded : 
+                title.contains('Beds') ? Icons.bed_rounded :
+                title.contains('Occupancy') ? Icons.pie_chart_rounded : Icons.currency_rupee_rounded,
+                size: 16, color: const Color(0xFF64748B)
+              ),
+              const SizedBox(width: 8),
+              Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textDarkColor,
-            ),
-          ),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppTheme.textLightColor,
-              fontFamily: AppTheme.fontFamily,
-            ),
+          const Spacer(),
+          Text(title, style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(isPositive ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded, size: 10, color: isPositive ? const Color(0xFF16A34A) : const Color(0xFFEF4444)),
+              const SizedBox(width: 4),
+              Text(change, style: TextStyle(fontSize: 10, color: isPositive ? const Color(0xFF16A34A) : const Color(0xFFEF4444), fontWeight: FontWeight.bold)),
+            ],
           ),
         ],
       ),
-    ).animate().fadeIn().scale(delay: 200.ms);
+    );
   }
-}
 
-class _WelcomeCard extends StatelessWidget {
-  final String uid;
-  const _WelcomeCard({required this.uid});
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('users').doc(uid).get(),
-      builder: (context, snapshot) {
-        final data = snapshot.data?.data() as Map<String, dynamic>?;
-        final info = data?['info'] as Map<String, dynamic>? ?? {};
-        final name = info['name'] as String? ?? 'Hoster';
-
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppTheme.primaryColor, AppTheme.primaryDark],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                blurRadius: 15,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: Colors.white.withValues(alpha: 0.2),
-                child: Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : 'H',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+  Widget _buildPropertiesCarousel(List properties) {
+    if (properties.isEmpty) return const SizedBox(height: 100, child: Center(child: Text('No properties listed')));
+    
+    return Column(
+      children: [
+        SizedBox(
+          height: 220,
+          child: PageView.builder(
+            itemCount: properties.length,
+            controller: PageController(viewportFraction: 0.9),
+            itemBuilder: (context, index) {
+              final p = properties[index];
+              final images = p['images'] as List? ?? [];
+              final name = p['basicInfo']?['name'] ?? 'Property';
+              
+              return Container(
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Hello, $name!',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                      child: images.isNotEmpty 
+                        ? CachedNetworkImage(imageUrl: images.first, height: 120, width: double.infinity, fit: BoxFit.cover)
+                        : Container(height: 120, color: Colors.grey[200]),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Ready to manage your properties today?',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontFamily: AppTheme.fontFamily,
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                  Row(children: [const Icon(Icons.location_on_rounded, size: 12, color: Color(0xFF94A3B8)), Text(' ${p['city']}', style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)))]),
+                                ],
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(8)),
+                                child: const Text('Active', style: TextStyle(color: Color(0xFF16A34A), fontSize: 10, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _propStat('95%', 'Occupancy'),
+                              _propStat('2', 'Vacant Beds'),
+                              _propStat('4', 'Inquiries'),
+                              _propStat('21', 'Residents'),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [0, 1, 2].map((i) => Container(width: 6, height: 6, margin: const EdgeInsets.all(2), decoration: BoxDecoration(color: i == 0 ? const Color(0xFF16A34A) : const Color(0xFFCBD5E1), shape: BoxShape.circle))).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _propStat(String val, String label) {
+    return Column(
+      children: [
+        Text(val, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+        Text(label, style: const TextStyle(fontSize: 8, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Widget _buildRevenueInsight(Map data) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Revenue This Month', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+              const Text('View Report', style: TextStyle(fontSize: 10, color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
             ],
           ),
-        ).animate().fadeIn().slideY(begin: -0.1, end: 0);
-      },
-    );
-  }
-}
-
-class _RecentBookings extends StatelessWidget {
-  final String uid;
-  final BookingService bookingService;
-  const _RecentBookings({required this.uid, required this.bookingService});
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: bookingService.getHosterBookings(uid),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final docs = snapshot.data?.docs.take(3).toList() ?? [];
-
-        if (docs.isEmpty) {
-          return Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Center(
-              child: Text(
-                'No recent activity',
-                style: TextStyle(color: AppTheme.textMutedColor),
-              ),
-            ),
-          );
-        }
-
-        return Column(
-          children: docs.map((doc) {
-            final data = doc.data();
-            final status = data['status'] as String? ?? 'pending';
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 0,
-              color: Colors.white,
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(12),
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
+          const SizedBox(height: 8),
+          Text('₹${(data['monthlyRevenue'] ?? 0).toString()}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          Row(
+            children: [
+              const Icon(Icons.arrow_upward_rounded, size: 10, color: Color(0xFF16A34A)),
+              const Text(' 12%', style: TextStyle(fontSize: 10, color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
+              const Text(' from last month', style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 60,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(show: false),
+                titlesData: FlTitlesData(show: false),
+                borderData: FlBorderData(show: false),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: [FlSpot(0, 4), FlSpot(1, 6), FlSpot(2, 4.5), FlSpot(3, 8), FlSpot(4, 5), FlSpot(5, 7), FlSpot(6, 9.5)],
+                    isCurved: true, color: const Color(0xFF16A34A), barWidth: 3, dotData: FlDotData(show: false),
+                    belowBarData: BarAreaData(show: true, color: const Color(0xFF16A34A).withValues(alpha: 0.1)),
                   ),
-                  child: const Icon(Icons.person_rounded, color: AppTheme.primaryColor, size: 20),
-                ),
-                title: Text(
-                  data['studentName'] ?? 'Guest Student',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                subtitle: Text(data['propertyName'] ?? 'Property'),
-                trailing: _StatusChip(status: status),
+                ],
               ),
-            );
-          }).toList(),
-        );
-      },
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('1 May', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8))),
+              Text('29 May', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8))),
+            ],
+          ),
+        ],
+      ),
     );
   }
-}
 
-class _StatusChip extends StatelessWidget {
-  final String status;
-  const _StatusChip({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    Color color;
-    switch (status.toLowerCase()) {
-      case 'confirmed':
-        color = AppTheme.successColor;
-        break;
-      case 'rejected':
-      case 'cancelled':
-        color = AppTheme.errorColor;
-        break;
-      default:
-        color = AppTheme.warningColor;
-    }
-
+  Widget _buildHostManagement() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Host Management', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+              const Text('Manage', style: TextStyle(fontSize: 10, color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _mgmtRow(Icons.people_outline_rounded, 'Total Hosts', '4', const Color(0xFF3B82F6)),
+          const SizedBox(height: 12),
+          _mgmtRow(Icons.person_pin_rounded, 'Active Hosts', '3', const Color(0xFF16A34A)),
+          const SizedBox(height: 12),
+          _mgmtRow(Icons.mail_outline_rounded, 'Pending Invitations', '1', const Color(0xFFF59E0B)),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(color: const Color(0xFFF0FDF4), borderRadius: BorderRadius.circular(12)),
+            child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_circle_rounded, size: 14, color: Color(0xFF16A34A)), Text(' Invite New Host', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)))]),
+          ),
+        ],
       ),
-      child: Text(
-        status.toUpperCase(),
-        style: TextStyle(
-          fontSize: 10,
-          color: color,
-          fontWeight: FontWeight.bold,
-          fontFamily: AppTheme.fontFamily,
+    );
+  }
+
+  Widget _mgmtRow(IconData i, String l, String v, Color c) {
+    return Row(
+      children: [
+        Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: c.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)), child: Icon(i, size: 14, color: c)),
+        const SizedBox(width: 8),
+        Text(l, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+        const Spacer(),
+        Text(v, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+      ],
+    );
+  }
+
+  Widget _buildRecentActivity(List activities) {
+    return Column(
+      children: activities.map((a) => Container(
+        margin: const EdgeInsets.only(top: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: (a['type'] == 'booking' ? const Color(0xFFDCFCE7) : const Color(0xFFFFF7ED)),
+                shape: BoxShape.circle
+              ),
+              child: Icon(
+                a['type'] == 'booking' ? Icons.calendar_today_rounded : Icons.currency_rupee_rounded,
+                size: 16, color: (a['type'] == 'booking' ? const Color(0xFF16A34A) : const Color(0xFFF59E0B))
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(a['title'], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+                  const SizedBox(height: 2),
+                  Text(a['time'], style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFFCBD5E1)),
+          ],
         ),
-      ),
+      )).toList(),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, {VoidCallback? onViewAll}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B), fontFamily: 'Outfit')),
+        if (onViewAll != null) 
+          GestureDetector(onTap: onViewAll, child: const Text('View All', style: TextStyle(fontSize: 12, color: Color(0xFF16A34A), fontWeight: FontWeight.bold))),
+      ],
     );
   }
 }
@@ -475,10 +598,18 @@ class _PropertiesTab extends StatelessWidget {
               children: [
                 Icon(Icons.home_work_outlined, size: 64, color: AppTheme.primaryColor.withValues(alpha: 0.2)),
                 const SizedBox(height: 16),
-                const Text('No properties listed yet', style: TextStyle(fontWeight: FontWeight.bold)),
-                TextButton(
+                const Text('No properties listed yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 8),
+                const Text('Start earning by listing your first property', style: TextStyle(color: AppTheme.textLightColor)),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ListPropertyScreen())),
-                  child: const Text('Add Your First Property'),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Add Your First Property'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
                 ),
               ],
             ),
@@ -643,6 +774,72 @@ class _BookingsTab extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class _LeadsTab extends StatelessWidget {
+  final String uid;
+  const _LeadsTab({required this.uid});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text('Leads & Inquiries', style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: Color(0xFF1E293B))),
+        backgroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.people_alt_rounded, size: 64, color: AppTheme.primaryColor.withValues(alpha: 0.1)),
+            const SizedBox(height: 16),
+            const Text('No new leads found', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+            const Text('New inquiries from students will appear here', style: TextStyle(color: Color(0xFF64748B))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String status;
+  const _StatusChip({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    Color color;
+    switch (status.toLowerCase()) {
+      case 'confirmed':
+        color = AppTheme.successColor;
+        break;
+      case 'rejected':
+      case 'cancelled':
+        color = AppTheme.errorColor;
+        break;
+      default:
+        color = AppTheme.warningColor;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: TextStyle(
+          fontSize: 10,
+          color: color,
+          fontWeight: FontWeight.bold,
+          fontFamily: AppTheme.fontFamily,
+        ),
+      ),
     );
   }
 }

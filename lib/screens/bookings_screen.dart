@@ -71,8 +71,8 @@ class _BookingsScreenState extends State<BookingsScreen>
               : TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildBookingsList(status: BookingStatus.confirmed),
-                  _buildBookingsList(status: BookingStatus.pending),
+                  _buildBookingsList(status: BookingStatus.bookingConfirmed),
+                  _buildBookingsList(status: BookingStatus.inquiryCreated),
                 ],
               ),
       bottomNavigationBar: const HomeBottomNavBar(selectedIndex: 2),
@@ -105,7 +105,7 @@ class _BookingsScreenState extends State<BookingsScreen>
 
         if (filteredDocs.isEmpty) {
           return _buildEmptyState(
-            status == BookingStatus.confirmed
+            status == BookingStatus.bookingConfirmed
                 ? 'No confirmed bookings'
                 : 'No pending bookings',
           );

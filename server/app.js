@@ -14,6 +14,9 @@ const propertyRoutes = require('./routes/property');
 const suggestionRoutes = require('./routes/suggestion');
 const locationRoutes = require('./routes/location');
 const imageRoutes = require('./routes/image');
+const paymentRoutes = require('./routes/payment');
+const maintenanceRoutes = require('./routes/maintenance');
+const complianceRoutes = require('./routes/compliance');
 
 const app = express();
 
@@ -33,6 +36,9 @@ app.use('/api/properties', propertyRoutes);
 app.use('/api/suggestions', suggestionRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/images', imageRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/compliance', complianceRoutes);
 
 app.get('/', (req, res) => {
   res.send('Triangle Home Admin API is running...');

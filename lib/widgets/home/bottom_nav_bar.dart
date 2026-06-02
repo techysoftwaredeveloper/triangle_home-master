@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:triangle_home/screens/auth/login_screen.dart';
 import 'package:triangle_home/screens/bookings_screen.dart';
 import 'package:triangle_home/screens/home_screen.dart';
+import 'package:triangle_home/screens/list_property/intro_screen.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
 import 'package:triangle_home/screens/list_property/my_property_info_screen.dart';
 import 'package:triangle_home/screens/wishlist_screen.dart';
@@ -118,15 +119,24 @@ class HomeBottomNavBar extends StatelessWidget {
   Future<void> _handleListPropertyNavigation(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
 
-    // Not logged in → go to login
-    if (user == null) {
+    // Not logged in → go to Intro Screen first
+    if (user == null || user.isAnonymous) {
       if (context.mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => LoginScreen(
-              isStudent: false,
-              onLoginNavigateTo: const ListPropertyScreen(),
+            builder: (_) => ListPropertyIntroScreen(
+              onGetStarted: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LoginScreen(
+                      isStudent: false,
+                      onLoginNavigateTo: const ListPropertyScreen(),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         );

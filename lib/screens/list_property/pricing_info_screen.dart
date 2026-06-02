@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/services/firebase_service.dart';
+import 'package:triangle_home/services/isar_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/list_property/input_field.dart';
 
@@ -18,13 +19,33 @@ class PricingInfoScreen extends StatefulWidget {
 
 class _PricingInfoScreenState extends State<PricingInfoScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _rentController = TextEditingController();
-  final _depositController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _localityController = TextEditingController();
+  late TextEditingController _rentController;
+  late TextEditingController _depositController;
+  late TextEditingController _addressController;
+  late TextEditingController _cityController;
+  late TextEditingController _localityController;
 
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _rentController = TextEditingController(text: widget.propertyData['monthlyRent'] ?? '');
+    _depositController = TextEditingController(text: widget.propertyData['securityDeposit'] ?? '');
+    _addressController = TextEditingController(text: widget.propertyData['address'] ?? '');
+    _cityController = TextEditingController(text: widget.propertyData['city'] ?? '');
+    _localityController = TextEditingController(text: widget.propertyData['locality'] ?? '');
+  }
+
+  @override
+  void dispose() {
+    _rentController.dispose();
+    _depositController.dispose();
+    _addressController.dispose();
+    _cityController.dispose();
+    _localityController.dispose();
+    super.dispose();
+  }
 
   Future<void> _submitProperty() async {
     if (!_formKey.currentState!.validate()) return;
@@ -62,6 +83,9 @@ class _PricingInfoScreenState extends State<PricingInfoScreen> {
 
       // 3. Save to Firestore
       await FirebaseFirestore.instance.collection('properties').add(finalData);
+
+      // 4. Clear local draft
+      await IsarService().clearPropertyDraft(user.uid);
 
       if (mounted) {
         _showSuccessDialog();

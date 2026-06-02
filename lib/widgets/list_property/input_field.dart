@@ -12,6 +12,7 @@ class InputField extends StatelessWidget {
   final String? prefix;
   final int maxLines;
   final String? hintText;
+  final Color? activeColor;
 
   const InputField({
     super.key,
@@ -25,6 +26,7 @@ class InputField extends StatelessWidget {
     this.prefix,
     this.maxLines = 1,
     this.hintText,
+    this.activeColor,
   });
 
   @override
@@ -72,7 +74,7 @@ class InputField extends StatelessWidget {
               filled: true,
               fillColor: Colors.white,
               prefixText: prefix,
-              prefixStyle: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
+              prefixStyle: TextStyle(color: activeColor ?? AppTheme.primaryColor, fontWeight: FontWeight.bold),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: Colors.grey.shade200),
@@ -83,7 +85,7 @@ class InputField extends StatelessWidget {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
+                borderSide: BorderSide(color: activeColor ?? AppTheme.primaryColor, width: 1.5),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),

@@ -199,8 +199,9 @@ class _DocumentCaptureCameraState extends State<DocumentCaptureCamera> {
     final double overlayHeight = overlayWidth * (2 / 3); // 3:2 Ratio
 
     Color borderColor = Colors.white;
-    if (_isCountingDown) borderColor = Colors.green;
-    else if (_isStable) borderColor = Colors.blue;
+    if (_isCountingDown) {
+      borderColor = Colors.green;
+    } else if (_isStable) borderColor = Colors.blue;
 
     return Stack(
       children: [
@@ -296,7 +297,7 @@ class _DocumentCaptureCameraState extends State<DocumentCaptureCamera> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.check_circle, color: Colors.blue, size: 20),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text('Perfect! Keep it there', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
               ],
             )

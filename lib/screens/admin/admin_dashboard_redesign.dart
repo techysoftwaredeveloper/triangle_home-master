@@ -14,6 +14,7 @@ import 'package:triangle_home/screens/admin/tabs/suggestions_tab.dart';
 import 'package:triangle_home/screens/admin/tabs/report_tab.dart';
 import 'package:triangle_home/screens/admin/tabs/moderation_tab.dart';
 import 'package:triangle_home/screens/admin/tabs/settings_tab.dart';
+import 'package:triangle_home/screens/admin/tabs/ops_dashboard_tab.dart';
 
 class AdminDashboardRedesign extends StatefulWidget {
   const AdminDashboardRedesign({super.key});
@@ -218,17 +219,18 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  _buildNavItem(0, Icons.home_rounded, 'Overview', width, isNarrow),
-                  _buildNavItem(1, Icons.assignment_turned_in_rounded, 'Approvals', width, isNarrow,
+                  _buildNavItem(0, Icons.auto_awesome_mosaic_rounded, 'Operations', width, isNarrow),
+                  _buildNavItem(1, Icons.home_rounded, 'Overview', width, isNarrow),
+                  _buildNavItem(2, Icons.assignment_turned_in_rounded, 'Approvals', width, isNarrow,
                       badge: pendingApprovals > 0 ? pendingApprovals.toString() : null),
-                  _buildNavItem(2, Icons.business_rounded, 'Listings', width, isNarrow),
-                  _buildNavItem(3, Icons.people_rounded, 'Users', width, isNarrow),
-                  _buildNavItem(4, Icons.calendar_today_rounded, 'Bookings', width, isNarrow),
-                  _buildNavItem(5, Icons.account_balance_wallet_rounded, 'Payments', width, isNarrow),
-                  _buildNavItem(6, Icons.lightbulb_rounded, 'Suggestions', width, isNarrow),
-                  _buildNavItem(7, Icons.analytics_rounded, 'Reports', width, isNarrow),
-                  _buildNavItem(8, Icons.security_rounded, 'Moderation', width, isNarrow),
-                  _buildNavItem(9, Icons.settings_rounded, 'Settings', width, isNarrow),
+                  _buildNavItem(3, Icons.business_rounded, 'Listings', width, isNarrow),
+                  _buildNavItem(4, Icons.people_rounded, 'Users', width, isNarrow),
+                  _buildNavItem(5, Icons.calendar_today_rounded, 'Bookings', width, isNarrow),
+                  _buildNavItem(6, Icons.account_balance_wallet_rounded, 'Payments', width, isNarrow),
+                  _buildNavItem(7, Icons.lightbulb_rounded, 'Suggestions', width, isNarrow),
+                  _buildNavItem(8, Icons.analytics_rounded, 'Reports', width, isNarrow),
+                  _buildNavItem(9, Icons.security_rounded, 'Moderation', width, isNarrow),
+                  _buildNavItem(10, Icons.settings_rounded, 'Settings', width, isNarrow),
                 ],
               ),
             ),
@@ -352,24 +354,26 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
 
         switch (_activeNavIndex) {
           case 0:
-            return OverviewTab(adminService: _adminService, isNarrow: isNarrow);
+            return OpsDashboardTab(adminService: _adminService, isNarrow: isNarrow);
           case 1:
-            return ApprovalsTab(adminService: _adminService, isNarrow: isNarrow);
+            return OverviewTab(adminService: _adminService, isNarrow: isNarrow);
           case 2:
-            return ListingsTab(adminService: _adminService, isNarrow: isNarrow);
+            return ApprovalsTab(adminService: _adminService, isNarrow: isNarrow);
           case 3:
-            return UsersTab(adminService: _adminService, isNarrow: isNarrow);
+            return ListingsTab(adminService: _adminService, isNarrow: isNarrow);
           case 4:
-            return BookingsTab(adminService: _adminService, isNarrow: isNarrow);
+            return UsersTab(adminService: _adminService, isNarrow: isNarrow);
           case 5:
-            return PaymentsTab(adminService: _adminService, isNarrow: isNarrow);
+            return BookingsTab(adminService: _adminService, isNarrow: isNarrow);
           case 6:
-            return SuggestionsTab(adminService: _adminService, isNarrow: isNarrow);
+            return PaymentsTab(adminService: _adminService, isNarrow: isNarrow);
           case 7:
-            return ReportTab(adminService: _adminService, isNarrow: isNarrow);
+            return SuggestionsTab(adminService: _adminService, isNarrow: isNarrow);
           case 8:
-            return ModerationTab(adminService: _adminService, isNarrow: isNarrow);
+            return ReportTab(adminService: _adminService, isNarrow: isNarrow);
           case 9:
+            return ModerationTab(adminService: _adminService, isNarrow: isNarrow);
+          case 10:
             return SettingsTab(adminService: _adminService, isNarrow: isNarrow);
           default:
             return const Center(child: Text('Tab Content Coming Soon'));

@@ -2,51 +2,57 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:triangle_home/hoster_info_screen.dart';
 import 'package:triangle_home/screens/auth/login_screen.dart';
 import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
+import 'package:triangle_home/screens/list_property/intro_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 /// HosterRegistrationCard - Entry point for Hoster login/registration.
-/// Routing:
-///   Not logged in → LoginScreen
-///   Logged in, approved hoster → HosterDashboardScreen
-///   Logged in, not a hoster → BecomeHosterScreen (request form)
 class HosterRegistrationCard extends StatelessWidget {
   const HosterRegistrationCard({super.key});
 
-  Future<void> _handleHosterLogin(BuildContext context) async {
+  Future<void> _handleHosterFlow(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
 
-    // 1. Not logged in → go to login (no specific destination, OTP flow handles it)
-    if (user == null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen(isStudent: false)),
-      );
-      return;
+    // 1. If logged in, check role
+    if (user != null && !user.isAnonymous) {
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (!context.mounted) return;
+
+      if (userDoc.exists && userDoc.data()?['role'] == 'hoster') {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const HosterDashboardScreen()));
+        return;
+      }
     }
 
-    final uid = user.uid;
-
-    // 2. Check if already an approved hoster in unified users collection
-    final userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
-
-    if (!context.mounted) return;
-
-    if (userDoc.exists && userDoc.data()?['role'] == 'hoster') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
-      );
-      return;
-    }
-
-    // 3. Not a hoster yet → go to request form
+    // 2. If not logged in or not a hoster, show the Intro Screen first
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const BecomeHosterScreen()),
+      MaterialPageRoute(
+        builder: (_) => ListPropertyIntroScreen(
+          onGetStarted: () {
+            // After intro, if still not logged in, go to Login
+            if (user == null || user.isAnonymous) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => LoginScreen(isStudent: false)),
+              );
+            } else {
+              // Already logged in but not a hoster, go to application form
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => HosterInfoScreen(
+                    phoneNumber: user?.phoneNumber ?? '',
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+      ),
     );
   }
 
@@ -57,31 +63,31 @@ class HosterRegistrationCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppTheme.primaryColor.withValues(alpha: 0.05), Colors.white],
+          colors: [AppTheme.primaryColor.withOpacity(0.05), Colors.white],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppTheme.primaryColor.withValues(alpha: 0.1),
+          color: AppTheme.primaryColor.withOpacity(0.1),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: InkWell(
-        onTap: () => _handleHosterLogin(context),
+        onTap: () => _handleHosterFlow(context),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                color: AppTheme.primaryColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

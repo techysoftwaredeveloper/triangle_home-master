@@ -1,12 +1,45 @@
 enum BookingStatus {
-  pending,
-  approved,
-  confirmed,
-  rejected,
-  cancelled,
+  // Initial
+  inquiryCreated,
+
+  // Compatibility
+  compatibilityPending,
+  compatibilityApproved,
+  compatibilityRejected,
+
+  // Visit
+  visitRequested,
+  visitScheduled,
+  visitCompleted,
+
+  // Reservation
+  reservationPending,
+  reserved,
+  reservationExpired,
+
+  // Payment
+  paymentPending,
+  paymentSuccess,
+  paymentFailed,
+
+  // Hoster Approval
+  hosterApprovalPending,
+  hosterApproved,
+  hosterRejected,
+
+  // Confirmed & Active
+  bookingConfirmed, // Data Unlocked at this stage
+  checkinPending,
   checkedIn,
   checkedOut,
-  expired
+
+  // Special States
+  disputeOpen,
+
+  // Final Terminal States
+  completed,
+  cancelled,
+  refunded
 }
 
 enum PropertyStatus {
@@ -26,10 +59,50 @@ enum PaymentStatus {
 }
 
 enum PaymentType {
+  reservationFee,
   rent,
   deposit,
-  maintenance,
+  platformFee,
+  refund,
   other
+}
+
+enum TransactionStatus {
+  created,
+  pending,
+  verificationPending,
+  success,
+  failed,
+  refunded,
+  partialRefund
+}
+
+enum TransactionType {
+  reservationFee,
+  deposit,
+  firstMonthRent,
+  serviceFee,
+  refund,
+  payout
+}
+
+enum EscrowStatus {
+  held,
+  readyForPayout,
+  payoutRequested,
+  payoutApproved,
+  payoutReleased,
+  disputed,
+  refunded
+}
+
+enum FinancialEventType {
+  paymentReceived,
+  escrowCreated,
+  payoutRequested,
+  payoutReleased,
+  refundInitiated,
+  refundCompleted
 }
 
 enum UserRole {
@@ -39,11 +112,52 @@ enum UserRole {
   guest
 }
 
-enum HosterStatus {
-  pending,
+enum DisputeStatus {
+  open,
+  underReview,
+  waitingForUser,
+  waitingForHoster,
+  resolved,
+  rejected
+}
+
+enum RefundStatus {
+  requested,
   approved,
-  rejected,
-  suspended
+  processing,
+  completed,
+  failed
+}
+
+enum BedStatus {
+  available,
+  reserved,
+  booked,
+  occupied,
+  maintenance,
+  blocked
+}
+
+enum RoomType {
+  single,
+  double,
+  triple,
+  dormitory
+}
+
+enum InventoryEventType {
+  bedCreated,
+  bedReserved,
+  bedBooked,
+  bedOccupied,
+  bedReleased,
+  bedMaintenance
+}
+
+enum TimelineSeverity {
+  info,
+  warning,
+  critical
 }
 
 extension BookingStatusX on BookingStatus {

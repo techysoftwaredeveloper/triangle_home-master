@@ -4,9 +4,15 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:triangle_home/screens/home_screen.dart';
 import 'package:triangle_home/screens/admin/admin_dashboard_redesign.dart';
+import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
+import 'package:triangle_home/hoster_info_screen.dart';
+import 'package:triangle_home/student_info_screen.dart';
 import 'package:triangle_home/services/auth_production_service.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
+import 'package:triangle_home/screens/list_property/list_property_screen.dart';
+import 'package:triangle_home/services/isar_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,6 +22,8 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final IsarService _isarService = IsarService();
+
   @override
   void initState() {
     super.initState();
@@ -46,31 +54,72 @@ class _SplashScreenState extends State<SplashScreen> {
 
     try {
       final authService = AuthProductionService();
-      final role = await authService.getUserRole(user);
+      final authDetails = await authService.getUserAuthDetails(user);
+      final role = authDetails['role'] as UserRole;
+      final status = authDetails['status'] as String;
+      final uid = user.uid;
 
       if (!mounted) return;
 
-      switch (role) {
-        case UserRole.superadmin:
-        case UserRole.admin:
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const AdminDashboardRedesign()),
-          );
-          break;
-        case UserRole.hoster:
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
-          );
-          break;
-        default:
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-          );
-          break;
+      // 1. Admin priority
+      if (role == UserRole.superadmin || role == UserRole.admin) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => AdminDashboardRedesign()),
+        );
+        return;
       }
+
+      // 2. Check for active hoster workflow drafts & requests
+      final propertyDraft = await _isarService.getPropertyDraft(uid);
+      final hosterAppDraft = await _isarService.getAdminCache('hoster_application_draft_$uid');
+      final onboardingIntent = await _isarService.getUserIntent();
+      
+      // Check Firestore for a pending/rejected request if not already a hoster
+      bool hasHosterRequest = false;
+      if (role != UserRole.hoster) {
+        final requestDoc = await FirebaseFirestore.instance.collection('hoster_requests').doc(uid).get();
+        if (requestDoc.exists) {
+          hasHosterRequest = true;
+        }
+      }
+
+      // If they have any hoster-related draft, intent, or existing request, stay in hoster flow
+      if (onboardingIntent == 'hoster' || hosterAppDraft != null || propertyDraft != null || role == UserRole.hoster || hasHosterRequest) {
+        // If they are already an approved hoster, clear the "intent" as it's now a reality
+        if (role == UserRole.hoster && status == 'approved') {
+          await _isarService.clearUserIntent();
+        }
+
+        // RESUME WORKFLOW logic
+        if (propertyDraft != null && status == 'approved') {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ListPropertyScreen()));
+        } else if (hosterAppDraft != null || hasHosterRequest || (role == UserRole.hoster && status != 'approved')) {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HosterInfoScreen(phoneNumber: user.phoneNumber ?? '')));
+        } else if (role == UserRole.hoster && status == 'approved') {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HosterDashboardScreen()));
+        } else if (onboardingIntent == 'hoster' && (role == UserRole.none || role == UserRole.student)) {
+          // New hoster registration resume
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HosterInfoScreen(phoneNumber: user.phoneNumber ?? '')));
+        } else {
+          // Fallback hoster destination
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HosterInfoScreen(phoneNumber: user.phoneNumber ?? '')));
+        }
+        return;
+      }
+
+      // 3. Student / Guest flow
+      if (role == UserRole.student || role == UserRole.none) {
+        if (role == UserRole.none && !user.isAnonymous) {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => StudentInfoScreen(phoneNumber: user.phoneNumber ?? '')));
+        } else {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+        }
+        return;
+      }
+
+      // 4. Ultimate fallback
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
     } catch (e) {
       debugPrint('Splash screen error: $e');
       if (mounted) {

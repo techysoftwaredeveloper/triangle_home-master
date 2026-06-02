@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:triangle_home/services/admin_service.dart';
-import 'package:triangle_home/screens/admin/widgets/admin_shared_widgets.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 

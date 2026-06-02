@@ -35,7 +35,11 @@ void main() async {
       appleProvider: kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
       webProvider: ReCaptchaV3Provider('6LcC4N8sAAAAAPxY6w6R3yM8QQhCtx1HH-w0vuSD'),
     );
-    debugPrint('🚀 Firebase App Check activated with reCAPTCHA.');
+    // Add this to show the debug token in logs
+    if (!kReleaseMode) {
+      FirebaseAppCheck.instance.getToken().then((token) => debugPrint('App Check Token: $token'));
+    }
+    debugPrint('🚀 Firebase App Check activated.');
   } catch (e) {
     debugPrint('⚠️ Firebase App Check activation warning: $e');
   }

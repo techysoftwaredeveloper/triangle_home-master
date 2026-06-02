@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/screens/payment/payment_screen.dart';
 import 'package:triangle_home/services/firebase_service.dart';
+import 'package:triangle_home/services/inventory_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
+import 'package:triangle_home/core/constants/enums.dart';
 
 class BookingSummaryScreen extends StatefulWidget {
   final Map<String, dynamic> accommodation;
@@ -35,6 +37,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
 
     try {
       final firebaseService = FirebaseService();
+      final inventoryService = InventoryService();
       final user = FirebaseAuth.instance.currentUser;
 
       if (user == null) {
@@ -45,13 +48,28 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
         return;
       }
 
-      // Create a pending booking in Firestore
+      final String? roomId = widget.accommodation['selectedRoomId'];
+      final String? bedId = widget.accommodation['selectedBedId'];
+
+      // 1. Lock the bed first if selected
+      if (roomId != null && bedId != null) {
+        await inventoryService.lockBedForUser(
+          propertyId: widget.accommodation['id'] ?? '',
+          roomId: roomId,
+          bedId: bedId,
+          userId: user.uid,
+        );
+      }
+
+      // 2. Create a pending booking in Firestore
       final bookingId = await firebaseService.createBooking(
         propertyId: widget.accommodation['id'] ?? '',
         propertyData: widget.accommodation,
         price: total.toDouble(),
         type: widget.accommodation['type'] ?? '',
         tenantDetails: widget.tenantDetails,
+        roomId: roomId,
+        bedId: bedId,
       );
 
       if (!mounted) return;
@@ -74,6 +92,9 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                   'totalRent': totalRent,
                   'image': widget.accommodation['image'],
                   'propertyId': widget.accommodation['id'],
+                  'roomId': roomId,
+                  'bedId': bedId,
+                  'lockExpiry': DateTime.now().add(const Duration(minutes: 15)),
                 },
               ),
         ),
@@ -82,7 +103,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           this.context,
-        ).showSnackBar(SnackBar(content: Text('Error creating booking: $e')));
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) {

@@ -8,6 +8,8 @@ import 'package:triangle_home/screens/admin/admin_login_screen.dart';
 import 'package:triangle_home/screens/auth/otp_verification_screen.dart';
 import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
+import 'package:triangle_home/screens/list_property/intro_screen.dart';
+import 'package:triangle_home/services/isar_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:triangle_home/screens/home_screen.dart';
@@ -63,6 +65,13 @@ class _LoginScreenState extends State<LoginScreen> {
     _startAutoScroll();
     // Rebuild when phone field changes so button reactive state updates
     _phoneController.addListener(() => setState(() {}));
+    
+    // Save onboarding intent based on mode
+    _saveIntent();
+  }
+
+  void _saveIntent() async {
+    await IsarService().setUserIntent(widget.isStudent ? 'student' : 'hoster');
   }
 
   @override
@@ -227,10 +236,25 @@ class _LoginScreenState extends State<LoginScreen> {
         },
         verificationFailed: (FirebaseAuthException e) {
           if (!mounted) return;
+          String message = e.message ?? 'Verification failed';
+          
+          if (e.code == 'too-many-requests') {
+            message = 'Too many requests. Please try again later.';
+          } else if (e.code == 'invalid-phone-number') {
+            message = 'The provided phone number is not valid.';
+          } else if (e.toString().contains('reCAPTCHA')) {
+            message = 'Safety check failed. Please ensure you are not on a VPN and have Google Play Services updated.';
+            debugPrint('🛡️ ReCAPTCHA Error Detail: ${e.toString()}');
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.message ?? 'Verification failed')),
+            SnackBar(
+              content: Text(message),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
           );
-          setState(() => _isLoading = false); // Stop loading on failure
+          setState(() => _isLoading = false);
         },
         codeSent: (String verificationId, int? resendToken) async {
           if (!mounted) return;
@@ -546,10 +570,26 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 16),
 
             TextButton(
-              onPressed: () {},
-              child: const Text(
-                'Forgot Password?',
-                style: TextStyle(
+              onPressed: () {
+                if (widget.isStudent) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ListPropertyIntroScreen(
+                        onGetStarted: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => LoginScreen(isStudent: false)),
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: Text(
+                widget.isStudent ? 'Are you a property owner? Join us' : 'Forgot Password?',
+                style: const TextStyle(
                   color: AppTheme.accentColor,
                   fontWeight: FontWeight.w500,
                   fontFamily: AppTheme.fontFamily,

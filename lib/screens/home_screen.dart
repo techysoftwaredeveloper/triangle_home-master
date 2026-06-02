@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:triangle_home/providers/property_provider.dart';
 import 'package:triangle_home/screens/auth/login_screen.dart';
+import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/screens/profile/profile_screen.dart';
 import 'package:triangle_home/screens/search_screen.dart';
 import 'package:triangle_home/services/property_service.dart';
@@ -40,9 +42,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _checkUserRole();
     _loadUserPreferences();
     _fetchCitiesFromFirestore();
     _getCurrentCityFromLocation();
+  }
+
+  Future<void> _checkUserRole() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && !user.isAnonymous) {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (doc.exists && mounted) {
+        final data = doc.data() as Map<String, dynamic>;
+        if (data['role'] == 'hoster') {
+          // If approved hoster accidentally on Home, redirect to Dashboard
+          if (data['status'] == 'approved') {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => HosterDashboardScreen()),
+              (route) => false,
+            );
+          } else {
+            // If pending/rejected hoster, they might want to see BecomeHosterScreen status
+            // But we allow them to browse Home as a student/guest too.
+          }
+        }
+      }
+    }
   }
 
   Future<void> _loadUserPreferences() async {

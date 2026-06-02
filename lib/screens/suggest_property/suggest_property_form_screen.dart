@@ -43,10 +43,10 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
   final _rentController = TextEditingController();
 
   final List<String> _categories = [
+    'Hostel',
     'PG Accommodation',
-    'College Hostel',
     'Apartment',
-    'Villa',
+    'Guest House',
   ];
 
   bool _isSubmitting = false;

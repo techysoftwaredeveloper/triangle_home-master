@@ -280,6 +280,14 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 else
                   const Text('No amenities specified', style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8))),
 
+                const SizedBox(height: 16),
+                const Divider(color: Color(0xFFF1F5F9), thickness: 1),
+                const SizedBox(height: 16),
+
+                _buildSectionTitle('VERIFICATION DOCUMENTS'),
+                const SizedBox(height: 16),
+                _buildDocumentSection(),
+
                 const SizedBox(height: 40),
 
                 // Actions
@@ -303,6 +311,88 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               child: const Center(child: CircularProgressIndicator()),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDocumentSection() {
+    final verification = _property['verification'] as Map? ?? {};
+    final documents = _property['documents'] as Map? ?? {};
+
+    final List<Map<String, dynamic>> docItems = [
+      if (verification['aadhaarUrl'] != null) {'title': 'Aadhaar Card', 'url': verification['aadhaarUrl']},
+      if (verification['panUrl'] != null) {'title': 'PAN Card', 'url': verification['panUrl']},
+      if (documents['ownershipUrl'] != null) {'title': 'Ownership Proof', 'url': documents['ownershipUrl']},
+      if (documents['utilityUrl'] != null) {'title': 'Utility Bill', 'url': documents['utilityUrl']},
+      if (documents['additionalUrl'] != null) {'title': 'Additional Doc', 'url': documents['additionalUrl']},
+    ];
+
+    if (docItems.isEmpty) {
+      return const Text('No documents uploaded', style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)));
+    }
+
+    return Column(
+      children: docItems.map((item) => Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.description_outlined, color: Color(0xFF2563EB), size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                item['title'],
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              ),
+            ),
+            TextButton(
+              onPressed: () => _viewDocument(item['url']),
+              child: const Text('View', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      )).toList(),
+    );
+  }
+
+  void _viewDocument(String url) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+              padding: const EdgeInsets.all(8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: url.toLowerCase().endsWith('.pdf') 
+                  ? const Center(child: Padding(padding: EdgeInsets.all(40), child: Text('PDF viewer not implemented. Please check URL.', textAlign: TextAlign.center)))
+                  : CachedNetworkImage(
+                      imageUrl: url,
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) => const CircularProgressIndicator(),
+                      errorWidget: (context, url, error) => const Icon(Icons.error),
+                    ),
+              ),
+            ),
+            Positioned(
+              top: 10, right: 10,
+              child: IconButton(
+                icon: const Icon(Icons.close_rounded, color: Colors.black54),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -102,6 +102,10 @@ service cloud.firestore {
     // PROPERTIES
     // =========================================================
 
+    function userIsHosterOf(propertyId) {
+      return get(/databases/$(database)/documents/properties/$(propertyId)).data.hoster_id == request.auth.uid;
+    }
+
     match /properties/{propertyId} {
       allow read: if true;
 
@@ -109,6 +113,16 @@ service cloud.firestore {
         isAdmin() ||
         (hasRole('hoster') && (resource == null || resource.data.hoster_id == request.auth.uid))
       );
+
+      // Private Data Vault (Document-Level Security)
+      match /private/details {
+        allow read: if isSignedIn() && (
+          isAdmin() ||
+          userIsHosterOf(propertyId) ||
+          exists(/databases/$(database)/documents/unlocked_data/$(request.auth.uid + "_" + propertyId))
+        );
+        allow write: if isAdmin() || userIsHosterOf(propertyId);
+      }
 
       // Rooms and Beds sub-resources
       match /rooms/{roomId} {
@@ -121,6 +135,11 @@ service cloud.firestore {
       }
     }
 
+    match /unlocked_data/{permissionId} {
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.user_id || isAdmin());
+      allow write: if isAdmin(); // Only Admin (via Function/Service) can grant
+    }
+
     // =========================================================
     // BOOKINGS
     // =========================================================
@@ -128,7 +147,7 @@ service cloud.firestore {
     match /bookings/{bookingId} {
       allow read: if isSignedIn() && (
         request.auth.uid == resource.data.user_id ||
-        request.auth.uid == get(/databases/$(database)/documents/properties/$(resource.data.property_id)).data.hoster_id ||
+        request.auth.uid == resource.data.hoster_id ||
         isAdmin()
       );
 
@@ -175,7 +194,7 @@ service cloud.firestore {
     // =========================================================
 
     match /payments/{paymentId} {
-      allow read: if isSignedIn() && (request.auth.uid == resource.data.user_id || isAdmin());
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.user_id || request.auth.uid == resource.data.hoster_id || isAdmin());
       allow write: if false;
     }
 

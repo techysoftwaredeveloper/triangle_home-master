@@ -7,6 +7,7 @@ class DropdownField extends StatelessWidget {
   final List<String> items;
   final bool required;
   final Function(String)? onChanged;
+  final Color? activeColor;
 
   const DropdownField({
     super.key,
@@ -15,6 +16,7 @@ class DropdownField extends StatelessWidget {
     required this.items,
     this.required = false,
     this.onChanged,
+    this.activeColor,
   });
 
   @override
@@ -133,27 +135,28 @@ class DropdownField extends StatelessWidget {
                   final isSelected = controller.text == item;
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.05) : Colors.transparent,
+                    child: Material(
+                      color: isSelected ? (activeColor ?? AppTheme.primaryColor).withOpacity(0.05) : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ListTile(
-                      title: Text(
-                        item,
-                        style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? AppTheme.primaryColor : AppTheme.textColor,
-                          fontFamily: AppTheme.fontFamily,
+                      clipBehavior: Clip.antiAlias,
+                      child: ListTile(
+                        title: Text(
+                          item,
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? (activeColor ?? AppTheme.primaryColor) : AppTheme.textColor,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
                         ),
+                        trailing: isSelected
+                            ? Icon(Icons.check_circle_rounded, color: activeColor ?? AppTheme.primaryColor)
+                            : null,
+                        onTap: () {
+                          controller.text = item;
+                          if (onChanged != null) onChanged!(item);
+                          Navigator.pop(context);
+                        },
                       ),
-                      trailing: isSelected
-                          ? const Icon(Icons.check_circle_rounded, color: AppTheme.primaryColor)
-                          : null,
-                      onTap: () {
-                        controller.text = item;
-                        if (onChanged != null) onChanged!(item);
-                        Navigator.pop(context);
-                      },
                     ),
                   );
                 },

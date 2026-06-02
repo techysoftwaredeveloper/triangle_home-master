@@ -28,7 +28,7 @@ class IsarService {
     return Isar.getInstance()!;
   }
 
-  // Admin Cache Operations
+  // Admin Cache Operations (Used for general caching including drafts)
   Future<void> saveAdminCache(String key, String jsonData) async {
     final isar = await db;
     await isar.writeTxn(() async {
@@ -44,6 +44,26 @@ class IsarService {
     final isar = await db;
     final cache = await isar.adminCaches.filter().keyEqualTo(key).findFirst();
     return cache?.jsonData;
+  }
+
+  Future<void> clearAdminCache(String key) async {
+    final isar = await db;
+    await isar.writeTxn(() async {
+      await isar.adminCaches.filter().keyEqualTo(key).deleteFirst();
+    });
+  }
+
+  // Legacy Property Draft wrappers using AdminCache
+  Future<void> savePropertyDraft(String hosterId, String jsonData) async {
+    await saveAdminCache('property_draft_$hosterId', jsonData);
+  }
+
+  Future<String?> getPropertyDraft(String hosterId) async {
+    return await getAdminCache('property_draft_$hosterId');
+  }
+
+  Future<void> clearPropertyDraft(String hosterId) async {
+    await clearAdminCache('property_draft_$hosterId');
   }
 
   // Location Cache Operations
@@ -95,5 +115,25 @@ class IsarService {
   Future<void> clearAll() async {
     final isar = await db;
     await isar.writeTxn(() => isar.clear());
+  }
+
+  // Clear role-specific caches
+  Future<void> clearHosterCache(String uid) async {
+    await clearAdminCache('hoster_application_draft_$uid');
+    await clearAdminCache('property_draft_$uid');
+    await clearAdminCache('user_onboarding_intent');
+  }
+
+  // User Intent Tracking (Separates Hoster/Student flows)
+  Future<void> setUserIntent(String mode) async {
+    await saveAdminCache('user_onboarding_intent', mode);
+  }
+
+  Future<String?> getUserIntent() async {
+    return await getAdminCache('user_onboarding_intent');
+  }
+
+  Future<void> clearUserIntent() async {
+    await clearAdminCache('user_onboarding_intent');
   }
 }

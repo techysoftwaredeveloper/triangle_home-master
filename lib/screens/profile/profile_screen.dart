@@ -14,6 +14,9 @@ import 'package:triangle_home/screens/profile/about_screen.dart';
 import 'package:triangle_home/screens/profile/privacy_policy_screen.dart';
 import 'package:triangle_home/screens/profile/verification_center_screen.dart';
 import 'package:triangle_home/screens/profile/saved_payments_screen.dart';
+import 'package:triangle_home/screens/list_property/intro_screen.dart';
+import 'package:triangle_home/screens/auth/login_screen.dart';
+import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
 import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
 import 'package:triangle_home/widgets/logout_confirmation_dialog.dart';
 import 'package:triangle_home/splash_screen.dart';
@@ -217,6 +220,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
                   child: Column(
                     children: [
+                      // Hoster Application Status Hook
+                      if (role != 'hoster')
+                        FutureBuilder<DocumentSnapshot>(
+                          future: FirebaseFirestore.instance.collection('hoster_requests').doc(user?.uid).get(),
+                          builder: (context, reqSnapshot) {
+                            if (reqSnapshot.hasData && reqSnapshot.data!.exists) {
+                              final reqData = reqSnapshot.data!.data() as Map<String, dynamic>;
+                              final status = reqData['status'] ?? 'pending';
+                              return Container(
+                                margin: const EdgeInsets.only(top: 24),
+                                decoration: BoxDecoration(
+                                  color: status == 'pending' ? Colors.orange.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: status == 'pending' ? Colors.orange.withOpacity(0.3) : Colors.red.withOpacity(0.3)),
+                                ),
+                                child: ListTile(
+                                  leading: Icon(
+                                    status == 'pending' ? Icons.hourglass_empty_rounded : Icons.error_outline_rounded,
+                                    color: status == 'pending' ? Colors.orange : Colors.red,
+                                  ),
+                                  title: Text(
+                                    'Hoster Application: ${status[0].toUpperCase() + status.substring(1)}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: status == 'pending' ? Colors.orange[800] : Colors.red[800],
+                                    ),
+                                  ),
+                                  subtitle: const Text('Tap to view details or manage application', style: TextStyle(fontSize: 12)),
+                                  trailing: const Icon(Icons.chevron_right),
+                                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BecomeHosterScreen())),
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
+
                       if (completion < 1.0) ...[
                         const SizedBox(height: 24),
                         _buildHeaderCompletionCard(completion),
@@ -766,7 +807,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: 'Contributions & Earnings',
       child: Column(
         children: [
-          _buildLinkRow(Icons.person_add_alt_1_outlined, 'Become a Host', 'List your property and earn', const Color(0xFF8B5CF6)),
+          _buildLinkRow(
+            Icons.person_add_alt_1_outlined,
+            'Become a Host',
+            'List your property and earn',
+            const Color(0xFF8B5CF6),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ListPropertyIntroScreen(
+                    onGetStarted: () {
+                      final user = FirebaseAuth.instance.currentUser;
+                      if (user == null || user.isAnonymous) {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => LoginScreen(isStudent: false)));
+                      } else {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => BecomeHosterScreen()));
+                      }
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
           _buildLinkRow(Icons.home_work_outlined, 'Suggest a Property', 'Help others find a great place', const Color(0xFF10B981)),
           _buildLinkRow(Icons.lightbulb_outline_rounded, 'My Suggestions', 'Track status of your suggestions', const Color(0xFFE11D48), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MySuggestionsScreen()))),
           _buildLinkRow(Icons.emoji_events_outlined, 'Rewards & Points', 'View points, history & offers', const Color(0xFFF59E0B), trailing: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFF5F3FF), borderRadius: BorderRadius.circular(20)), child: const Text('250 pts', style: TextStyle(color: Color(0xFF8B5CF6), fontSize: 10, fontWeight: FontWeight.bold)))),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:triangle_home/services/admin_service.dart';
-import 'package:triangle_home/screens/admin/widgets/admin_shared_widgets.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
@@ -21,7 +20,7 @@ class ListingsTab extends StatefulWidget {
 class _ListingsTabState extends State<ListingsTab> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
+  final String _searchQuery = '';
 
   @override
   void initState() {

@@ -7,7 +7,9 @@ import 'package:triangle_home/widgets/list_property/toggle_buttons.dart';
 
 class PropertyInfoScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onContinue;
-  const PropertyInfoScreen({super.key, required this.onContinue});
+  final Map<String, dynamic>? initialData;
+
+  const PropertyInfoScreen({super.key, required this.onContinue, this.initialData});
 
   @override
   State<PropertyInfoScreen> createState() => _PropertyInfoScreenState();
@@ -16,7 +18,19 @@ class PropertyInfoScreen extends StatefulWidget {
 class _PropertyInfoScreenState extends State<PropertyInfoScreen> {
   String _selectedGender = 'Men';
   String _selectedSharing = 'Double';
-  final List<File> _selectedImages = [];
+  final List<String> _selectedImageUrls = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final prefs = widget.initialData?['preferences'] ?? {};
+    _selectedGender = prefs['gender'] ?? 'Men';
+    _selectedSharing = prefs['sharing'] ?? 'Double';
+    final images = widget.initialData?['image_urls'] as List?;
+    if (images != null) {
+      _selectedImageUrls.addAll(images.cast<String>());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,9 +76,9 @@ class _PropertyInfoScreenState extends State<PropertyInfoScreen> {
           const Text('PREMISES IMAGES', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textMutedColor, letterSpacing: 1.0)),
           const SizedBox(height: 12),
           ImageUploadWidget(
-            selectedImages: _selectedImages,
-            onImageAdded: (file) => setState(() => _selectedImages.add(file)),
-            onImageRemoved: (index) => setState(() => _selectedImages.removeAt(index)),
+            imageUrls: _selectedImageUrls,
+            onImageUploaded: (url) => setState(() => _selectedImageUrls.add(url)),
+            onImageRemoved: (index) => setState(() => _selectedImageUrls.removeAt(index)),
           ),
 
           const SizedBox(height: 40),
@@ -72,13 +86,13 @@ class _PropertyInfoScreenState extends State<PropertyInfoScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _selectedImages.isEmpty ? null : () {
+              onPressed: _selectedImageUrls.isEmpty ? null : () {
                 widget.onContinue({
                   'preferences': {
                     'gender': _selectedGender,
                     'sharing': _selectedSharing,
                   },
-                  'temp_image_files': _selectedImages, // Handled in final step for upload
+                  'image_urls': _selectedImageUrls,
                 });
               },
               style: ElevatedButton.styleFrom(

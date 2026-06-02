@@ -34,31 +34,38 @@ class AuthProductionService {
     }
   }
 
-  // 2. Comprehensive Role Detection
-  Future<UserRole> getUserRole(User user) async {
+  // 2. Comprehensive Role & Status Detection
+  Future<Map<String, dynamic>> getUserAuthDetails(User user) async {
     try {
-      // Priority 1: Check Custom Claims (Most Secure, Token-based)
       final idTokenResult = await user.getIdTokenResult(true);
       final roleClaim = idTokenResult.claims?['role'];
-
-      if (roleClaim == 'superadmin') return UserRole.superadmin;
-      if (roleClaim == 'admin') return UserRole.admin;
-      if (roleClaim == 'hoster') return UserRole.hoster;
-
-      // Priority 2: Check standard "users" collection (Security Rule compliant)
+      
+      // Check Firestore for detailed status
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
-      if (userDoc.exists) {
-        final role = userDoc.data()?['role'];
-        if (role == 'student') return UserRole.student;
-        if (role == 'hoster') return UserRole.hoster;
-      }
+      final userData = userDoc.data();
+      final firestoreRole = userData?['role'];
+      final status = userData?['status'] ?? 'pending';
 
-      // Priority 3: No fallback to legacy collections (Rules compliant)
-      return UserRole.none;
+      UserRole finalRole = UserRole.none;
+      if (roleClaim == 'superadmin') finalRole = UserRole.superadmin;
+      else if (roleClaim == 'admin') finalRole = UserRole.admin;
+      else if (roleClaim == 'hoster' || firestoreRole == 'hoster') finalRole = UserRole.hoster;
+      else if (firestoreRole == 'student' || firestoreRole == 'user') finalRole = UserRole.student;
+
+      return {
+        'role': finalRole,
+        'status': status,
+      };
     } catch (e) {
-      debugPrint('Error detecting role: $e');
-      return UserRole.none;
+      debugPrint('Error detecting role/status: $e');
+      return {'role': UserRole.none, 'status': 'unknown'};
     }
+  }
+
+  // Legacy support for older code
+  Future<UserRole> getUserRole(User user) async {
+    final details = await getUserAuthDetails(user);
+    return details['role'] as UserRole;
   }
 
   // 3. Secure Sign Out

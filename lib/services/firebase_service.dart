@@ -9,24 +9,28 @@ class FirebaseService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // ==================== IMAGE UPLOAD ====================
+  // ==================== DOCUMENT/IMAGE UPLOAD ====================
 
-  Future<String> uploadImage(File image) async {
-    final String fileName = '${const Uuid().v4()}.jpg';
+  Future<String> uploadFile(File file) async {
+    final String extension = file.path.split('.').last.toLowerCase();
+    final String fileName = '${const Uuid().v4()}.$extension';
     final Reference ref = _storage.ref().child('property_images/$fileName');
-    final UploadTask uploadTask = ref.putFile(image);
+    final UploadTask uploadTask = ref.putFile(file);
     final TaskSnapshot snapshot = await uploadTask;
     return await snapshot.ref.getDownloadURL();
   }
 
-  Future<List<String>> uploadImages(List<File> images) async {
-    final List<String> imageUrls = [];
-    for (final image in images) {
-      final url = await uploadImage(image);
-      imageUrls.add(url);
+  Future<List<String>> uploadFiles(List<File> files) async {
+    final List<String> urls = [];
+    for (final file in files) {
+      final url = await uploadFile(file);
+      urls.add(url);
     }
-    return imageUrls;
+    return urls;
   }
+
+  // Alias for backward compatibility
+  Future<List<String>> uploadImages(List<File> images) => uploadFiles(images);
 
   // ==================== PROPERTIES ====================
 
@@ -64,7 +68,7 @@ class FirebaseService {
       final String userId = _auth.currentUser?.uid ?? '';
       if (userId.isEmpty) throw 'User not authenticated';
 
-      final List<String> imageUrls = await uploadImages(images);
+      final List<String> imageUrls = await uploadFiles(images);
 
       await _firestore.collection('properties').add({
         'hoster_id': userId,
@@ -194,19 +198,24 @@ class FirebaseService {
         .snapshots();
   }
 
-  /// Create a new booking
+  /// Create a new booking with optional room and bed selection
   Future<String> createBooking({
     required String propertyId,
     required Map<String, dynamic> propertyData,
     required double price,
     required String type,
     required List<Map<String, String>> tenantDetails,
+    String? roomId,
+    String? bedId,
   }) async {
     if (_userId == null) throw 'User not authenticated';
 
     final docRef = await _firestore.collection('bookings').add({
       'user_id': _userId,
       'property_id': propertyId,
+      'roomId': roomId,
+      'bedId': bedId,
+      'hoster_id': propertyData['hoster_id'] ?? propertyData['ownerId'],
       'propertyData': propertyData,
       'price': price,
       'type': type,
@@ -506,6 +515,7 @@ class FirebaseService {
     String? transactionId,
     String? razorpayPaymentId,
     String? razorpayOrderId,
+    String? hosterId, // Added hosterId parameter
   }) async {
     if (_userId == null) throw 'User not authenticated';
 
@@ -513,6 +523,7 @@ class FirebaseService {
       'user_id': _userId,
       'booking_id': bookingId,
       'property_id': propertyId,
+      'hoster_id': hosterId, // Ensure hoster_id is stored
       'amount': amount,
       'paymentMethod': paymentMethod,
       'paymentType': paymentType, // 'rent' or 'deposit'

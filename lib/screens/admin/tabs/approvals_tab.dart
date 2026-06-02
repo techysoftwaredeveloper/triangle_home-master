@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:triangle_home/services/admin_service.dart';
+import 'package:triangle_home/screens/admin/hoster_detail_screen.dart';
+import 'package:triangle_home/screens/admin/property_detail_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
@@ -372,8 +374,37 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
         item: item,
         onApprove: () => _handleAction(item['id'], item['type'], 'approve'),
         onReject: () => _handleAction(item['id'], item['type'], 'reject'),
+        onDetails: () => _viewDetails(item),
       )).toList(),
     );
+  }
+
+  void _viewDetails(Map<String, dynamic> item) {
+    if (item['type'] == 'property') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PropertyDetailScreen(
+            property: item,
+            adminService: widget.adminService,
+          ),
+        ),
+      );
+    } else if (item['type'] == 'hoster') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HosterDetailScreen(
+            request: item,
+            adminService: widget.adminService,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Details view for this request type is coming soon')),
+      );
+    }
   }
 
   Future<void> _handleAction(String id, String type, String action) async {
@@ -506,11 +537,13 @@ class _ApprovalItemCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final VoidCallback onApprove;
   final VoidCallback onReject;
+  final VoidCallback onDetails;
 
   const _ApprovalItemCard({
     required this.item,
     required this.onApprove,
     required this.onReject,
+    required this.onDetails,
   });
 
   @override
@@ -595,6 +628,9 @@ class _ApprovalItemCard extends StatelessWidget {
   }
 
   Widget _buildThumbnail(IconData icon, Color color) {
+    final images = item['images'] as List? ?? [];
+    final imageUrl = images.isNotEmpty ? images.first : 'https://via.placeholder.com/90';
+
     return Stack(
       children: [
         Container(
@@ -603,8 +639,8 @@ class _ApprovalItemCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(16),
-            image: const DecorationImage(
-              image: NetworkImage('https://via.placeholder.com/90'), // Placeholder for actual image
+            image: DecorationImage(
+              image: NetworkImage(imageUrl),
               fit: BoxFit.cover,
             ),
           ),
@@ -733,7 +769,7 @@ class _ApprovalItemCard extends StatelessWidget {
           Expanded(
             child: _ActionButton(
               label: 'Details',
-              onPressed: () {},
+              onPressed: onDetails,
               color: Colors.white,
               textColor: const Color(0xFF0F172A),
               border: true,
@@ -783,7 +819,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: 44,
       child: ElevatedButton(
         onPressed: onPressed,

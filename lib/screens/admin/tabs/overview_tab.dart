@@ -658,7 +658,7 @@ class OverviewTab extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           // Mock Area Chart
-          Container(
+          SizedBox(
             height: 140,
             width: double.infinity,
             child: CustomPaint(
@@ -721,7 +721,7 @@ class OverviewTab extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           // Bar Chart
-          Container(
+          SizedBox(
             height: 180,
             width: double.infinity,
             child: Row(

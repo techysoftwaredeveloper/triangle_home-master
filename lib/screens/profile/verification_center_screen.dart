@@ -4,12 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
-import 'package:camera/camera.dart';
 import 'package:triangle_home/widgets/document_capture_camera.dart';
 import 'dart:io';
 import 'package:triangle_home/screens/profile/verification_otp_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:intl/intl.dart';
 
 class VerificationCenterScreen extends StatefulWidget {
   const VerificationCenterScreen({super.key});
@@ -383,24 +381,28 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
       ),
-      child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: (isVerified ? _successGreen : _accentBlue).withValues(alpha: 0.1), shape: BoxShape.circle),
-          child: Icon(icon, color: isVerified ? _successGreen : _accentBlue, size: 24),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
-          child: Text(statusText, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          onTap: onTap,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: (isVerified ? _successGreen : _accentBlue).withValues(alpha: 0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: isVerified ? _successGreen : _accentBlue, size: 24),
+          ),
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
+          subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+            child: Text(statusText, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+          ),
         ),
       ),
     );
@@ -485,15 +487,18 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
   }
 
   Widget _buildOptionTile(String title, String fieldPrefix, String type) {
-    return ListTile(
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () async {
-        Navigator.pop(context);
-        await _firestore.collection('users').doc(_auth.currentUser?.uid).set({
-          'verification': { '${fieldPrefix}Type': type }
-        }, SetOptions(merge: true));
-      },
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () async {
+          Navigator.pop(context);
+          await _firestore.collection('users').doc(_auth.currentUser?.uid).set({
+            'verification': { '${fieldPrefix}Type': type }
+          }, SetOptions(merge: true));
+        },
+      ),
     );
   }
 
@@ -593,7 +598,7 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
 
       await _firestore.collection('users').doc(userId).set({
         'verification': {
-          '${fieldPrefix}${side}Url': url,
+          '$fieldPrefix${side}Url': url,
           '${fieldPrefix}Status': 'pending',
           '${fieldPrefix}Timestamp': FieldValue.serverTimestamp(),
         }

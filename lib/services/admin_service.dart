@@ -4,6 +4,7 @@ import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/services/audit_service.dart';
 import 'package:triangle_home/services/isar_service.dart';
 import 'package:triangle_home/services/admin_api_service.dart';
+import 'package:triangle_home/services/hoster_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:intl/intl.dart';
@@ -44,7 +45,7 @@ class AdminService {
         .map((c) => json.decode(c!) as Map<String, dynamic>);
 
     // 2. Real-time Firestore aggregation
-    final firestoreStream = Rx.combineLatest7(
+    final firestoreStream = Rx.combineLatest9(
       _firestore.collection('users').snapshots(),
       _firestore.collection('properties').snapshots(),
       _firestore.collection('bookings').snapshots(),
@@ -52,8 +53,11 @@ class AdminService {
       _firestore.collection('property_suggestions').snapshots(),
       _firestore.collection('reports').snapshots(),
       _firestore.collection('audit_logs').snapshots(),
-      (users, properties, bookings, payments, suggestions, reports, auditLogs) {
+      _firestore.collection('disputes').snapshots(),
+      _firestore.collection('escrow').snapshots(),
+      (users, properties, bookings, payments, suggestions, reports, auditLogs, disputes, escrow) {
         double totalRevenue = 0;
+        // ... (existing loops for payments)
         double paidRevenue = 0;
         double pendingRevenue = 0;
         double refundedRevenue = 0;
@@ -138,6 +142,25 @@ class AdminService {
               .where((doc) => (doc.data()['status'] ?? '').toString().toLowerCase() == 'pending')
               .length;
 
+        final openDisputes = disputes.docs
+              .where((doc) => doc.data()['status'] == DisputeStatus.open.name || doc.data()['status'] == DisputeStatus.underReview.name)
+              .length;
+
+        final readyPayouts = escrow.docs
+              .where((doc) => doc.data()['escrowStatus'] == EscrowStatus.readyForPayout.name)
+              .length;
+
+        final expiringReservations = bookings.docs
+              .where((doc) {
+                final status = doc.data()['status'];
+                final expiryStr = doc.data()['expiryTime'];
+                if (status != BookingStatus.reserved.name || expiryStr == null) return false;
+                final expiry = (expiryStr is Timestamp) ? expiryStr.toDate() : DateTime.tryParse(expiryStr.toString());
+                if (expiry == null) return false;
+                final diff = expiry.difference(DateTime.now()).inHours;
+                return diff >= 0 && diff <= 12;
+              }).length;
+
         // Top Cities calculation
         Map<String, int> cityCounts = {};
         for (var doc in properties.docs) {
@@ -188,7 +211,10 @@ class AdminService {
           'pendingReports': unresolvedReports,
           'pendingSuggestions': pendingSuggestions,
           'pendingModeration': pendingModeration,
-          'totalNotifications': pendingProperties + pendingHosters + unresolvedReports + pendingModeration,
+          'openDisputes': openDisputes,
+          'readyPayouts': readyPayouts,
+          'expiringReservations': expiringReservations,
+          'totalNotifications': pendingProperties + pendingHosters + unresolvedReports + pendingModeration + openDisputes,
           'newSuggestions': newSuggestions,
           'reviewSuggestions': reviewSuggestions,
           'contactedSuggestions': contactedSuggestions,
@@ -214,45 +240,83 @@ class AdminService {
     return Rx.concat([cachedStream, firestoreStream]).asBroadcastStream();
   }
 
-  Stream<List<Map<String, dynamic>>> getPendingApprovalsStream() async* {
-    // 1. Emit cached approvals immediately
-    final cached = await _isarService.getAdminCache('admin_pending_approvals');
-    if (cached != null) {
-      final List<dynamic> list = json.decode(cached);
-      yield list.cast<Map<String, dynamic>>();
-    }
-
-    // 2. Fetch from Firestore (Users & Properties)
+  Stream<List<Map<String, dynamic>>> getPendingApprovalsStream() {
+    // 1. Fetch from Firestore (Users & Properties) - Both in REAL-TIME
     final hostersStream = _firestore
         .collection('users')
-        .where('role', isEqualTo: 'hoster')
+        .where('permissions.role', isEqualTo: 'hoster')
+        .where('permissions.status', isEqualTo: 'pending')
+        .snapshots();
+
+    final propertiesStream = _firestore
+        .collection('properties')
         .where('status', isEqualTo: 'pending')
         .snapshots();
 
-    // We merge these streams
-    yield* hostersStream.asyncMap((hosterSnap) async {
-      final propertiesSnap = await _firestore
-          .collection('properties')
-          .where('status', isEqualTo: 'pending')
-          .get();
+    final userVerificationsStream = _firestore
+        .collection('users')
+        .where('role', whereIn: ['student', 'professional', 'user'])
+        .where('verification.roleIdStatus', isEqualTo: 'pending')
+        .snapshots();
 
+    return Rx.combineLatest3(hostersStream, propertiesStream, userVerificationsStream, (hosterSnap, propertySnap, userVerifSnap) {
       final List<Map<String, dynamic>> approvals = [];
 
-      // Add Hosters
-      for (var doc in hosterSnap.docs) {
+      // Add User Verifications (Students/Professionals)
+      for (var doc in userVerifSnap.docs) {
+        final data = doc.data();
+        final info = data['info'] as Map? ?? {};
+        
         approvals.add({
           'id': doc.id,
+          'uid': doc.id,
+          'type': 'user_verification',
+          'name': info['name'] ?? 'User Applicant',
+          'email': info['email'],
+          'verificationType': data['role'] == 'student' ? 'Student ID' : 'Professional ID',
+          'createdAt': data['updatedAt'] ?? data['createdAt'],
+          ...data,
+        });
+      }
+
+      // Add Hosters from users collection
+      for (var doc in hosterSnap.docs) {
+        final data = doc.data();
+        final info = data['info'] as Map? ?? {};
+        final permissions = data['permissions'] as Map? ?? {};
+        
+        approvals.add({
+          'id': doc.id,
+          'uid': doc.id,
           'type': 'hoster',
-          ...doc.data(),
+          'name': info['name'] ?? 'Hoster Applicant',
+          'hosterName': info['name'],
+          'email': info['email'],
+          'location': '${info['city'] ?? ""}, ${info['state'] ?? ""}',
+          'createdAt': data['createdAt'] ?? data['updatedAt'],
+          'permissions': permissions,
+          ...data,
         });
       }
 
       // Add Properties
-      for (var doc in propertiesSnap.docs) {
+      for (var doc in propertySnap.docs) {
+        final data = doc.data();
+        final verification = data['verification'] as Map? ?? {};
+        final documents = data['documents'] as Map? ?? {};
+        
+        int uploaded = 0;
+        if (verification['aadhaarUrl'] != null) uploaded++;
+        if (verification['panUrl'] != null) uploaded++;
+        if (documents['ownershipUrl'] != null) uploaded++;
+        if (documents['utilityUrl'] != null) uploaded++;
+        if (documents['additionalUrl'] != null) uploaded++;
+
         approvals.add({
           'id': doc.id,
           'type': 'property',
-          ...doc.data(),
+          'docsCount': '$uploaded/5',
+          ...data,
         });
       }
 
@@ -260,15 +324,17 @@ class AdminService {
       approvals.sort((a, b) {
         final aDate = a['createdAt'] as Timestamp?;
         final bDate = b['createdAt'] as Timestamp?;
-        if (aDate == null || bDate == null) return 0;
+        if (aDate == null && bDate == null) return 0;
+        if (aDate == null) return 1;
+        if (bDate == null) return -1;
         return bDate.compareTo(aDate);
       });
 
       // Save to cache (Sanitized)
-      await _isarService.saveAdminCache('admin_pending_approvals', json.encode(_sanitize(approvals)));
+      _isarService.saveAdminCache('admin_pending_approvals', json.encode(_sanitize(approvals)));
 
       return approvals;
-    });
+    }).asBroadcastStream();
   }
 
   Stream<List<Map<String, dynamic>>> getUsersStream() async* {
@@ -521,7 +587,15 @@ class AdminService {
     );
   }
 
-  // ==================== SUPERADMIN OPS ====================
+  // ==================== HOSTER DETAIL FETCH ====================
+
+  Future<Map<String, dynamic>> getHosterDashboardSummary(String hosterId) async {
+    final HosterService hosterService = HosterService();
+    // Re-use the hoster's own logic to get a summary for the admin
+    // This ensures consistency between what the hoster sees and what the admin sees
+    final stats = await hosterService.getDetailedHosterStatsStream(hosterId).first;
+    return stats;
+  }
 
   Future<void> deleteListing(String propertyId) async {
     await _firestore.collection('properties').doc(propertyId).delete();
