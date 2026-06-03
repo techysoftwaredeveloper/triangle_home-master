@@ -138,7 +138,10 @@ class AppTheme {
         foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w600),
+        textStyle: GoogleFonts.outfit(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
         elevation: 0,
       ),
     ),
@@ -148,7 +151,10 @@ class AppTheme {
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         side: const BorderSide(color: primaryColor),
-        textStyle: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w600),
+        textStyle: GoogleFonts.outfit(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(

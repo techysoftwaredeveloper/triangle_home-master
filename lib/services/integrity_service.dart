@@ -16,22 +16,28 @@ class IntegrityService {
         final studentId = data['studentId'];
 
         // 1. Check Property Existence
-        final propDoc = await _firestore.collection('properties').doc(propertyId).get();
+        final propDoc =
+            await _firestore.collection('properties').doc(propertyId).get();
         if (!propDoc.exists) {
-          errors.add('Booking ${doc.id} references non-existent property $propertyId');
+          errors.add(
+            'Booking ${doc.id} references non-existent property $propertyId',
+          );
         }
 
         // 2. Check Student Existence (across student/hoster/guest collections)
         bool studentFound = false;
         for (final col in ['student', 'hoster', 'guest']) {
-          final studentDoc = await _firestore.collection(col).doc(studentId).get();
+          final studentDoc =
+              await _firestore.collection(col).doc(studentId).get();
           if (studentDoc.exists) {
             studentFound = true;
             break;
           }
         }
         if (!studentFound) {
-          errors.add('Booking ${doc.id} references non-existent student $studentId');
+          errors.add(
+            'Booking ${doc.id} references non-existent student $studentId',
+          );
         }
       }
     } catch (e) {

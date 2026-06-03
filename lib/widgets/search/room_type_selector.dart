@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:triangle_home/widgets/search/option_button.dart';
 
-
 class RoomTypeSelector extends StatelessWidget {
   final List<String> roomTypes;
   final String selectedType;
@@ -31,16 +30,17 @@ class RoomTypeSelector extends StatelessWidget {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: roomTypes.map((type) {
-            return SizedBox(
-              width: (MediaQuery.of(context).size.width - 48) / 3,
-              child: OptionButton(
-                text: type,
-                isSelected: selectedType == type,
-                onTap: () => onTypeSelected(type),
-              ),
-            );
-          }).toList(),
+          children:
+              roomTypes.map((type) {
+                return SizedBox(
+                  width: (MediaQuery.of(context).size.width - 48) / 3,
+                  child: OptionButton(
+                    text: type,
+                    isSelected: selectedType == type,
+                    onTap: () => onTypeSelected(type),
+                  ),
+                );
+              }).toList(),
         ),
       ],
     );

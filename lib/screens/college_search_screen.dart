@@ -41,8 +41,11 @@ class _CollegeSearchScreenState extends State<CollegeSearchScreen> {
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                    color: AppTheme.primaryColor, size: 20),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: AppTheme.primaryColor,
+                  size: 20,
+                ),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -103,11 +106,18 @@ class _CollegeSearchScreenState extends State<CollegeSearchScreen> {
                 style: TextStyle(
                   fontFamily: AppTheme.fontFamily,
                   fontSize: AppTheme.fontBase,
-                  color: _selectedCollege.isEmpty ? AppTheme.textMutedColor : AppTheme.textColor,
+                  color:
+                      _selectedCollege.isEmpty
+                          ? AppTheme.textMutedColor
+                          : AppTheme.textColor,
                 ),
               ),
             ),
-            const Icon(Icons.search_rounded, color: AppTheme.textMutedColor, size: 28),
+            const Icon(
+              Icons.search_rounded,
+              color: AppTheme.textMutedColor,
+              size: 28,
+            ),
           ],
         ),
       ),
@@ -119,14 +129,20 @@ class _CollegeSearchScreenState extends State<CollegeSearchScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => CollegeSearchPopup(
-        colleges: const ['Yenepoya University', 'Anna University', 'St. Aloysius College', 'Madras Christian College'],
-        onCollegeSelected: (college) {
-          setState(() {
-            _selectedCollege = college;
-          });
-        },
-      ),
+      builder:
+          (context) => CollegeSearchPopup(
+            colleges: const [
+              'Yenepoya University',
+              'Anna University',
+              'St. Aloysius College',
+              'Madras Christian College',
+            ],
+            onCollegeSelected: (college) {
+              setState(() {
+                _selectedCollege = college;
+              });
+            },
+          ),
     );
   }
 
@@ -155,61 +171,78 @@ class _CollegeSearchScreenState extends State<CollegeSearchScreen> {
             builder: (context, constraints) {
               // Calculate width for 3 columns as per design image
               final itemWidth = (constraints.maxWidth - (2 * 12)) / 3;
-              final options = ['Any', 'Single', '2 Sharing', '3 Sharing', '4 Sharing'];
+              final options = [
+                'Any',
+                'Single',
+                '2 Sharing',
+                '3 Sharing',
+                '4 Sharing',
+              ];
               return Wrap(
                 spacing: 12,
                 runSpacing: 12,
-                children: options.map((label) {
-                  final isSelected = _selectedSharing == label;
-                  return InkWell(
-                    onTap: () => setState(() => _selectedSharing = label),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      width: itemWidth,
-                      height: 44,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppTheme.primaryColor.withValues(alpha: 0.08)
-                            : Colors.white,
+                children:
+                    options.map((label) {
+                      final isSelected = _selectedSharing == label;
+                      return InkWell(
+                        onTap: () => setState(() => _selectedSharing = label),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected ? AppTheme.primaryColor : AppTheme.dividerColor,
-                          width: isSelected ? 1.5 : 1,
+                        child: Container(
+                          width: itemWidth,
+                          height: 44,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color:
+                                isSelected
+                                    ? AppTheme.primaryColor.withValues(
+                                      alpha: 0.08,
+                                    )
+                                    : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color:
+                                  isSelected
+                                      ? AppTheme.primaryColor
+                                      : AppTheme.dividerColor,
+                              width: isSelected ? 1.5 : 1,
+                            ),
+                            boxShadow:
+                                isSelected
+                                    ? [
+                                      BoxShadow(
+                                        color: AppTheme.primaryColor.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                    : null,
+                          ),
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              color:
+                                  isSelected
+                                      ? AppTheme.primaryColor
+                                      : const Color(0xFF64748B),
+                              fontFamily: AppTheme.fontFamily,
+                              fontSize: 12,
+                              fontWeight:
+                                  isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                            ),
+                          ),
                         ),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                )
-                              ]
-                            : null,
-                      ),
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          color: isSelected ? AppTheme.primaryColor : const Color(0xFF64748B),
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
+                      );
+                    }).toList(),
               );
             },
           ),
         ],
       ),
     ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0);
-  }
-
-  Widget _buildSharingButton(String label) {
-    // This method is no longer used but kept for structural reference or can be deleted
-    return const SizedBox.shrink();
   }
 
   Widget _buildHelpCard() {
@@ -279,26 +312,30 @@ class _CollegeSearchScreenState extends State<CollegeSearchScreen> {
         width: double.infinity,
         height: 56,
         child: ElevatedButton(
-          onPressed: isEnabled
-              ? () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SearchResultsScreen(
-                        searchQuery: _selectedCollege,
-                        selectedCity: '', // Should be passed if known
-                        searchType: 'College',
-                        selectedLocalities: const [],
-                        selectedState: '',
-                        tenantType: widget.gender == 'Men' ? 'Man' : 'Woman',
-                        roomType: _selectedSharing,
+          onPressed:
+              isEnabled
+                  ? () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) => SearchResultsScreen(
+                              searchQuery: _selectedCollege,
+                              selectedCity: '', // Should be passed if known
+                              searchType: 'College',
+                              selectedLocalities: const [],
+                              selectedState: '',
+                              tenantType:
+                                  widget.gender == 'Men' ? 'Man' : 'Woman',
+                              roomType: _selectedSharing,
+                            ),
                       ),
-                    ),
-                  );
-                }
-              : null,
+                    );
+                  }
+                  : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: isEnabled ? AppTheme.primaryColor : const Color(0xFFE5E5E5),
+            backgroundColor:
+                isEnabled ? AppTheme.primaryColor : const Color(0xFFE5E5E5),
             foregroundColor: isEnabled ? Colors.white : AppTheme.textMutedColor,
             elevation: 0,
             shape: RoundedRectangleBorder(
@@ -323,58 +360,59 @@ class _CollegeSearchScreenState extends State<CollegeSearchScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.4,
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder:
+          (context) => Container(
+            height: MediaQuery.of(context).size.height * 0.4,
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Financial Assistance',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
                 const Text(
-                  'Financial Assistance',
+                  'Need help with hostel fee payments? We offer flexible payment plans and educational loans to support your stay. Contact our support team for more details.',
                   style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    height: 1.5,
+                    color: AppTheme.textLightColor,
                     fontFamily: AppTheme.fontFamily,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
+                const Spacer(),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // TODO: Implement contact support
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Contact Support'),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            const Text(
-              'Need help with hostel fee payments? We offer flexible payment plans and educational loans to support your stay. Contact our support team for more details.',
-              style: TextStyle(
-                fontSize: 16,
-                height: 1.5,
-                color: AppTheme.textLightColor,
-                fontFamily: AppTheme.fontFamily,
-              ),
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Implement contact support
-                  Navigator.pop(context);
-                },
-                child: const Text('Contact Support'),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 }

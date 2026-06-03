@@ -64,7 +64,10 @@ class _AboutScreenState extends State<AboutScreen> {
                       height: 80,
                       width: 80,
                     ),
-                  ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
+                  ).animate().scale(
+                    duration: 500.ms,
+                    curve: Curves.easeOutBack,
+                  ),
                   const SizedBox(height: 24),
                   const Text(
                     'Triangle Homes',
@@ -77,7 +80,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Version $_version',
+                    'BETA $_version',
                     style: const TextStyle(
                       color: AppTheme.textMutedColor,
                       fontFamily: AppTheme.fontFamily,
@@ -90,7 +93,8 @@ class _AboutScreenState extends State<AboutScreen> {
             const SizedBox(height: 40),
             _buildSectionCard(
               title: 'Who We Are',
-              content: 'Triangle Homes is your trusted partner in finding the perfect accommodation. We connect students and professionals with quality paying guest accommodations, hostels, and apartments.',
+              content:
+                  'Triangle Homes is your trusted partner in finding the perfect accommodation. We connect students and professionals with quality paying guest accommodations, hostels, and apartments.',
               icon: Icons.info_outline_rounded,
             ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0),
             const SizedBox(height: 20),
@@ -135,7 +139,11 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
-  Widget _buildSectionCard({required String title, required String content, required IconData icon}) {
+  Widget _buildSectionCard({
+    required String title,
+    required String content,
+    required IconData icon,
+  }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(

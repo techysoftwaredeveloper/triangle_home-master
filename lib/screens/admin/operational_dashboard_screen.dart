@@ -14,7 +14,10 @@ class OperationalDashboardScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppTheme.primaryColor,
-        title: const Text('Operational Health', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Operational Health',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -30,7 +33,8 @@ class OperationalDashboardScreen extends StatelessWidget {
             StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: auditService.getLogs(limit: 10),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                if (!snapshot.hasData)
+                  return const Center(child: CircularProgressIndicator());
                 final logs = snapshot.data!.docs;
                 return ListView.builder(
                   shrinkWrap: true,
@@ -40,12 +44,28 @@ class OperationalDashboardScreen extends StatelessWidget {
                     final log = logs[index].data();
                     final timestamp = log['timestamp'] as Timestamp?;
                     return Card(
-                      child: ListTile(
-                        title: Text(log['action']?.toString().replaceAll('_', ' ').toUpperCase() ?? 'ACTION'),
-                        subtitle: Text('${log['targetType']} ID: ${log['targetId']}\n${log['reason'] ?? ""}'),
-                        trailing: Text(
-                          timestamp != null ? DateFormat('HH:mm').format(timestamp.toDate()) : '--:--',
-                          style: const TextStyle(fontSize: 10, color: Colors.grey),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: ListTile(
+                          title: Text(
+                            log['action']
+                                    ?.toString()
+                                    .replaceAll('_', ' ')
+                                    .toUpperCase() ??
+                                'ACTION',
+                          ),
+                          subtitle: Text(
+                            '${log['targetType']} ID: ${log['targetId']}\n${log['reason'] ?? ""}',
+                          ),
+                          trailing: Text(
+                            timestamp != null
+                                ? DateFormat('HH:mm').format(timestamp.toDate())
+                                : '--:--',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey,
+                            ),
+                          ),
                         ),
                       ),
                     );
@@ -62,16 +82,32 @@ class OperationalDashboardScreen extends StatelessWidget {
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        fontFamily: AppTheme.fontFamily,
+      ),
     );
   }
 
   Widget _buildHealthCards() {
     return const Row(
       children: [
-        Expanded(child: _HealthCard(title: 'Stuck Bookings', value: '0', color: Colors.orange)),
+        Expanded(
+          child: _HealthCard(
+            title: 'Stuck Bookings',
+            value: '0',
+            color: Colors.orange,
+          ),
+        ),
         SizedBox(width: 16),
-        Expanded(child: _HealthCard(title: 'Failed Payments', value: '0', color: Colors.red)),
+        Expanded(
+          child: _HealthCard(
+            title: 'Failed Payments',
+            value: '0',
+            color: Colors.red,
+          ),
+        ),
       ],
     );
   }
@@ -81,7 +117,11 @@ class _HealthCard extends StatelessWidget {
   final String title;
   final String value;
   final Color color;
-  const _HealthCard({required this.title, required this.value, required this.color});
+  const _HealthCard({
+    required this.title,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -94,9 +134,19 @@ class _HealthCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );

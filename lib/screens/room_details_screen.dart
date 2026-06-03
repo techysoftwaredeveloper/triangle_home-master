@@ -22,7 +22,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   int _selectedBhkIndex = 0;
 
   int _displayPrice = 0;
-  int _displayArea = 0;          // sq ft for selected BHK config
+  int _displayArea = 0; // sq ft for selected BHK config
   final List<Map<String, String>> _tenantDetails = [];
 
   // ── Type helpers ──────────────────────────────────────────────────────────
@@ -37,21 +37,24 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     if (value == null) return defaultValue;
     if (value is int) return value;
     if (value is double) return value.toInt();
-    if (value is String) return int.tryParse(value.replaceAll(',', '')) ?? defaultValue;
+    if (value is String)
+      return int.tryParse(value.replaceAll(',', '')) ?? defaultValue;
     return defaultValue;
   }
 
   List<String> _asStringList(dynamic value) {
     if (value == null) return [];
-    if (value is List) return value.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    if (value is List)
+      return value.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
     if (value is String && value.isNotEmpty) return [value];
     return [];
   }
 
   bool get _isApartment {
-    final t = _asString(
-      widget.accommodation['propertyType'] ?? widget.accommodation['type'],
-    ).toLowerCase();
+    final t =
+        _asString(
+          widget.accommodation['propertyType'] ?? widget.accommodation['type'],
+        ).toLowerCase();
     return t.contains('apartment') || t.contains('flat');
   }
 
@@ -66,7 +69,8 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   /// Reads from pricingInfo['1 BHK'], ['2 BHK'], etc. Falls back to base price.
   int _priceForBhk(int index) {
     final pricingInfoRaw = widget.accommodation['pricingInfo'];
-    final pricingInfo = pricingInfoRaw is Map<String, dynamic> ? pricingInfoRaw : null;
+    final pricingInfo =
+        pricingInfoRaw is Map<String, dynamic> ? pricingInfoRaw : null;
     if (pricingInfo != null) {
       final val = pricingInfo[_bhkKey(index)];
       if (val != null) return _asInt(val);
@@ -76,7 +80,8 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
 
   int _priceForSharing(int count) {
     final pricingInfoRaw = widget.accommodation['pricingInfo'];
-    final pricingInfo = pricingInfoRaw is Map<String, dynamic> ? pricingInfoRaw : null;
+    final pricingInfo =
+        pricingInfoRaw is Map<String, dynamic> ? pricingInfoRaw : null;
     if (pricingInfo != null) {
       final val = pricingInfo['$count sharing'];
       if (val != null) return _asInt(val);
@@ -102,7 +107,9 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
       final val = areaInfo[_bhkKey(index)];
       if (val != null) return _asInt(val);
     }
-    return _asInt(widget.accommodation['area'] ?? widget.accommodation['carpetArea']);
+    return _asInt(
+      widget.accommodation['area'] ?? widget.accommodation['carpetArea'],
+    );
   }
 
   // ── Availability ──────────────────────────────────────────────────────────
@@ -139,7 +146,8 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   /// e.g. { '1 BHK': { 'bedrooms': 1, 'bathrooms': 1, 'floor': '3rd', 'parking': true, ... } }
   Map<String, dynamic> get _bhkDetails {
     final bhkDetailsMapRaw = widget.accommodation['bhkDetails'];
-    final bhkDetailsMap = bhkDetailsMapRaw is Map<String, dynamic> ? bhkDetailsMapRaw : null;
+    final bhkDetailsMap =
+        bhkDetailsMapRaw is Map<String, dynamic> ? bhkDetailsMapRaw : null;
     if (bhkDetailsMap != null) {
       final key = _bhkKey(_selectedBhkIndex);
       final val = bhkDetailsMap[key];
@@ -156,15 +164,22 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     final result = <String, List<Map<String, dynamic>>>{};
     raw.forEach((k, v) {
       if (v is List) {
-        result[k.toString()] = v.map<Map<String, dynamic>>((item) {
-          if (item is Map) {
-            return {
-              'label': _asString(item['label']),
-              'available': (item['available'] is bool) ? item['available'] as bool : true,
-            };
-          }
-          return {'label': item.toString(), 'available': true};
-        }).where((m) => (m['label'] as String).isNotEmpty).toList();
+        result[k.toString()] =
+            v
+                .map<Map<String, dynamic>>((item) {
+                  if (item is Map) {
+                    return {
+                      'label': _asString(item['label']),
+                      'available':
+                          (item['available'] is bool)
+                              ? item['available'] as bool
+                              : true,
+                    };
+                  }
+                  return {'label': item.toString(), 'available': true};
+                })
+                .where((m) => (m['label'] as String).isNotEmpty)
+                .toList();
       }
     });
     return result;
@@ -183,9 +198,8 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    _displayPrice = _isApartment
-        ? _priceForBhk(0)
-        : _asInt(widget.accommodation['price']);
+    _displayPrice =
+        _isApartment ? _priceForBhk(0) : _asInt(widget.accommodation['price']);
     _displayArea = _isApartment ? _areaForBhk(0) : 0;
   }
 
@@ -246,7 +260,10 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   List<String> _parseAmenities(dynamic amenities) {
     if (amenities == null) return [];
     if (amenities is! List) return [];
-    return amenities.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    return amenities
+        .map((e) => e.toString())
+        .where((e) => e.isNotEmpty)
+        .toList();
   }
 
   List<String> _parseDistances(dynamic distances) => _asStringList(distances);
@@ -262,9 +279,10 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
 
     final imageList = _parseImageList(accommodation['images']);
     final fallbackImage = _asString(accommodation['image']);
-    final displayImages = imageList.isNotEmpty
-        ? imageList
-        : (fallbackImage.isNotEmpty ? [fallbackImage] : <String>[]);
+    final displayImages =
+        imageList.isNotEmpty
+            ? imageList
+            : (fallbackImage.isNotEmpty ? [fallbackImage] : <String>[]);
 
     final imageTags = _parseImageTags(accommodation['imageTags']);
     final distances = _parseDistances(accommodation['distances']);
@@ -298,10 +316,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ImageCarousel(
-                  images: displayImages,
-                  imageTags: imageTags,
-                ),
+                ImageCarousel(images: displayImages, imageTags: imageTags),
                 RoomInfo(
                   name: _asString(accommodation['name']),
                   type: propertyType,
@@ -346,9 +361,10 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
             left: 0,
             right: 0,
             child: BottomBar(
-              price: _displayPrice > 0
-                  ? _displayPrice
-                  : _asInt(accommodation['price']),
+              price:
+                  _displayPrice > 0
+                      ? _displayPrice
+                      : _asInt(accommodation['price']),
               deposit: deposit,
               maintenanceCharge: maintenanceCharge,
               additionalCosts: additionalCosts,

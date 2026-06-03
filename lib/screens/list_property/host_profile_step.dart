@@ -6,7 +6,11 @@ class HostProfileStep extends StatefulWidget {
   final Function(Map<String, dynamic>) onContinue;
   final Map<String, dynamic>? initialData;
 
-  const HostProfileStep({super.key, required this.onContinue, this.initialData});
+  const HostProfileStep({
+    super.key,
+    required this.onContinue,
+    this.initialData,
+  });
 
   @override
   State<HostProfileStep> createState() => _HostProfileStepState();
@@ -48,7 +52,11 @@ class _HostProfileStepState extends State<HostProfileStep> {
           children: [
             const Text(
               'Basic Information',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Outfit',
+              ),
             ),
             const SizedBox(height: 20),
             InputField(
@@ -74,7 +82,11 @@ class _HostProfileStepState extends State<HostProfileStep> {
             const SizedBox(height: 24),
             const Text(
               'Host Type',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Outfit',
+              ),
             ),
             const SizedBox(height: 16),
             GridView.builder(
@@ -91,28 +103,48 @@ class _HostProfileStepState extends State<HostProfileStep> {
                 final type = _hostTypes[index];
                 final isSelected = _selectedHostType == type['label'];
                 return InkWell(
-                  onTap: () => setState(() => _selectedHostType = type['label']),
+                  onTap:
+                      () => setState(() => _selectedHostType = type['label']),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isSelected ? AppTheme.successColor.withOpacity(0.05) : Colors.white,
+                      color:
+                          isSelected
+                              ? AppTheme.successColor.withValues(alpha: 0.05)
+                              : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? AppTheme.successColor : Colors.grey.shade200,
+                        color:
+                            isSelected
+                                ? AppTheme.successColor
+                                : Colors.grey.shade200,
                         width: 1.5,
                       ),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Row(
                       children: [
-                        Icon(type['icon'], color: isSelected ? AppTheme.successColor : AppTheme.textMutedColor, size: 20),
+                        Icon(
+                          type['icon'],
+                          color:
+                              isSelected
+                                  ? AppTheme.successColor
+                                  : AppTheme.textMutedColor,
+                          size: 20,
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             type['label'],
                             style: TextStyle(
                               fontSize: 11,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                              color: isSelected ? AppTheme.successColor : AppTheme.textDarkColor,
+                              fontWeight:
+                                  isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w600,
+                              color:
+                                  isSelected
+                                      ? AppTheme.successColor
+                                      : AppTheme.textDarkColor,
                             ),
                           ),
                         ),
@@ -134,16 +166,24 @@ class _HostProfileStepState extends State<HostProfileStep> {
                         'email': _emailController.text,
                         'phone': _phoneController.text,
                         'hostType': _selectedHostType,
-                      }
+                      },
                     });
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.successColor,
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: const Text('Continue', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Continue',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],

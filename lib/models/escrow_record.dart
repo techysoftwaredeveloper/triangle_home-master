@@ -14,6 +14,8 @@ class EscrowRecord {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? releaseEligibleAt;
+  final bool isFrozen;
+  final String? freezeReason;
 
   EscrowRecord({
     required this.bookingId,
@@ -28,6 +30,8 @@ class EscrowRecord {
     required this.createdAt,
     required this.updatedAt,
     this.releaseEligibleAt,
+    this.isFrozen = false,
+    this.freezeReason,
   });
 
   factory EscrowRecord.fromFirestore(Map<String, dynamic> data) {
@@ -47,6 +51,8 @@ class EscrowRecord {
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
       releaseEligibleAt: (data['releaseEligibleAt'] as Timestamp?)?.toDate(),
+      isFrozen: data['isFrozen'] ?? false,
+      freezeReason: data['freezeReason'],
     );
   }
 
@@ -63,7 +69,10 @@ class EscrowRecord {
       'escrowStatus': status.name,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': FieldValue.serverTimestamp(),
-      if (releaseEligibleAt != null) 'releaseEligibleAt': Timestamp.fromDate(releaseEligibleAt!),
+      if (releaseEligibleAt != null)
+        'releaseEligibleAt': Timestamp.fromDate(releaseEligibleAt!),
+      'isFrozen': isFrozen,
+      if (freezeReason != null) 'freezeReason': freezeReason,
     };
   }
 }

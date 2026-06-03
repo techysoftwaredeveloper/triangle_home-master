@@ -16,70 +16,74 @@ class PaymentHistoryCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  payment['propertyName'],
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                _buildStatusChip(payment['status']),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tenant: ${payment['tenantName']}',
-              style: const TextStyle(fontSize: 14),
-            ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      amount,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          contentPadding: const EdgeInsets.all(16),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    payment['propertyName'],
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  _buildStatusChip(payment['status']),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tenant: ${payment['tenantName']}',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ],
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        amount,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          payment['type'],
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        payment['type'],
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  date,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                ),
-              ],
-            ),
-          ],
+                    ],
+                  ),
+                  Text(
+                    date,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

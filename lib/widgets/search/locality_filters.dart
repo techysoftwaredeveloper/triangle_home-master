@@ -37,15 +37,18 @@ class LocalityFilters extends StatelessWidget {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: selectedLocalities.map((locality) {
-            return Chip(
-              label: Text(locality),
-              deleteIcon: const Icon(Icons.close, size: 18),
-              onDeleted: () => onLocalityRemoved(locality),
-              backgroundColor: const Color(0xFF1E3A8A).withValues(alpha: 0.1),
-              labelStyle: const TextStyle(color: Color(0xFF1E3A8A)),
-            );
-          }).toList(),
+          children:
+              selectedLocalities.map((locality) {
+                return Chip(
+                  label: Text(locality),
+                  deleteIcon: const Icon(Icons.close, size: 18),
+                  onDeleted: () => onLocalityRemoved(locality),
+                  backgroundColor: const Color(
+                    0xFF1E3A8A,
+                  ).withValues(alpha: 0.1),
+                  labelStyle: const TextStyle(color: Color(0xFF1E3A8A)),
+                );
+              }).toList(),
         ).animate().fadeIn(delay: 600.ms).slideX(begin: -0.2, end: 0),
       ],
     );

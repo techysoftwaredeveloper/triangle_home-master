@@ -41,9 +41,10 @@ class DisputeModel {
       ),
       category: data['category'] ?? 'OTHER',
       description: data['description'] ?? '',
-      evidence: (data['evidence'] as List? ?? [])
-          .map((e) => DisputeEvidence.fromMap(e as Map<String, dynamic>))
-          .toList(),
+      evidence:
+          (data['evidence'] as List? ?? [])
+              .map((e) => DisputeEvidence.fromMap(e as Map<String, dynamic>))
+              .toList(),
       decision: data['decision'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       resolvedAt: (data['resolvedAt'] as Timestamp?)?.toDate(),

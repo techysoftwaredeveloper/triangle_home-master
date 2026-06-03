@@ -17,18 +17,23 @@ const AdminCacheSchema = CollectionSchema(
   name: r'AdminCache',
   id: 4843013893273495263,
   properties: {
-    r'jsonData': PropertySchema(
+    r'expiresAt': PropertySchema(
       id: 0,
+      name: r'expiresAt',
+      type: IsarType.dateTime,
+    ),
+    r'jsonData': PropertySchema(
+      id: 1,
       name: r'jsonData',
       type: IsarType.string,
     ),
     r'key': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'key',
       type: IsarType.string,
     ),
     r'lastUpdated': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'lastUpdated',
       type: IsarType.dateTime,
     )
@@ -83,9 +88,10 @@ void _adminCacheSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.jsonData);
-  writer.writeString(offsets[1], object.key);
-  writer.writeDateTime(offsets[2], object.lastUpdated);
+  writer.writeDateTime(offsets[0], object.expiresAt);
+  writer.writeString(offsets[1], object.jsonData);
+  writer.writeString(offsets[2], object.key);
+  writer.writeDateTime(offsets[3], object.lastUpdated);
 }
 
 AdminCache _adminCacheDeserialize(
@@ -95,9 +101,10 @@ AdminCache _adminCacheDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = AdminCache(
-    jsonData: reader.readStringOrNull(offsets[0]),
-    key: reader.readString(offsets[1]),
-    lastUpdated: reader.readDateTimeOrNull(offsets[2]),
+    expiresAt: reader.readDateTimeOrNull(offsets[0]),
+    jsonData: reader.readStringOrNull(offsets[1]),
+    key: reader.readString(offsets[2]),
+    lastUpdated: reader.readDateTimeOrNull(offsets[3]),
   );
   object.id = id;
   return object;
@@ -111,10 +118,12 @@ P _adminCacheDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
+      return (reader.readString(offset)) as P;
+    case 3:
       return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -311,6 +320,78 @@ extension AdminCacheQueryWhere
 
 extension AdminCacheQueryFilter
     on QueryBuilder<AdminCache, AdminCache, QFilterCondition> {
+  QueryBuilder<AdminCache, AdminCache, QAfterFilterCondition>
+      expiresAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'expiresAt',
+      ));
+    });
+  }
+
+  QueryBuilder<AdminCache, AdminCache, QAfterFilterCondition>
+      expiresAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'expiresAt',
+      ));
+    });
+  }
+
+  QueryBuilder<AdminCache, AdminCache, QAfterFilterCondition> expiresAtEqualTo(
+      DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'expiresAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AdminCache, AdminCache, QAfterFilterCondition>
+      expiresAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'expiresAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AdminCache, AdminCache, QAfterFilterCondition> expiresAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'expiresAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AdminCache, AdminCache, QAfterFilterCondition> expiresAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'expiresAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<AdminCache, AdminCache, QAfterFilterCondition> idEqualTo(
       Id value) {
     return QueryBuilder.apply(this, (query) {
@@ -728,6 +809,18 @@ extension AdminCacheQueryLinks
 
 extension AdminCacheQuerySortBy
     on QueryBuilder<AdminCache, AdminCache, QSortBy> {
+  QueryBuilder<AdminCache, AdminCache, QAfterSortBy> sortByExpiresAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiresAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AdminCache, AdminCache, QAfterSortBy> sortByExpiresAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiresAt', Sort.desc);
+    });
+  }
+
   QueryBuilder<AdminCache, AdminCache, QAfterSortBy> sortByJsonData() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'jsonData', Sort.asc);
@@ -767,6 +860,18 @@ extension AdminCacheQuerySortBy
 
 extension AdminCacheQuerySortThenBy
     on QueryBuilder<AdminCache, AdminCache, QSortThenBy> {
+  QueryBuilder<AdminCache, AdminCache, QAfterSortBy> thenByExpiresAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiresAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AdminCache, AdminCache, QAfterSortBy> thenByExpiresAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiresAt', Sort.desc);
+    });
+  }
+
   QueryBuilder<AdminCache, AdminCache, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -818,6 +923,12 @@ extension AdminCacheQuerySortThenBy
 
 extension AdminCacheQueryWhereDistinct
     on QueryBuilder<AdminCache, AdminCache, QDistinct> {
+  QueryBuilder<AdminCache, AdminCache, QDistinct> distinctByExpiresAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'expiresAt');
+    });
+  }
+
   QueryBuilder<AdminCache, AdminCache, QDistinct> distinctByJsonData(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -844,6 +955,12 @@ extension AdminCacheQueryProperty
   QueryBuilder<AdminCache, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<AdminCache, DateTime?, QQueryOperations> expiresAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'expiresAt');
     });
   }
 

@@ -109,9 +109,14 @@ service cloud.firestore {
     match /properties/{propertyId} {
       allow read: if true;
 
-      allow create, update, delete: if isSignedIn() && (
+      allow create: if isSignedIn() && (
         isAdmin() ||
-        (hasRole('hoster') && (resource == null || resource.data.hoster_id == request.auth.uid))
+        (hasRole('hoster') && request.resource.data.hoster_id == request.auth.uid)
+      );
+
+      allow update, delete: if isSignedIn() && (
+        isAdmin() ||
+        (hasRole('hoster') && resource.data.hoster_id == request.auth.uid && request.resource.data.hoster_id == request.auth.uid)
       );
 
       // Private Data Vault (Document-Level Security)
@@ -269,6 +274,24 @@ service cloud.firestore {
     match /admins/{adminId} {
       allow read: if isAdmin();
       allow write: if isSuperAdmin();
+    }
+
+    // =========================================================
+    // MAINTENANCE TICKETS
+    // =========================================================
+
+    match /maintenance_tickets/{ticketId} {
+      allow create: if isSignedIn() && request.resource.data.user_id == request.auth.uid;
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.user_id ||
+        request.auth.uid == resource.data.hoster_id ||
+        isAdmin()
+      );
+      allow update: if isSignedIn() && (
+        request.auth.uid == resource.data.hoster_id ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
     }
   }
 }

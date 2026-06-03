@@ -39,14 +39,17 @@ class _AdminBookingManagementState extends State<AdminBookingManagement> {
               final doc = snapshot.data!.docs[index];
               final data = doc.data();
               final propertyData = data['propertyData'] ?? {};
-              final createdAt = (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+              final createdAt =
+                  (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
               final status = data['status'] ?? 'pending';
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ExpansionTile(
                   leading: CircleAvatar(
-                    backgroundColor: _getStatusColor(status).withValues(alpha: 0.1),
+                    backgroundColor: _getStatusColor(
+                      status,
+                    ).withValues(alpha: 0.1),
                     child: Icon(Icons.book, color: _getStatusColor(status)),
                   ),
                   title: Text(
@@ -57,7 +60,10 @@ class _AdminBookingManagementState extends State<AdminBookingManagement> {
                     '${data['userPhone'] ?? ''} • ${DateFormat('MMM dd, yyyy').format(createdAt)}',
                   ),
                   trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: _getStatusColor(status).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -87,10 +93,17 @@ class _AdminBookingManagementState extends State<AdminBookingManagement> {
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 4),
-                          ...(data['tenantDetails'] as List? ?? []).map((tenant) {
+                          ...(data['tenantDetails'] as List? ?? []).map((
+                            tenant,
+                          ) {
                             return Padding(
-                              padding: const EdgeInsets.only(left: 8, bottom: 4),
-                              child: Text('• ${tenant['name']} (${tenant['phone']})'),
+                              padding: const EdgeInsets.only(
+                                left: 8,
+                                bottom: 4,
+                              ),
+                              child: Text(
+                                '• ${tenant['name']} (${tenant['phone']})',
+                              ),
                             );
                           }),
                           const SizedBox(height: 16),
@@ -99,14 +112,27 @@ class _AdminBookingManagementState extends State<AdminBookingManagement> {
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 OutlinedButton(
-                                  onPressed: () => _updateBookingStatus(doc.id, 'cancelled'),
-                                  style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                                  onPressed:
+                                      () => _updateBookingStatus(
+                                        doc.id,
+                                        'cancelled',
+                                      ),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                  ),
                                   child: const Text('Cancel Booking'),
                                 ),
                                 const SizedBox(width: 8),
                                 ElevatedButton(
-                                  onPressed: () => _updateBookingStatus(doc.id, 'confirmed'),
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                                  onPressed:
+                                      () => _updateBookingStatus(
+                                        doc.id,
+                                        'confirmed',
+                                      ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                  ),
                                   child: const Text('Confirm'),
                                 ),
                               ],
@@ -163,9 +189,9 @@ class _AdminBookingManagementState extends State<AdminBookingManagement> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }

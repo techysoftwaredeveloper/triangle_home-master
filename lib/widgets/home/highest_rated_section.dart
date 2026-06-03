@@ -82,24 +82,32 @@ class HighestRatedSection extends StatelessWidget {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: item['logo'] != null
-                  ? CachedNetworkImage(
-                      imageUrl: item['logo'],
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => const Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                child:
+                    item['logo'] != null
+                        ? CachedNetworkImage(
+                          imageUrl: item['logo'],
+                          fit: BoxFit.cover,
+                          placeholder:
+                              (context, url) => const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ),
+                          errorWidget:
+                              (context, url, error) => const Icon(
+                                Icons.image_not_supported_outlined,
+                                color: AppTheme.textMutedColor,
+                                size: 20,
+                              ),
+                        )
+                        : const Icon(
+                          Icons.school_outlined,
+                          color: AppTheme.primaryColor,
                         ),
-                      ),
-                      errorWidget: (context, url, error) => const Icon(
-                        Icons.image_not_supported_outlined,
-                        color: AppTheme.textMutedColor,
-                        size: 20,
-                      ),
-                    )
-                  : const Icon(Icons.school_outlined, color: AppTheme.primaryColor),
               ),
             ),
             const SizedBox(width: 12),

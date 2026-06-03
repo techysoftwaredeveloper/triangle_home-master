@@ -26,11 +26,19 @@ class _PricingStepState extends State<PricingStep> {
   void initState() {
     super.initState();
     final data = widget.initialData?['pricing'] ?? {};
-    _singleRentController = TextEditingController(text: data['singleRent'] ?? '');
-    _doubleRentController = TextEditingController(text: data['doubleRent'] ?? '');
-    _tripleRentController = TextEditingController(text: data['tripleRent'] ?? '');
+    _singleRentController = TextEditingController(
+      text: data['singleRent'] ?? '',
+    );
+    _doubleRentController = TextEditingController(
+      text: data['doubleRent'] ?? '',
+    );
+    _tripleRentController = TextEditingController(
+      text: data['tripleRent'] ?? '',
+    );
     _depositController = TextEditingController(text: data['deposit'] ?? '');
-    _noticePeriodController = TextEditingController(text: data['noticePeriod'] ?? '30 Days');
+    _noticePeriodController = TextEditingController(
+      text: data['noticePeriod'] ?? '30 Days',
+    );
     _isFoodIncluded = data['foodIncluded'] ?? false;
   }
 
@@ -94,12 +102,27 @@ class _PricingStepState extends State<PricingStep> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Food Included?', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+                const Text(
+                  'Food Included?',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textDarkColor,
+                  ),
+                ),
                 Row(
                   children: [
-                    _buildToggleButton('Yes', _isFoodIncluded, () => setState(() => _isFoodIncluded = true)),
+                    _buildToggleButton(
+                      'Yes',
+                      _isFoodIncluded,
+                      () => setState(() => _isFoodIncluded = true),
+                    ),
                     const SizedBox(width: 12),
-                    _buildToggleButton('No', !_isFoodIncluded, () => setState(() => _isFoodIncluded = false)),
+                    _buildToggleButton(
+                      'No',
+                      !_isFoodIncluded,
+                      () => setState(() => _isFoodIncluded = false),
+                    ),
                   ],
                 ),
               ],
@@ -118,16 +141,24 @@ class _PricingStepState extends State<PricingStep> {
                         'deposit': _depositController.text,
                         'noticePeriod': _noticePeriodController.text,
                         'foodIncluded': _isFoodIncluded,
-                      }
+                      },
                     });
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.successColor,
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: const Text('Continue', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Continue',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],
@@ -144,7 +175,9 @@ class _PricingStepState extends State<PricingStep> {
         decoration: BoxDecoration(
           color: isSelected ? AppTheme.successColor : Colors.white,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: isSelected ? AppTheme.successColor : Colors.grey.shade200),
+          border: Border.all(
+            color: isSelected ? AppTheme.successColor : Colors.grey.shade200,
+          ),
         ),
         child: Text(
           label,

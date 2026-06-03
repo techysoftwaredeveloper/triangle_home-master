@@ -16,7 +16,11 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textDarkColor, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppTheme.textDarkColor,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -60,7 +64,11 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
                           color: AppTheme.primaryColor.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(32),
                         ),
-                        child: const Icon(Icons.home_work_rounded, size: 80, color: AppTheme.primaryColor),
+                        child: const Icon(
+                          Icons.home_work_rounded,
+                          size: 80,
+                          color: AppTheme.primaryColor,
+                        ),
                       ),
                       Positioned(
                         top: 10,
@@ -70,13 +78,31 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
                           decoration: const BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          child: const Icon(Icons.location_on_rounded, color: AppTheme.primaryColor, size: 24),
-                        ).animate().scale(delay: 500.ms, duration: 400.ms, curve: Curves.easeOutBack),
+                          child: const Icon(
+                            Icons.location_on_rounded,
+                            color: AppTheme.primaryColor,
+                            size: 24,
+                          ),
+                        ).animate().scale(
+                          delay: 500.ms,
+                          duration: 400.ms,
+                          curve: Curves.easeOutBack,
+                        ),
                       ),
                     ],
-                  ).animate().scale(delay: 300.ms, duration: 500.ms, curve: Curves.easeOutBack),
+                  ).animate().scale(
+                    delay: 300.ms,
+                    duration: 500.ms,
+                    curve: Curves.easeOutBack,
+                  ),
                 ],
               ),
             ),
@@ -86,21 +112,24 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
             _buildBenefitItem(
               icon: Icons.group_add_outlined,
               title: 'Help the Community',
-              description: 'Aid students & pros in finding verified, reliable stays.',
+              description:
+                  'Aid students & pros in finding verified, reliable stays.',
               color: const Color(0xFF22C55E), // Green
             ).animate().fadeIn(delay: 500.ms).slideX(begin: 0.1, end: 0),
             const SizedBox(height: 12),
             _buildBenefitItem(
               icon: Icons.verified_user_outlined,
               title: 'Trusted & Verified',
-              description: 'We verify owners to ensure safety and trust for all.',
+              description:
+                  'We verify owners to ensure safety and trust for all.',
               color: const Color(0xFF3B82F6), // Blue
             ).animate().fadeIn(delay: 600.ms).slideX(begin: 0.1, end: 0),
             const SizedBox(height: 12),
             _buildBenefitItem(
               icon: Icons.card_giftcard_outlined,
               title: 'Appreciation Rewards',
-              description: 'Top suggesters get special rewards and recognition.',
+              description:
+                  'Top suggesters get special rewards and recognition.',
               color: const Color(0xFFF59E0B), // Orange
             ).animate().fadeIn(delay: 700.ms).slideX(begin: 0.1, end: 0),
 
@@ -114,12 +143,16 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SuggestPropertyFormScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const SuggestPropertyFormScreen(),
+                    ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: 0,
                 ),
                 child: const Row(
@@ -127,7 +160,11 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
                   children: [
                     Text(
                       'Get Started',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Outfit',
+                      ),
                     ),
                     SizedBox(width: 8),
                     Icon(Icons.arrow_forward_rounded, size: 20),
@@ -143,16 +180,25 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const BecomeHosterScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const BecomeHosterScreen(),
+                    ),
                   );
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppTheme.primaryColor),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
                 child: const Text(
                   'Own a property? Become a Host',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.primaryColor),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Outfit',
+                    color: AppTheme.primaryColor,
+                  ),
                 ),
               ),
             ).animate().fadeIn(delay: 900.ms).slideY(begin: 0.2, end: 0),
@@ -162,7 +208,11 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.shield_outlined, size: 14, color: AppTheme.textLightColor.withValues(alpha: 0.5)),
+                Icon(
+                  Icons.shield_outlined,
+                  size: 14,
+                  color: AppTheme.textLightColor.withValues(alpha: 0.5),
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Your data is private and encrypted',

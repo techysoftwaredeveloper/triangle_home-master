@@ -132,20 +132,15 @@
 //   }
 // }
 
-
 // lib/widgets/bookingscreen/booking_card.dart
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:triangle_home/screens/payment/payment_screen.dart';
 
-
 class BookingCard extends StatelessWidget {
   final Map<String, dynamic> booking;
 
-  const BookingCard({
-    super.key,
-    required this.booking,
-  });
+  const BookingCard({super.key, required this.booking});
 
   @override
   Widget build(BuildContext context) {
@@ -174,20 +169,20 @@ class BookingCard extends StatelessWidget {
               height: 200,
               width: double.infinity,
               fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                height: 200,
-                color: Colors.grey[200],
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
+              placeholder:
+                  (context, url) => Container(
+                    height: 200,
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
                   ),
-                ),
-              ),
-              errorWidget: (context, url, error) => Container(
-                height: 200,
-                color: Colors.grey[200],
-                child: const Icon(Icons.error),
-              ),
+              errorWidget:
+                  (context, url, error) => Container(
+                    height: 200,
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.error),
+                  ),
             ),
           ),
           Padding(
@@ -245,10 +240,7 @@ class BookingCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   booking['location'],
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -265,16 +257,15 @@ class BookingCard extends StatelessWidget {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isConfirmed
-                          ? const Color(0xFF1E3A8A)
-                          : Colors.white,
-                      foregroundColor: isConfirmed
-                          ? Colors.white
-                          : const Color(0xFF1E3A8A),
+                      backgroundColor:
+                          isConfirmed ? const Color(0xFF1E3A8A) : Colors.white,
+                      foregroundColor:
+                          isConfirmed ? Colors.white : const Color(0xFF1E3A8A),
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: isConfirmed
-                          ? null
-                          : const BorderSide(color: Color(0xFF1E3A8A)),
+                      side:
+                          isConfirmed
+                              ? null
+                              : const BorderSide(color: Color(0xFF1E3A8A)),
                     ),
                     child: Text(
                       isConfirmed ? 'Complete Payment' : 'View Details',

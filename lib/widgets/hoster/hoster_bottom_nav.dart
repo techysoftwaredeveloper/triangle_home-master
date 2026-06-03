@@ -54,8 +54,18 @@ class HosterBottomNav extends StatelessWidget {
                 right: -4,
                 child: Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle),
-                  child: const Text('4', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEF4444),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Text(
+                    '4',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],

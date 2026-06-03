@@ -9,30 +9,33 @@ class FirestoreCityDiagnostics {
   /// Check if cities exist in Firestore
   static Future<void> checkCities() async {
     debugPrint('🔍 Checking Firestore cities collection...');
-    
+
     try {
       final snapshot = await _firestore.collection('cities').get();
-      
+
       if (snapshot.docs.isEmpty) {
         debugPrint('⚠️ No cities found in Firestore!');
         debugPrint('📝 Please run: await uploadCitiesToFirestore()');
         return;
       }
-      
+
       debugPrint('✅ Found ${snapshot.docs.length} cities');
       debugPrint('─' * 50);
-      
+
       for (final doc in snapshot.docs) {
         final name = doc['name'] ?? 'NO NAME FIELD';
         debugPrint('📍 Document ID: ${doc.id}');
         debugPrint('   Name: $name');
-        
+
         // Check if areas subcollection exists
         final areasSnapshot = await doc.reference.collection('areas').get();
         debugPrint('   Areas: ${areasSnapshot.docs.length} areas');
-        
+
         if (areasSnapshot.docs.isNotEmpty) {
-          final areaNames = areasSnapshot.docs.map((a) => a.id).take(3).join(', ');
+          final areaNames = areasSnapshot.docs
+              .map((a) => a.id)
+              .take(3)
+              .join(', ');
           debugPrint('   Sample areas: $areaNames...');
         }
         debugPrint('─' * 50);
@@ -45,9 +48,9 @@ class FirestoreCityDiagnostics {
   /// Upload cities if they don't exist
   static Future<void> ensureCitiesExist() async {
     debugPrint('🔧 Ensuring cities exist in Firestore...');
-    
+
     final snapshot = await _firestore.collection('cities').get();
-    
+
     if (snapshot.docs.isEmpty) {
       debugPrint('📤 Cities not found. Uploading now...');
       await uploadCitiesToFirestore();
@@ -60,14 +63,14 @@ class FirestoreCityDiagnostics {
   /// Fix mismatched document IDs and name fields
   static Future<void> fixCityMappings() async {
     debugPrint('🔧 Fixing city document mappings...');
-    
+
     try {
       final snapshot = await _firestore.collection('cities').get();
       int fixed = 0;
-      
+
       for (final doc in snapshot.docs) {
         final name = doc['name'] as String?;
-        
+
         // If name field doesn't match document ID, update it
         if (name != null && name != doc.id) {
           debugPrint('⚠️ Mismatch: ID="${doc.id}", Name="$name"');
@@ -75,7 +78,7 @@ class FirestoreCityDiagnostics {
           fixed++;
         }
       }
-      
+
       if (fixed > 0) {
         debugPrint('✅ Fixed $fixed city mappings');
       } else {
@@ -89,10 +92,10 @@ class FirestoreCityDiagnostics {
   /// Test city lookup (simulates what the app does)
   static Future<void> testCityLookup(String testCity) async {
     debugPrint('🧪 Testing city lookup for: "$testCity"');
-    
+
     try {
       final snapshot = await _firestore.collection('cities').get();
-      
+
       // Test case-insensitive matching
       String? matchedCity;
       for (final doc in snapshot.docs) {
@@ -102,7 +105,7 @@ class FirestoreCityDiagnostics {
           break;
         }
       }
-      
+
       if (matchedCity != null) {
         debugPrint('✅ Found match: "$matchedCity"');
       } else {

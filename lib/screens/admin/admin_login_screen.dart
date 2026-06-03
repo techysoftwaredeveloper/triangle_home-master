@@ -25,10 +25,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      final userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
 
       final user = userCredential.user;
       if (user != null) {
@@ -48,7 +49,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           await FirebaseAuth.instance.signOut();
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Access Denied: You do not have admin privileges.')),
+            const SnackBar(
+              content: Text('Access Denied: You do not have admin privileges.'),
+            ),
           );
         }
       }
@@ -78,10 +81,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       backgroundColor: AppTheme.primaryColor,
       body: SafeArea(
         child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(child: _buildLoginForm()),
-          ],
+          children: [_buildHeader(), Expanded(child: _buildLoginForm())],
         ),
       ),
     );
@@ -99,7 +99,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 'assets/images/Logo.svg',
                 height: 48,
                 width: 48,
-                colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                colorFilter: const ColorFilter.mode(
+                  Colors.white,
+                  BlendMode.srcIn,
+                ),
               ),
               const SizedBox(width: 15),
               const Text(
@@ -157,30 +160,58 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               const SizedBox(height: 30),
 
               // Email Field
-              const Text('Email Address', style: TextStyle(fontWeight: FontWeight.w500)),
+              const Text(
+                'Email Address',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: _inputDecoration('name@example.com', Icons.email_outlined),
-                validator: (value) => value == null || !value.contains('@') ? 'Enter a valid email' : null,
+                decoration: _inputDecoration(
+                  'name@example.com',
+                  Icons.email_outlined,
+                ),
+                validator:
+                    (value) =>
+                        value == null || !value.contains('@')
+                            ? 'Enter a valid email'
+                            : null,
               ).animate().fadeIn(delay: 500.ms),
 
               const SizedBox(height: 20),
 
               // Password Field
-              const Text('Password', style: TextStyle(fontWeight: FontWeight.w500)),
+              const Text(
+                'Password',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _passwordController,
                 obscureText: !_isPasswordVisible,
-                decoration: _inputDecoration('Enter password', Icons.lock_outline).copyWith(
+                decoration: _inputDecoration(
+                  'Enter password',
+                  Icons.lock_outline,
+                ).copyWith(
                   suffixIcon: IconButton(
-                    icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off, color: Colors.grey),
-                    onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                    icon: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                      color: Colors.grey,
+                    ),
+                    onPressed:
+                        () => setState(
+                          () => _isPasswordVisible = !_isPasswordVisible,
+                        ),
                   ),
                 ),
-                validator: (value) => value == null || value.length < 6 ? 'Password must be at least 6 chars' : null,
+                validator:
+                    (value) =>
+                        value == null || value.length < 6
+                            ? 'Password must be at least 6 chars'
+                            : null,
               ).animate().fadeIn(delay: 600.ms),
 
               const SizedBox(height: 40),
@@ -193,19 +224,22 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
                     padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
                     elevation: 5,
                   ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Access Control Panel',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                  child:
+                      _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                            'Access Control Panel',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
                 ),
               ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2, end: 0),
 
@@ -213,7 +247,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               Center(
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Back to User Login', style: TextStyle(color: AppTheme.textMutedColor)),
+                  child: const Text(
+                    'Back to User Login',
+                    style: TextStyle(color: AppTheme.textMutedColor),
+                  ),
                 ),
               ),
             ],
@@ -229,8 +266,14 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       prefixIcon: Icon(icon, color: AppTheme.primaryColor),
       filled: true,
       fillColor: Colors.white,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide.none,
+      ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
         borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),

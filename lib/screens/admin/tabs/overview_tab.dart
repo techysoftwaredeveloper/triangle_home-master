@@ -27,7 +27,10 @@ class OverviewTab extends StatelessWidget {
               const SizedBox(height: 24),
               _buildSystemStatusRow(data),
               const SizedBox(height: 40),
-              _buildSectionHeader('Critical Actions Required', trailing: 'View All'),
+              _buildSectionHeader(
+                'Critical Actions Required',
+                trailing: 'View All',
+              ),
               const SizedBox(height: 16),
               _buildCriticalActions(data),
               const SizedBox(height: 40),
@@ -35,7 +38,7 @@ class OverviewTab extends StatelessWidget {
               const SizedBox(height: 16),
               _buildPlatformStatsGrid(data),
               const SizedBox(height: 40),
-              
+
               if (isNarrow) ...[
                 _buildSuggestionsPipeline(data),
                 const SizedBox(height: 24),
@@ -98,7 +101,9 @@ class OverviewTab extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                isNarrow ? 'Good morning, Admin 👋' : 'Good morning, Super Admin 👋',
+                isNarrow
+                    ? 'Good morning, Admin 👋'
+                    : 'Good morning, Super Admin 👋',
                 style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -109,7 +114,11 @@ class OverviewTab extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 "Here's what's happening with your platform today.",
-                style: const TextStyle(color: Color(0xFF64748B), fontSize: 15, fontFamily: 'Outfit'),
+                style: const TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 15,
+                  fontFamily: 'Outfit',
+                ),
               ),
             ],
           ),
@@ -131,14 +140,26 @@ class OverviewTab extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today_outlined, size: 18, color: Color(0xFF64748B)),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 18,
+                  color: Color(0xFF64748B),
+                ),
                 const SizedBox(width: 12),
                 Text(
                   DateFormat('dd MMM yyyy').format(DateTime.now()),
-                  style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A), fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF0F172A),
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.keyboard_arrow_down, size: 18, color: Color(0xFF64748B)),
+                const Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 18,
+                  color: Color(0xFF64748B),
+                ),
               ],
             ),
           ),
@@ -170,11 +191,26 @@ class OverviewTab extends StatelessWidget {
           children: [
             _buildStatusTag(),
             const SizedBox(width: 32),
-            _buildMiniMetric(Icons.auto_graph_rounded, 'Uptime', '99.98%', const Color(0xFF10B981)),
+            _buildMiniMetric(
+              Icons.auto_graph_rounded,
+              'Uptime',
+              '99.98%',
+              const Color(0xFF10B981),
+            ),
             _buildVerticalDivider(),
-            _buildMiniMetric(Icons.speed_rounded, 'Response Time', '420ms', const Color(0xFF6366F1)),
+            _buildMiniMetric(
+              Icons.speed_rounded,
+              'Response Time',
+              '420ms',
+              const Color(0xFF6366F1),
+            ),
             _buildVerticalDivider(),
-            _buildMiniMetric(Icons.people_alt_outlined, 'Active Now', (data?['activeNow'] ?? 32).toString(), const Color(0xFF16A34A)),
+            _buildMiniMetric(
+              Icons.people_alt_outlined,
+              'Active Now',
+              (data?['activeNow'] ?? 32).toString(),
+              const Color(0xFF16A34A),
+            ),
           ],
         ),
       ),
@@ -199,11 +235,20 @@ class OverviewTab extends StatelessWidget {
             children: const [
               Text(
                 'System Status',
-                style: TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 0.5),
+                style: TextStyle(
+                  color: Color(0xFF16A34A),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                  letterSpacing: 0.5,
+                ),
               ),
               Text(
                 'All systems operational',
-                style: TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.w600, fontSize: 13),
+                style: TextStyle(
+                  color: Color(0xFF16A34A),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
             ],
           ),
@@ -212,7 +257,12 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildMiniMetric(IconData icon, String label, String value, Color color) {
+  Widget _buildMiniMetric(
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -229,9 +279,23 @@ class OverviewTab extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
+            ),
           ],
         ),
       ],
@@ -253,7 +317,12 @@ class OverviewTab extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A), fontFamily: 'Outfit'),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0F172A),
+            fontFamily: 'Outfit',
+          ),
         ),
         InkWell(
           onTap: () {},
@@ -261,11 +330,19 @@ class OverviewTab extends StatelessWidget {
             children: [
               Text(
                 trailing,
-                style: const TextStyle(color: Color(0xFF6366F1), fontSize: 14, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  color: Color(0xFF6366F1),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               if (trailing.toLowerCase().contains('month')) ...[
                 const SizedBox(width: 4),
-                const Icon(Icons.keyboard_arrow_down, color: Color(0xFF6366F1), size: 18),
+                const Icon(
+                  Icons.keyboard_arrow_down,
+                  color: Color(0xFF6366F1),
+                  size: 18,
+                ),
               ],
             ],
           ),
@@ -276,62 +353,69 @@ class OverviewTab extends StatelessWidget {
 
   Widget _buildCriticalActions(Map<String, dynamic>? data) {
     final double cardWidth = isNarrow ? 170 : 210;
-    
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
           _buildActionCard(
-            data?['pendingHosters']?.toString() ?? '3', 
-            'Pending Host Approvals', 
-            const Color(0xFFFEE2E2), 
-            const Color(0xFFEF4444), 
+            data?['pendingHosters']?.toString() ?? '3',
+            'Pending Host Approvals',
+            const Color(0xFFFEE2E2),
+            const Color(0xFFEF4444),
             Icons.assignment_ind_outlined,
-            cardWidth
+            cardWidth,
           ),
           const SizedBox(width: 16),
           _buildActionCard(
-            data?['reportedListings']?.toString() ?? '2', 
-            'Reported Listings', 
-            const Color(0xFFFFEDD5), 
-            const Color(0xFFF59E0B), 
+            data?['reportedListings']?.toString() ?? '2',
+            'Reported Listings',
+            const Color(0xFFFFEDD5),
+            const Color(0xFFF59E0B),
             Icons.flag_outlined,
-            cardWidth
+            cardWidth,
           ),
           const SizedBox(width: 16),
           _buildActionCard(
-            data?['failedPayments']?.toString() ?? '5', 
-            'Failed Payments', 
-            const Color(0xFFFEF9C3), 
-            const Color(0xFFEAB308), 
+            data?['failedPayments']?.toString() ?? '5',
+            'Failed Payments',
+            const Color(0xFFFEF9C3),
+            const Color(0xFFEAB308),
             Icons.money_off_rounded,
-            cardWidth
+            cardWidth,
           ),
           const SizedBox(width: 16),
           _buildActionCard(
-            data?['pendingApprovals']?.toString() ?? '4', 
-            'Verification Requests', 
-            const Color(0xFFF3E8FF), 
-            const Color(0xFFA855F7), 
+            data?['pendingApprovals']?.toString() ?? '4',
+            'Verification Requests',
+            const Color(0xFFF3E8FF),
+            const Color(0xFFA855F7),
             Icons.verified_user_outlined,
-            cardWidth
+            cardWidth,
           ),
           const SizedBox(width: 16),
           _buildActionCard(
-            '1', 
-            'Suspicious Account', 
-            const Color(0xFFFCE7F3), 
-            const Color(0xFFEC4899), 
+            '1',
+            'Suspicious Account',
+            const Color(0xFFFCE7F3),
+            const Color(0xFFEC4899),
             Icons.report_problem_outlined,
-            cardWidth
+            cardWidth,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionCard(String count, String label, Color bg, Color color, IconData icon, double width) {
+  Widget _buildActionCard(
+    String count,
+    String label,
+    Color bg,
+    Color color,
+    IconData icon,
+    double width,
+  ) {
     return Container(
       width: width,
       padding: const EdgeInsets.all(20),
@@ -345,15 +429,30 @@ class OverviewTab extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(height: 16),
-          Text(count, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+          Text(
+            count,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
-            label, 
-            style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500, height: 1.3),
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w500,
+              height: 1.3,
+            ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -363,9 +462,9 @@ class OverviewTab extends StatelessWidget {
             child: Text(
               'Review Now',
               style: TextStyle(
-                color: color, 
-                fontSize: 13, 
-                fontWeight: FontWeight.bold, 
+                color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
                 decoration: TextDecoration.underline,
               ),
             ),
@@ -384,16 +483,64 @@ class OverviewTab extends StatelessWidget {
       mainAxisSpacing: 16,
       childAspectRatio: isNarrow ? 1.1 : 1.0,
       children: [
-        _buildStatBox('Students', data?['totalStudents']?.toString() ?? '1,284', '12.5%', true, const Color(0xFFEFF6FF), const Color(0xFF3B82F6), Icons.people_outline),
-        _buildStatBox('Hosters', data?['totalHosters']?.toString() ?? '342', '8.3%', true, const Color(0xFFF0FDF4), const Color(0xFF10B981), Icons.business_center_outlined),
-        _buildStatBox('Active Listings', data?['activeProperties']?.toString() ?? '1,076', '15.2%', true, const Color(0xFFF5F3FF), const Color(0xFF8B5CF6), Icons.home_work_outlined),
-        _buildStatBox('Occupancy Rate', '${data?['occupancyRate'] ?? '78.6'}%', '6.1%', true, const Color(0xFFFDF4FF), const Color(0xFFD946EF), Icons.pie_chart_outline),
-        _buildStatBox('Revenue', '₹${NumberFormat.currency(locale: 'en_IN', symbol: '', decimalDigits: 0).format(data?['totalRevenue'] ?? 485250)}', '18.7%', true, const Color(0xFFFFF7ED), const Color(0xFFF59E0B), Icons.account_balance_wallet_outlined),
+        _buildStatBox(
+          'Students',
+          data?['totalStudents']?.toString() ?? '1,284',
+          '12.5%',
+          true,
+          const Color(0xFFEFF6FF),
+          const Color(0xFF3B82F6),
+          Icons.people_outline,
+        ),
+        _buildStatBox(
+          'Hosters',
+          data?['totalHosters']?.toString() ?? '342',
+          '8.3%',
+          true,
+          const Color(0xFFF0FDF4),
+          const Color(0xFF10B981),
+          Icons.business_center_outlined,
+        ),
+        _buildStatBox(
+          'Active Listings',
+          data?['activeProperties']?.toString() ?? '1,076',
+          '15.2%',
+          true,
+          const Color(0xFFF5F3FF),
+          const Color(0xFF8B5CF6),
+          Icons.home_work_outlined,
+        ),
+        _buildStatBox(
+          'Occupancy Rate',
+          '${data?['occupancyRate'] ?? '78.6'}%',
+          '6.1%',
+          true,
+          const Color(0xFFFDF4FF),
+          const Color(0xFFD946EF),
+          Icons.pie_chart_outline,
+        ),
+        _buildStatBox(
+          'Revenue',
+          '₹${NumberFormat.currency(locale: 'en_IN', symbol: '', decimalDigits: 0).format(data?['totalRevenue'] ?? 485250)}',
+          '18.7%',
+          true,
+          const Color(0xFFFFF7ED),
+          const Color(0xFFF59E0B),
+          Icons.account_balance_wallet_outlined,
+        ),
       ],
     );
   }
 
-  Widget _buildStatBox(String label, String value, String change, bool isUp, Color bg, Color color, IconData icon) {
+  Widget _buildStatBox(
+    String label,
+    String value,
+    String change,
+    bool isUp,
+    Color bg,
+    Color color,
+    IconData icon,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -417,7 +564,10 @@ class OverviewTab extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Icon(icon, color: color, size: 20),
               ),
               // Subtle sparkline or ghost icon could go here
@@ -428,24 +578,48 @@ class OverviewTab extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF64748B), fontFamily: 'Outfit'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF64748B),
+                  fontFamily: 'Outfit',
+                ),
               ),
               const SizedBox(height: 4),
               FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF0F172A), height: 1.1)),
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                    height: 1.1,
+                  ),
+                ),
               ),
             ],
           ),
           Row(
             children: [
-              Icon(isUp ? Icons.arrow_upward : Icons.arrow_downward, color: const Color(0xFF10B981), size: 14),
+              Icon(
+                isUp ? Icons.arrow_upward : Icons.arrow_downward,
+                color: const Color(0xFF10B981),
+                size: 14,
+              ),
               const SizedBox(width: 4),
-              Text(change, style: const TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.bold)),
+              Text(
+                change,
+                style: const TextStyle(
+                  color: Color(0xFF10B981),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(width: 4),
               const Expanded(
                 child: Text(
-                  'vs last month', 
+                  'vs last month',
                   style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -470,34 +644,78 @@ class OverviewTab extends StatelessWidget {
         children: [
           _buildSectionHeader('Suggestions Pipeline', trailing: 'View All'),
           const SizedBox(height: 24),
-          _buildPipelineItem('New Suggestions', (data?['newSuggestions'] ?? 18).toString(), const Color(0xFF3B82F6), Icons.rocket_launch_outlined),
-          _buildPipelineItem('Under Review', (data?['reviewSuggestions'] ?? 12).toString(), const Color(0xFFF59E0B), Icons.timer_outlined),
-          _buildPipelineItem('Contacted', (data?['contactedSuggestions'] ?? 7).toString(), const Color(0xFF8B5CF6), Icons.phone_in_talk_outlined),
-          _buildPipelineItem('Approved', (data?['approvedSuggestions'] ?? 6).toString(), const Color(0xFF10B981), Icons.check_circle_outline),
-          _buildPipelineItem('Rejected', (data?['rejectedSuggestions'] ?? 3).toString(), const Color(0xFFEF4444), Icons.cancel_outlined),
+          _buildPipelineItem(
+            'New Suggestions',
+            (data?['newSuggestions'] ?? 18).toString(),
+            const Color(0xFF3B82F6),
+            Icons.rocket_launch_outlined,
+          ),
+          _buildPipelineItem(
+            'Under Review',
+            (data?['reviewSuggestions'] ?? 12).toString(),
+            const Color(0xFFF59E0B),
+            Icons.timer_outlined,
+          ),
+          _buildPipelineItem(
+            'Contacted',
+            (data?['contactedSuggestions'] ?? 7).toString(),
+            const Color(0xFF8B5CF6),
+            Icons.phone_in_talk_outlined,
+          ),
+          _buildPipelineItem(
+            'Approved',
+            (data?['approvedSuggestions'] ?? 6).toString(),
+            const Color(0xFF10B981),
+            Icons.check_circle_outline,
+          ),
+          _buildPipelineItem(
+            'Rejected',
+            (data?['rejectedSuggestions'] ?? 3).toString(),
+            const Color(0xFFEF4444),
+            Icons.cancel_outlined,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildPipelineItem(String label, String count, Color color, IconData icon) {
+  Widget _buildPipelineItem(
+    String label,
+    String count,
+    Color color,
+    IconData icon,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF475569))
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF475569),
+              ),
             ),
           ),
-          Text(count, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+          Text(
+            count,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
         ],
       ),
     );
@@ -505,15 +723,38 @@ class OverviewTab extends StatelessWidget {
 
   Widget _buildRecentActivity(Map<String, dynamic>? data) {
     final activities = (data?['recentActivities'] as List?) ?? [];
-    
+
     // Default mock data if empty to match image
-    final displayActivities = activities.isNotEmpty ? activities : [
-      {'title': 'Sunrise Hostels approved by Admin', 'subtitle': 'Kozhikode, Kerala', 'time': '10:30 AM'},
-      {'title': 'New hoster registration', 'subtitle': 'John Doe', 'time': '09:45 AM'},
-      {'title': 'New property suggestion submitted', 'subtitle': 'Green Valley PG, Calicut', 'time': '09:20 AM'},
-      {'title': 'Payment received', 'subtitle': 'Room A-203, Sunrise Hostels', 'time': '08:50 AM'},
-      {'title': 'Listing reported', 'subtitle': 'Comfort Living PG', 'time': '08:15 AM'},
-    ];
+    final displayActivities =
+        activities.isNotEmpty
+            ? activities
+            : [
+              {
+                'title': 'Sunrise Hostels approved by Admin',
+                'subtitle': 'Kozhikode, Kerala',
+                'time': '10:30 AM',
+              },
+              {
+                'title': 'New hoster registration',
+                'subtitle': 'John Doe',
+                'time': '09:45 AM',
+              },
+              {
+                'title': 'New property suggestion submitted',
+                'subtitle': 'Green Valley PG, Calicut',
+                'time': '09:20 AM',
+              },
+              {
+                'title': 'Payment received',
+                'subtitle': 'Room A-203, Sunrise Hostels',
+                'time': '08:50 AM',
+              },
+              {
+                'title': 'Listing reported',
+                'subtitle': 'Comfort Living PG',
+                'time': '08:15 AM',
+              },
+            ];
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -527,13 +768,15 @@ class OverviewTab extends StatelessWidget {
         children: [
           _buildSectionHeader('Recent Activity', trailing: 'View All'),
           const SizedBox(height: 24),
-          ...displayActivities.map((a) => _buildActivityItem(
-            a['title'] ?? '',
-            a['subtitle'] ?? '',
-            a['time'] ?? '',
-            _getActivityIcon(a['title'] ?? ''),
-            _getActivityColor(a['title'] ?? ''),
-          )),
+          ...displayActivities.map(
+            (a) => _buildActivityItem(
+              a['title'] ?? '',
+              a['subtitle'] ?? '',
+              a['time'] ?? '',
+              _getActivityIcon(a['title'] ?? ''),
+              _getActivityColor(a['title'] ?? ''),
+            ),
+          ),
         ],
       ),
     );
@@ -542,10 +785,13 @@ class OverviewTab extends StatelessWidget {
   IconData _getActivityIcon(String title) {
     title = title.toLowerCase();
     if (title.contains('approved')) return Icons.home_work_outlined;
-    if (title.contains('registration') || title.contains('user')) return Icons.person_outline;
+    if (title.contains('registration') || title.contains('user'))
+      return Icons.person_outline;
     if (title.contains('suggestion')) return Icons.lightbulb_outline;
-    if (title.contains('payment') || title.contains('received')) return Icons.payments_outlined;
-    if (title.contains('report') || title.contains('listing')) return Icons.flag_outlined;
+    if (title.contains('payment') || title.contains('received'))
+      return Icons.payments_outlined;
+    if (title.contains('report') || title.contains('listing'))
+      return Icons.flag_outlined;
     return Icons.notifications_outlined;
   }
 
@@ -554,12 +800,20 @@ class OverviewTab extends StatelessWidget {
     if (title.contains('approved')) return const Color(0xFF10B981);
     if (title.contains('registration')) return const Color(0xFF3B82F6);
     if (title.contains('suggestion')) return const Color(0xFF8B5CF6);
-    if (title.contains('payment') || title.contains('received')) return const Color(0xFFF59E0B);
-    if (title.contains('report') || title.contains('listing')) return const Color(0xFFEF4444);
+    if (title.contains('payment') || title.contains('received'))
+      return const Color(0xFFF59E0B);
+    if (title.contains('report') || title.contains('listing'))
+      return const Color(0xFFEF4444);
     return const Color(0xFF64748B);
   }
 
-  Widget _buildActivityItem(String title, String subtitle, String time, IconData icon, Color color) {
+  Widget _buildActivityItem(
+    String title,
+    String subtitle,
+    String time,
+    IconData icon,
+    Color color,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Row(
@@ -567,7 +821,10 @@ class OverviewTab extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
             child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(width: 16),
@@ -575,13 +832,33 @@ class OverviewTab extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
               ],
             ),
           ),
-          Text(time, style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500)),
+          Text(
+            time,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF94A3B8),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
@@ -600,40 +877,83 @@ class OverviewTab extends StatelessWidget {
         children: [
           _buildSectionHeader('Moderation & Trust', trailing: 'View All'),
           const SizedBox(height: 24),
-          _buildModerationItem('Flagged Listings', (data?['reportedListings'] ?? 2).toString(), const Color(0xFFEF4444), Icons.outlined_flag),
-          _buildModerationItem('Reported Users', (data?['reportedUsers'] ?? 1).toString(), const Color(0xFFF59E0B), Icons.person_off_outlined),
-          _buildModerationItem('Blocked Accounts', (data?['blockedUsers'] ?? 3).toString(), const Color(0xFF8B5CF6), Icons.block_flipped),
-          _buildModerationItem('Verification Queue', (data?['pendingApprovals'] ?? 4).toString(), const Color(0xFF3B82F6), Icons.verified_user_outlined),
+          _buildModerationItem(
+            'Flagged Listings',
+            (data?['reportedListings'] ?? 2).toString(),
+            const Color(0xFFEF4444),
+            Icons.outlined_flag,
+          ),
+          _buildModerationItem(
+            'Reported Users',
+            (data?['reportedUsers'] ?? 1).toString(),
+            const Color(0xFFF59E0B),
+            Icons.person_off_outlined,
+          ),
+          _buildModerationItem(
+            'Blocked Accounts',
+            (data?['blockedUsers'] ?? 3).toString(),
+            const Color(0xFF8B5CF6),
+            Icons.block_flipped,
+          ),
+          _buildModerationItem(
+            'Verification Queue',
+            (data?['pendingApprovals'] ?? 4).toString(),
+            const Color(0xFF3B82F6),
+            Icons.verified_user_outlined,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildModerationItem(String label, String count, Color color, IconData icon) {
+  Widget _buildModerationItem(
+    String label,
+    String count,
+    Color color,
+    IconData icon,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Row(
         children: [
           Container(
-             padding: const EdgeInsets.all(8),
-             decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
-             child: Icon(icon, color: color, size: 20),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF475569))
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF475569),
+              ),
             ),
           ),
-          Text(count, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+          Text(
+            count,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildRevenueOverview(Map<String, dynamic>? data) {
-    final format = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final format = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    );
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -646,14 +966,31 @@ class OverviewTab extends StatelessWidget {
         children: [
           _buildSectionHeader('Revenue Overview', trailing: 'This Month'),
           const SizedBox(height: 24),
-          Text(format.format(data?['totalRevenue'] ?? 485250), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+          Text(
+            format.format(data?['totalRevenue'] ?? 485250),
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
           const SizedBox(height: 4),
           Row(
             children: const [
               Icon(Icons.arrow_upward, color: Color(0xFF10B981), size: 16),
               SizedBox(width: 4),
-              Text('18.7%', style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 14)),
-              Text(' vs last month', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
+              Text(
+                '18.7%',
+                style: TextStyle(
+                  color: Color(0xFF10B981),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                ' vs last month',
+                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+              ),
             ],
           ),
           const SizedBox(height: 32),
@@ -661,16 +998,26 @@ class OverviewTab extends StatelessWidget {
           SizedBox(
             height: 140,
             width: double.infinity,
-            child: CustomPaint(
-              painter: _AreaChartPainter(),
-            ),
+            child: CustomPaint(painter: _AreaChartPainter()),
           ),
           const SizedBox(height: 32),
           Row(
             children: [
-              _buildBreakdownItem('Paid', format.format(data?['paidRevenue'] ?? 375000), const Color(0xFF10B981)),
-              _buildBreakdownItem('Pending', format.format(data?['pendingRevenue'] ?? 75250), const Color(0xFFF59E0B)),
-              _buildBreakdownItem('Refunded', format.format(data?['refundedRevenue'] ?? 35000), const Color(0xFFEF4444)),
+              _buildBreakdownItem(
+                'Paid',
+                format.format(data?['paidRevenue'] ?? 375000),
+                const Color(0xFF10B981),
+              ),
+              _buildBreakdownItem(
+                'Pending',
+                format.format(data?['pendingRevenue'] ?? 75250),
+                const Color(0xFFF59E0B),
+              ),
+              _buildBreakdownItem(
+                'Refunded',
+                format.format(data?['refundedRevenue'] ?? 35000),
+                const Color(0xFFEF4444),
+              ),
             ],
           ),
         ],
@@ -683,14 +1030,35 @@ class OverviewTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const SizedBox(height: 6),
           FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
+            ),
           ),
           const SizedBox(height: 8),
-          Container(height: 4, width: 40, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+          Container(
+            height: 4,
+            width: 40,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
         ],
       ),
     );
@@ -709,14 +1077,31 @@ class OverviewTab extends StatelessWidget {
         children: [
           _buildSectionHeader('Bookings Overview', trailing: 'This Month'),
           const SizedBox(height: 24),
-          Text((data?['totalBookings'] ?? 452).toString(), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+          Text(
+            (data?['totalBookings'] ?? 452).toString(),
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
           const SizedBox(height: 4),
           Row(
             children: const [
               Icon(Icons.arrow_upward, color: Color(0xFF10B981), size: 16),
               SizedBox(width: 4),
-              Text('14.6%', style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 14)),
-              Text(' vs last month', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
+              Text(
+                '14.6%',
+                style: TextStyle(
+                  color: Color(0xFF10B981),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                ' vs last month',
+                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+              ),
             ],
           ),
           const SizedBox(height: 32),
@@ -734,7 +1119,9 @@ class OverviewTab extends StatelessWidget {
                     height: h,
                     decoration: BoxDecoration(
                       color: const Color(0xFF3B82F6),
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(4),
+                      ),
                     ),
                   ),
                 );
@@ -745,9 +1132,18 @@ class OverviewTab extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: const [
-              Text('1 May', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
-              Text('11 May', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
-              Text('19 May', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+              Text(
+                '1 May',
+                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+              ),
+              Text(
+                '11 May',
+                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+              ),
+              Text(
+                '19 May',
+                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+              ),
             ],
           ),
         ],
@@ -757,14 +1153,17 @@ class OverviewTab extends StatelessWidget {
 
   Widget _buildTopCities(Map<String, dynamic>? data) {
     final topCities = (data?['topCities'] as List?) ?? [];
-    
-    final displayCities = topCities.isNotEmpty ? topCities : [
-      {'name': 'Kozhikode', 'count': 312},
-      {'name': 'Calicut', 'count': 210},
-      {'name': 'Kannur', 'count': 146},
-      {'name': 'Thrissur', 'count': 98},
-      {'name': 'Kochi', 'count': 76},
-    ];
+
+    final displayCities =
+        topCities.isNotEmpty
+            ? topCities
+            : [
+              {'name': 'Kozhikode', 'count': 312},
+              {'name': 'Calicut', 'count': 210},
+              {'name': 'Kannur', 'count': 146},
+              {'name': 'Thrissur', 'count': 98},
+              {'name': 'Kochi', 'count': 76},
+            ];
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -781,7 +1180,11 @@ class OverviewTab extends StatelessWidget {
           ...displayCities.map((c) {
             final count = c['count'] as int;
             final max = (displayCities.first['count'] as int);
-            return _buildCityProgress(c['name'], count, count / (max > 0 ? max : 1));
+            return _buildCityProgress(
+              c['name'],
+              count,
+              count / (max > 0 ? max : 1),
+            );
           }),
         ],
       ),
@@ -797,8 +1200,22 @@ class OverviewTab extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(city, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
-              Text(count.toString(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+              Text(
+                city,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF475569),
+                ),
+              ),
+              Text(
+                count.toString(),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -835,28 +1252,50 @@ class OverviewTab extends StatelessWidget {
 class _AreaChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF10B981).withValues(alpha: 0.1)
-      ..style = PaintingStyle.fill;
+    final paint =
+        Paint()
+          ..color = const Color(0xFF10B981).withValues(alpha: 0.1)
+          ..style = PaintingStyle.fill;
 
     final path = Path();
     path.moveTo(0, size.height);
-    path.quadraticBezierTo(size.width * 0.2, size.height * 0.8, size.width * 0.4, size.height * 0.9);
-    path.quadraticBezierTo(size.width * 0.6, size.height, size.width * 0.8, size.height * 0.6);
+    path.quadraticBezierTo(
+      size.width * 0.2,
+      size.height * 0.8,
+      size.width * 0.4,
+      size.height * 0.9,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.6,
+      size.height,
+      size.width * 0.8,
+      size.height * 0.6,
+    );
     path.lineTo(size.width, size.height * 0.7);
     path.lineTo(size.width, size.height);
     path.close();
     canvas.drawPath(path, paint);
 
-    final linePaint = Paint()
-      ..color = const Color(0xFF10B981)
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke;
+    final linePaint =
+        Paint()
+          ..color = const Color(0xFF10B981)
+          ..strokeWidth = 3
+          ..style = PaintingStyle.stroke;
 
     final linePath = Path();
     linePath.moveTo(0, size.height);
-    linePath.quadraticBezierTo(size.width * 0.2, size.height * 0.8, size.width * 0.4, size.height * 0.9);
-    linePath.quadraticBezierTo(size.width * 0.6, size.height, size.width * 0.8, size.height * 0.6);
+    linePath.quadraticBezierTo(
+      size.width * 0.2,
+      size.height * 0.8,
+      size.width * 0.4,
+      size.height * 0.9,
+    );
+    linePath.quadraticBezierTo(
+      size.width * 0.6,
+      size.height,
+      size.width * 0.8,
+      size.height * 0.6,
+    );
     linePath.lineTo(size.width, size.height * 0.7);
     canvas.drawPath(linePath, linePaint);
   }

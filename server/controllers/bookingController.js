@@ -86,25 +86,76 @@ exports.updateBookingStatus = asyncHandler(async (req, res) => {
             throw new Error(`Cannot change status from ${currentStatus}`);
         }
 
-        // Handle Occupancy Side Effects
+        // Handle Occupancy & Bed Inventory Side Effects
         if (propertyId) {
             const propertyRef = db.collection('properties').doc(propertyId);
+            const roomId = currentBookingData.roomId;
+            const bedId = currentBookingData.bedId;
 
-            // If becoming confirmed, increment occupancy
-            if (status === 'confirmed' && currentStatus !== 'confirmed') {
-                transaction.update(propertyRef, {
-                    currentOccupancy: db.FieldValue.increment(1),
-                    updatedAt: new Date().toISOString(),
-                });
-            }
+            // SOURCE OF TRUTH: Bed Inventory
+            if (bedId && roomId) {
+                const bedRef = propertyRef.collection('rooms').doc(roomId).collection('beds').doc(bedId);
+                const bedDoc = await transaction.get(bedRef);
 
-            // If cancelling from confirmed or checking out, decrement occupancy
-            if ((status === 'cancelled' && currentStatus === 'confirmed') ||
-                (status === 'checkedOut' && currentStatus === 'checkedIn')) {
-                transaction.update(propertyRef, {
-                    currentOccupancy: db.FieldValue.increment(-1),
-                    updatedAt: new Date().toISOString(),
-                });
+                if (!bedDoc.exists) {
+                    throw new Error('Bed not found in inventory');
+                }
+
+                const bedStatus = bedDoc.data().status;
+
+                // Transition: Confirming Booking
+                if (status === 'confirmed' && currentStatus !== 'confirmed') {
+                    if (bedStatus !== 'available' && bedStatus !== 'reserved') {
+                        throw new Error('Bed is no longer available');
+                    }
+                    transaction.update(bedRef, {
+                        status: 'booked',
+                        updatedAt: new Date().toISOString()
+                    });
+                    // Cache update on property
+                    transaction.update(propertyRef, {
+                        currentOccupancy: db.FieldValue.increment(1),
+                        updatedAt: new Date().toISOString()
+                    });
+                }
+
+                // Transition: Checking In
+                if (status === 'checkedIn' && currentStatus !== 'checkedIn') {
+                    transaction.update(bedRef, {
+                        status: 'occupied',
+                        updatedAt: new Date().toISOString()
+                    });
+                }
+
+                // Transition: Cancellation/Checkout
+                if ((status === 'cancelled' && currentStatus === 'confirmed') ||
+                    (status === 'checkedOut' && currentStatus === 'checkedIn') ||
+                    (status === 'expired')) {
+                    transaction.update(bedRef, {
+                        status: 'available',
+                        updatedAt: new Date().toISOString()
+                    });
+                    transaction.update(propertyRef, {
+                        currentOccupancy: db.FieldValue.increment(-1),
+                        updatedAt: new Date().toISOString()
+                    });
+                }
+            } else {
+                // Fallback for property-level only occupancy
+                if (status === 'confirmed' && currentStatus !== 'confirmed') {
+                    transaction.update(propertyRef, {
+                        currentOccupancy: db.FieldValue.increment(1),
+                        updatedAt: new Date().toISOString(),
+                    });
+                }
+
+                if ((status === 'cancelled' && currentStatus === 'confirmed') ||
+                    (status === 'checkedOut' && currentStatus === 'checkedIn')) {
+                    transaction.update(propertyRef, {
+                        currentOccupancy: db.FieldValue.increment(-1),
+                        updatedAt: new Date().toISOString(),
+                    });
+                }
             }
         }
 

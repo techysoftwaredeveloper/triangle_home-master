@@ -43,18 +43,12 @@ class PropertyCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   property['address'],
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    _buildInfoChip(
-                      Icons.home,
-                      property['type'],
-                    ),
+                    _buildInfoChip(Icons.home, property['type']),
                     const SizedBox(width: 8),
                     _buildInfoChip(
                       Icons.door_front_door,
@@ -65,10 +59,7 @@ class PropertyCard extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   'Listed on: ${property['listed']}',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
               ],
             ),
@@ -83,7 +74,10 @@ class PropertyCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isActive ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
+        color:
+            isActive
+                ? Colors.green.withValues(alpha: 0.1)
+                : Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -108,13 +102,7 @@ class PropertyCard extends StatelessWidget {
         children: [
           Icon(icon, size: 16, color: Colors.grey[600]),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 12,
-            ),
-          ),
+          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
         ],
       ),
     );

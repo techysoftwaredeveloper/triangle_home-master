@@ -23,23 +23,31 @@ class _LiveInventoryScreenState extends State<LiveInventoryScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Live Inventory', style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+        title: const Text(
+          'Live Inventory',
+          style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+        ),
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textDarkColor,
         elevation: 0,
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance
-            .collection('properties')
-            .doc(widget.propertyId)
-            .collection('rooms')
-            .snapshots(),
+        stream:
+            FirebaseFirestore.instance
+                .collection('properties')
+                .doc(widget.propertyId)
+                .collection('rooms')
+                .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final rooms = snapshot.data?.docs.map((doc) => RoomModel.fromFirestore(doc)).toList() ?? [];
+          final rooms =
+              snapshot.data?.docs
+                  .map((doc) => RoomModel.fromFirestore(doc))
+                  .toList() ??
+              [];
 
           if (rooms.isEmpty) {
             return _buildEmptyState();
@@ -48,11 +56,12 @@ class _LiveInventoryScreenState extends State<LiveInventoryScreen> {
           return ListView.builder(
             padding: const EdgeInsets.all(20),
             itemCount: rooms.length,
-            itemBuilder: (context, index) => _RoomInventoryCard(
-              propertyId: widget.propertyId,
-              room: rooms[index],
-              inventoryService: _inventoryService,
-            ),
+            itemBuilder:
+                (context, index) => _RoomInventoryCard(
+                  propertyId: widget.propertyId,
+                  room: rooms[index],
+                  inventoryService: _inventoryService,
+                ),
           );
         },
       ),
@@ -66,7 +75,10 @@ class _LiveInventoryScreenState extends State<LiveInventoryScreen> {
         children: [
           Icon(Icons.bed_rounded, size: 64, color: Colors.grey[200]),
           const SizedBox(height: 16),
-          const Text('No inventory defined', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          const Text(
+            'No inventory defined',
+            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );
@@ -78,7 +90,11 @@ class _RoomInventoryCard extends StatelessWidget {
   final RoomModel room;
   final InventoryService inventoryService;
 
-  const _RoomInventoryCard({required this.propertyId, required this.room, required this.inventoryService});
+  const _RoomInventoryCard({
+    required this.propertyId,
+    required this.room,
+    required this.inventoryService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -100,38 +116,66 @@ class _RoomInventoryCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Room ${room.roomNumber}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text('${room.roomType.name.toUpperCase()} • Floor ${room.floor}', 
-                      style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
+                    Text(
+                      'Room ${room.roomNumber}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    Text(
+                      '${room.roomType.name.toUpperCase()} • Floor ${room.floor}',
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
-                _OccupancyBadge(occupied: room.occupiedBeds, total: room.totalBeds),
+                _OccupancyBadge(
+                  occupied: room.occupiedBeds,
+                  total: room.totalBeds,
+                ),
               ],
             ),
           ),
           const Divider(height: 1),
           StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: FirebaseFirestore.instance
-                .collection('properties')
-                .doc(propertyId)
-                .collection('rooms')
-                .doc(room.id)
-                .collection('beds')
-                .snapshots(),
+            stream:
+                FirebaseFirestore.instance
+                    .collection('properties')
+                    .doc(propertyId)
+                    .collection('rooms')
+                    .doc(room.id)
+                    .collection('beds')
+                    .snapshots(),
             builder: (context, snapshot) {
-              if (!snapshot.hasData) return const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()));
-              
-              final beds = snapshot.data!.docs.map((doc) => BedModel.fromFirestore(doc)).toList();
-              
+              if (!snapshot.hasData)
+                return const SizedBox(
+                  height: 100,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+
+              final beds =
+                  snapshot.data!.docs
+                      .map((doc) => BedModel.fromFirestore(doc))
+                      .toList();
+
               return Padding(
                 padding: const EdgeInsets.all(16),
                 child: Wrap(
                   spacing: 12,
                   runSpacing: 12,
-                  children: beds.map((bed) => _BedStatusChip(
-                    bed: bed,
-                    onTap: () => _showBedActions(context, bed),
-                  )).toList(),
+                  children:
+                      beds
+                          .map(
+                            (bed) => _BedStatusChip(
+                              bed: bed,
+                              onTap: () => _showBedActions(context, bed),
+                            ),
+                          )
+                          .toList(),
                 ),
               );
             },
@@ -144,32 +188,69 @@ class _RoomInventoryCard extends StatelessWidget {
   void _showBedActions(BuildContext context, BedModel bed) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Bed ${bed.bedNumber} Actions', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 24),
-            _actionTile(context, 'Release Bed', Icons.check_circle_outline, Colors.green, () {
-              inventoryService.releaseBed(propertyId: propertyId, roomId: room.id, bedId: bed.id);
-              Navigator.pop(context);
-            }),
-            _actionTile(context, 'Maintenance Mode', Icons.build_circle_outlined, Colors.orange, () {
-              // Implementation of status update for maintenance
-              Navigator.pop(context);
-            }),
-            _actionTile(context, 'Block Bed', Icons.block_flipped, Colors.red, () {
-              Navigator.pop(context);
-            }),
-          ],
-        ),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Bed ${bed.bedNumber} Actions',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _actionTile(
+                  context,
+                  'Release Bed',
+                  Icons.check_circle_outline,
+                  Colors.green,
+                  () {
+                    inventoryService.releaseBed(
+                      propertyId: propertyId,
+                      roomId: room.id,
+                      bedId: bed.id,
+                    );
+                    Navigator.pop(context);
+                  },
+                ),
+                _actionTile(
+                  context,
+                  'Maintenance Mode',
+                  Icons.build_circle_outlined,
+                  Colors.orange,
+                  () {
+                    // Implementation of status update for maintenance
+                    Navigator.pop(context);
+                  },
+                ),
+                _actionTile(
+                  context,
+                  'Block Bed',
+                  Icons.block_flipped,
+                  Colors.red,
+                  () {
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          ),
     );
   }
 
-  Widget _actionTile(BuildContext context, String title, IconData icon, Color color, VoidCallback onTap) {
+  Widget _actionTile(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return ListTile(
       onTap: onTap,
       leading: Icon(icon, color: color),
@@ -187,8 +268,18 @@ class _OccupancyBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(12)),
-      child: Text('$occupied/$total Occupied', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '$occupied/$total Occupied',
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: AppTheme.textDarkColor,
+        ),
+      ),
     );
   }
 }
@@ -205,23 +296,24 @@ class _BedStatusChip extends StatelessWidget {
     IconData icon = Icons.bed_outlined;
 
     switch (bed.status) {
-      case BedStatus.available: 
-        color = Colors.green; 
+      case BedStatus.available:
+        color = Colors.green;
         icon = Icons.bed_outlined;
         break;
-      case BedStatus.reserved: 
-        color = Colors.orange; 
+      case BedStatus.reserved:
+        color = Colors.orange;
         icon = Icons.timer_outlined;
         break;
-      case BedStatus.occupied: 
-        color = Colors.blue; 
+      case BedStatus.occupied:
+        color = Colors.blue;
         icon = Icons.person_rounded;
         break;
-      case BedStatus.maintenance: 
-        color = Colors.red; 
+      case BedStatus.maintenance:
+        color = Colors.red;
         icon = Icons.cleaning_services_rounded;
         break;
-      default: color = Colors.grey;
+      default:
+        color = Colors.grey;
     }
 
     return InkWell(
@@ -239,8 +331,22 @@ class _BedStatusChip extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(height: 4),
-            Text(bed.bedNumber, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 14)),
-            Text(bed.status.name.toUpperCase(), style: TextStyle(fontSize: 8, color: color, fontWeight: FontWeight.bold)),
+            Text(
+              bed.bedNumber,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: color,
+                fontSize: 14,
+              ),
+            ),
+            Text(
+              bed.status.name.toUpperCase(),
+              style: TextStyle(
+                fontSize: 8,
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),

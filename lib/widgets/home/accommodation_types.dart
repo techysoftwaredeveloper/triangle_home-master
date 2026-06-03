@@ -402,11 +402,12 @@ class _AccommodationTypesState extends State<AccommodationTypes> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => SearchScreen(
-            initialSearchType: params['searchType'],
-            initialAccommodationType: params['accommodationType'],
-            initialTenantType: params['tenantType'],
-          ),
+          builder:
+              (_) => SearchScreen(
+                initialSearchType: params['searchType'],
+                initialAccommodationType: params['accommodationType'],
+                initialTenantType: params['tenantType'],
+              ),
         ),
       );
     }
@@ -466,7 +467,10 @@ class _AccommodationTypesState extends State<AccommodationTypes> {
       child: Material(
         color: Colors.transparent,
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 15,
+            vertical: 0,
+          ),
           leading: SvgPicture.asset(svgAssetPath, height: 28, width: 28),
           title: Text(
             title,
@@ -479,7 +483,9 @@ class _AccommodationTypesState extends State<AccommodationTypes> {
           ),
           trailing: const Icon(Icons.chevron_right, color: Colors.black45),
           onTap: onTap,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
         ),
       ),
     ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0);

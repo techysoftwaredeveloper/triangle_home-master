@@ -21,7 +21,7 @@ class HosterProfileScreen extends StatefulWidget {
 class _HosterProfileScreenState extends State<HosterProfileScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final HosterService _hosterService = HosterService();
-  
+
   Stream<Map<String, dynamic>>? _profileDataStream;
 
   @override
@@ -36,17 +36,18 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
   void _handleSignOut() {
     showDialog(
       context: context,
-      builder: (context) => LogoutConfirmationDialog(
-        onConfirm: () async {
-          await _auth.signOut();
-          if (!context.mounted) return;
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const SplashScreen()),
-            (route) => false,
-          );
-        },
-      ),
+      builder:
+          (context) => LogoutConfirmationDialog(
+            onConfirm: () async {
+              await _auth.signOut();
+              if (!context.mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const SplashScreen()),
+                (route) => false,
+              );
+            },
+          ),
     );
   }
 
@@ -55,8 +56,11 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
     return StreamBuilder<Map<String, dynamic>>(
       stream: _profileDataStream,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         final stats = snapshot.data ?? {};
@@ -81,7 +85,10 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.more_vert_rounded, color: AppTheme.textDarkColor),
+                icon: const Icon(
+                  Icons.more_vert_rounded,
+                  color: AppTheme.textDarkColor,
+                ),
                 onPressed: () {},
               ),
             ],
@@ -137,16 +144,25 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(100),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Icon(Icons.shield_rounded, color: AppTheme.successColor, size: 14),
+                      Icon(
+                        Icons.shield_rounded,
+                        color: AppTheme.successColor,
+                        size: 14,
+                      ),
                       SizedBox(width: 6),
                       Text(
                         'Hoster Verified',
@@ -174,8 +190,18 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
                 child: CircleAvatar(
                   radius: 50,
                   backgroundColor: Colors.white10,
-                  backgroundImage: imageUrl != null ? CachedNetworkImageProvider(imageUrl) : null,
-                  child: imageUrl == null ? const Icon(Icons.person_rounded, size: 45, color: Colors.white54) : null,
+                  backgroundImage:
+                      imageUrl != null
+                          ? CachedNetworkImageProvider(imageUrl)
+                          : null,
+                  child:
+                      imageUrl == null
+                          ? const Icon(
+                            Icons.person_rounded,
+                            size: 45,
+                            color: Colors.white54,
+                          )
+                          : null,
                 ),
               ),
               if (isVerified)
@@ -186,7 +212,11 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(color: AppTheme.primaryColor, width: 3),
                   ),
-                  child: const Icon(Icons.check_rounded, color: Colors.white, size: 16),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 16,
+                  ),
                 ),
             ],
           ),
@@ -214,13 +244,24 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
                 ),
               ),
               const SizedBox(width: 10),
-              Container(width: 4, height: 4, decoration: const BoxDecoration(color: Colors.white38, shape: BoxShape.circle)),
+              Container(
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                  color: Colors.white38,
+                  shape: BoxShape.circle,
+                ),
+              ),
               const SizedBox(width: 10),
               const Icon(Icons.star_rounded, color: Colors.amber, size: 18),
               const SizedBox(width: 4),
               Text(
                 '$rating ($reviews)',
-                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -228,9 +269,15 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildHeaderStat(stats['totalProperties']?.toString() ?? '0', 'Properties'),
+              _buildHeaderStat(
+                stats['totalProperties']?.toString() ?? '0',
+                'Properties',
+              ),
               _buildHeaderStat(stats['totalRooms']?.toString() ?? '0', 'Rooms'),
-              _buildHeaderStat(stats['activeListings']?.toString() ?? '0', 'Active Listings'),
+              _buildHeaderStat(
+                stats['activeListings']?.toString() ?? '0',
+                'Active Listings',
+              ),
             ],
           ),
         ],
@@ -241,9 +288,14 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
   Widget _buildHeaderStat(String val, String label) {
     IconData icon;
     switch (label) {
-      case 'Properties': icon = Icons.home_work_rounded; break;
-      case 'Rooms': icon = Icons.meeting_room_rounded; break;
-      default: icon = Icons.list_alt_rounded;
+      case 'Properties':
+        icon = Icons.home_work_rounded;
+        break;
+      case 'Rooms':
+        icon = Icons.meeting_room_rounded;
+        break;
+      default:
+        icon = Icons.list_alt_rounded;
     }
 
     return Column(
@@ -254,14 +306,22 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
             const SizedBox(width: 6),
             Text(
               val,
-              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
@@ -274,7 +334,11 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 15, offset: const Offset(0, 5)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
         ],
       ),
       child: Column(
@@ -285,15 +349,27 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
             children: [
               const Text(
                 'Verification Status',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit'),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textDarkColor,
+                  fontFamily: 'Outfit',
+                ),
               ),
-              const Icon(Icons.verified_user_rounded, color: AppTheme.successColor, size: 20),
+              const Icon(
+                Icons.verified_user_rounded,
+                color: AppTheme.successColor,
+                size: 20,
+              ),
             ],
           ),
           const SizedBox(height: 20),
           _buildVerifItem('Email Verified', stats['emailVerified'] == true),
           _buildVerifItem('Phone Verified', stats['phoneVerified'] == true),
-          _buildVerifItem('Identity Verified', stats['identityVerified'] == true),
+          _buildVerifItem(
+            'Identity Verified',
+            stats['identityVerified'] == true,
+          ),
           _buildVerifItem('Hoster Approved', stats['hosterVerified'] == true),
         ],
       ),
@@ -308,7 +384,10 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: (isVerified ? AppTheme.successColor : AppTheme.warningColor).withValues(alpha: 0.1),
+              color: (isVerified
+                      ? AppTheme.successColor
+                      : AppTheme.warningColor)
+                  .withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -318,14 +397,21 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          Text(label, style: const TextStyle(fontSize: 14, color: AppTheme.textLightColor, fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppTheme.textLightColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const Spacer(),
           Text(
             isVerified ? 'Verified' : 'Pending',
             style: TextStyle(
-              fontSize: 12, 
-              fontWeight: FontWeight.bold, 
-              color: isVerified ? AppTheme.successColor : AppTheme.warningColor
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: isVerified ? AppTheme.successColor : AppTheme.warningColor,
             ),
           ),
         ],
@@ -346,7 +432,11 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppTheme.successColor.withValues(alpha: 0.1)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 15, offset: const Offset(0, 5)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
         ],
       ),
       child: Column(
@@ -363,12 +453,19 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
                       value: completion,
                       strokeWidth: 6,
                       backgroundColor: const Color(0xFFF1F5F9),
-                      valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.successColor),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        AppTheme.successColor,
+                      ),
                     ),
                   ),
                   Text(
                     '$percentage%',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit'),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textDarkColor,
+                      fontFamily: 'Outfit',
+                    ),
                   ),
                 ],
               ),
@@ -379,12 +476,20 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
                   children: [
                     Text(
                       'Profile Completion',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textDarkColor, fontFamily: 'Outfit'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppTheme.textDarkColor,
+                        fontFamily: 'Outfit',
+                      ),
                     ),
                     SizedBox(height: 4),
                     Text(
                       'Complete your profile to build trust with tenants.',
-                      style: TextStyle(fontSize: 12, color: AppTheme.textLightColor),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textLightColor,
+                      ),
                     ),
                   ],
                 ),
@@ -395,15 +500,26 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OwnerProfileEditScreen())),
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const OwnerProfileEditScreen(),
+                    ),
+                  ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1E293B),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 elevation: 0,
               ),
-              child: const Text('Complete Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              child: const Text(
+                'Complete Now',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
             ),
           ),
         ],
@@ -417,29 +533,100 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
         children: [
-          _buildMenuTile(Icons.person_outline_rounded, 'Basic Information', color: Colors.blue, page: const HosterBasicInfoScreen()),
-          _buildMenuTile(Icons.assignment_ind_outlined, 'Identity & Compliance', color: Colors.purple, page: const HosterIdentityScreen()),
-          _buildMenuTile(Icons.business_center_outlined, 'Business Information', color: Colors.orange, page: const HosterBusinessInfoScreen()),
-          _buildMenuTile(Icons.account_balance_outlined, 'Banking & Payouts', color: Colors.green, page: const HosterBankingScreen()),
-          _buildMenuTile(Icons.home_work_outlined, 'Property Summary', color: Colors.indigo, page: const HosterPropertySummaryScreen()),
-          _buildMenuTile(Icons.insights_rounded, 'Performance', color: Colors.red, page: const HosterPerformanceScreen()),
-          _buildMenuTile(Icons.star_outline_rounded, 'Reviews & Ratings', color: Colors.amber, page: const HosterReviewsScreen()),
-          _buildMenuTile(Icons.speed_rounded, 'Trust Score', color: Colors.teal, page: const HosterTrustScoreScreen()),
-          _buildMenuTile(Icons.tune_rounded, 'Preferences', color: Colors.cyan, page: const HosterPreferencesScreen()),
-          _buildMenuTile(Icons.contact_phone_outlined, 'Emergency Contact', color: Colors.deepOrange, page: const HosterEmergencyContactScreen()),
-          _buildMenuTile(Icons.security_outlined, 'Security Center', color: Colors.blueGrey, page: const HosterSecurityCenterScreen()),
-          _buildMenuTile(Icons.notifications_none_rounded, 'Notification Settings', isLast: true, color: Colors.pink, page: const HosterNotificationsScreen()),
+          _buildMenuTile(
+            Icons.person_outline_rounded,
+            'Basic Information',
+            color: Colors.blue,
+            page: const HosterBasicInfoScreen(),
+          ),
+          _buildMenuTile(
+            Icons.assignment_ind_outlined,
+            'Identity & Compliance',
+            color: Colors.purple,
+            page: const HosterIdentityScreen(),
+          ),
+          _buildMenuTile(
+            Icons.business_center_outlined,
+            'Business Information',
+            color: Colors.orange,
+            page: const HosterBusinessInfoScreen(),
+          ),
+          _buildMenuTile(
+            Icons.account_balance_outlined,
+            'Banking & Payouts',
+            color: Colors.green,
+            page: const HosterBankingScreen(),
+          ),
+          _buildMenuTile(
+            Icons.home_work_outlined,
+            'Property Summary',
+            color: Colors.indigo,
+            page: const HosterPropertySummaryScreen(),
+          ),
+          _buildMenuTile(
+            Icons.insights_rounded,
+            'Performance',
+            color: Colors.red,
+            page: const HosterPerformanceScreen(),
+          ),
+          _buildMenuTile(
+            Icons.star_outline_rounded,
+            'Reviews & Ratings',
+            color: Colors.amber,
+            page: const HosterReviewsScreen(),
+          ),
+          _buildMenuTile(
+            Icons.speed_rounded,
+            'Trust Score',
+            color: Colors.teal,
+            page: const HosterTrustScoreScreen(),
+          ),
+          _buildMenuTile(
+            Icons.tune_rounded,
+            'Preferences',
+            color: Colors.cyan,
+            page: const HosterPreferencesScreen(),
+          ),
+          _buildMenuTile(
+            Icons.contact_phone_outlined,
+            'Emergency Contact',
+            color: Colors.deepOrange,
+            page: const HosterEmergencyContactScreen(),
+          ),
+          _buildMenuTile(
+            Icons.security_outlined,
+            'Security Center',
+            color: Colors.blueGrey,
+            page: const HosterSecurityCenterScreen(),
+          ),
+          _buildMenuTile(
+            Icons.notifications_none_rounded,
+            'Notification Settings',
+            isLast: true,
+            color: Colors.pink,
+            page: const HosterNotificationsScreen(),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMenuTile(IconData icon, String label, {bool isLast = false, required Color color, Widget? page}) {
+  Widget _buildMenuTile(
+    IconData icon,
+    String label, {
+    bool isLast = false,
+    required Color color,
+    Widget? page,
+  }) {
     return Column(
       children: [
         Material(
@@ -455,19 +642,42 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
             ),
             title: Text(
               label,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textDarkColor, fontFamily: 'Outfit'),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textDarkColor,
+                fontFamily: 'Outfit',
+              ),
             ),
-            trailing: const Icon(Icons.chevron_right_rounded, color: AppTheme.textMutedColor, size: 20),
+            trailing: const Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.textMutedColor,
+              size: 20,
+            ),
             onTap: () {
               if (page != null) {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => page),
+                );
               } else {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const HosterProfileDetailsScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const HosterProfileDetailsScreen(),
+                  ),
+                );
               }
             },
           ),
         ),
-        if (!isLast) const Divider(height: 1, indent: 64, endIndent: 20, color: Color(0xFFF1F5F9)),
+        if (!isLast)
+          const Divider(
+            height: 1,
+            indent: 64,
+            endIndent: 20,
+            color: Color(0xFFF1F5F9),
+          ),
       ],
     );
   }
@@ -489,7 +699,11 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
             SizedBox(width: 12),
             Text(
               'Logout Account',
-              style: TextStyle(color: AppTheme.errorColor, fontWeight: FontWeight.bold, fontSize: 14),
+              style: TextStyle(
+                color: AppTheme.errorColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
             ),
           ],
         ),

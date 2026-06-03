@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 class ProgressBar extends StatelessWidget {
@@ -28,9 +27,10 @@ class ProgressBar extends StatelessWidget {
                       child: Container(
                         height: 4,
                         decoration: BoxDecoration(
-                          color: isActive
-                              ? AppTheme.primaryColor
-                              : AppTheme.dividerColor,
+                          color:
+                              isActive
+                                  ? AppTheme.primaryColor
+                                  : AppTheme.dividerColor,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -72,16 +72,26 @@ class ProgressBar extends StatelessWidget {
 
   String _getStepTitle(int step) {
     switch (step) {
-      case 0: return 'Host Profile';
-      case 1: return 'Host Verification';
-      case 2: return 'Property Basics';
-      case 3: return 'Location';
-      case 4: return 'Property Details';
-      case 5: return 'Amenities';
-      case 6: return 'Photos';
-      case 7: return 'Pricing';
-      case 8: return 'Documents';
-      default: return '';
+      case 0:
+        return 'Host Profile';
+      case 1:
+        return 'Host Verification';
+      case 2:
+        return 'Property Basics';
+      case 3:
+        return 'Location';
+      case 4:
+        return 'Property Details';
+      case 5:
+        return 'Amenities';
+      case 6:
+        return 'Photos';
+      case 7:
+        return 'Pricing';
+      case 8:
+        return 'Documents';
+      default:
+        return '';
     }
   }
 }

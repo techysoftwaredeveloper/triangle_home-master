@@ -22,7 +22,8 @@ class OptionButton extends StatelessWidget {
           color: isSelected ? Theme.of(context).primaryColor : Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? Theme.of(context).primaryColor : Colors.grey[300]!,
+            color:
+                isSelected ? Theme.of(context).primaryColor : Colors.grey[300]!,
           ),
         ),
         child: Center(

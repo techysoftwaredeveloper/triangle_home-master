@@ -1,9 +1,24 @@
-const { admin } = require('../config/firebase-config');
+const { admin, db } = require('../config/firebase-config');
 
 /**
- * Utility to send push notifications
+ * Utility to send push notifications with deduplication
+ * @param {string} eventId - Unique ID for the event (e.g., booking_confirmed_123)
  */
-exports.sendNotification = async (token, title, body, data = {}) => {
+exports.sendNotification = async (token, title, body, data = {}, eventId = null) => {
+  if (eventId) {
+    const logRef = db.collection('notification_logs').doc(eventId);
+    const logDoc = await logRef.get();
+    if (logDoc.exists) {
+      console.log(`Notification for event ${eventId} already sent. Skipping.`);
+      return null;
+    }
+    await logRef.set({
+      sentAt: admin.firestore.FieldValue.serverTimestamp(),
+      recipient: token,
+      title
+    });
+  }
+
   const message = {
     notification: {
       title,

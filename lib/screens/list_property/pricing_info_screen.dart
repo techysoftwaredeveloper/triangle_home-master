@@ -11,7 +11,11 @@ class PricingInfoScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onContinue;
   final Map<String, dynamic> propertyData;
 
-  const PricingInfoScreen({super.key, required this.onContinue, required this.propertyData});
+  const PricingInfoScreen({
+    super.key,
+    required this.onContinue,
+    required this.propertyData,
+  });
 
   @override
   State<PricingInfoScreen> createState() => _PricingInfoScreenState();
@@ -30,11 +34,21 @@ class _PricingInfoScreenState extends State<PricingInfoScreen> {
   @override
   void initState() {
     super.initState();
-    _rentController = TextEditingController(text: widget.propertyData['monthlyRent'] ?? '');
-    _depositController = TextEditingController(text: widget.propertyData['securityDeposit'] ?? '');
-    _addressController = TextEditingController(text: widget.propertyData['address'] ?? '');
-    _cityController = TextEditingController(text: widget.propertyData['city'] ?? '');
-    _localityController = TextEditingController(text: widget.propertyData['locality'] ?? '');
+    _rentController = TextEditingController(
+      text: widget.propertyData['monthlyRent'] ?? '',
+    );
+    _depositController = TextEditingController(
+      text: widget.propertyData['securityDeposit'] ?? '',
+    );
+    _addressController = TextEditingController(
+      text: widget.propertyData['address'] ?? '',
+    );
+    _cityController = TextEditingController(
+      text: widget.propertyData['city'] ?? '',
+    );
+    _localityController = TextEditingController(
+      text: widget.propertyData['locality'] ?? '',
+    );
   }
 
   @override
@@ -59,8 +73,11 @@ class _PricingInfoScreenState extends State<PricingInfoScreen> {
       final firebaseService = FirebaseService();
 
       // 1. Upload Images to Firebase Storage
-      final List<dynamic> imageFiles = widget.propertyData['temp_image_files'] ?? [];
-      final List<String> imageUrls = await firebaseService.uploadImages(imageFiles.cast());
+      final List<dynamic> imageFiles =
+          widget.propertyData['temp_image_files'] ?? [];
+      final List<String> imageUrls = await firebaseService.uploadImages(
+        imageFiles.cast(),
+      );
 
       // 2. Prepare Final Data
       final finalData = {
@@ -92,7 +109,12 @@ class _PricingInfoScreenState extends State<PricingInfoScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Submission failed: $e'), backgroundColor: AppTheme.errorColor));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Submission failed: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -103,41 +125,69 @@ class _PricingInfoScreenState extends State<PricingInfoScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), shape: BoxShape.circle),
-              child: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 60),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
             ),
-            const SizedBox(height: 24),
-            const Text('Listing Submitted!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
-            const SizedBox(height: 12),
-            const Text(
-              'Your property has been sent for admin approval. You will be notified once it goes live.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppTheme.textLightColor),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green,
+                    size: 60,
+                  ),
                 ),
-                child: const Text('Back to Dashboard', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Listing Submitted!',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: AppTheme.fontFamily,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Your property has been sent for admin approval. You will be notified once it goes live.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppTheme.textLightColor),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed:
+                        () => Navigator.of(
+                          context,
+                        ).popUntil((route) => route.isFirst),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text(
+                      'Back to Dashboard',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -228,16 +278,30 @@ class _PricingInfoScreenState extends State<PricingInfoScreen> {
                   backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: 4,
                   disabledBackgroundColor: Colors.grey.shade300,
                 ),
-                child: _isSubmitting
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text(
-                      'Submit for Approval',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                    ),
+                child:
+                    _isSubmitting
+                        ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                        : const Text(
+                          'Submit for Approval',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
               ),
             ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),
             const SizedBox(height: 40),

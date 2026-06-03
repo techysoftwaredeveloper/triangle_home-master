@@ -1,15 +1,18 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ExportService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Returns data as a List of Maps for CSV/Excel conversion
-  Future<List<Map<String, dynamic>>> exportCollection(String collectionName) async {
+  Future<List<Map<String, dynamic>>> exportCollection(
+    String collectionName,
+  ) async {
     try {
       final snapshot = await _firestore.collection(collectionName).get();
       return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
     } catch (e) {
-      print('Export failed: $e');
+      debugPrint('Export failed: $e');
       return [];
     }
   }

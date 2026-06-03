@@ -203,7 +203,7 @@ class _MyAddedPropertyScreenState extends State<MyAddedPropertyScreen>
             icon: const Icon(Icons.add),
             label: const Text('List New Property'),
           ).animate().scale(),
-           bottomNavigationBar: const HomeBottomNavBar(selectedIndex: 3),
+      bottomNavigationBar: const HomeBottomNavBar(selectedIndex: 3),
     );
   }
 

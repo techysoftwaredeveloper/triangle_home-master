@@ -51,7 +51,8 @@ class RefundModel {
       'reason': reason,
       'requestedBy': requestedBy,
       'createdAt': Timestamp.fromDate(createdAt),
-      'processedAt': processedAt != null ? Timestamp.fromDate(processedAt!) : null,
+      'processedAt':
+          processedAt != null ? Timestamp.fromDate(processedAt!) : null,
     };
   }
 }

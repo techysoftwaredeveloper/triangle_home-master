@@ -70,11 +70,17 @@ class InputField extends StatelessWidget {
             ),
             decoration: InputDecoration(
               hintText: hintText ?? 'Enter $label',
-              hintStyle: const TextStyle(color: AppTheme.textMutedColor, fontSize: 14),
+              hintStyle: const TextStyle(
+                color: AppTheme.textMutedColor,
+                fontSize: 14,
+              ),
               filled: true,
               fillColor: Colors.white,
               prefixText: prefix,
-              prefixStyle: TextStyle(color: activeColor ?? AppTheme.primaryColor, fontWeight: FontWeight.bold),
+              prefixStyle: TextStyle(
+                color: activeColor ?? AppTheme.primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: Colors.grey.shade200),
@@ -85,11 +91,17 @@ class InputField extends StatelessWidget {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: activeColor ?? AppTheme.primaryColor, width: 1.5),
+                borderSide: BorderSide(
+                  color: activeColor ?? AppTheme.primaryColor,
+                  width: 1.5,
+                ),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.errorColor, width: 1),
+                borderSide: const BorderSide(
+                  color: AppTheme.errorColor,
+                  width: 1,
+                ),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,

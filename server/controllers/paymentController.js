@@ -98,15 +98,16 @@ exports.verifyPayment = asyncHandler(async (req, res) => {
     razorpay_payment_id,
     razorpay_signature,
     bookingId,
-    paymentType
+    paymentType,
+    idempotencyKey // Client-generated UUID
   } = req.body;
 
-  // 1. Check Idempotency
-  const processedRef = db.collection('processed_payments').doc(razorpay_payment_id);
+  // 1. Check Idempotency (Razorpay Payment ID + Optional Client Key)
+  const processedRef = db.collection('processed_payments').doc(razorpay_payment_id || idempotencyKey);
   const processedDoc = await processedRef.get();
 
   if (processedDoc.exists) {
-    return res.json({ success: true, message: 'Payment already processed' });
+    return res.json({ success: true, message: 'Payment already processed', transactionId: processedDoc.data().transactionId });
   }
 
   // 2. Verify Signature
@@ -151,6 +152,8 @@ exports.verifyPayment = asyncHandler(async (req, res) => {
       processed: true,
       orderId: razorpay_order_id,
       paymentId: razorpay_payment_id,
+      idempotencyKey: idempotencyKey,
+      bookingId,
       timestamp: admin.firestore.FieldValue.serverTimestamp()
     });
 

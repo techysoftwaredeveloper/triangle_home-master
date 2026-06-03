@@ -1,10 +1,4 @@
-enum AccommodationType {
-  apartment,
-  pgAccommodation,
-  house,
-  villa,
-  hostel,
-}
+enum AccommodationType { apartment, pgAccommodation, house, villa, hostel }
 
 class Accommodation {
   final String id;

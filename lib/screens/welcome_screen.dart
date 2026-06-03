@@ -8,7 +8,6 @@
 // import 'package:triangle_home/widgets/phone_input.dart';
 // import 'package:triangle_home/widgets/social_buttons.dart';
 
-
 // class WelcomeScreen extends StatefulWidget {
 //   const WelcomeScreen({super.key});
 
@@ -20,7 +19,7 @@
 //   final CarouselController _carouselController = CarouselController();
 //   int _currentCarouselIndex = 0;
 //   final TextEditingController _phoneController = TextEditingController();
-  
+
 //   final List<String> _carouselItems = [
 //     // 'Apartments? PG Accommodations? We\'ve got you!',
 //     'Eacy and securly manage properties in ease',
@@ -84,9 +83,9 @@
 //               ),
 //             ],
 //           ).animate().fadeIn(duration: 800.ms),
-          
+
 //           const SizedBox(height: 80),
-          
+
 //           // Search Bar
 //           AccommodationSearch(
 //             items: _carouselItems,
@@ -96,9 +95,9 @@
 //           .animate()
 //           .fadeIn(delay: 300.ms, duration: 800.ms)
 //           .slideY(begin: -0.2, end: 0),
-          
+
 //           const SizedBox(height: 8),
-          
+
 //           // Carousel Indicator
 //           AnimatedSmoothIndicator(
 //             activeIndex: _currentCarouselIndex,
@@ -144,15 +143,15 @@
 //               ),
 //             ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
 //             const SizedBox(height: 24),
-            
+
 //             // Phone Input
 //             const PhoneInput()
 //               .animate()
 //               .fadeIn(delay: 500.ms)
 //               .slideY(begin: 0.2, end: 0),
-            
+
 //             const SizedBox(height: 32),
-            
+
 //             // Social Login Options
 //             const Text(
 //               'Or Login/Signup Using A Social Account:',
@@ -161,25 +160,25 @@
 //                 color: Color(0xFF6B7280),
 //               ),
 //             ).animate().fadeIn(delay: 600.ms),
-            
+
 //             const SizedBox(height: 16),
-            
+
 //             // Social Login Buttons
 //             const SocialLoginButtons()
 //               .animate()
 //               .fadeIn(delay: 700.ms)
 //               .slideY(begin: 0.2, end: 0),
-            
+
 //             const SizedBox(height: 32),
-            
+
 //             // Get Started Button
 //             ElevatedButton(
 //               onPressed: _handleGetStarted,
 //               child: const Text('Get Started'),
 //             ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2, end: 0),
-            
+
 //             const SizedBox(height: 16),
-            
+
 //             // Forgot Password Link
 //             TextButton(
 //               onPressed: () {},
@@ -217,7 +216,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   final TextEditingController _phoneController = TextEditingController();
-  
+
   final List<String> _contentItems = [
     'Apartments? PG Accommodations? We\'ve got you!',
     'Find your perfect home away from home',
@@ -256,9 +255,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => OtpVerificationScreen(
-          phoneNumber: _phoneController.text,
-        ),
+        builder:
+            (context) =>
+                OtpVerificationScreen(phoneNumber: _phoneController.text),
       ),
     );
   }
@@ -270,7 +269,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         child: Column(
           children: [
             _buildHeader(),
-             const SizedBox(height: 30),
+            const SizedBox(height: 30),
             Expanded(child: _buildContent()),
           ],
         ),
@@ -285,18 +284,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       child: Column(
         children: [
           // App Logo and Brand
-
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-
-            const SizedBox(height: 80),
+              const SizedBox(height: 80),
               //TriangleLogo(),
-              Image.asset(
-                'assets/images/logomain.png',
-                height: 50,
-                width: 50,            
-              ),
+              Image.asset('assets/images/logomain.png', height: 50, width: 50),
               const SizedBox(width: 10),
               Text(
                 'T R I A N G L E  H O M E S',
@@ -310,58 +303,58 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ),
             ],
           ).animate().fadeIn(duration: 800.ms),
-          
+
           const SizedBox(height: 20),
-          
+
           // Content Slider
           SizedBox(
-            height: 40,
-            width: double.maxFinite,
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPage = index;
-                });
-              },
-              itemCount: _contentItems.length,
-              itemBuilder: (context, index) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
+                height: 40,
+                width: double.maxFinite,
+                child: PageView.builder(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentPage = index;
+                    });
+                  },
+                  itemCount: _contentItems.length,
+                  itemBuilder: (context, index) {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      _contentItems[index],
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.normal,
-                        //fontWeight: FontWeight,
-                        fontFamily: 'outfit',
-                        color: const Color.fromRGBO(49, 78, 125, 100),
+                      child: Center(
+                        child: Text(
+                          _contentItems[index],
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.normal,
+                            //fontWeight: FontWeight,
+                            fontFamily: 'outfit',
+                            color: const Color.fromRGBO(49, 78, 125, 100),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              )
+              .animate()
+              .fadeIn(delay: 300.ms, duration: 800.ms)
+              .slideY(begin: -0.2, end: 0),
 
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ).animate()
-            .fadeIn(delay: 300.ms, duration: 800.ms)
-            .slideY(begin: -0.2, end: 0),
-          
           const SizedBox(height: 8),
-          
+
           // Page Indicator
           SmoothPageIndicator(
             controller: _pageController,
@@ -396,14 +389,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             const SizedBox(height: 8),
             Text(
               'Welcome!',
-              style:TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.normal,
                 fontFamily: 'outfit',
-                color:  Colors.grey[800],
-              )
-             // style: Theme.of(context).textTheme.headlineMedium,
+                color: Colors.grey[800],
+              ),
 
+              // style: Theme.of(context).textTheme.headlineMedium,
             ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
             const SizedBox(height: 16),
             const Text(
@@ -416,42 +409,39 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ),
             ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
             const SizedBox(height: 24),
-            
+
             // Phone Input
             const PhoneInput()
-              .animate()
-              .fadeIn(delay: 500.ms)
-              .slideY(begin: 0.2, end: 0),
-            
+                .animate()
+                .fadeIn(delay: 500.ms)
+                .slideY(begin: 0.2, end: 0),
+
             const SizedBox(height: 32),
-            
+
             // Social Login Options
             const Text(
               'Or Login/Signup Using A Social Account:',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6B7280),
-              ),
+              style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
             ).animate().fadeIn(delay: 600.ms),
-            
+
             const SizedBox(height: 16),
-            
+
             // Social Login Buttons
             const SocialLoginButtons()
-              .animate()
-              .fadeIn(delay: 700.ms)
-              .slideY(begin: 0.2, end: 0),
-            
+                .animate()
+                .fadeIn(delay: 700.ms)
+                .slideY(begin: 0.2, end: 0),
+
             const SizedBox(height: 32),
-            
+
             // Get Started Button
             ElevatedButton(
               onPressed: _handleGetStarted,
               child: const Text('Get Started'),
             ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2, end: 0),
-            
+
             const SizedBox(height: 16),
-            
+
             // Forgot Password Link
             TextButton(
               onPressed: () {},

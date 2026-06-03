@@ -1,12 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum SuggestionStatus {
-  pending,
-  underReview,
-  contacted,
-  approved,
-  rejected
-}
+enum SuggestionStatus { pending, underReview, contacted, approved, rejected }
 
 class PropertySuggestion {
   final String id;

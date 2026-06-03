@@ -25,10 +25,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   void initState() {
     super.initState();
-    _remaining = widget.booking['lockExpiry'] != null 
-        ? (widget.booking['lockExpiry'] as DateTime).difference(DateTime.now())
-        : const Duration(minutes: 15);
-    
+    _remaining =
+        widget.booking['lockExpiry'] != null
+            ? (widget.booking['lockExpiry'] as DateTime).difference(
+              DateTime.now(),
+            )
+            : const Duration(minutes: 15);
+
     _startTimer();
     _razorpay = Razorpay();
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _onPaymentSuccess);
@@ -61,18 +64,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text('Reservation Expired'),
-          content: const Text('Your bed reservation has expired. Please start again to select an available bed.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              },
-              child: const Text('Return to Home'),
+        builder:
+            (context) => AlertDialog(
+              title: const Text('Reservation Expired'),
+              content: const Text(
+                'Your bed reservation has expired. Please start again to select an available bed.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
+                  child: const Text('Return to Home'),
+                ),
+              ],
             ),
-          ],
-        ),
       );
     }
   }
@@ -288,7 +294,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       _buildInfoRow(
                         'Hold Expires In',
                         _formatDuration(_remaining),
-                        valueColor: _remaining.inMinutes < 2 ? Colors.red : Colors.orange,
+                        valueColor:
+                            _remaining.inMinutes < 2
+                                ? Colors.red
+                                : Colors.orange,
                       ),
                     ],
                   ],

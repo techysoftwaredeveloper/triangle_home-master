@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:triangle_home/core/app_config.dart';
@@ -16,7 +17,7 @@ class LocationApiService {
       }
       return [];
     } catch (e) {
-      print('Location API Error: $e');
+      debugPrint('Location API Error: $e');
       return [];
     }
   }
@@ -32,7 +33,7 @@ class LocationApiService {
       }
       return [];
     } catch (e) {
-      print('Location API Error: $e');
+      debugPrint('Location API Error: $e');
       return [];
     }
   }

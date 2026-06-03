@@ -125,19 +125,21 @@ class HomeBottomNavBar extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ListPropertyIntroScreen(
-              onGetStarted: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => LoginScreen(
-                      isStudent: false,
-                      onLoginNavigateTo: const ListPropertyScreen(),
-                    ),
-                  ),
-                );
-              },
-            ),
+            builder:
+                (_) => ListPropertyIntroScreen(
+                  onGetStarted: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) => LoginScreen(
+                              isStudent: false,
+                              onLoginNavigateTo: const ListPropertyScreen(),
+                            ),
+                      ),
+                    );
+                  },
+                ),
           ),
         );
       }
@@ -158,9 +160,7 @@ class HomeBottomNavBar extends StatelessWidget {
       if (context.mounted) {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const SuggestPropertyIntroScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const SuggestPropertyIntroScreen()),
         );
       }
       return;
@@ -176,10 +176,7 @@ class HomeBottomNavBar extends StatelessWidget {
       final screen = await _resolvePropertyScreen();
       if (context.mounted) {
         if (screen is ListPropertyScreen) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => screen),
-          );
+          Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
         } else {
           Navigator.pushAndRemoveUntil(
             context,
@@ -298,7 +295,10 @@ class HomeBottomNavBar extends StatelessWidget {
             ),
             _buildNavItem(
               iconPath: 'assets/images/listmyproperty.svg',
-              label: FirebaseAuth.instance.currentUser == null ? 'List A Property' : 'Suggest',
+              label:
+                  FirebaseAuth.instance.currentUser == null
+                      ? 'List A Property'
+                      : 'Suggest',
               isActive: selectedIndex == 3,
             ),
           ],

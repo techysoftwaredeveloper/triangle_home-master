@@ -85,7 +85,6 @@
 //   }
 // }
 
-
 // // lib/widgets/room_details/tenant_selector.dart
 
 // lib/widgets/room_details/tenant_selector.dart
@@ -108,7 +107,7 @@
 //     setState(() {
 //       selectedTenant = index;
 //       _tenantControllers.clear();
-      
+
 //       // Create controllers for each tenant except the first one
 //       if (index > 0) {
 //         for (var i = 0; i < index; i++) {
@@ -152,7 +151,7 @@
 //                 ),
 //               ),
 //             ).animate().fadeIn(duration: 300.ms),
-            
+
 //             Row(
 //               children: List.generate(4, (index) {
 //                 final isSelected = selectedTenant == index;
@@ -291,10 +290,7 @@ import 'package:triangle_home/theme/app_theme.dart';
 class TenantSelector extends StatefulWidget {
   final Function(int) onTenantSelected;
 
-  const TenantSelector({
-    super.key, 
-    required this.onTenantSelected,
-  });
+  const TenantSelector({super.key, required this.onTenantSelected});
 
   @override
   State<TenantSelector> createState() => _TenantSelectorState();
@@ -343,7 +339,10 @@ class _TenantSelectorState extends State<TenantSelector> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
-                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected ? Colors.white : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
@@ -354,7 +353,8 @@ class _TenantSelectorState extends State<TenantSelector> {
                         fontSize: 15,
                         fontFamily: 'Outfit',
                         fontWeight: FontWeight.w500,
-                        color: isSelected ? const Color(0xFF1E4373) : Colors.white,
+                        color:
+                            isSelected ? const Color(0xFF1E4373) : Colors.white,
                       ),
                     ),
                   ),
@@ -380,5 +380,3 @@ class _TenantSelectorState extends State<TenantSelector> {
     );
   }
 }
-
-

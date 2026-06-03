@@ -8,6 +8,7 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:triangle_home/splash_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/services/isar_service.dart';
+import 'package:triangle_home/services/sync_service.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -16,6 +17,10 @@ void main() async {
   // Initialize Isar Local Database
   final isarService = IsarService();
   await isarService.db; // Wait for initialization
+
+  // Initialize Sync Engine
+  final syncService = SyncService();
+  syncService.initialize();
 
   // Set transparent status bar
   SystemChrome.setSystemUIOverlayStyle(
@@ -31,13 +36,19 @@ void main() async {
   // ✅ Robust App Check Initialization
   try {
     await FirebaseAppCheck.instance.activate(
-      androidProvider: kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
-      appleProvider: kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
-      webProvider: ReCaptchaV3Provider('6LcC4N8sAAAAAPxY6w6R3yM8QQhCtx1HH-w0vuSD'),
+      androidProvider:
+          kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
+      appleProvider:
+          kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
+      webProvider: ReCaptchaV3Provider(
+        '6LcC4N8sAAAAAPxY6w6R3yM8QQhCtx1HH-w0vuSD',
+      ),
     );
     // Add this to show the debug token in logs
     if (!kReleaseMode) {
-      FirebaseAppCheck.instance.getToken().then((token) => debugPrint('App Check Token: $token'));
+      FirebaseAppCheck.instance.getToken().then(
+        (token) => debugPrint('App Check Token: $token'),
+      );
     }
     debugPrint('🚀 Firebase App Check activated.');
   } catch (e) {

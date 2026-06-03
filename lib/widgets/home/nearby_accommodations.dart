@@ -32,9 +32,11 @@ class NearbyAccommodations extends StatelessWidget {
                 )
                 .toList();
 
-    final title = customTitle ?? (selectedCity.toLowerCase() == 'near me'
-                  ? 'PG Accommodations Near You'
-                  : 'PG Accommodations in $selectedCity');
+    final title =
+        customTitle ??
+        (selectedCity.toLowerCase() == 'near me'
+            ? 'PG Accommodations Near You'
+            : 'PG Accommodations in $selectedCity');
 
     return Container(
       color: Colors.white,

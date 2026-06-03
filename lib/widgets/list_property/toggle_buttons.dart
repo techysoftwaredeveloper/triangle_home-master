@@ -23,22 +23,24 @@ class CustomToggleButtons extends StatelessWidget {
       return Wrap(
         spacing: 12,
         runSpacing: 12,
-        children: options.map((option) => _buildButton(context, option)).toList(),
+        children:
+            options.map((option) => _buildButton(context, option)).toList(),
       );
     }
 
     return Row(
-      children: options.map((option) {
-        final button = _buildButton(context, option);
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-              right: option != options.last ? 12 : 0,
-            ),
-            child: button,
-          ),
-        );
-      }).toList(),
+      children:
+          options.map((option) {
+            final button = _buildButton(context, option);
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: option != options.last ? 12 : 0,
+                ),
+                child: button,
+              ),
+            );
+          }).toList(),
     );
   }
 
@@ -58,13 +60,16 @@ class CustomToggleButtons extends StatelessWidget {
             color: isSelected ? color : Colors.grey.shade200,
             width: 1.5,
           ),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: color.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            )
-          ] : null,
+          boxShadow:
+              isSelected
+                  ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                  : null,
         ),
         child: Center(
           child: Text(

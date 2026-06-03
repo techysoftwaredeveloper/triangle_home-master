@@ -8,7 +8,11 @@ class BasicInfoScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onContinue;
   final Map<String, dynamic>? initialData;
 
-  const BasicInfoScreen({super.key, required this.onContinue, this.initialData});
+  const BasicInfoScreen({
+    super.key,
+    required this.onContinue,
+    this.initialData,
+  });
 
   @override
   State<BasicInfoScreen> createState() => _BasicInfoScreenState();
@@ -26,7 +30,9 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
   void initState() {
     super.initState();
     final basic = widget.initialData?['basicInfo'] ?? {};
-    _propertyTypeController = TextEditingController(text: widget.initialData?['propertyType'] ?? '');
+    _propertyTypeController = TextEditingController(
+      text: widget.initialData?['propertyType'] ?? '',
+    );
     _nameController = TextEditingController(text: basic['name'] ?? '');
     _wardenController = TextEditingController(text: basic['wardenName'] ?? '');
     _phoneController = TextEditingController(text: basic['phone'] ?? '');
@@ -72,7 +78,11 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
               label: 'Property Type',
               controller: _propertyTypeController,
               required: true,
-              items: const ['College Hostel', 'Paying Guest Accommodation', 'Apartment'],
+              items: const [
+                'College Hostel',
+                'Paying Guest Accommodation',
+                'Apartment',
+              ],
             ),
 
             InputField(
@@ -117,7 +127,7 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
                         'wardenName': _wardenController.text,
                         'phone': _phoneController.text,
                         'email': _emailController.text,
-                      }
+                      },
                     });
                   }
                 },
@@ -125,13 +135,19 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
                   backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: 4,
                   shadowColor: AppTheme.primaryColor.withValues(alpha: 0.4),
                 ),
                 child: const Text(
                   'Continue to Banking',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),

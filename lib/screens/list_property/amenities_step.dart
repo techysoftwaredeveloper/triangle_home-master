@@ -45,7 +45,14 @@ class _AmenitiesStepState extends State<AmenitiesStep> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Select available amenities', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+          const Text(
+            'Select available amenities',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDarkColor,
+            ),
+          ),
           const SizedBox(height: 24),
           Expanded(
             child: GridView.builder(
@@ -58,7 +65,9 @@ class _AmenitiesStepState extends State<AmenitiesStep> {
               itemCount: _amenities.length,
               itemBuilder: (context, index) {
                 final amenity = _amenities[index];
-                final isSelected = _selectedAmenities.contains(amenity['label']);
+                final isSelected = _selectedAmenities.contains(
+                  amenity['label'],
+                );
                 return InkWell(
                   onTap: () {
                     setState(() {
@@ -74,11 +83,24 @@ class _AmenitiesStepState extends State<AmenitiesStep> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppTheme.successColor : Colors.white,
+                          color:
+                              isSelected ? AppTheme.successColor : Colors.white,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: isSelected ? AppTheme.successColor : Colors.grey.shade200),
+                          border: Border.all(
+                            color:
+                                isSelected
+                                    ? AppTheme.successColor
+                                    : Colors.grey.shade200,
+                          ),
                         ),
-                        child: Icon(amenity['icon'], color: isSelected ? Colors.white : AppTheme.textMutedColor, size: 22),
+                        child: Icon(
+                          amenity['icon'],
+                          color:
+                              isSelected
+                                  ? Colors.white
+                                  : AppTheme.textMutedColor,
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -86,8 +108,12 @@ class _AmenitiesStepState extends State<AmenitiesStep> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 9,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? AppTheme.successColor : AppTheme.textLightColor,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          color:
+                              isSelected
+                                  ? AppTheme.successColor
+                                  : AppTheme.textLightColor,
                         ),
                       ),
                     ],
@@ -100,16 +126,22 @@ class _AmenitiesStepState extends State<AmenitiesStep> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                widget.onContinue({
-                  'amenities': _selectedAmenities.toList(),
-                });
+                widget.onContinue({'amenities': _selectedAmenities.toList()});
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.successColor,
                 padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('Continue', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Continue',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
         ],

@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/paymentController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { verifyToken } = require('../middleware/auth');
 const { body } = require('express-validator');
 
 // Create Razorpay Order
 router.post(
   '/create-order',
-  authMiddleware,
+  verifyToken,
   [
     body('propertyId').notEmpty(),
     body('bookingId').notEmpty(),
@@ -19,12 +19,13 @@ router.post(
 // Verify Razorpay Payment
 router.post(
   '/verify',
-  authMiddleware,
+  verifyToken,
   [
     body('razorpay_order_id').notEmpty(),
     body('razorpay_payment_id').notEmpty(),
     body('razorpay_signature').notEmpty(),
     body('bookingId').notEmpty(),
+    body('paymentType').notEmpty(),
   ],
   paymentController.verifyPayment
 );

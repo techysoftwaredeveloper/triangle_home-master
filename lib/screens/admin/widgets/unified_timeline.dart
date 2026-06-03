@@ -31,7 +31,11 @@ class UnifiedTimeline extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   'No events found for this booking',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 13, fontFamily: 'Outfit'),
+                  style: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 13,
+                    fontFamily: 'Outfit',
+                  ),
                 ),
               ],
             ),
@@ -76,7 +80,7 @@ class _TimelineItem extends StatelessWidget {
 
   Widget _buildIndicator() {
     final Color color = _getSeverityColor(event.severity);
-    
+
     return Column(
       children: [
         Container(
@@ -90,12 +94,7 @@ class _TimelineItem extends StatelessWidget {
           child: Icon(_getCategoryIcon(event.category), size: 16, color: color),
         ),
         if (!isLast)
-          Expanded(
-            child: Container(
-              width: 2,
-              color: Colors.grey[200],
-            ),
-          ),
+          Expanded(child: Container(width: 2, color: Colors.grey[200])),
       ],
     );
   }
@@ -141,7 +140,11 @@ class _TimelineItem extends StatelessWidget {
           const SizedBox(height: 6),
           Row(
             children: [
-              Icon(Icons.person_outline_rounded, size: 12, color: Colors.grey[400]),
+              Icon(
+                Icons.person_outline_rounded,
+                size: 12,
+                color: Colors.grey[400],
+              ),
               const SizedBox(width: 4),
               Text(
                 'By ${event.performer}',
@@ -155,10 +158,7 @@ class _TimelineItem extends StatelessWidget {
               const Spacer(),
               Text(
                 DateFormat('dd MMM yyyy').format(event.timestamp),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey[400],
-                ),
+                style: TextStyle(fontSize: 10, color: Colors.grey[400]),
               ),
             ],
           ),
@@ -169,19 +169,27 @@ class _TimelineItem extends StatelessWidget {
 
   IconData _getCategoryIcon(TimelineCategory category) {
     switch (category) {
-      case TimelineCategory.booking: return Icons.book_rounded;
-      case TimelineCategory.payment: return Icons.payments_rounded;
-      case TimelineCategory.financial: return Icons.account_balance_wallet_rounded;
-      case TimelineCategory.dispute: return Icons.report_problem_rounded;
-      case TimelineCategory.admin: return Icons.admin_panel_settings_rounded;
+      case TimelineCategory.booking:
+        return Icons.book_rounded;
+      case TimelineCategory.payment:
+        return Icons.payments_rounded;
+      case TimelineCategory.financial:
+        return Icons.account_balance_wallet_rounded;
+      case TimelineCategory.dispute:
+        return Icons.report_problem_rounded;
+      case TimelineCategory.admin:
+        return Icons.admin_panel_settings_rounded;
     }
   }
 
   Color _getSeverityColor(TimelineSeverity severity) {
     switch (severity) {
-      case TimelineSeverity.info: return AppTheme.successColor;
-      case TimelineSeverity.warning: return Colors.orange;
-      case TimelineSeverity.critical: return Colors.red;
+      case TimelineSeverity.info:
+        return AppTheme.successColor;
+      case TimelineSeverity.warning:
+        return Colors.orange;
+      case TimelineSeverity.critical:
+        return Colors.red;
     }
   }
 }

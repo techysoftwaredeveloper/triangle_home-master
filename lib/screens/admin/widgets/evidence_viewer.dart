@@ -25,7 +25,10 @@ class EvidenceViewer extends StatelessWidget {
             children: [
               Icon(Icons.attachment_rounded, color: Colors.grey[300], size: 40),
               const SizedBox(height: 12),
-              Text('No evidence uploaded', style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+              Text(
+                'No evidence uploaded',
+                style: TextStyle(color: Colors.grey[500], fontSize: 13),
+              ),
             ],
           ),
         ),
@@ -59,21 +62,23 @@ class _EvidenceItem extends StatelessWidget {
     if (type == 'image') {
       showDialog(
         context: context,
-        builder: (context) => Dialog(
-          backgroundColor: Colors.transparent,
-          child: Stack(
-            children: [
-              CachedNetworkImage(imageUrl: item.url, fit: BoxFit.contain),
-              Positioned(
-                top: 10, right: 10,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
+        builder:
+            (context) => Dialog(
+              backgroundColor: Colors.transparent,
+              child: Stack(
+                children: [
+                  CachedNetworkImage(imageUrl: item.url, fit: BoxFit.contain),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
       );
     } else {
       // For PDF/Video, try to launch URL
@@ -81,9 +86,9 @@ class _EvidenceItem extends StatelessWidget {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open file')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Could not open file')));
       }
     }
   }
@@ -117,19 +122,24 @@ class _EvidenceItem extends StatelessWidget {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: item.fileType == 'image'
-                    ? CachedNetworkImage(
-                        imageUrl: item.url,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(color: Colors.grey[50]),
-                      )
-                    : Container(
-                        width: double.infinity,
-                        color: typeColor.withValues(alpha: 0.1),
-                        child: Icon(typeIcon, color: typeColor, size: 32),
-                      ),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+                child:
+                    item.fileType == 'image'
+                        ? CachedNetworkImage(
+                          imageUrl: item.url,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          placeholder:
+                              (context, url) =>
+                                  Container(color: Colors.grey[50]),
+                        )
+                        : Container(
+                          width: double.infinity,
+                          color: typeColor.withValues(alpha: 0.1),
+                          child: Icon(typeIcon, color: typeColor, size: 32),
+                        ),
               ),
             ),
             Padding(
@@ -139,12 +149,20 @@ class _EvidenceItem extends StatelessWidget {
                 children: [
                   Text(
                     'Uploaded by ${item.uploadedBy.toUpperCase()}',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textMutedColor),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textMutedColor,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Icon(Icons.access_time_rounded, size: 8, color: Colors.grey[400]),
+                      Icon(
+                        Icons.access_time_rounded,
+                        size: 8,
+                        color: Colors.grey[400],
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         DateFormat('dd MMM, hh:mm a').format(item.timestamp),

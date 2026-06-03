@@ -9,10 +9,7 @@ import 'package:triangle_home/screens/home_screen.dart';
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
 
-  const OtpVerificationScreen({
-    super.key,
-    required this.phoneNumber,
-  });
+  const OtpVerificationScreen({super.key, required this.phoneNumber});
 
   @override
   State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
@@ -23,10 +20,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     6,
     (index) => TextEditingController(),
   );
-  final List<FocusNode> _focusNodes = List.generate(
-    6,
-    (index) => FocusNode(),
-  );
+  final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
   Timer? _timer;
   int _timeLeft = 30;
 
@@ -49,18 +43,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   void startTimer() {
-    _timer = Timer.periodic(
-      const Duration(seconds: 1),
-      (timer) {
-        if (_timeLeft == 0) {
-          timer.cancel();
-        } else {
-          setState(() {
-            _timeLeft--;
-          });
-        }
-      },
-    );
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_timeLeft == 0) {
+        timer.cancel();
+      } else {
+        setState(() {
+          _timeLeft--;
+        });
+      }
+    });
   }
 
   String formatTime(int seconds) {
@@ -95,21 +86,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-             // const SizedBox(height: 0),
-              Lottie.asset(
-                'assets/images/otp_animation.json',
-                height: 200,
-              ),
+              // const SizedBox(height: 0),
+              Lottie.asset('assets/images/otp_animation.json', height: 200),
               //   'https://app.lottiefiles.com/animation/3732a84d-f86d-4e35-8524-a96a3ba9cd4e?channel=web&source=public-animation&panel=download&from=download',
               //   height: 200,
               // ).animate().fadeIn(duration: 600.ms),
               const SizedBox(height: 32),
               const Text(
                 'One Time Password',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ).animate().fadeIn(delay: 200.ms),
               const SizedBox(height: 12),
               Text(
@@ -150,9 +135,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           ),
                         ),
                       ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       onChanged: (value) => _onOtpDigitChanged(index, value),
                     ),
                   ),
@@ -175,20 +158,22 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   Row(
                     children: [
                       TextButton(
-                        onPressed: _timeLeft == 0
-                            ? () {
-                                setState(() {
-                                  _timeLeft = 30;
-                                });
-                                startTimer();
-                              }
-                            : null,
+                        onPressed:
+                            _timeLeft == 0
+                                ? () {
+                                  setState(() {
+                                    _timeLeft = 30;
+                                  });
+                                  startTimer();
+                                }
+                                : null,
                         child: Text(
                           'Resend OTP',
                           style: TextStyle(
-                            color: _timeLeft == 0
-                                ? const Color(0xFF1E3A8A)
-                                : Colors.grey,
+                            color:
+                                _timeLeft == 0
+                                    ? const Color(0xFF1E3A8A)
+                                    : Colors.grey,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -196,9 +181,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       if (_timeLeft > 0)
                         Text(
                           formatTime(_timeLeft),
-                          style: const TextStyle(
-                            color: Colors.black54,
-                          ),
+                          style: const TextStyle(color: Colors.black54),
                         ),
                     ],
                   ),
@@ -209,13 +192,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                     Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HomeScreen(),
-        
-      ),
-    );// Handle verification
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => HomeScreen()),
+                    ); // Handle verification
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E3A8A),
@@ -226,10 +206,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   ),
                   child: const Text(
                     'Continue',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ).animate().fadeIn(delay: 1000.ms).slideY(begin: 0.2, end: 0),

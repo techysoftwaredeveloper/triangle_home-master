@@ -11,70 +11,14 @@ class AdminPayoutService {
     String? reason,
   }) async {
     // 1. Fetch current Escrow and Booking state
-    final escrowDoc = await _firestore.collection('escrow').doc(bookingId).get();
-    final bookingDoc = await _firestore.collection('bookings').doc(bookingId).get();
+    final escrowDoc =
+        await _firestore.collection('escrow').doc(bookingId).get();
+    final bookingDoc =
+        await _firestore.collection('bookings').doc(bookingId).get();
 
     if (!escrowDoc.exists || !bookingDoc.exists) {
       throw 'Escrow or Booking record not found';
-      /// Validates if a booking is eligible for payout release
-  Future<PayoutValidationResult> validatePayoutEligibility(String bookingId) async {
-    try {
-      final escrowDoc = await _firestore.collection('escrow').doc(bookingId).get();
-      final bookingDoc = await _firestore.collection('bookings').doc(bookingId).get();
-
-      if (!escrowDoc.exists || !bookingDoc.exists) {
-        return PayoutValidationResult(canRelease: false, reason: 'Records not found');
-      }
-
-      final escrowData = escrowDoc.data()!;
-      final bookingData = bookingDoc.data()!;
-
-      // Rule 1: No active disputes
-      final disputeSnapshot = await _firestore
-          .collection('disputes')
-          .where('bookingId', isEqualTo: bookingId)
-          .where('status', whereIn: [DisputeStatus.open.name, DisputeStatus.underReview.name])
-          .get();
-
-      if (disputeSnapshot.docs.isNotEmpty) {
-        return PayoutValidationResult(canRelease: false, reason: 'Active dispute found');
-      }
-
-      // Rule 2: Booking Status must be CHECKED_IN
-      if (bookingData['status'] != BookingStatus.checkedIn.name && 
-          bookingData['status'] != BookingStatus.checkedOut.name &&
-          bookingData['status'] != BookingStatus.completed.name) {
-        return PayoutValidationResult(canRelease: false, reason: 'User not checked in');
-      }
-
-      // Rule 3: 48-hour hold window (if not already released)
-      if (escrowData['escrowStatus'] == EscrowStatus.payoutReleased.name) {
-        return PayoutValidationResult(canRelease: false, reason: 'Already released');
-      }
-
-      final checkedInAt = (bookingData['checkedInAt'] as Timestamp?)?.toDate();
-      if (checkedInAt == null) {
-        return PayoutValidationResult(canRelease: false, reason: 'Check-in time not recorded');
-      }
-
-      final hoursPassed = DateTime.now().difference(checkedInAt).inHours;
-      if (hoursPassed < 48) {
-        return PayoutValidationResult(canRelease: false, reason: 'Holding window active (${48 - hoursPassed}h left)');
-      }
-
-      return PayoutValidationResult(canRelease: true);
-    } catch (e) {
-      return PayoutValidationResult(canRelease: false, reason: 'Validation error: $e');
     }
-  }
-}
-
-class PayoutValidationResult {
-  final bool canRelease;
-  final String? reason;
-
-  PayoutValidationResult({required this.canRelease, this.reason});
-}
 
     final escrowData = escrowDoc.data()!;
     final bookingData = bookingDoc.data()!;
@@ -83,197 +27,30 @@ class PayoutValidationResult {
     // Rule A: Escrow Status must be READY_FOR_PAYOUT
     if (escrowData['escrowStatus'] != EscrowStatus.readyForPayout.name) {
       throw 'Payout not eligible. Current status: ${escrowData['escrowStatus']}';
-      /// Validates if a booking is eligible for payout release
-  Future<PayoutValidationResult> validatePayoutEligibility(String bookingId) async {
-    try {
-      final escrowDoc = await _firestore.collection('escrow').doc(bookingId).get();
-      final bookingDoc = await _firestore.collection('bookings').doc(bookingId).get();
-
-      if (!escrowDoc.exists || !bookingDoc.exists) {
-        return PayoutValidationResult(canRelease: false, reason: 'Records not found');
-      }
-
-      final escrowData = escrowDoc.data()!;
-      final bookingData = bookingDoc.data()!;
-
-      // Rule 1: No active disputes
-      final disputeSnapshot = await _firestore
-          .collection('disputes')
-          .where('bookingId', isEqualTo: bookingId)
-          .where('status', whereIn: [DisputeStatus.open.name, DisputeStatus.underReview.name])
-          .get();
-
-      if (disputeSnapshot.docs.isNotEmpty) {
-        return PayoutValidationResult(canRelease: false, reason: 'Active dispute found');
-      }
-
-      // Rule 2: Booking Status must be CHECKED_IN
-      if (bookingData['status'] != BookingStatus.checkedIn.name && 
-          bookingData['status'] != BookingStatus.checkedOut.name &&
-          bookingData['status'] != BookingStatus.completed.name) {
-        return PayoutValidationResult(canRelease: false, reason: 'User not checked in');
-      }
-
-      // Rule 3: 48-hour hold window (if not already released)
-      if (escrowData['escrowStatus'] == EscrowStatus.payoutReleased.name) {
-        return PayoutValidationResult(canRelease: false, reason: 'Already released');
-      }
-
-      final checkedInAt = (bookingData['checkedInAt'] as Timestamp?)?.toDate();
-      if (checkedInAt == null) {
-        return PayoutValidationResult(canRelease: false, reason: 'Check-in time not recorded');
-      }
-
-      final hoursPassed = DateTime.now().difference(checkedInAt).inHours;
-      if (hoursPassed < 48) {
-        return PayoutValidationResult(canRelease: false, reason: 'Holding window active (${48 - hoursPassed}h left)');
-      }
-
-      return PayoutValidationResult(canRelease: true);
-    } catch (e) {
-      return PayoutValidationResult(canRelease: false, reason: 'Validation error: $e');
     }
-  }
-}
-
-class PayoutValidationResult {
-  final bool canRelease;
-  final String? reason;
-
-  PayoutValidationResult({required this.canRelease, this.reason});
-}
 
     // Rule B: Booking Status must be CHECKED_IN
     if (bookingData['status'] != BookingStatus.checkedIn.name) {
       throw 'Payout blocked: User has not checked in.';
-      /// Validates if a booking is eligible for payout release
-  Future<PayoutValidationResult> validatePayoutEligibility(String bookingId) async {
-    try {
-      final escrowDoc = await _firestore.collection('escrow').doc(bookingId).get();
-      final bookingDoc = await _firestore.collection('bookings').doc(bookingId).get();
-
-      if (!escrowDoc.exists || !bookingDoc.exists) {
-        return PayoutValidationResult(canRelease: false, reason: 'Records not found');
-      }
-
-      final escrowData = escrowDoc.data()!;
-      final bookingData = bookingDoc.data()!;
-
-      // Rule 1: No active disputes
-      final disputeSnapshot = await _firestore
-          .collection('disputes')
-          .where('bookingId', isEqualTo: bookingId)
-          .where('status', whereIn: [DisputeStatus.open.name, DisputeStatus.underReview.name])
-          .get();
-
-      if (disputeSnapshot.docs.isNotEmpty) {
-        return PayoutValidationResult(canRelease: false, reason: 'Active dispute found');
-      }
-
-      // Rule 2: Booking Status must be CHECKED_IN
-      if (bookingData['status'] != BookingStatus.checkedIn.name && 
-          bookingData['status'] != BookingStatus.checkedOut.name &&
-          bookingData['status'] != BookingStatus.completed.name) {
-        return PayoutValidationResult(canRelease: false, reason: 'User not checked in');
-      }
-
-      // Rule 3: 48-hour hold window (if not already released)
-      if (escrowData['escrowStatus'] == EscrowStatus.payoutReleased.name) {
-        return PayoutValidationResult(canRelease: false, reason: 'Already released');
-      }
-
-      final checkedInAt = (bookingData['checkedInAt'] as Timestamp?)?.toDate();
-      if (checkedInAt == null) {
-        return PayoutValidationResult(canRelease: false, reason: 'Check-in time not recorded');
-      }
-
-      final hoursPassed = DateTime.now().difference(checkedInAt).inHours;
-      if (hoursPassed < 48) {
-        return PayoutValidationResult(canRelease: false, reason: 'Holding window active (${48 - hoursPassed}h left)');
-      }
-
-      return PayoutValidationResult(canRelease: true);
-    } catch (e) {
-      return PayoutValidationResult(canRelease: false, reason: 'Validation error: $e');
     }
-  }
-}
-
-class PayoutValidationResult {
-  final bool canRelease;
-  final String? reason;
-
-  PayoutValidationResult({required this.canRelease, this.reason});
-}
 
     // Rule C: No active disputes
-    final disputeSnapshot = await _firestore
-        .collection('disputes')
-        .where('bookingId', isEqualTo: bookingId)
-        .where('status', whereIn: [DisputeStatus.open.name, DisputeStatus.underReview.name])
-        .get();
+    final disputeSnapshot =
+        await _firestore
+            .collection('disputes')
+            .where('bookingId', isEqualTo: bookingId)
+            .where(
+              'status',
+              whereIn: [
+                DisputeStatus.open.name,
+                DisputeStatus.underReview.name,
+              ],
+            )
+            .get();
 
     if (disputeSnapshot.docs.isNotEmpty) {
       throw 'Payout blocked: Active dispute found for this booking.';
-      /// Validates if a booking is eligible for payout release
-  Future<PayoutValidationResult> validatePayoutEligibility(String bookingId) async {
-    try {
-      final escrowDoc = await _firestore.collection('escrow').doc(bookingId).get();
-      final bookingDoc = await _firestore.collection('bookings').doc(bookingId).get();
-
-      if (!escrowDoc.exists || !bookingDoc.exists) {
-        return PayoutValidationResult(canRelease: false, reason: 'Records not found');
-      }
-
-      final escrowData = escrowDoc.data()!;
-      final bookingData = bookingDoc.data()!;
-
-      // Rule 1: No active disputes
-      final disputeSnapshot = await _firestore
-          .collection('disputes')
-          .where('bookingId', isEqualTo: bookingId)
-          .where('status', whereIn: [DisputeStatus.open.name, DisputeStatus.underReview.name])
-          .get();
-
-      if (disputeSnapshot.docs.isNotEmpty) {
-        return PayoutValidationResult(canRelease: false, reason: 'Active dispute found');
-      }
-
-      // Rule 2: Booking Status must be CHECKED_IN
-      if (bookingData['status'] != BookingStatus.checkedIn.name && 
-          bookingData['status'] != BookingStatus.checkedOut.name &&
-          bookingData['status'] != BookingStatus.completed.name) {
-        return PayoutValidationResult(canRelease: false, reason: 'User not checked in');
-      }
-
-      // Rule 3: 48-hour hold window (if not already released)
-      if (escrowData['escrowStatus'] == EscrowStatus.payoutReleased.name) {
-        return PayoutValidationResult(canRelease: false, reason: 'Already released');
-      }
-
-      final checkedInAt = (bookingData['checkedInAt'] as Timestamp?)?.toDate();
-      if (checkedInAt == null) {
-        return PayoutValidationResult(canRelease: false, reason: 'Check-in time not recorded');
-      }
-
-      final hoursPassed = DateTime.now().difference(checkedInAt).inHours;
-      if (hoursPassed < 48) {
-        return PayoutValidationResult(canRelease: false, reason: 'Holding window active (${48 - hoursPassed}h left)');
-      }
-
-      return PayoutValidationResult(canRelease: true);
-    } catch (e) {
-      return PayoutValidationResult(canRelease: false, reason: 'Validation error: $e');
     }
-  }
-}
-
-class PayoutValidationResult {
-  final bool canRelease;
-  final String? reason;
-
-  PayoutValidationResult({required this.canRelease, this.reason});
-}
 
     // 3. Process Payout Transactionally
     await _firestore.runTransaction((transaction) async {
@@ -300,114 +77,89 @@ class PayoutValidationResult {
         'timestamp': FieldValue.serverTimestamp(),
       });
     });
-    /// Validates if a booking is eligible for payout release
-  Future<PayoutValidationResult> validatePayoutEligibility(String bookingId) async {
-    try {
-      final escrowDoc = await _firestore.collection('escrow').doc(bookingId).get();
-      final bookingDoc = await _firestore.collection('bookings').doc(bookingId).get();
-
-      if (!escrowDoc.exists || !bookingDoc.exists) {
-        return PayoutValidationResult(canRelease: false, reason: 'Records not found');
-      }
-
-      final escrowData = escrowDoc.data()!;
-      final bookingData = bookingDoc.data()!;
-
-      // Rule 1: No active disputes
-      final disputeSnapshot = await _firestore
-          .collection('disputes')
-          .where('bookingId', isEqualTo: bookingId)
-          .where('status', whereIn: [DisputeStatus.open.name, DisputeStatus.underReview.name])
-          .get();
-
-      if (disputeSnapshot.docs.isNotEmpty) {
-        return PayoutValidationResult(canRelease: false, reason: 'Active dispute found');
-      }
-
-      // Rule 2: Booking Status must be CHECKED_IN
-      if (bookingData['status'] != BookingStatus.checkedIn.name && 
-          bookingData['status'] != BookingStatus.checkedOut.name &&
-          bookingData['status'] != BookingStatus.completed.name) {
-        return PayoutValidationResult(canRelease: false, reason: 'User not checked in');
-      }
-
-      // Rule 3: 48-hour hold window (if not already released)
-      if (escrowData['escrowStatus'] == EscrowStatus.payoutReleased.name) {
-        return PayoutValidationResult(canRelease: false, reason: 'Already released');
-      }
-
-      final checkedInAt = (bookingData['checkedInAt'] as Timestamp?)?.toDate();
-      if (checkedInAt == null) {
-        return PayoutValidationResult(canRelease: false, reason: 'Check-in time not recorded');
-      }
-
-      final hoursPassed = DateTime.now().difference(checkedInAt).inHours;
-      if (hoursPassed < 48) {
-        return PayoutValidationResult(canRelease: false, reason: 'Holding window active (${48 - hoursPassed}h left)');
-      }
-
-      return PayoutValidationResult(canRelease: true);
-    } catch (e) {
-      return PayoutValidationResult(canRelease: false, reason: 'Validation error: $e');
-    }
   }
-}
 
-class PayoutValidationResult {
-  final bool canRelease;
-  final String? reason;
-
-  PayoutValidationResult({required this.canRelease, this.reason});
-}
   /// Validates if a booking is eligible for payout release
-  Future<PayoutValidationResult> validatePayoutEligibility(String bookingId) async {
+  Future<PayoutValidationResult> validatePayoutEligibility(
+    String bookingId,
+  ) async {
     try {
-      final escrowDoc = await _firestore.collection('escrow').doc(bookingId).get();
-      final bookingDoc = await _firestore.collection('bookings').doc(bookingId).get();
+      final escrowDoc =
+          await _firestore.collection('escrow').doc(bookingId).get();
+      final bookingDoc =
+          await _firestore.collection('bookings').doc(bookingId).get();
 
       if (!escrowDoc.exists || !bookingDoc.exists) {
-        return PayoutValidationResult(canRelease: false, reason: 'Records not found');
+        return PayoutValidationResult(
+          canRelease: false,
+          reason: 'Records not found',
+        );
       }
 
       final escrowData = escrowDoc.data()!;
       final bookingData = bookingDoc.data()!;
 
       // Rule 1: No active disputes
-      final disputeSnapshot = await _firestore
-          .collection('disputes')
-          .where('bookingId', isEqualTo: bookingId)
-          .where('status', whereIn: [DisputeStatus.open.name, DisputeStatus.underReview.name])
-          .get();
+      final disputeSnapshot =
+          await _firestore
+              .collection('disputes')
+              .where('bookingId', isEqualTo: bookingId)
+              .where(
+                'status',
+                whereIn: [
+                  DisputeStatus.open.name,
+                  DisputeStatus.underReview.name,
+                ],
+              )
+              .get();
 
       if (disputeSnapshot.docs.isNotEmpty) {
-        return PayoutValidationResult(canRelease: false, reason: 'Active dispute found');
+        return PayoutValidationResult(
+          canRelease: false,
+          reason: 'Active dispute found',
+        );
       }
 
       // Rule 2: Booking Status must be CHECKED_IN
-      if (bookingData['status'] != BookingStatus.checkedIn.name && 
+      if (bookingData['status'] != BookingStatus.checkedIn.name &&
           bookingData['status'] != BookingStatus.checkedOut.name &&
           bookingData['status'] != BookingStatus.completed.name) {
-        return PayoutValidationResult(canRelease: false, reason: 'User not checked in');
+        return PayoutValidationResult(
+          canRelease: false,
+          reason: 'User not checked in',
+        );
       }
 
       // Rule 3: 48-hour hold window (if not already released)
       if (escrowData['escrowStatus'] == EscrowStatus.payoutReleased.name) {
-        return PayoutValidationResult(canRelease: false, reason: 'Already released');
+        return PayoutValidationResult(
+          canRelease: false,
+          reason: 'Already released',
+        );
       }
 
       final checkedInAt = (bookingData['checkedInAt'] as Timestamp?)?.toDate();
       if (checkedInAt == null) {
-        return PayoutValidationResult(canRelease: false, reason: 'Check-in time not recorded');
+        return PayoutValidationResult(
+          canRelease: false,
+          reason: 'Check-in time not recorded',
+        );
       }
 
       final hoursPassed = DateTime.now().difference(checkedInAt).inHours;
       if (hoursPassed < 48) {
-        return PayoutValidationResult(canRelease: false, reason: 'Holding window active (${48 - hoursPassed}h left)');
+        return PayoutValidationResult(
+          canRelease: false,
+          reason: 'Holding window active (${48 - hoursPassed}h left)',
+        );
       }
 
       return PayoutValidationResult(canRelease: true);
     } catch (e) {
-      return PayoutValidationResult(canRelease: false, reason: 'Validation error: $e');
+      return PayoutValidationResult(
+        canRelease: false,
+        reason: 'Validation error: $e',
+      );
     }
   }
 }

@@ -50,7 +50,7 @@ class _RealtimeDocumentUploadState extends State<RealtimeDocumentUpload> {
 
         final file = File(result.files.single.path!);
         final firebaseService = FirebaseService();
-        
+
         // Simulating progress for better UX if needed, or just direct upload
         // Here we use the existing uploadImage (we might need a generic uploadDocument)
         final url = await firebaseService.uploadFile(file);
@@ -66,9 +66,9 @@ class _RealtimeDocumentUploadState extends State<RealtimeDocumentUpload> {
     } catch (e) {
       setState(() => _isUploading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
       }
     }
   }
@@ -92,7 +92,7 @@ class _RealtimeDocumentUploadState extends State<RealtimeDocumentUpload> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.05),
+                color: AppTheme.primaryColor.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -117,10 +117,17 @@ class _RealtimeDocumentUploadState extends State<RealtimeDocumentUpload> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    isUploaded ? (_currentUrl!.toLowerCase().contains('.pdf') ? 'PDF Document uploaded' : 'Image uploaded successfully') : widget.subtitle,
+                    isUploaded
+                        ? (_currentUrl!.toLowerCase().contains('.pdf')
+                            ? 'PDF Document uploaded'
+                            : 'Image uploaded successfully')
+                        : widget.subtitle,
                     style: TextStyle(
                       fontSize: 12,
-                      color: isUploaded ? AppTheme.successColor : AppTheme.textLightColor,
+                      color:
+                          isUploaded
+                              ? AppTheme.successColor
+                              : AppTheme.textLightColor,
                       fontFamily: 'Outfit',
                     ),
                   ),
@@ -131,10 +138,17 @@ class _RealtimeDocumentUploadState extends State<RealtimeDocumentUpload> {
               const SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.successColor),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppTheme.successColor,
+                ),
               )
             else if (isUploaded)
-              const Icon(Icons.check_circle_rounded, color: AppTheme.successColor, size: 24)
+              const Icon(
+                Icons.check_circle_rounded,
+                color: AppTheme.successColor,
+                size: 24,
+              )
             else
               Container(
                 padding: const EdgeInsets.all(6),
@@ -142,7 +156,11 @@ class _RealtimeDocumentUploadState extends State<RealtimeDocumentUpload> {
                   color: AppTheme.successColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.file_upload_outlined, color: Colors.white, size: 18),
+                child: const Icon(
+                  Icons.file_upload_outlined,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
           ],
         ),

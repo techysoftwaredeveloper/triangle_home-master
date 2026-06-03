@@ -5,10 +5,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:triangle_home/services/auth_production_service.dart';
 import 'package:triangle_home/screens/admin/admin_dashboard_redesign.dart';
-import 'package:triangle_home/hoster_info_screen.dart';
 import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
-import 'package:triangle_home/student_info_screen.dart';
 import 'package:triangle_home/screens/home_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
@@ -151,12 +149,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (_) => widget.isStudent
-                  ? StudentInfoScreen(
-                      phoneNumber: user.phoneNumber ?? '',
-                      onCompleteNavigateTo: widget.onLoginNavigateTo,
-                    )
-                  : const BecomeHosterScreen(),
+              builder:
+                  (_) =>
+                      widget.isStudent
+                          ? const HomeScreen()
+                          : const BecomeHosterScreen(),
             ),
             (route) => false,
           );
@@ -164,12 +161,20 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       }
     } on FirebaseAuthException catch (e) {
       String message = 'Verification failed';
-      if (e.code == 'invalid-verification-code') message = 'Invalid OTP. Please try again.';
-      if (e.code == 'session-expired') message = 'OTP expired. Please resend.';
+      if (e.code == 'invalid-verification-code') {
+        message = 'Invalid OTP. Please try again.';
+      }
+      if (e.code == 'session-expired') {
+        message = 'OTP expired. Please resend.';
+      }
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('An unexpected error occurred')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('An unexpected error occurred')),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

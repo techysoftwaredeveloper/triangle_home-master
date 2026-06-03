@@ -4,10 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 class SearchBar extends StatelessWidget {
   final TextEditingController controller;
 
-  const SearchBar({
-    super.key,
-    required this.controller,
-  });
+  const SearchBar({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {

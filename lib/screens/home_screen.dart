@@ -11,13 +11,11 @@ import 'package:triangle_home/screens/auth/login_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/screens/profile/profile_screen.dart';
 import 'package:triangle_home/screens/search_screen.dart';
-import 'package:triangle_home/services/property_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/home/accommodation_types.dart';
 import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
 import 'package:triangle_home/widgets/home/state_tags.dart';
 import 'package:triangle_home/widgets/home/enrollment_card.dart';
-import 'package:triangle_home/widgets/home/hoster_registration_card.dart';
 import 'package:triangle_home/widgets/home/nearby_accommodations.dart';
 import 'package:triangle_home/widgets/home/highest_rated_section.dart';
 import 'package:triangle_home/services/location_api_service.dart';
@@ -31,7 +29,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  final PropertyService _propertyService = PropertyService();
   final LocationApiService _locationApi = LocationApiService();
   final IsarService _isarService = IsarService();
 
@@ -51,7 +48,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _checkUserRole() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null && !user.isAnonymous) {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
       if (doc.exists && mounted) {
         final data = doc.data() as Map<String, dynamic>;
         if (data['role'] == 'hoster') {
@@ -99,7 +100,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         await _isarService.saveMajorCities(cities);
       } else if (_states.isEmpty) {
         // Ultimate fallback
-        setState(() => _states = ["Kozhikode", "Malappuram", "Kochi", "Bangalore", "Chennai", "Mumbai", "Hyderabad", "Delhi"]);
+        setState(
+          () =>
+              _states = [
+                "Kozhikode",
+                "Malappuram",
+                "Kochi",
+                "Bangalore",
+                "Chennai",
+                "Mumbai",
+                "Hyderabad",
+                "Delhi",
+              ],
+        );
       }
     } catch (e) {
       debugPrint('❌ Error fetching cities: $e');
@@ -112,11 +125,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Guide: Do NOT request permission on startup.
       // Only proceed if already granted.
 
-      if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
         Position position = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+          ),
         );
-        List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
         if (placemarks.isNotEmpty) {
           final Placemark place = placemarks.first;
           if (mounted) {
@@ -125,7 +144,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // If no city selected yet, use detected
               if (_currentCity.isEmpty) _currentCity = _detectedCity;
             });
-            _isarService.saveLocationPreference(selected: _currentCity, detected: _detectedCity);
+            _isarService.saveLocationPreference(
+              selected: _currentCity,
+              detected: _detectedCity,
+            );
           }
         }
       }
@@ -139,8 +161,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _handleNearMeSelected();
     } else {
       setState(() => _currentCity = city);
-      _isarService.saveLocationPreference(selected: city, detected: _detectedCity);
-      ref.invalidate(paginatedPropertiesProvider);
+      _isarService.saveLocationPreference(
+        selected: city,
+        detected: _detectedCity,
+      );
+      // No need to manually invalidate if using .family correctly, 
+      // but ref.invalidate(paginatedPropertiesProvider(city)) could be used if needed.
     }
   }
 
@@ -150,14 +176,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) throw 'Location permissions denied';
+        if (permission == LocationPermission.denied) {
+          throw 'Location permissions denied';
+        }
       }
 
       Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
-      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
 
       if (placemarks.isNotEmpty) {
         final Placemark place = placemarks.first;
@@ -170,11 +203,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             _currentCity = detectedCity ?? 'Unknown';
           });
 
-          _isarService.saveLocationPreference(selected: _currentCity, detected: _detectedCity);
-          ref.invalidate(paginatedPropertiesProvider);
+          _isarService.saveLocationPreference(
+            selected: _currentCity,
+            detected: _detectedCity,
+          );
 
           Fluttertoast.showToast(
-            msg: "Showing properties near ${detectedLocality ?? detectedCity ?? 'you'}",
+            msg:
+                "Showing properties near ${detectedLocality ?? detectedCity ?? 'you'}",
             backgroundColor: AppTheme.primaryColor,
             textColor: Colors.white,
           );
@@ -183,8 +219,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } catch (e) {
       debugPrint('Near Me Error: $e');
       if (mounted) {
-        setState(() => _currentCity = _detectedCity.isNotEmpty ? _detectedCity : 'Global');
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+        setState(
+          () =>
+              _currentCity =
+                  _detectedCity.isNotEmpty ? _detectedCity : 'Global',
+        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     }
   }
@@ -192,22 +234,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _navigateToProfileOrLogin(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      );
     } else {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen(isStudent: true)));
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen(isStudent: true)),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final propertiesState = ref.watch(paginatedPropertiesProvider);
+    final propertiesState = ref.watch(paginatedPropertiesProvider(_currentCity));
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: RefreshIndicator(
         onRefresh: () async {
           await _fetchCitiesFromFirestore();
-          ref.invalidate(paginatedPropertiesProvider);
+          ref.invalidate(paginatedPropertiesProvider(_currentCity));
         },
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -226,14 +274,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               flexibleSpace: FlexibleSpaceBar(
                 background: SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     child: Column(
                       children: [
                         Row(
                           children: [
                             IconButton(
                               icon: const Icon(Icons.menu, color: Colors.white),
-                              onPressed: () => _navigateToProfileOrLogin(context),
+                              onPressed:
+                                  () => _navigateToProfileOrLogin(context),
                             ),
                             Expanded(
                               child: Row(
@@ -243,12 +295,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     'assets/images/Logo.svg',
                                     height: 24,
                                     width: 24,
-                                    colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                                    colorFilter: const ColorFilter.mode(
+                                      Colors.white,
+                                      BlendMode.srcIn,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   const Text(
                                     'TRIANGLE HOMES',
-                                    style: TextStyle(color: Colors.white, fontFamily: 'outfit', fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'outfit',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 2,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -258,14 +319,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         const SizedBox(height: 12),
                         GestureDetector(
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen())),
+                          onTap:
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SearchScreen(),
+                                ),
+                              ),
                           child: Container(
                             height: 48,
                             padding: const EdgeInsets.symmetric(horizontal: 20),
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(15),
+                            ),
                             child: const Row(
                               children: [
-                                Expanded(child: Text('Search Area/City/College', style: TextStyle(color: Colors.grey, fontSize: 13))),
+                                Expanded(
+                                  child: Text(
+                                    'Search Area/City/College',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
                                 Icon(Icons.search, color: Colors.black54),
                               ],
                             ),
@@ -307,27 +385,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: propertiesState.when(
-                      data: (accommodations) => NearbyAccommodations(
-                        accommodations: accommodations,
-                        selectedCity: 'near me',
-                        customTitle: 'PG Accommodation Near Yenepoya University',
-                      ),
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (error, stack) => Center(child: Text('Error: ${error.toString()}')),
+                      data:
+                          (accommodations) => NearbyAccommodations(
+                            accommodations: accommodations,
+                            selectedCity: _currentCity,
+                          ),
+                      loading:
+                          () =>
+                              const Center(child: CircularProgressIndicator()),
+                      error:
+                          (error, stack) =>
+                              Center(child: Text('Error: ${error.toString()}')),
                     ),
                   ),
                   HighestRatedSection(
-                    title: 'Highest Rated Apartments of 2025',
+                    title: 'Highest Rated College Apartments of 2025',
                     items: _mockApartments,
                     onItemTap: (item) {},
                   ),
                   HighestRatedSection(
-                    title: 'Highest Rated PGs of 2025',
+                    title: 'Highest Rated College Paying Guest Accommodation of 2025',
                     items: _mockPGs,
                     onItemTap: (item) {},
                   ),
-                  const EnrollmentCard(),
-                  const HosterRegistrationCard(),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -340,18 +420,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   final List<Map<String, dynamic>> _mockInstitutions = [
-    {'name': 'Yenepoya University', 'location': 'Mangaluru, Karnataka', 'logo': 'https://www.yenepoya.edu.in/images/logo.png'},
-    {'name': 'Madras Christian College', 'location': 'Chennai, Tamil Nadu', 'logo': 'https://mcc.edu.in/wp-content/uploads/2020/07/mcc-logo.png'},
+    {
+      'name': 'Yenepoya University',
+      'location': 'Mangaluru, Karnataka',
+      'logo': 'https://www.yenepoya.edu.in/images/logo.png',
+    },
+    {
+      'name': 'IIT Delhi',
+      'location': 'New Delhi',
+      'logo': 'https://home.iitd.ac.in/images/logo.png',
+    },
+    {
+      'name': 'IIM Ahmedabad',
+      'location': 'Ahmedabad, Gujarat',
+      'logo': 'https://www.iima.ac.in/sites/default/files/iima-logo.png',
+    },
+    {
+      'name': 'Madras Christian College',
+      'location': 'Chennai, Tamil Nadu',
+      'logo': 'https://mcc.edu.in/wp-content/uploads/2020/07/mcc-logo.png',
+    },
+    {
+      'name': 'SRM University',
+      'location': 'Chennai, Tamil Nadu',
+      'logo': 'https://www.srmist.edu.in/wp-content/uploads/2021/01/logo.png',
+    },
   ];
 
   final List<Map<String, dynamic>> _mockApartments = [
-    {'name': 'Prestige Apartments', 'location': 'Bangalore, Karnataka', 'logo': 'https://www.prestigeconstructions.com/images/logo.png'},
-    {'name': 'Brigade Gateway', 'location': 'Bangalore, Karnataka', 'logo': 'https://www.brigadegroup.com/images/logo.png'},
+    {
+      'name': 'Prestige Apartments',
+      'location': 'Bangalore, Karnataka',
+      'logo': 'https://www.prestigeconstructions.com/images/logo.png',
+    },
+    {
+      'name': 'Brigade Gateway',
+      'location': 'Bangalore, Karnataka',
+      'logo': 'https://www.brigadegroup.com/images/logo.png',
+    },
   ];
 
   final List<Map<String, dynamic>> _mockPGs = [
-    {'name': 'Zolo Stay PGs', 'location': 'Chennai, Tamil Nadu', 'logo': 'https://www.zolostays.com/images/logo.png'},
-    {'name': 'Stanza Living', 'location': 'Kochi, Kerala', 'logo': 'https://www.stanzaliving.com/images/logo.png'},
+    {
+      'name': 'Zolo Stay PGs',
+      'location': 'Chennai, Tamil Nadu',
+      'logo': 'https://www.zolostays.com/images/logo.png',
+    },
+    {
+      'name': 'Stanza Living',
+      'location': 'Kochi, Kerala',
+      'logo': 'https://www.stanzaliving.com/images/logo.png',
+    },
   ];
 }
 
@@ -362,7 +481,11 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
   _StickyHeaderDelegate({required this.height, required this.child});
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return SizedBox.expand(child: child);
   }
 

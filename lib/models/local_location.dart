@@ -13,11 +13,7 @@ class LocalLocation {
   bool isMajor = false;
   DateTime lastUpdated = DateTime.now();
 
-  LocalLocation({
-    required this.cityName,
-    this.stateName,
-    this.isMajor = false,
-  });
+  LocalLocation({required this.cityName, this.stateName, this.isMajor = false});
 }
 
 @collection

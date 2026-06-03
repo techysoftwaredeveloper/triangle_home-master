@@ -28,10 +28,10 @@ service firebase.storage {
       allow write: if isOwner(userId);
     }
 
-    // Property Images: Used for listing properties
-    match /property_images/{allPaths=**} {
+    // Property Images: Used for listing properties. Must be prefixed by user ID.
+    match /property_images/{hosterId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if isOwner(hosterId);
     }
   }
 }

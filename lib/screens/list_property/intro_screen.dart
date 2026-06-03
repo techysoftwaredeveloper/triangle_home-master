@@ -23,68 +23,89 @@ class ListPropertyIntroScreen extends StatelessWidget {
         backgroundColor: AppTheme.successColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Become a Hoster',
-          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Outfit',
+          ),
         ),
       ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            decoration: const BoxDecoration(
-              color: AppTheme.successColor,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              decoration: const BoxDecoration(
+                color: AppTheme.successColor,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'List your property\nin minutes',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Outfit',
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Reach thousands of verified\nstudents & professionals',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 14,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Center(
+                    child: SvgPicture.asset(
+                      'assets/images/listmyproperty.svg',
+                      height: 120,
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'List your property\nin minutes',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Outfit',
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Reach thousands of verified\nstudents & professionals',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: 14,
-                    fontFamily: 'Outfit',
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Center(
-                  child: SvgPicture.asset(
-                    'assets/images/listmyproperty.svg',
-                    height: 120,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
+            Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  _buildBenefitItem(Icons.trending_up_rounded, 'Get more bookings'),
-                  _buildBenefitItem(Icons.verified_user_outlined, 'Secure rent payments'),
-                  _buildBenefitItem(Icons.business_center_outlined, 'Manage properties easily'),
-                  _buildBenefitItem(Icons.shield_outlined, 'Build your trust score'),
-                  const Spacer(),
+                  _buildBenefitItem(
+                    Icons.trending_up_rounded,
+                    'Get more bookings',
+                  ),
+                  _buildBenefitItem(
+                    Icons.verified_user_outlined,
+                    'Secure rent payments',
+                  ),
+                  _buildBenefitItem(
+                    Icons.business_center_outlined,
+                    'Manage properties easily',
+                  ),
+                  _buildBenefitItem(
+                    Icons.shield_outlined,
+                    'Build your trust score',
+                  ),
+                  const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -92,11 +113,17 @@ class ListPropertyIntroScreen extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.successColor,
                         padding: const EdgeInsets.symmetric(vertical: 18),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       child: const Text(
                         'Get Started',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -105,19 +132,25 @@ class ListPropertyIntroScreen extends StatelessWidget {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen(isStudent: false)),
+                        MaterialPageRoute(
+                          builder: (_) => const LoginScreen(isStudent: false),
+                        ),
                       );
                     },
                     child: const Text(
                       'I already have an account',
-                      style: TextStyle(color: AppTheme.textMutedColor, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: AppTheme.textMutedColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -29,11 +29,7 @@ class OwnerProfile extends StatelessWidget {
           children: [
             const Text(
               "Owner's Profile",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             TextButton(
               onPressed: onViewAllListings,
@@ -44,10 +40,7 @@ class OwnerProfile extends StatelessWidget {
         const SizedBox(height: 16),
         Row(
           children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundImage: NetworkImage(image),
-            ),
+            CircleAvatar(radius: 30, backgroundImage: NetworkImage(image)),
             const SizedBox(width: 16),
             Expanded(
               child: Column(

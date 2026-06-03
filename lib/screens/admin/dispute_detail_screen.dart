@@ -39,9 +39,9 @@ class _DisputeDetailScreenState extends State<DisputeDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to update: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -53,7 +53,10 @@ class _DisputeDetailScreenState extends State<DisputeDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Dispute Case', style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+        title: const Text(
+          'Dispute Case',
+          style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+        ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
@@ -85,7 +88,10 @@ class _DisputeDetailScreenState extends State<DisputeDetailScreen> {
                     hintText: 'Add a decision or note for the parties...',
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 120),
@@ -94,7 +100,10 @@ class _DisputeDetailScreenState extends State<DisputeDetailScreen> {
           ),
           _buildBottomActions(),
           if (_isProcessing)
-            Container(color: Colors.white.withValues(alpha: 0.5), child: const Center(child: CircularProgressIndicator())),
+            Container(
+              color: Colors.white.withValues(alpha: 0.5),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
         ],
       ),
     );
@@ -116,11 +125,24 @@ class _DisputeDetailScreenState extends State<DisputeDetailScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('CASE #${widget.dispute.id.substring(0, 8).toUpperCase()}', 
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textMutedColor, letterSpacing: 1)),
+                  Text(
+                    'CASE #${widget.dispute.id.substring(0, 8).toUpperCase()}',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textMutedColor,
+                      letterSpacing: 1,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(widget.dispute.category.replaceAll('_', ' '), 
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+                  Text(
+                    widget.dispute.category.replaceAll('_', ' '),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textDarkColor,
+                    ),
+                  ),
                 ],
               ),
               _StatusBadge(status: widget.dispute.status),
@@ -130,7 +152,10 @@ class _DisputeDetailScreenState extends State<DisputeDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _headerMeta('Opened On', DateFormat('dd MMM yyyy').format(widget.dispute.createdAt)),
+              _headerMeta(
+                'Opened On',
+                DateFormat('dd MMM yyyy').format(widget.dispute.createdAt),
+              ),
               _headerMeta('Booking ID', widget.dispute.bookingId),
             ],
           ),
@@ -143,9 +168,23 @@ class _DisputeDetailScreenState extends State<DisputeDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textMutedColor, fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            color: AppTheme.textMutedColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         const SizedBox(height: 2),
-        Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textDarkColor,
+          ),
+        ),
       ],
     );
   }
@@ -162,10 +201,23 @@ class _DisputeDetailScreenState extends State<DisputeDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Primary Complaint:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textMutedColor)),
+          const Text(
+            'Primary Complaint:',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textMutedColor,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(widget.dispute.description, 
-            style: const TextStyle(fontSize: 14, color: AppTheme.textDarkColor, height: 1.5)),
+          Text(
+            widget.dispute.description,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppTheme.textDarkColor,
+              height: 1.5,
+            ),
+          ),
         ],
       ),
     );
@@ -174,37 +226,69 @@ class _DisputeDetailScreenState extends State<DisputeDetailScreen> {
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Outfit',
+        ),
+      ),
     );
   }
 
   Widget _buildBottomActions() {
     final s = widget.dispute.status;
-    if (s == DisputeStatus.resolved || s == DisputeStatus.rejected) return const SizedBox.shrink();
+    if (s == DisputeStatus.resolved || s == DisputeStatus.rejected)
+      return const SizedBox.shrink();
 
     return Positioned(
-      bottom: 0, left: 0, right: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
       child: Container(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Expanded(
               child: ElevatedButton(
                 onPressed: () => _updateStatus(DisputeStatus.rejected),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFEF2F2), foregroundColor: Colors.red, elevation: 0),
-                child: const Text('Reject Case', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFEF2F2),
+                  foregroundColor: Colors.red,
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'Reject Case',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: ElevatedButton(
                 onPressed: () => _updateStatus(DisputeStatus.resolved),
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successColor, elevation: 0),
-                child: const Text('Resolve Dispute', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.successColor,
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'Resolve Dispute',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],
@@ -226,8 +310,18 @@ class _StatusBadge extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-      child: Text(status.name.toUpperCase(), style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        status.name.toUpperCase(),
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }

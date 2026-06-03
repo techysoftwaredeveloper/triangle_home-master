@@ -5,15 +5,19 @@ import 'package:triangle_home/theme/app_theme.dart';
 class AmenitiesSection extends StatefulWidget {
   final List<String> amenities;
   final String propertyType;
+
   /// For apartments: key highlights list of maps {icon, label, sublabel?}
   final List<Map<String, dynamic>> highlights;
+
   /// Structured amenity categories — overrides flat [amenities] list for Hostel/PG.
   /// Keys: `food`, `utilities`, `comfort`, `facilities`, `safety`
   /// Each value is a List of maps with `label` and `available` (bool)
   final Map<String, List<Map<String, dynamic>>> amenityCategories;
+
   /// BHK-specific property details for apartments:
   /// Keys: `bedrooms`, `bathrooms`, `floor`, `parking`, `age`, `facing`, `furnishing`
   final Map<String, dynamic> bhkDetails;
+
   /// Project status string, e.g. 'Ready to Move', 'Under Construction'
   final String propertyStatus;
 
@@ -48,9 +52,10 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
   // Apartments: Key Highlights expanded grid
   // ─────────────────────────────────────────────────────────────────────────
   Widget _buildKeyHighlights() {
-    final highlights = widget.highlights.isNotEmpty
-        ? widget.highlights
-        : _buildHighlightsFromDetails();
+    final highlights =
+        widget.highlights.isNotEmpty
+            ? widget.highlights
+            : _buildHighlightsFromDetails();
 
     return Container(
       color: const Color(0xFFF5F6FA),
@@ -104,17 +109,23 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
     }
 
     // Furnishing
-    final furnishing = (d['furnishing'] as String?) ?? (d['furnishingStatus'] as String?);
+    final furnishing =
+        (d['furnishing'] as String?) ?? (d['furnishingStatus'] as String?);
     if (furnishing != null && furnishing.isNotEmpty) {
       result.add({
         'icon': Icons.chair_outlined,
         'label': furnishing,
         'sublabel': 'Furnishing',
       });
-    } else if (widget.amenities.any((a) =>
-        a.toLowerCase().contains('furnish') || a.toLowerCase().contains('move'))) {
+    } else if (widget.amenities.any(
+      (a) =>
+          a.toLowerCase().contains('furnish') ||
+          a.toLowerCase().contains('move'),
+    )) {
       final match = widget.amenities.firstWhere(
-        (a) => a.toLowerCase().contains('furnish') || a.toLowerCase().contains('move'),
+        (a) =>
+            a.toLowerCase().contains('furnish') ||
+            a.toLowerCase().contains('move'),
       );
       result.add({'icon': Icons.chair_outlined, 'label': match});
     }
@@ -140,11 +151,16 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
     }
 
     // Floor
-    final floor = d['floor'] as String? ?? (d['floorNumber'] != null ? '${d['floorNumber']}' : null);
+    final floor =
+        d['floor'] as String? ??
+        (d['floorNumber'] != null ? '${d['floorNumber']}' : null);
     if (floor != null && floor.isNotEmpty) {
       result.add({
         'icon': Icons.layers_outlined,
-        'label': floor.contains('Floor') || floor.contains('floor') ? floor : '$floor Floor',
+        'label':
+            floor.contains('Floor') || floor.contains('floor')
+                ? floor
+                : '$floor Floor',
         'sublabel': 'Floor',
       });
     }
@@ -152,15 +168,26 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
     // Parking
     final parking = d['parking'];
     if (parking == true || parking == 'Yes' || parking == 'yes') {
-      result.add({'icon': Icons.directions_car_outlined, 'label': 'Parking Available'});
+      result.add({
+        'icon': Icons.directions_car_outlined,
+        'label': 'Parking Available',
+      });
     } else if (parking == false || parking == 'No' || parking == 'no') {
-      result.add({'icon': Icons.directions_car_outlined, 'label': 'No Parking', 'unavailable': true});
+      result.add({
+        'icon': Icons.directions_car_outlined,
+        'label': 'No Parking',
+        'unavailable': true,
+      });
     }
 
     // Property age / project status
     final age = d['age'] as String? ?? d['propertyAge'] as String?;
     if (age != null && age.isNotEmpty) {
-      result.add({'icon': Icons.calendar_today_outlined, 'label': age, 'sublabel': 'Property Age'});
+      result.add({
+        'icon': Icons.calendar_today_outlined,
+        'label': age,
+        'sublabel': 'Property Age',
+      });
     } else if (widget.propertyStatus.isNotEmpty) {
       result.add({
         'icon': Icons.info_outline_rounded,
@@ -172,11 +199,19 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
     // Facing direction
     final facing = d['facing'] as String?;
     if (facing != null && facing.isNotEmpty) {
-      result.add({'icon': Icons.explore_outlined, 'label': '$facing Facing', 'sublabel': 'Direction'});
+      result.add({
+        'icon': Icons.explore_outlined,
+        'label': '$facing Facing',
+        'sublabel': 'Direction',
+      });
     }
 
     // Lift / elevator from amenities
-    if (widget.amenities.any((a) => a.toLowerCase().contains('lift') || a.toLowerCase().contains('elevator'))) {
+    if (widget.amenities.any(
+      (a) =>
+          a.toLowerCase().contains('lift') ||
+          a.toLowerCase().contains('elevator'),
+    )) {
       result.add({'icon': Icons.elevator_outlined, 'label': 'Lift Available'});
     }
 
@@ -193,27 +228,33 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
       rows.add([items[i], if (i + 1 < items.length) items[i + 1]]);
     }
     return Column(
-      children: rows.asMap().entries.map((entry) {
-        final rowIndex = entry.key;
-        final pair = entry.value;
-        return Column(
-          children: [
-            if (rowIndex > 0) Divider(color: Colors.grey.shade100, height: 1),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  Expanded(child: _buildHighlightItem(pair[0])),
-                  if (pair.length > 1) ...[
-                    Container(width: 1, height: 48, color: Colors.grey.shade100),
-                    Expanded(child: _buildHighlightItem(pair[1])),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        );
-      }).toList(),
+      children:
+          rows.asMap().entries.map((entry) {
+            final rowIndex = entry.key;
+            final pair = entry.value;
+            return Column(
+              children: [
+                if (rowIndex > 0)
+                  Divider(color: Colors.grey.shade100, height: 1),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildHighlightItem(pair[0])),
+                      if (pair.length > 1) ...[
+                        Container(
+                          width: 1,
+                          height: 48,
+                          color: Colors.grey.shade100,
+                        ),
+                        Expanded(child: _buildHighlightItem(pair[1])),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
     );
   }
 
@@ -228,7 +269,8 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
         Icon(
           icon,
           size: 28,
-          color: unavailable ? const Color(0xFFBDBDBD) : AppTheme.textLightColor,
+          color:
+              unavailable ? const Color(0xFFBDBDBD) : AppTheme.textLightColor,
         ),
         const SizedBox(height: 8),
         Text(
@@ -275,15 +317,24 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
 
   IconData _iconForAmenity(String amenity) {
     final a = amenity.toLowerCase();
-    if (a.contains('carpet') || a.contains('area') || a.contains('sqft')) return Icons.grid_view_outlined;
-    if (a.contains('furnished') || a.contains('furnish')) return Icons.bed_outlined;
-    if (a.contains('parking') || a.contains('car')) return Icons.directions_car_outlined;
-    if (a.contains('gym') || a.contains('fitness')) return Icons.fitness_center_outlined;
-    if (a.contains('pool') || a.contains('swimming')) return Icons.pool_outlined;
-    if (a.contains('lift') || a.contains('elevator')) return Icons.elevator_outlined;
-    if (a.contains('security') || a.contains('guard')) return Icons.security_outlined;
-    if (a.contains('wifi') || a.contains('internet')) return Icons.wifi_outlined;
-    if (a.contains('power') || a.contains('backup')) return Icons.power_outlined;
+    if (a.contains('carpet') || a.contains('area') || a.contains('sqft'))
+      return Icons.grid_view_outlined;
+    if (a.contains('furnished') || a.contains('furnish'))
+      return Icons.bed_outlined;
+    if (a.contains('parking') || a.contains('car'))
+      return Icons.directions_car_outlined;
+    if (a.contains('gym') || a.contains('fitness'))
+      return Icons.fitness_center_outlined;
+    if (a.contains('pool') || a.contains('swimming'))
+      return Icons.pool_outlined;
+    if (a.contains('lift') || a.contains('elevator'))
+      return Icons.elevator_outlined;
+    if (a.contains('security') || a.contains('guard'))
+      return Icons.security_outlined;
+    if (a.contains('wifi') || a.contains('internet'))
+      return Icons.wifi_outlined;
+    if (a.contains('power') || a.contains('backup'))
+      return Icons.power_outlined;
     return Icons.check_circle_outline;
   }
 
@@ -295,25 +346,32 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
     'food': (label: 'Food', icon: Icons.restaurant_outlined),
     'utilities': (label: 'Utilities', icon: Icons.electrical_services_outlined),
     'comfort': (label: 'Comfort', icon: Icons.bed_outlined),
-    'facilities': (label: 'Facilities', icon: Icons.local_laundry_service_outlined),
+    'facilities': (
+      label: 'Facilities',
+      icon: Icons.local_laundry_service_outlined,
+    ),
     'safety': (label: 'Safety', icon: Icons.security_outlined),
   };
 
   Widget _buildCategorizedAmenities() {
     // Build categories from structured data or infer from flat list
-    final cats = widget.amenityCategories.isNotEmpty
-        ? widget.amenityCategories
-        : _inferCategories(widget.amenities);
+    final cats =
+        widget.amenityCategories.isNotEmpty
+            ? widget.amenityCategories
+            : _inferCategories(widget.amenities);
 
-    if (cats.isEmpty && widget.amenities.isEmpty) return const SizedBox.shrink();
+    if (cats.isEmpty && widget.amenities.isEmpty)
+      return const SizedBox.shrink();
 
     // Flatten to a combined list for "show all" logic
-    final allCategories = _categoryMeta.keys
-        .where((k) => cats.containsKey(k) && cats[k]!.isNotEmpty)
-        .toList();
+    final allCategories =
+        _categoryMeta.keys
+            .where((k) => cats.containsKey(k) && cats[k]!.isNotEmpty)
+            .toList();
 
     // When not showing all, show at most 2 categories
-    final visibleCategories = _showAll ? allCategories : allCategories.take(2).toList();
+    final visibleCategories =
+        _showAll ? allCategories : allCategories.take(2).toList();
 
     final hasMore = allCategories.length > 2;
 
@@ -358,35 +416,36 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Column(
-              children: visibleCategories.asMap().entries.map((entry) {
-                final key = entry.value;
-                final meta = _categoryMeta[key]!;
-                final items = cats[key]!;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _CategoryCard(
-                    label: meta.label,
-                    icon: meta.icon,
-                    items: items,
-                  ).animate().fadeIn(
+              children:
+                  visibleCategories.asMap().entries.map((entry) {
+                    final key = entry.value;
+                    final meta = _categoryMeta[key]!;
+                    final items = cats[key]!;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _CategoryCard(
+                        label: meta.label,
+                        icon: meta.icon,
+                        items: items,
+                      ).animate().fadeIn(
                         delay: Duration(milliseconds: entry.key * 80),
                         duration: 300.ms,
                       ),
-                );
-              }).toList(),
+                    );
+                  }).toList(),
             ),
           ),
 
           // Flat fallback if no categorized data but flat amenities exist
-          if (cats.isEmpty && widget.amenities.isNotEmpty)
-            _buildFlatFallback(),
+          if (cats.isEmpty && widget.amenities.isNotEmpty) _buildFlatFallback(),
         ],
       ),
     );
   }
 
   Widget _buildFlatFallback() {
-    final displayed = _showAll ? widget.amenities : widget.amenities.take(4).toList();
+    final displayed =
+        _showAll ? widget.amenities : widget.amenities.take(4).toList();
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: AnimatedContainer(
@@ -414,7 +473,11 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
                     children: [
                       const Text(
                         '•',
-                        style: TextStyle(fontSize: 20, height: 1, color: Color(0xFF2D2D2D)),
+                        style: TextStyle(
+                          fontSize: 20,
+                          height: 1,
+                          color: Color(0xFF2D2D2D),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -428,7 +491,11 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
                       ),
                     ],
                   ),
-                  const Icon(Icons.check_circle, color: Color(0xFF1ABC5C), size: 20),
+                  const Icon(
+                    Icons.check_circle,
+                    color: Color(0xFF1ABC5C),
+                    size: 20,
+                  ),
                 ],
               ),
             ).animate().fadeIn(delay: Duration(milliseconds: index * 60));
@@ -439,7 +506,9 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
   }
 
   /// Infer categories from a flat amenity list using keyword matching
-  Map<String, List<Map<String, dynamic>>> _inferCategories(List<String> amenities) {
+  Map<String, List<Map<String, dynamic>>> _inferCategories(
+    List<String> amenities,
+  ) {
     final food = <Map<String, dynamic>>[];
     final utilities = <Map<String, dynamic>>[];
     final comfort = <Map<String, dynamic>>[];
@@ -558,17 +627,18 @@ class _CategoryCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
-              children: items.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final item = entry.value;
-                final itemLabel = item['label'] as String? ?? '';
-                final available = item['available'] as bool? ?? true;
-                return _AmenityRow(
-                  label: itemLabel,
-                  available: available,
-                  showDivider: idx < items.length - 1,
-                );
-              }).toList(),
+              children:
+                  items.asMap().entries.map((entry) {
+                    final idx = entry.key;
+                    final item = entry.value;
+                    final itemLabel = item['label'] as String? ?? '';
+                    final available = item['available'] as bool? ?? true;
+                    return _AmenityRow(
+                      label: itemLabel,
+                      available: available,
+                      showDivider: idx < items.length - 1,
+                    );
+                  }).toList(),
             ),
           ),
         ],
@@ -614,14 +684,25 @@ class _AmenityRow extends StatelessWidget {
                       fontSize: 14,
                       fontFamily: 'Outfit',
                       fontWeight: FontWeight.w400,
-                      color: available ? const Color(0xFF2D2D2D) : AppTheme.textLightColor,
+                      color:
+                          available
+                              ? const Color(0xFF2D2D2D)
+                              : AppTheme.textLightColor,
                     ),
                   ),
                 ],
               ),
               available
-                  ? const Icon(Icons.check_circle, color: Color(0xFF1ABC5C), size: 20)
-                  : const Icon(Icons.cancel_outlined, color: Color(0xFFBDBDBD), size: 20),
+                  ? const Icon(
+                    Icons.check_circle,
+                    color: Color(0xFF1ABC5C),
+                    size: 20,
+                  )
+                  : const Icon(
+                    Icons.cancel_outlined,
+                    color: Color(0xFFBDBDBD),
+                    size: 20,
+                  ),
             ],
           ),
         ),

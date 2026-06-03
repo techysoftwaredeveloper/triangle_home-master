@@ -23,7 +23,10 @@ class PropertyPrivateDetails {
     required this.updatedAt,
   });
 
-  factory PropertyPrivateDetails.fromFirestore(String id, Map<String, dynamic> data) {
+  factory PropertyPrivateDetails.fromFirestore(
+    String id,
+    Map<String, dynamic> data,
+  ) {
     return PropertyPrivateDetails(
       propertyId: id,
       exactAddress: data['exactAddress'] ?? '',

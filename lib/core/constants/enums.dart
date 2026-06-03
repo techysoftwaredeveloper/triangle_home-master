@@ -39,33 +39,17 @@ enum BookingStatus {
   // Final Terminal States
   completed,
   cancelled,
-  refunded
-}
-
-enum PropertyStatus {
-  pending,
-  approved,
-  rejected,
-  suspended,
-  active
-}
-
-enum PaymentStatus {
-  pending,
-  completed,
-  failed,
   refunded,
-  partiallyPaid
+  approved,
+  pending,
+  confirmed,
 }
 
-enum PaymentType {
-  reservationFee,
-  rent,
-  deposit,
-  platformFee,
-  refund,
-  other
-}
+enum PropertyStatus { pending, approved, rejected, suspended, active }
+
+enum PaymentStatus { pending, completed, failed, refunded, partiallyPaid }
+
+enum PaymentType { reservationFee, rent, deposit, platformFee, refund, other }
 
 enum TransactionStatus {
   created,
@@ -74,7 +58,7 @@ enum TransactionStatus {
   success,
   failed,
   refunded,
-  partialRefund
+  partialRefund,
 }
 
 enum TransactionType {
@@ -83,7 +67,7 @@ enum TransactionType {
   firstMonthRent,
   serviceFee,
   refund,
-  payout
+  payout,
 }
 
 enum EscrowStatus {
@@ -93,7 +77,7 @@ enum EscrowStatus {
   payoutApproved,
   payoutReleased,
   disputed,
-  refunded
+  refunded,
 }
 
 enum FinancialEventType {
@@ -102,15 +86,10 @@ enum FinancialEventType {
   payoutRequested,
   payoutReleased,
   refundInitiated,
-  refundCompleted
+  refundCompleted,
 }
 
-enum UserRole {
-  student,
-  hoster,
-  admin,
-  guest
-}
+enum UserRole { student, hoster, admin, guest }
 
 enum DisputeStatus {
   open,
@@ -118,47 +97,89 @@ enum DisputeStatus {
   waitingForUser,
   waitingForHoster,
   resolved,
-  rejected
+  rejected,
 }
 
-enum RefundStatus {
-  requested,
-  approved,
-  processing,
+enum RefundStatus { requested, approved, processing, completed, failed }
+
+enum BedStatus { available, reserved, booked, occupied, maintenance, blocked }
+
+enum RoomType { single, double, triple, dormitory }
+
+enum CheckInStatus { pending, verified, expired, cancelled }
+
+enum CheckInMethod { qr, otp }
+
+enum StayStatus {
+  active,
+  noticeSubmitted,
+  checkoutPending,
+  inspectionPending,
+  settlementPending,
   completed,
-  failed
+  terminated,
 }
 
-enum BedStatus {
-  available,
-  reserved,
-  booked,
-  occupied,
-  maintenance,
-  blocked
+enum RentStatus { pending, paid, overdue, waived }
+
+enum NoticeStatus { pending, approved, rejected, withdrawn }
+
+enum InspectionCondition { excellent, good, damaged }
+
+enum DepositStatus { pending, proposed, approved, processed, disputed }
+
+enum CheckoutStatus {
+  none,
+  noticeSubmitted,
+  inspectionPending,
+  settlementPending,
+  awaitingResidentApproval,
+  completed,
 }
 
-enum RoomType {
-  single,
-  double,
-  triple,
-  dormitory
+enum AttachmentType { image, video, document }
+
+enum TicketCategory {
+  electrical,
+  plumbing,
+  cleaning,
+  internet,
+  furniture,
+  food,
+  security,
+  other,
+}
+
+enum TicketPriority { low, medium, high, emergency }
+
+enum TicketStatus { open, assigned, inProgress, resolved, closed, reopened }
+
+enum MaintenanceEventType {
+  ticketCreated,
+  ticketAssigned,
+  ticketResolved,
+  ticketReopened,
+  slaBreached,
+}
+
+enum AdminActionType {
+  payoutReleased,
+  disputeResolved,
+  bookingCancelled,
+  refundApproved,
+  userSuspended,
 }
 
 enum InventoryEventType {
   bedCreated,
   bedReserved,
-  bedBooked,
   bedOccupied,
   bedReleased,
-  bedMaintenance
+  roomCreated,
+  roomDeleted,
 }
 
-enum TimelineSeverity {
-  info,
-  warning,
-  critical
-}
+enum TimelineSeverity { info, warning, critical }
 
 extension BookingStatusX on BookingStatus {
   String get name => toString().split('.').last;

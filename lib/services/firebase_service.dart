@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -258,48 +259,160 @@ class FirebaseService {
 
   // ==================== SEARCH ====================
 
-  /// Get all unique cities from properties
+  /// Get all unique cities from properties - with Fallback
   Future<List<String>> getCities() async {
-    final snapshot = await _firestore.collection('properties').get();
-    final cities = <String>{};
-    for (final doc in snapshot.docs) {
-      final city = doc.data()['city'] as String?;
-      if (city != null && city.isNotEmpty) {
-        cities.add(city);
+    try {
+      final snapshot = await _firestore.collection('cities').get();
+      final cities = snapshot.docs.map((doc) => doc.id).toList();
+      if (cities.isNotEmpty) {
+        return cities..sort();
       }
+    } catch (e) {
+      debugPrint('Error fetching cities from Firestore: $e');
     }
-    return cities.toList()..sort();
+
+    // Default Fallback Cities for the project
+    return [
+      "Kozhikode",
+      "Malappuram",
+      "Kochi",
+      "Bangalore",
+      "Chennai",
+      "Mumbai",
+      "Hyderabad",
+      "Delhi",
+    ]..sort();
   }
 
-  /// Get localities for a city
+  /// Get localities for a city - with Fallback
   Future<List<String>> getLocalities(String city) async {
-    final snapshot =
-        await _firestore
-            .collection('properties')
-            .where('city', isEqualTo: city)
-            .get();
-    final localities = <String>{};
-    for (final doc in snapshot.docs) {
-      final locality = doc.data()['locality'] as String?;
-      if (locality != null && locality.isNotEmpty) {
-        localities.add(locality);
+    try {
+      final snapshot = await _firestore
+          .collection('cities')
+          .doc(city)
+          .collection('areas')
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        return snapshot.docs.map((doc) => doc.id).toList()..sort();
       }
+    } catch (e) {
+      debugPrint('Error fetching localities: $e');
     }
-    return localities.toList()..sort();
+
+    // Default Fallback Localities for major cities
+    final Map<String, List<String>> cityLocalities = {
+      'Kochi': [
+        'Kalamassery',
+        'Edappally',
+        'Kakkanad',
+        'Aluva',
+        'Vytila',
+        'Tripunithura',
+        'Panampilly Nagar',
+        'Fort Kochi'
+      ],
+      'Kozhikode': [
+        'Mavoor Road',
+        'Thondayad',
+        'Nadakkavu',
+        'Medical College',
+        'Pantheeramkavu',
+        'Feroke',
+        'West Hill'
+      ],
+      'Malappuram': [
+        'Manjeri',
+        'Kottakkal',
+        'Perinthalmanna',
+        'Tirur',
+        'Ponnani',
+        'Nilambur',
+        'Kondotty'
+      ],
+      'Bangalore': [
+        'Koramangala',
+        'Indiranagar',
+        'HSR Layout',
+        'Whitefield',
+        'Electronic City',
+        'Jayanagar',
+        'BTM Layout',
+        'Hebbal'
+      ],
+      'Chennai': [
+        'Adyar',
+        'Anna Nagar',
+        'T. Nagar',
+        'Velachery',
+        'Mylapore',
+        'Guindy',
+        'OMR',
+        'Besant Nagar'
+      ],
+      'Mumbai': [
+        'Andheri',
+        'Bandra',
+        'Borivali',
+        'Colaba',
+        'Dadar',
+        'Goregaon',
+        'Powai',
+        'Worli'
+      ],
+      'Hyderabad': [
+        'Banjara Hills',
+        'Gachibowli',
+        'HITEC City',
+        'Jubilee Hills',
+        'Kukatpally',
+        'Madhapur',
+        'Secunderabad'
+      ],
+      'Delhi': [
+        'Connaught Place',
+        'Dwarka',
+        'Hauz Khas',
+        'Karol Bagh',
+        'Lajpat Nagar',
+        'Rohini',
+        'Saket',
+        'South Ext'
+      ],
+    };
+
+    return cityLocalities[city] ?? []
+      ..sort();
   }
 
-  /// Get all unique colleges from properties
+  /// Get all unique colleges from properties - with Fallback
   Future<List<String>> getColleges() async {
-    final snapshot = await _firestore.collection('properties').get();
-    final colleges = <String>{};
-    for (final doc in snapshot.docs) {
-      final basicInfo = doc.data()['basicInfo'] as Map<String, dynamic>?;
-      final college = basicInfo?['collegeName'] as String?;
-      if (college != null && college.isNotEmpty) {
-        colleges.add(college);
+    try {
+      final snapshot = await _firestore.collection('properties').get();
+      final colleges = <String>{};
+      for (final doc in snapshot.docs) {
+        final basicInfo = doc.data()['basicInfo'] as Map<String, dynamic>?;
+        final college = basicInfo?['collegeName'] as String?;
+        if (college != null && college.isNotEmpty) {
+          colleges.add(college);
+        }
       }
+      if (colleges.isNotEmpty) {
+        return colleges.toList()..sort();
+      }
+    } catch (e) {
+      debugPrint('Error fetching colleges: $e');
     }
-    return colleges.toList()..sort();
+
+    // Default Fallback Colleges
+    return [
+      "Yenepoya University",
+      "Anna University",
+      "St. Aloysius College",
+      "Madras Christian College",
+      "Cochin University (CUSAT)",
+      "Amrita Vishwa Vidyapeetham",
+    ]..sort();
   }
 
   /// Search properties with filters - returns stream for real-time updates
@@ -641,14 +754,14 @@ class FirebaseService {
 
   /// Create notification
   Future<void> createNotification({
-    required String user_id,
+    required String userId,
     required String title,
     required String body,
     String? type,
     Map<String, dynamic>? data,
   }) async {
     await _firestore.collection('notifications').add({
-      'user_id': user_id,
+      'user_id': userId,
       'title': title,
       'body': body,
       'type': type,
@@ -724,9 +837,10 @@ class FirebaseService {
       'totalBookings': bookings.docs.length,
       'totalUsers': users.docs.length,
       'totalRevenue': totalRevenue,
-      'pendingProperties': properties.docs
-          .where((doc) => doc.data()['status'] == 'pending')
-          .length,
+      'pendingProperties':
+          properties.docs
+              .where((doc) => doc.data()['status'] == 'pending')
+              .length,
     };
   }
 
@@ -773,20 +887,23 @@ class FirebaseService {
 
   /// Get stats for hoster dashboard
   Future<Map<String, dynamic>> getHosterStats(String hosterId) async {
-    final properties = await _firestore
-        .collection('properties')
-        .where('hoster_id', isEqualTo: hosterId)
-        .get();
+    final properties =
+        await _firestore
+            .collection('properties')
+            .where('hoster_id', isEqualTo: hosterId)
+            .get();
 
-    final bookings = await _firestore
-        .collection('bookings')
-        .where('hoster_id', isEqualTo: hosterId)
-        .get();
+    final bookings =
+        await _firestore
+            .collection('bookings')
+            .where('hoster_id', isEqualTo: hosterId)
+            .get();
 
-    final payments = await _firestore
-        .collection('payments')
-        .where('hoster_id', isEqualTo: hosterId)
-        .get();
+    final payments =
+        await _firestore
+            .collection('payments')
+            .where('hoster_id', isEqualTo: hosterId)
+            .get();
 
     double totalEarnings = 0;
     for (var doc in payments.docs) {
@@ -797,12 +914,17 @@ class FirebaseService {
       'totalProperties': properties.docs.length,
       'totalBookings': bookings.docs.length,
       'totalEarnings': totalEarnings,
-      'pendingBookings': bookings.docs.where((doc) => doc.data()['status'] == 'pending').length,
+      'pendingBookings':
+          bookings.docs
+              .where((doc) => doc.data()['status'] == 'pending')
+              .length,
     };
   }
 
   /// Get hoster properties stream
-  Stream<QuerySnapshot<Map<String, dynamic>>> getHosterProperties(String hosterId) {
+  Stream<QuerySnapshot<Map<String, dynamic>>> getHosterProperties(
+    String hosterId,
+  ) {
     return _firestore
         .collection('properties')
         .where('hoster_id', isEqualTo: hosterId)
@@ -811,7 +933,9 @@ class FirebaseService {
   }
 
   /// Get hoster bookings stream
-  Stream<QuerySnapshot<Map<String, dynamic>>> getHosterBookings(String hosterId) {
+  Stream<QuerySnapshot<Map<String, dynamic>>> getHosterBookings(
+    String hosterId,
+  ) {
     return _firestore
         .collection('bookings')
         .where('hoster_id', isEqualTo: hosterId)

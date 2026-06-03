@@ -11,7 +11,8 @@ class WorkflowService {
   /// Orchestrates the process after a booking is confirmed (usually after payment)
   Future<void> handleBookingConfirmation(String bookingId) async {
     try {
-      final bookingDoc = await _firestore.collection('bookings').doc(bookingId).get();
+      final bookingDoc =
+          await _firestore.collection('bookings').doc(bookingId).get();
       if (!bookingDoc.exists) return;
 
       final data = bookingDoc.data()!;
@@ -51,9 +52,16 @@ class WorkflowService {
         extraData: {'propertyId': propertyId},
       );
 
-      await _monitoringService.logEvent('booking_confirmation_workflow_success', params: {'bookingId': bookingId});
+      await _monitoringService.logEvent(
+        'booking_confirmation_workflow_success',
+        params: {'bookingId': bookingId},
+      );
     } catch (e, stack) {
-      await _monitoringService.logError('Workflow Failure: handleBookingConfirmation', stackTrace: stack.toString(), extra: {'bookingId': bookingId});
+      await _monitoringService.logError(
+        'Workflow Failure: handleBookingConfirmation',
+        stackTrace: stack.toString(),
+        extra: {'bookingId': bookingId},
+      );
     }
   }
 
@@ -76,10 +84,11 @@ class WorkflowService {
 
         // Decrement Occupancy
         if (propertyId != null) {
-          transaction.update(_firestore.collection('properties').doc(propertyId), {
-            'currentOccupancy': FieldValue.increment(-1),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+          transaction
+              .update(_firestore.collection('properties').doc(propertyId), {
+                'currentOccupancy': FieldValue.increment(-1),
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
         }
       });
 
@@ -89,7 +98,11 @@ class WorkflowService {
         targetType: 'booking',
       );
     } catch (e, stack) {
-      await _monitoringService.logError('Workflow Failure: handleTenantCheckOut', stackTrace: stack.toString(), extra: {'bookingId': bookingId});
+      await _monitoringService.logError(
+        'Workflow Failure: handleTenantCheckOut',
+        stackTrace: stack.toString(),
+        extra: {'bookingId': bookingId},
+      );
     }
   }
 }

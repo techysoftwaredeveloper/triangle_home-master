@@ -34,9 +34,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading stats: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading stats: $e')));
       }
     }
   }
@@ -59,113 +59,119 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadStats,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Overview',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'outfit',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      childAspectRatio: 1.5,
-                      children: [
-                        _buildStatCard(
-                          'Properties',
-                          _stats['totalProperties'].toString(),
-                          Icons.home,
-                          Colors.blue,
-                        ),
-                        _buildStatCard(
-                          'Bookings',
-                          _stats['totalBookings'].toString(),
-                          Icons.book,
-                          Colors.green,
-                        ),
-                        _buildStatCard(
-                          'Users',
-                          _stats['totalUsers'].toString(),
-                          Icons.people,
-                          Colors.orange,
-                        ),
-                        _buildStatCard(
-                          'Revenue',
-                          '₹${_stats['totalRevenue'].toStringAsFixed(0)}',
-                          Icons.currency_rupee,
-                          Colors.purple,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Management',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'outfit',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildMenuTile(
-                      'Property Management',
-                      'Approve or reject property listings',
-                      Icons.home_work,
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AdminPropertyManagement(),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : RefreshIndicator(
+                onRefresh: _loadStats,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Overview',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'outfit',
                         ),
                       ),
-                      badge: _stats['pendingProperties'] > 0
-                          ? _stats['pendingProperties'].toString()
-                          : null,
-                    ),
-                    _buildMenuTile(
-                      'User Management',
-                      'View and manage students and hosters',
-                      Icons.person_search,
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AdminUserManagement(),
+                      const SizedBox(height: 16),
+                      GridView.count(
+                        crossAxisCount: 2,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        childAspectRatio: 1.5,
+                        children: [
+                          _buildStatCard(
+                            'Properties',
+                            _stats['totalProperties']?.toString() ?? '0',
+                            Icons.home,
+                            Colors.blue,
+                          ),
+                          _buildStatCard(
+                            'Occupancy',
+                            '${((_stats['occupancyRate'] ?? 0.0) * 100).toStringAsFixed(1)}%',
+                            Icons.pie_chart,
+                            Colors.teal,
+                          ),
+                          _buildStatCard(
+                            'Active Disputes',
+                            _stats['activeDisputes']?.toString() ?? '0',
+                            Icons.gavel,
+                            Colors.red,
+                          ),
+                          _buildStatCard(
+                            'Revenue (GMV)',
+                            '₹${(_stats['totalRevenue'] ?? 0).toStringAsFixed(0)}',
+                            Icons.currency_rupee,
+                            Colors.purple,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Management',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'outfit',
                         ),
                       ),
-                    ),
-                    _buildMenuTile(
-                      'Booking History',
-                      'Track all platform bookings',
-                      Icons.history,
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AdminBookingManagement(),
+                      const SizedBox(height: 16),
+                      _buildMenuTile(
+                        'Property Management',
+                        'Approve or reject property listings',
+                        Icons.home_work,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AdminPropertyManagement(),
+                          ),
+                        ),
+                        badge:
+                            _stats['pendingProperties'] > 0
+                                ? _stats['pendingProperties'].toString()
+                                : null,
+                      ),
+                      _buildMenuTile(
+                        'User Management',
+                        'View and manage students and hosters',
+                        Icons.person_search,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AdminUserManagement(),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                      _buildMenuTile(
+                        'Booking History',
+                        'Track all platform bookings',
+                        Icons.history,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AdminBookingManagement(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
     );
   }
 
   Widget _buildStatCard(
-      String title, String value, IconData icon, Color color) {
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -193,64 +199,68 @@ class _AdminDashboardState extends State<AdminDashboard> {
               color: Colors.black,
             ),
           ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(title, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
         ],
       ),
     );
   }
 
   Widget _buildMenuTile(
-      String title, String subtitle, IconData icon, VoidCallback onTap,
-      {String? badge}) {
+    String title,
+    String subtitle,
+    IconData icon,
+    VoidCallback onTap, {
+    String? badge,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 2,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: AppTheme.primaryColor),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(subtitle),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (badge != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  badge,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: AppTheme.primaryColor),
+          ),
+          title:
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Text(subtitle),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (badge != null)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    badge,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-            const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward_ios, size: 16),
-          ],
+              const SizedBox(width: 8),
+              const Icon(Icons.arrow_forward_ios, size: 16),
+            ],
+          ),
+          onTap: onTap,
         ),
-        onTap: onTap,
       ),
     );
   }

@@ -111,6 +111,7 @@ class PrivacySecurityNotifier extends StateNotifier<PrivacySettings> {
   }
 }
 
-final privacySecurityProvider = StateNotifierProvider<PrivacySecurityNotifier, PrivacySettings>((ref) {
-  return PrivacySecurityNotifier();
-});
+final privacySecurityProvider =
+    StateNotifierProvider<PrivacySecurityNotifier, PrivacySettings>((ref) {
+      return PrivacySecurityNotifier();
+    });

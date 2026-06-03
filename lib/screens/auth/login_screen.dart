@@ -55,9 +55,11 @@ class _LoginScreenState extends State<LoginScreen> {
     'Verified tenants for your peace of mind',
   ];
 
-  List<String> get _contentItems => widget.isStudent ? _studentContent : _hosterContent;
+  List<String> get _contentItems =>
+      widget.isStudent ? _studentContent : _hosterContent;
 
-  Color get _themeColor => widget.isStudent ? AppTheme.primaryColor : AppTheme.successColor;
+  Color get _themeColor =>
+      widget.isStudent ? AppTheme.primaryColor : AppTheme.successColor;
 
   @override
   void initState() {
@@ -65,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _startAutoScroll();
     // Rebuild when phone field changes so button reactive state updates
     _phoneController.addListener(() => setState(() {}));
-    
+
     // Save onboarding intent based on mode
     _saveIntent();
   }
@@ -117,7 +119,8 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       // Create a new credential
       final AuthCredential credential = GoogleAuthProvider.credential(
@@ -126,12 +129,14 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       // Once signed in, return the UserCredential
-      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(
-        credential,
-      );
-      
+      final UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithCredential(credential);
+
       final User? user = userCredential.user;
-      if (user == null) throw Exception('Firebase User is null after successful Google Sign-In');
+      if (user == null)
+        throw Exception(
+          'Firebase User is null after successful Google Sign-In',
+        );
 
       if (!mounted) return;
 
@@ -140,7 +145,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final String displayName = user.displayName ?? '';
 
       // Sync user data with Firestore
-      final DocumentReference userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+      final DocumentReference userRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid);
       final DocumentSnapshot userDoc = await userRef.get();
 
       if (!userDoc.exists) {
@@ -153,18 +160,14 @@ class _LoginScreenState extends State<LoginScreen> {
             'profileImage': user.photoURL,
             'phoneNumber': user.phoneNumber,
           },
-          'permissions': {
-            'is_admin': false,
-          },
+          'permissions': {'is_admin': false},
           'is_active': true,
           'createdAt': FieldValue.serverTimestamp(),
           'lastLogin': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       } else {
         // Update existing user's last login
-        await userRef.update({
-          'lastLogin': FieldValue.serverTimestamp(),
-        });
+        await userRef.update({'lastLogin': FieldValue.serverTimestamp()});
       }
 
       if (!mounted) return;
@@ -172,8 +175,10 @@ class _LoginScreenState extends State<LoginScreen> {
       // Determine the destination screen based on user role and context
       if (!widget.isStudent) {
         // Hoster Flow
-        final userData = userDoc.exists ? (userDoc.data() as Map<String, dynamic>) : null;
-        final bool isAlreadyHoster = userData != null && userData['role'] == 'hoster';
+        final userData =
+            userDoc.exists ? (userDoc.data() as Map<String, dynamic>) : null;
+        final bool isAlreadyHoster =
+            userData != null && userData['role'] == 'hoster';
 
         if (isAlreadyHoster) {
           Navigator.pushAndRemoveUntil(
@@ -237,13 +242,14 @@ class _LoginScreenState extends State<LoginScreen> {
         verificationFailed: (FirebaseAuthException e) {
           if (!mounted) return;
           String message = e.message ?? 'Verification failed';
-          
+
           if (e.code == 'too-many-requests') {
             message = 'Too many requests. Please try again later.';
           } else if (e.code == 'invalid-phone-number') {
             message = 'The provided phone number is not valid.';
           } else if (e.toString().contains('reCAPTCHA')) {
-            message = 'Safety check failed. Please ensure you are not on a VPN and have Google Play Services updated.';
+            message =
+                'Safety check failed. Please ensure you are not on a VPN and have Google Play Services updated.';
             debugPrint('🛡️ ReCAPTCHA Error Detail: ${e.toString()}');
           }
 
@@ -407,7 +413,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Icon(
-                        widget.isStudent ? Icons.home_outlined : Icons.business_center_outlined,
+                        widget.isStudent
+                            ? Icons.home_outlined
+                            : Icons.business_center_outlined,
                         size: 14,
                         color: _themeColor,
                       ),
@@ -495,10 +503,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: _themeColor,
-                    width: 1.5,
-                  ),
+                  borderSide: BorderSide(color: _themeColor, width: 1.5),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -575,20 +580,25 @@ class _LoginScreenState extends State<LoginScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ListPropertyIntroScreen(
-                        onGetStarted: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => LoginScreen(isStudent: false)),
-                          );
-                        },
-                      ),
+                      builder:
+                          (_) => ListPropertyIntroScreen(
+                            onGetStarted: () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => LoginScreen(isStudent: false),
+                                ),
+                              );
+                            },
+                          ),
                     ),
                   );
                 }
               },
               child: Text(
-                widget.isStudent ? 'Are you a property owner? Join us' : 'Forgot Password?',
+                widget.isStudent
+                    ? 'Are you a property owner? Join us'
+                    : 'Forgot Password?',
                 style: const TextStyle(
                   color: AppTheme.accentColor,
                   fontWeight: FontWeight.w500,

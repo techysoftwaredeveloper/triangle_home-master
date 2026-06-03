@@ -11,7 +11,8 @@ class AdminApiService {
   /// For physical Android devices via USB, run: adb reverse tcp:5000 tcp:5000
   static String get _host {
     if (kIsWeb) return 'localhost';
-    if (Platform.isAndroid) return '192.168.31.25'; // Updated Bridge IP for Physical Device
+    if (Platform.isAndroid)
+      return '192.168.31.25'; // Updated Bridge IP for Physical Device
     return 'localhost';
   }
 
@@ -45,7 +46,9 @@ class AdminApiService {
       }
       throw Exception(data['error'] ?? 'Failed to load stats');
     }
-    throw Exception('Error ${response.statusCode}: Failed to connect to server');
+    throw Exception(
+      'Error ${response.statusCode}: Failed to connect to server',
+    );
   }
 
   // Users
@@ -64,7 +67,11 @@ class AdminApiService {
     throw Exception('Error ${response.statusCode}: Failed to load users');
   }
 
-  Future<void> toggleUserStatus(String userId, {String? status, bool? isActive}) async {
+  Future<void> toggleUserStatus(
+    String userId, {
+    String? status,
+    bool? isActive,
+  }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/admin/users/toggle-status'),
       headers: await _getHeaders(),
@@ -75,7 +82,9 @@ class AdminApiService {
       }),
     );
     if (response.statusCode != 200) {
-      final error = json.decode(response.body)['message'] ?? 'Failed to update user status';
+      final error =
+          json.decode(response.body)['message'] ??
+          'Failed to update user status';
       throw Exception(error);
     }
   }
@@ -157,13 +166,18 @@ class AdminApiService {
       headers: await _getHeaders(),
     );
     if (response.statusCode != 200) {
-      final error = json.decode(response.body)['error'] ?? 'Failed to convert suggestion';
+      final error =
+          json.decode(response.body)['error'] ?? 'Failed to convert suggestion';
       throw Exception(error);
     }
   }
 
   // Reports
-  Future<void> updateReportStatus(String id, String status, {String? resolution}) async {
+  Future<void> updateReportStatus(
+    String id,
+    String status, {
+    String? resolution,
+  }) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/admin/reports/$id/status'),
       headers: await _getHeaders(),

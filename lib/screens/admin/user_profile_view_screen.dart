@@ -40,7 +40,8 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
 
   String _formatDate(dynamic date) {
     if (date == null) return 'N/A';
-    if (date is Timestamp) return DateFormat('dd MMM yyyy, hh:mm a').format(date.toDate());
+    if (date is Timestamp)
+      return DateFormat('dd MMM yyyy, hh:mm a').format(date.toDate());
     return date.toString();
   }
 
@@ -53,11 +54,16 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
   Color _getStatusColor(dynamic s) {
     final status = s?.toString().toLowerCase() ?? 'pending';
     switch (status) {
-      case 'contacted': return const Color(0xFF7C3AED);
-      case 'shortlisted': return const Color(0xFF2563EB);
-      case 'converted': return const Color(0xFF16A34A);
-      case 'rejected': return const Color(0xFFDC2626);
-      default: return const Color(0xFFD97706);
+      case 'contacted':
+        return const Color(0xFF7C3AED);
+      case 'shortlisted':
+        return const Color(0xFF2563EB);
+      case 'converted':
+        return const Color(0xFF16A34A);
+      case 'rejected':
+        return const Color(0xFFDC2626);
+      default:
+        return const Color(0xFFD97706);
     }
   }
 
@@ -69,7 +75,11 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isActive ? 'User deactivated successfully' : 'User activated successfully'),
+            content: Text(
+              isActive
+                  ? 'User deactivated successfully'
+                  : 'User activated successfully',
+            ),
             backgroundColor: isActive ? Colors.orange : Colors.green,
           ),
         );
@@ -97,7 +107,9 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
         );
 
         if (user.isEmpty) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         final info = user['info'] as Map<String, dynamic>? ?? {};
@@ -113,20 +125,32 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
           appBar: AppBar(
             title: const Text(
               'User Profile',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B), fontFamily: 'Outfit', fontSize: 18),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+                fontFamily: 'Outfit',
+                fontSize: 18,
+              ),
             ),
             backgroundColor: Colors.white,
             elevation: 0,
             centerTitle: true,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_left_rounded, color: Color(0xFF1E293B), size: 32),
+              icon: const Icon(
+                Icons.arrow_left_rounded,
+                color: Color(0xFF1E293B),
+                size: 32,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
           ),
           body: Stack(
             children: [
               SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -139,45 +163,86 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
                             height: 100,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFFF1F5F9), width: 4),
+                              border: Border.all(
+                                color: const Color(0xFFF1F5F9),
+                                width: 4,
+                              ),
                               boxShadow: [
-                                BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 10)),
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
                               ],
                             ),
                             child: CircleAvatar(
                               radius: 50,
                               backgroundColor: const Color(0xFFF1F5F9),
                               child: ClipOval(
-                                child: profileImage != null
-                                    ? CachedNetworkImage(
-                                        imageUrl: profileImage,
-                                        fit: BoxFit.cover,
-                                        width: 100,
-                                        height: 100,
-                                        placeholder: (context, url) => const CircularProgressIndicator(),
-                                        errorWidget: (context, url, error) => Text(initial, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.grey)),
-                                      )
-                                    : Text(initial, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                child:
+                                    profileImage != null
+                                        ? CachedNetworkImage(
+                                          imageUrl: profileImage,
+                                          fit: BoxFit.cover,
+                                          width: 100,
+                                          height: 100,
+                                          placeholder:
+                                              (context, url) =>
+                                                  const CircularProgressIndicator(),
+                                          errorWidget:
+                                              (context, url, error) => Text(
+                                                initial,
+                                                style: const TextStyle(
+                                                  fontSize: 40,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                        )
+                                        : Text(
+                                          initial,
+                                          style: const TextStyle(
+                                            fontSize: 40,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
                               ),
                             ),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             name,
-                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1E293B), fontFamily: 'Outfit'),
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E293B),
+                              fontFamily: 'Outfit',
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             user['id']?.toString().toUpperCase() ?? 'USR-NEW',
-                            style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold, letterSpacing: 1),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF94A3B8),
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              StatusBadge(text: role, color: _getRoleColor(role)),
+                              StatusBadge(
+                                text: role,
+                                color: _getRoleColor(role),
+                              ),
                               const SizedBox(width: 8),
-                              StatusBadge(text: isActive ? 'ACTIVE' : 'INACTIVE', color: isActive ? Colors.green : Colors.grey),
+                              StatusBadge(
+                                text: isActive ? 'ACTIVE' : 'INACTIVE',
+                                color: isActive ? Colors.green : Colors.grey,
+                              ),
                             ],
                           ),
                         ],
@@ -191,9 +256,17 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
                     // Contact Information
                     _buildSectionTitle('CONTACT INFORMATION'),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.email_outlined, 'Email Address', info['email'] ?? 'No Email'),
+                    _buildDetailRow(
+                      Icons.email_outlined,
+                      'Email Address',
+                      info['email'] ?? 'No Email',
+                    ),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.phone_outlined, 'Phone Number', info['phoneNumber'] ?? 'No Phone'),
+                    _buildDetailRow(
+                      Icons.phone_outlined,
+                      'Phone Number',
+                      info['phoneNumber'] ?? 'No Phone',
+                    ),
 
                     const SizedBox(height: 24),
                     const Divider(color: Color(0xFFF1F5F9), thickness: 1),
@@ -202,9 +275,17 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
                     // Account Details
                     _buildSectionTitle('ACCOUNT DETAILS'),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.calendar_today_outlined, 'Joined On', _formatDate(user['createdAt'])),
+                    _buildDetailRow(
+                      Icons.calendar_today_outlined,
+                      'Joined On',
+                      _formatDate(user['createdAt']),
+                    ),
                     const SizedBox(height: 16),
-                    _buildDetailRow(Icons.security_outlined, 'Account Status', isActive ? 'Active' : 'Deactivated'),
+                    _buildDetailRow(
+                      Icons.security_outlined,
+                      'Account Status',
+                      isActive ? 'Active' : 'Deactivated',
+                    ),
 
                     const SizedBox(height: 24),
                     const Divider(color: Color(0xFFF1F5F9), thickness: 1),
@@ -214,18 +295,26 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
                     _buildSectionTitle('SUGGESTION ACTIVITY'),
                     const SizedBox(height: 16),
                     StreamBuilder<List<Map<String, dynamic>>>(
-                      stream: widget.adminService.getUserSuggestionsStream(widget.userId),
+                      stream: widget.adminService.getUserSuggestionsStream(
+                        widget.userId,
+                      ),
                       builder: (context, suggestionSnapshot) {
                         final suggestions = suggestionSnapshot.data ?? [];
                         if (suggestions.isEmpty) {
                           return const Text(
                             'No suggestion activity yet.',
-                            style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF64748B),
+                            ),
                           );
                         }
 
                         return Column(
-                          children: suggestions.map((s) => _buildSuggestionCard(s)).toList(),
+                          children:
+                              suggestions
+                                  .map((s) => _buildSuggestionCard(s))
+                                  .toList(),
                         );
                       },
                     ),
@@ -235,9 +324,15 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
                     // Actions
                     _buildActionBtn(
                       isActive ? 'Deactivate User' : 'Activate User',
-                      isActive ? const Color(0xFFFEF2F2) : const Color(0xFFF0FDF4),
-                      isActive ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
-                      isActive ? Icons.block_flipped : Icons.check_circle_outline,
+                      isActive
+                          ? const Color(0xFFFEF2F2)
+                          : const Color(0xFFF0FDF4),
+                      isActive
+                          ? const Color(0xFFDC2626)
+                          : const Color(0xFF16A34A),
+                      isActive
+                          ? Icons.block_flipped
+                          : Icons.check_circle_outline,
                       () => _handleToggleStatus(isActive),
                     ),
                     const SizedBox(height: 12),
@@ -267,7 +362,12 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8), letterSpacing: 1.0),
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        color: Color(0xFF94A3B8),
+        letterSpacing: 1.0,
+      ),
     );
   }
 
@@ -281,9 +381,23 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500)),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF94A3B8),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
             ],
           ),
         ),
@@ -312,7 +426,11 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
               Expanded(
                 child: Text(
                   s['business_name'] ?? 'Untitled Property',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Color(0xFF1E293B),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -328,11 +446,21 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.calendar_today_outlined, size: 10, color: Color(0xFF94A3B8)),
+              const Icon(
+                Icons.calendar_today_outlined,
+                size: 10,
+                color: Color(0xFF94A3B8),
+              ),
               const SizedBox(width: 4),
               Text(
-                DateFormat('dd MMM yyyy').format((s['createdAt'] as Timestamp).toDate()),
-                style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+                DateFormat(
+                  'dd MMM yyyy',
+                ).format((s['createdAt'] as Timestamp).toDate()),
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -341,20 +469,37 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen> {
     );
   }
 
-  Widget _buildActionBtn(String label, Color bg, Color text, IconData icon, VoidCallback onTap) {
+  Widget _buildActionBtn(
+    String label,
+    Color bg,
+    Color text,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: 18, color: text),
             const SizedBox(width: 8),
-            Text(label, style: TextStyle(color: text, fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'Outfit')),
+            Text(
+              label,
+              style: TextStyle(
+                color: text,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                fontFamily: 'Outfit',
+              ),
+            ),
           ],
         ),
       ),

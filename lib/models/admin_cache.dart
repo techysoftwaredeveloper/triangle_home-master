@@ -11,10 +11,12 @@ class AdminCache {
 
   String? jsonData; // JSON string of the cached data
   DateTime? lastUpdated;
+  DateTime? expiresAt; // For TTL support
 
   AdminCache({
     required this.key,
     this.jsonData,
     this.lastUpdated,
+    this.expiresAt,
   });
 }

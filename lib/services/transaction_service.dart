@@ -11,14 +11,14 @@ class TransactionService {
       ...transaction.toFirestore(),
       'status': TransactionStatus.created.name,
     });
-    
+
     // Log financial event
     await _logFinancialEvent(
       bookingId: transaction.bookingId,
       type: FinancialEventType.paymentReceived,
       amount: transaction.amount,
       userId: transaction.userId,
-      extraData: {'transactionId': docRef.id, 'type': transaction.type.name}
+      extraData: {'transactionId': docRef.id, 'type': transaction.type.name},
     );
 
     return docRef.id;
@@ -44,15 +44,20 @@ class TransactionService {
 
   /// Verifies if a payment has already been processed (Idempotency check)
   Future<bool> isPaymentProcessed(String gatewayPaymentId) async {
-    final snapshot = await _firestore
-        .collection('processed_payments')
-        .doc(gatewayPaymentId)
-        .get();
+    final snapshot =
+        await _firestore
+            .collection('processed_payments')
+            .doc(gatewayPaymentId)
+            .get();
     return snapshot.exists;
   }
 
   /// Verifies a payment and updates transaction status with audit trail
-  Future<void> updateTransactionStatus(String transactionId, TransactionStatus status, {String? paymentId}) async {
+  Future<void> updateTransactionStatus(
+    String transactionId,
+    TransactionStatus status, {
+    String? paymentId,
+  }) async {
     await _firestore.collection('transactions').doc(transactionId).update({
       'status': status.name,
       if (paymentId != null) 'gatewayPaymentId': paymentId,
@@ -62,7 +67,10 @@ class TransactionService {
     // Log payment event for specific transitions
     await _firestore.collection('payment_events').add({
       'transactionId': transactionId,
-      'event': status == TransactionStatus.success ? 'PAYMENT_SUCCESS' : 'STATUS_UPDATE',
+      'event':
+          status == TransactionStatus.success
+              ? 'PAYMENT_SUCCESS'
+              : 'STATUS_UPDATE',
       'status': status.name,
       'timestamp': FieldValue.serverTimestamp(),
     });
@@ -75,8 +83,13 @@ class TransactionService {
         .where('bookingId', isEqualTo: bookingId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => TransactionModel.fromFirestore(doc.id, doc.data()))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map(
+                    (doc) => TransactionModel.fromFirestore(doc.id, doc.data()),
+                  )
+                  .toList(),
+        );
   }
 }

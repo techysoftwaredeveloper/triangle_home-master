@@ -18,24 +18,25 @@ class CitySelector extends StatelessWidget {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: cities.map((city) {
-          final isSelected = city == selectedCity;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(city),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) onCitySelected(city);
-              },
-              backgroundColor: Colors.white,
-              selectedColor: const Color(0xFF1E3A8A),
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
-              ),
-            ),
-          );
-        }).toList(),
+        children:
+            cities.map((city) {
+              final isSelected = city == selectedCity;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(city),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) onCitySelected(city);
+                  },
+                  backgroundColor: Colors.white,
+                  selectedColor: const Color(0xFF1E3A8A),
+                  labelStyle: TextStyle(
+                    color: isSelected ? Colors.white : Colors.black87,
+                  ),
+                ),
+              );
+            }).toList(),
       ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.2, end: 0),
     );
   }

@@ -34,16 +34,22 @@ class PermissionService {
     required String userId,
     required String bookingId,
   }) async {
-    await _firestore.collection('unlocked_data').doc('${userId}_$propertyId').set({
-      'user_id': userId,
-      'property_id': propertyId,
-      'booking_id': bookingId,
-      'unlocked_at': FieldValue.serverTimestamp(),
-    });
+    await _firestore
+        .collection('unlocked_data')
+        .doc('${userId}_$propertyId')
+        .set({
+          'user_id': userId,
+          'property_id': propertyId,
+          'booking_id': bookingId,
+          'unlocked_at': FieldValue.serverTimestamp(),
+        });
   }
 
   /// Revokes access to a property's private vault
   Future<void> revokePrivateAccess(String propertyId, String userId) async {
-    await _firestore.collection('unlocked_data').doc('${userId}_$propertyId').delete();
+    await _firestore
+        .collection('unlocked_data')
+        .doc('${userId}_$propertyId')
+        .delete();
   }
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FeatureFlagService {
@@ -11,14 +12,15 @@ class FeatureFlagService {
 
   Future<void> init() async {
     try {
-      final doc = await _firestore.collection('config').doc('feature_flags').get();
+      final doc =
+          await _firestore.collection('config').doc('feature_flags').get();
       if (doc.exists) {
         final data = doc.data()!;
         _flags = data.map((key, value) => MapEntry(key, value as bool));
       }
     } catch (e) {
       // Fallback to defaults
-      print('Failed to load feature flags: $e');
+      debugPrint('Failed to load feature flags: $e');
     }
   }
 

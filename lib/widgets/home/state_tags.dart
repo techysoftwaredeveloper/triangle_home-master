@@ -46,8 +46,7 @@ class StateTags extends StatelessWidget {
               padding: const EdgeInsets.only(right: 16),
               child: Row(
                 children: [
-                  if (currentLocation.isNotEmpty)
-                    _buildNearMeButton(),
+                  if (currentLocation.isNotEmpty) _buildNearMeButton(),
 
                   ...states.map((state) => _buildCityChip(state)),
                 ],
@@ -63,10 +62,14 @@ class StateTags extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.near_me_outlined, size: 14, color: AppTheme.primaryColor),
+        const Icon(
+          Icons.near_me_outlined,
+          size: 14,
+          color: AppTheme.primaryColor,
+        ),
         const SizedBox(width: 6),
         Text(
-          'Jump To City',
+          'Jump to city',
           style: TextStyle(
             color: AppTheme.primaryColor,
             fontWeight: FontWeight.bold,
@@ -76,17 +79,14 @@ class StateTags extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Container(
-          width: 1,
-          height: 20,
-          color: const Color(0xFFE2E8F0),
-        ),
+        Container(width: 1, height: 20, color: const Color(0xFFE2E8F0)),
       ],
     );
   }
 
   Widget _buildNearMeButton() {
-    final bool isSelected = selectedState == currentLocation || selectedState == 'Detecting...';
+    final bool isSelected =
+        selectedState == currentLocation || selectedState == 'Detecting...';
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: InkWell(
@@ -99,7 +99,8 @@ class StateTags extends StatelessWidget {
             color: isSelected ? AppTheme.accentColor : Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSelected ? AppTheme.accentColor : const Color(0xFFE2E8F0),
+              color:
+                  isSelected ? AppTheme.accentColor : const Color(0xFFE2E8F0),
               width: 1.5,
             ),
           ),
@@ -109,13 +110,16 @@ class StateTags extends StatelessWidget {
                 const SizedBox(
                   width: 14,
                   height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               else
                 Icon(
                   Icons.my_location_rounded,
                   size: 14,
-                  color: isSelected ? Colors.white : AppTheme.accentColor
+                  color: isSelected ? Colors.white : AppTheme.accentColor,
                 ),
               const SizedBox(width: 6),
               Text(

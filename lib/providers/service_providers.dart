@@ -11,4 +11,6 @@ final bookingServiceProvider = Provider((ref) => BookingService());
 final paymentServiceProvider = Provider((ref) => PaymentService());
 final hosterServiceProvider = Provider((ref) => HosterService());
 final adminServiceProvider = Provider((ref) => AdminService());
-final searchServiceProvider = Provider<AppSearchService>((ref) => FirestoreSearchService());
+final searchServiceProvider = Provider<AppSearchService>(
+  (ref) => FirestoreSearchService(),
+);

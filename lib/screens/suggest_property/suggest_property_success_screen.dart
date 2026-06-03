@@ -22,7 +22,12 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
         centerTitle: true,
         title: const Text(
           'Success',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.primaryColor),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Outfit',
+            color: AppTheme.primaryColor,
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -43,7 +48,11 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
                           color: AppTheme.primaryColor.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(32),
                         ),
-                        child: const Icon(Icons.home_work_rounded, size: 80, color: AppTheme.primaryColor),
+                        child: const Icon(
+                          Icons.home_work_rounded,
+                          size: 80,
+                          color: AppTheme.primaryColor,
+                        ),
                       ),
                       Positioned(
                         bottom: 0,
@@ -52,23 +61,46 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
                           decoration: const BoxDecoration(
                             color: Color(0xFF22C55E),
                             shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          child: const Icon(Icons.check, color: Colors.white, size: 32),
-                        ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        ).animate().scale(
+                          duration: 600.ms,
+                          curve: Curves.easeOutBack,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 32),
                   const Text(
                     'Success!',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.primaryColor),
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Outfit',
+                      color: AppTheme.primaryColor,
+                    ),
                   ).animate().fadeIn(delay: 200.ms),
                   const SizedBox(height: 12),
                   const Text(
                     'Thank you for your suggestion. We\'ll review it and get back to you soon.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: AppTheme.textLightColor, fontFamily: 'Outfit', height: 1.6),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.textLightColor,
+                      fontFamily: 'Outfit',
+                      height: 1.6,
+                    ),
                   ).animate().fadeIn(delay: 400.ms),
                 ],
               ),
@@ -100,10 +132,17 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const HomeScreen()), (route) => false),
+                onPressed:
+                    () => Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const HomeScreen()),
+                      (route) => false,
+                    ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: 0,
                 ),
                 child: const Row(
@@ -111,7 +150,14 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
                   children: [
                     Icon(Icons.home_outlined, color: Colors.white, size: 20),
                     SizedBox(width: 12),
-                    Text('Go to Home', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+                    Text(
+                      'Go to Home',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -124,11 +170,18 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
                 onPressed: () => Navigator.pop(context),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppTheme.primaryColor),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
                 child: const Text(
                   'Suggest Another',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.primaryColor),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Outfit',
+                    color: AppTheme.primaryColor,
+                  ),
                 ),
               ),
             ).animate().fadeIn(delay: 900.ms).slideY(begin: 0.1, end: 0),
@@ -171,12 +224,19 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
                 child: Icon(icon, color: color, size: 20),
               ),
               if (!isLast)
                 Expanded(
-                  child: Container(width: 2, color: const Color(0xFFF1F5F9), margin: const EdgeInsets.symmetric(vertical: 4)),
+                  child: Container(
+                    width: 2,
+                    color: const Color(0xFFF1F5F9),
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                  ),
                 ),
             ],
           ),
@@ -187,16 +247,47 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Expanded(child: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Outfit'))),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Outfit',
+                        ),
+                      ),
+                    ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                      child: Text(badge, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        badge,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Outfit',
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(subtitle, style: const TextStyle(fontSize: 13, color: AppTheme.textLightColor, fontFamily: 'Outfit', height: 1.4)),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.textLightColor,
+                    fontFamily: 'Outfit',
+                    height: 1.4,
+                  ),
+                ),
                 const SizedBox(height: 28),
               ],
             ),
@@ -219,9 +310,20 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.description_outlined, color: Color(0xFF22C55E), size: 18),
+              const Icon(
+                Icons.description_outlined,
+                color: Color(0xFF22C55E),
+                size: 18,
+              ),
               const SizedBox(width: 12),
-              const Text('Submission Details', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+              const Text(
+                'Submission Details',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Outfit',
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -241,14 +343,26 @@ class SuggestPropertySuccessScreen extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textLightColor, fontFamily: 'Outfit')),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppTheme.textLightColor,
+            fontFamily: 'Outfit',
+          ),
+        ),
         const Spacer(),
         Expanded(
           flex: 2,
           child: Text(
             value,
             textAlign: TextAlign.right,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.textDarkColor),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Outfit',
+              color: AppTheme.textDarkColor,
+            ),
             overflow: TextOverflow.ellipsis,
             maxLines: 2,
           ),

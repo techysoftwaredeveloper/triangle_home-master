@@ -10,9 +10,7 @@ class TriangleLogo extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: TriangleLogoPainter(),
-      ),
+      child: CustomPaint(painter: TriangleLogoPainter()),
     );
   }
 }
@@ -20,16 +18,18 @@ class TriangleLogo extends StatelessWidget {
 class TriangleLogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
+    final Paint paint =
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.0;
 
-    final Path path = Path()
-      ..moveTo(size.width / 2, 0)
-      ..lineTo(0, size.height)
-      ..lineTo(size.width, size.height)
-      ..close();
+    final Path path =
+        Path()
+          ..moveTo(size.width / 2, 0)
+          ..lineTo(0, size.height)
+          ..lineTo(size.width, size.height)
+          ..close();
 
     // Draw outline
     canvas.drawPath(path, paint);

@@ -5,7 +5,10 @@ void main() {
   group('Failures', () {
     test('should return correct string representation', () {
       const failure = Failure('Test message', code: 'TEST_CODE');
-      expect(failure.toString(), 'Failure(code: TEST_CODE, message: Test message)');
+      expect(
+        failure.toString(),
+        'Failure(code: TEST_CODE, message: Test message)',
+      );
     });
 
     test('BookingFailure should have correct default code', () {

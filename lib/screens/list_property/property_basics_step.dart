@@ -7,7 +7,11 @@ class PropertyBasicsStep extends StatefulWidget {
   final Function(Map<String, dynamic>) onContinue;
   final Map<String, dynamic>? initialData;
 
-  const PropertyBasicsStep({super.key, required this.onContinue, this.initialData});
+  const PropertyBasicsStep({
+    super.key,
+    required this.onContinue,
+    this.initialData,
+  });
 
   @override
   State<PropertyBasicsStep> createState() => _PropertyBasicsStepState();
@@ -25,7 +29,9 @@ class _PropertyBasicsStepState extends State<PropertyBasicsStep> {
   void initState() {
     super.initState();
     final data = widget.initialData?['propertyBasics'] ?? {};
-    _propertyTypeController = TextEditingController(text: data['type'] ?? 'Hostel');
+    _propertyTypeController = TextEditingController(
+      text: data['type'] ?? 'Hostel',
+    );
     _nameController = TextEditingController(text: data['name'] ?? '');
     _wardenController = TextEditingController(text: data['wardenName'] ?? '');
     _phoneController = TextEditingController(text: data['phone'] ?? '');
@@ -44,7 +50,12 @@ class _PropertyBasicsStepState extends State<PropertyBasicsStep> {
               label: 'Property Type',
               controller: _propertyTypeController,
               required: true,
-              items: const ['Hostel', 'PG Accommodation', 'Apartment', 'Guest House'],
+              items: const [
+                'Hostel',
+                'PG Accommodation',
+                'Apartment',
+                'Guest House',
+              ],
               activeColor: AppTheme.successColor,
             ),
             InputField(
@@ -87,16 +98,24 @@ class _PropertyBasicsStepState extends State<PropertyBasicsStep> {
                         'wardenName': _wardenController.text,
                         'phone': _phoneController.text,
                         'email': _emailController.text,
-                      }
+                      },
                     });
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.successColor,
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: const Text('Continue', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Continue',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],

@@ -34,13 +34,15 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
       for (var xFile in images) {
         final index = widget.imageUrls.length + _uploadingIndices.length;
         setState(() => _uploadingIndices.add(index));
-        
+
         try {
           final url = await firebaseService.uploadFile(File(xFile.path));
           widget.onImageUploaded(url);
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
           }
         } finally {
           setState(() => _uploadingIndices.remove(index));
@@ -66,7 +68,8 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
           itemBuilder: (context, index) {
             if (index < widget.imageUrls.length) {
               return _buildImagePreview(index);
-            } else if (index < widget.imageUrls.length + _uploadingIndices.length) {
+            } else if (index <
+                widget.imageUrls.length + _uploadingIndices.length) {
               return _buildLoadingPreview();
             } else {
               return _buildAddButton();
@@ -97,7 +100,11 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.2), width: 1.5, style: BorderStyle.solid),
+          border: Border.all(
+            color: color.withValues(alpha: 0.2),
+            width: 1.5,
+            style: BorderStyle.solid,
+          ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -105,7 +112,7 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.add_a_photo_rounded, color: color, size: 24),
@@ -133,7 +140,10 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: const Center(
-        child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.successColor),
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: AppTheme.successColor,
+        ),
       ),
     );
   }
@@ -150,7 +160,7 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -168,7 +178,11 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.close_rounded, color: AppTheme.errorColor, size: 16),
+              child: const Icon(
+                Icons.close_rounded,
+                color: AppTheme.errorColor,
+                size: 16,
+              ),
             ),
           ),
         ),

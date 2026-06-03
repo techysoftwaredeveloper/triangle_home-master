@@ -60,82 +60,89 @@ class TopHostels extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: ListTile(
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: CachedNetworkImage(
-                        imageUrl: hostel['image'] ?? '',
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        placeholder:
-                            (context, url) => Container(
-                              width: 60,
-                              height: 60,
-                              color: Colors.grey[200],
-                              child: const Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                  child: Material(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    child: ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: CachedNetworkImage(
+                          imageUrl: hostel['image'] ?? '',
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          placeholder:
+                              (context, url) => Container(
+                                width: 60,
+                                height: 60,
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                        errorWidget:
-                            (context, url, error) => Container(
-                              width: 60,
-                              height: 60,
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.home, size: 20),
-                            ),
-                      ),
-                    ),
-                    title: Text(
-                      hostel['name'] ?? 'Property',
-                      style: const TextStyle(
-                        fontSize: AppTheme.fontSM,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          hostel['location'] ?? '',
-                          style: const TextStyle(
-                            fontSize: AppTheme.fontXS - 2,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          errorWidget:
+                              (context, url, error) => Container(
+                                width: 60,
+                                height: 60,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.home, size: 20),
+                              ),
                         ),
-                        if (hostel['rating'] != null)
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.star,
-                                size: 10,
-                                color: AppTheme.warningColor,
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                '${hostel['rating']?.toStringAsFixed(1) ?? '4.0'}',
-                                style: const TextStyle(
-                                  fontSize: AppTheme.fontXS - 2,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                              ),
-                            ],
+                      ),
+                      title: Text(
+                        hostel['name'] ?? 'Property',
+                        style: const TextStyle(
+                          fontSize: AppTheme.fontSM,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            hostel['location'] ?? '',
+                            style: const TextStyle(
+                              fontSize: AppTheme.fontXS - 2,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: AppTheme.fontFamily,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                      ],
+                          if (hostel['rating'] != null)
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.star,
+                                  size: 10,
+                                  color: AppTheme.warningColor,
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${hostel['rating']?.toStringAsFixed(1) ?? '4.0'}',
+                                  style: const TextStyle(
+                                    fontSize: AppTheme.fontXS - 2,
+                                    fontFamily: AppTheme.fontFamily,
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
                     ),
-                    trailing: const Icon(Icons.chevron_right),
                   ),
                 ),
               ).animate().fadeIn(delay: (600 + (index * 200)).ms);

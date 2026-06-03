@@ -21,7 +21,10 @@ class VerificationOtpScreen extends StatefulWidget {
 }
 
 class _VerificationOtpScreenState extends State<VerificationOtpScreen> {
-  final List<TextEditingController> _controllers = List.generate(6, (index) => TextEditingController());
+  final List<TextEditingController> _controllers = List.generate(
+    6,
+    (index) => TextEditingController(),
+  );
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
   int _timeLeft = 30;
   Timer? _timer;
@@ -74,13 +77,13 @@ class _VerificationOtpScreenState extends State<VerificationOtpScreen> {
       if (user != null) {
         // Link the phone number to the current account
         await user.linkWithCredential(credential);
-        
+
         // Update Firestore
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'verification': {
             'phoneVerified': true,
             'phoneVerifiedAt': FieldValue.serverTimestamp(),
-          }
+          },
         }, SetOptions(merge: true));
 
         Fluttertoast.showToast(msg: 'Phone verified successfully!');
@@ -101,40 +104,58 @@ class _VerificationOtpScreenState extends State<VerificationOtpScreen> {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            const Text('Enter the 6-digit code sent to your phone', textAlign: TextAlign.center),
+            const Text(
+              'Enter the 6-digit code sent to your phone',
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(6, (index) => SizedBox(
-                width: 45,
-                child: TextField(
-                  controller: _controllers[index],
-                  focusNode: _focusNodes[index],
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.number,
-                  maxLength: 1,
-                  decoration: const InputDecoration(counterText: ''),
-                  onChanged: (value) {
-                    if (value.length == 1 && index < 5) {
-                      _focusNodes[index + 1].requestFocus();
-                    }
-                    if (value.isEmpty && index > 0) {
-                      _focusNodes[index - 1].requestFocus();
-                    }
-                  },
+              children: List.generate(
+                6,
+                (index) => SizedBox(
+                  width: 45,
+                  child: TextField(
+                    controller: _controllers[index],
+                    focusNode: _focusNodes[index],
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.number,
+                    maxLength: 1,
+                    decoration: const InputDecoration(counterText: ''),
+                    onChanged: (value) {
+                      if (value.length == 1 && index < 5) {
+                        _focusNodes[index + 1].requestFocus();
+                      }
+                      if (value.isEmpty && index > 0) {
+                        _focusNodes[index - 1].requestFocus();
+                      }
+                    },
+                  ),
                 ),
-              )),
+              ),
             ),
             const SizedBox(height: 40),
             ElevatedButton(
               onPressed: _isLoading ? null : _verifyOTP,
-              style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
-              child: _isLoading ? const CircularProgressIndicator() : const Text('Verify'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+              ),
+              child:
+                  _isLoading
+                      ? const CircularProgressIndicator()
+                      : const Text('Verify'),
             ),
             const SizedBox(height: 20),
             TextButton(
-              onPressed: _timeLeft == 0 ? () { /* resend logic */ } : null,
-              child: Text(_timeLeft > 0 ? 'Resend in ${_timeLeft}s' : 'Resend OTP'),
+              onPressed:
+                  _timeLeft == 0
+                      ? () {
+                        /* resend logic */
+                      }
+                      : null,
+              child: Text(
+                _timeLeft > 0 ? 'Resend in ${_timeLeft}s' : 'Resend OTP',
+              ),
             ),
           ],
         ),

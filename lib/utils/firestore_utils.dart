@@ -5,5 +5,7 @@ class FirestoreUtils {
   static const GetOptions serverOnly = GetOptions(source: Source.server);
 
   /// Options for fetching data that can be cached
-  static const GetOptions cacheFirst = GetOptions(source: Source.serverAndCache);
+  static const GetOptions cacheFirst = GetOptions(
+    source: Source.serverAndCache,
+  );
 }

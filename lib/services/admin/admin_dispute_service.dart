@@ -16,7 +16,8 @@ class AdminDisputeService {
       // 1. Update Dispute
       transaction.update(_firestore.collection('disputes').doc(disputeId), {
         'status': newStatus.name,
-        if (newStatus == DisputeStatus.resolved || newStatus == DisputeStatus.rejected)
+        if (newStatus == DisputeStatus.resolved ||
+            newStatus == DisputeStatus.rejected)
           'resolvedAt': FieldValue.serverTimestamp(),
         if (resolutionNote != null) 'decision': resolutionNote,
       });
@@ -39,13 +40,14 @@ class AdminDisputeService {
         'performedBy': adminId,
         'timestamp': FieldValue.serverTimestamp(),
       });
-      
+
       // 4. Freeze Escrow if needed
-      if (newStatus == DisputeStatus.open || newStatus == DisputeStatus.underReview) {
-         transaction.update(_firestore.collection('escrow').doc(bookingId), {
-           'escrowStatus': EscrowStatus.disputed.name,
-           'updatedAt': FieldValue.serverTimestamp(),
-         });
+      if (newStatus == DisputeStatus.open ||
+          newStatus == DisputeStatus.underReview) {
+        transaction.update(_firestore.collection('escrow').doc(bookingId), {
+          'escrowStatus': EscrowStatus.disputed.name,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
       }
     });
   }

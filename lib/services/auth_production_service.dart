@@ -39,7 +39,7 @@ class AuthProductionService {
     try {
       final idTokenResult = await user.getIdTokenResult(true);
       final roleClaim = idTokenResult.claims?['role'];
-      
+
       // Check Firestore for detailed status
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final userData = userDoc.data();
@@ -47,15 +47,16 @@ class AuthProductionService {
       final status = userData?['status'] ?? 'pending';
 
       UserRole finalRole = UserRole.none;
-      if (roleClaim == 'superadmin') finalRole = UserRole.superadmin;
-      else if (roleClaim == 'admin') finalRole = UserRole.admin;
-      else if (roleClaim == 'hoster' || firestoreRole == 'hoster') finalRole = UserRole.hoster;
-      else if (firestoreRole == 'student' || firestoreRole == 'user') finalRole = UserRole.student;
+      if (roleClaim == 'superadmin') {
+        finalRole = UserRole.superadmin;
+      } else if (roleClaim == 'admin')
+        finalRole = UserRole.admin;
+      else if (roleClaim == 'hoster' || firestoreRole == 'hoster')
+        finalRole = UserRole.hoster;
+      else if (firestoreRole == 'student' || firestoreRole == 'user')
+        finalRole = UserRole.student;
 
-      return {
-        'role': finalRole,
-        'status': status,
-      };
+      return {'role': finalRole, 'status': status};
     } catch (e) {
       debugPrint('Error detecting role/status: $e');
       return {'role': UserRole.none, 'status': 'unknown'};

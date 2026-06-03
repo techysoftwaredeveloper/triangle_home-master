@@ -10,7 +10,8 @@ class PrivacySecurityScreen extends ConsumerStatefulWidget {
   const PrivacySecurityScreen({super.key});
 
   @override
-  ConsumerState<PrivacySecurityScreen> createState() => _PrivacySecurityScreenState();
+  ConsumerState<PrivacySecurityScreen> createState() =>
+      _PrivacySecurityScreenState();
 }
 
 class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
@@ -46,14 +47,17 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
                 title: 'Change Password',
                 subtitle: 'Update your security credentials',
                 onTap: () {
-                    Fluttertoast.showToast(msg: "Password reset link sent to your email");
+                  Fluttertoast.showToast(
+                    msg: "Password reset link sent to your email",
+                  );
                 },
               ),
               _buildSwitchTile(
                 icon: Icons.security_rounded,
                 title: 'Two-Factor Authentication',
                 subtitle: 'Enhanced security via OTP verification',
-                value: false, // Placeholder as 2FA is handled by Phone Auth usually
+                value:
+                    false, // Placeholder as 2FA is handled by Phone Auth usually
                 onChanged: (v) {},
               ),
               _buildSwitchTile(
@@ -62,19 +66,22 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
                 subtitle: 'Use Face ID or Fingerprint to unlock',
                 value: settings.biometricLogin,
                 onChanged: (v) async {
-                    if (v) {
-                        final available = await _biometricService.isAvailable();
-                        if (!available) {
-                            Fluttertoast.showToast(msg: "Biometrics not available on this device");
-                            return;
-                        }
-                        final authenticated = await _biometricService.authenticate();
-                        if (authenticated) {
-                            notifier.toggleBiometric(true);
-                        }
-                    } else {
-                        notifier.toggleBiometric(false);
+                  if (v) {
+                    final available = await _biometricService.isAvailable();
+                    if (!available) {
+                      Fluttertoast.showToast(
+                        msg: "Biometrics not available on this device",
+                      );
+                      return;
                     }
+                    final authenticated =
+                        await _biometricService.authenticate();
+                    if (authenticated) {
+                      notifier.toggleBiometric(true);
+                    }
+                  } else {
+                    notifier.toggleBiometric(false);
+                  }
                 },
               ),
             ]),
@@ -117,7 +124,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
                 title: 'Download My Data',
                 subtitle: 'Get a copy of your personal records',
                 onTap: () {
-                    Fluttertoast.showToast(msg: "Preparing your data export...");
+                  Fluttertoast.showToast(msg: "Preparing your data export...");
                 },
               ),
               _buildActionTile(
@@ -150,7 +157,11 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
       ),
       child: Column(
         children: [
-          Icon(Icons.shield_rounded, size: 64, color: Colors.white.withValues(alpha: 0.9)),
+          Icon(
+            Icons.shield_rounded,
+            size: 64,
+            color: Colors.white.withValues(alpha: 0.9),
+          ),
           const SizedBox(height: 16),
           const Text(
             'Your Security, Our Priority',
@@ -204,18 +215,28 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
           ),
         ],
       ),
-      child: Column(
-        children: children.asMap().entries.map((entry) {
-          final index = entry.key;
-          final widget = entry.value;
-          return Column(
-            children: [
-              widget,
-              if (index < children.length - 1)
-                const Divider(height: 1, indent: 64, endIndent: 16, color: AppTheme.dividerColor),
-            ],
-          );
-        }).toList(),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        child: Column(
+          children:
+              children.asMap().entries.map((entry) {
+                final index = entry.key;
+                final widget = entry.value;
+                return Column(
+                  children: [
+                    widget,
+                    if (index < children.length - 1)
+                      const Divider(
+                        height: 1,
+                        indent: 64,
+                        endIndent: 16,
+                        color: AppTheme.dividerColor,
+                      ),
+                  ],
+                );
+              }).toList(),
+        ),
       ),
     ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0);
   }
@@ -231,6 +252,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
   }) {
     return ListTile(
       onTap: onTap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       leading: Container(
         padding: const EdgeInsets.all(10),
@@ -257,7 +279,14 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
           fontFamily: AppTheme.fontFamily,
         ),
       ),
-      trailing: showTrailing ? const Icon(Icons.chevron_right_rounded, color: AppTheme.textMutedColor, size: 20) : null,
+      trailing:
+          showTrailing
+              ? const Icon(
+                Icons.chevron_right_rounded,
+                color: AppTheme.textMutedColor,
+                size: 20,
+              )
+              : null,
     );
   }
 
@@ -271,7 +300,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
     return SwitchListTile.adaptive(
       value: value,
       onChanged: onChanged,
-      activeColor: AppTheme.primaryColor,
+      activeTrackColor: AppTheme.primaryColor,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       secondary: Container(
         padding: const EdgeInsets.all(10),
@@ -304,34 +333,51 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
   void _showDeleteConfirmation(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          'Delete Account?',
-          style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
-        ),
-        content: const Text(
-          'This action is permanent. All your bookings, wishlist items, and personal data will be erased from our servers.',
-          style: TextStyle(fontFamily: 'Outfit', color: AppTheme.textLightColor),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontFamily: 'Outfit')),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // Implementation for account deletion
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
             ),
-            child: const Text('Delete Permanently', style: TextStyle(color: Colors.white, fontFamily: 'Outfit')),
+            title: const Text(
+              'Delete Account?',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Outfit',
+              ),
+            ),
+            content: const Text(
+              'This action is permanent. All your bookings, wishlist items, and personal data will be erased from our servers.',
+              style: TextStyle(
+                fontFamily: 'Outfit',
+                color: AppTheme.textLightColor,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.grey, fontFamily: 'Outfit'),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // Implementation for account deletion
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.errorColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Delete Permanently',
+                  style: TextStyle(color: Colors.white, fontFamily: 'Outfit'),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }

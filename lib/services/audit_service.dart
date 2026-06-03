@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -26,7 +27,7 @@ class AuditService {
       });
     } catch (e) {
       // We don't want audit logging failure to crash the app, but we should log it
-      print('Audit logging failed: $e');
+      debugPrint('Audit logging failed: $e');
     }
   }
 

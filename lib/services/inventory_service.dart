@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/models/room_model.dart';
-import 'package:triangle_home/models/bed_model.dart';
 
 class InventoryService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -14,7 +13,7 @@ class InventoryService {
   }) async {
     final propertyRef = _firestore.collection('properties').doc(propertyId);
     final roomRef = propertyRef.collection('rooms').doc();
-    
+
     await _firestore.runTransaction((transaction) async {
       // 1. Create Room
       transaction.set(roomRef, {
@@ -98,9 +97,7 @@ class InventoryService {
       });
 
       // 3. Update Counters
-      transaction.update(roomRef, {
-        'availableBeds': FieldValue.increment(-1),
-      });
+      transaction.update(roomRef, {'availableBeds': FieldValue.increment(-1)});
       transaction.update(propertyRef, {
         'availableBeds': FieldValue.increment(-1),
       });
@@ -139,9 +136,7 @@ class InventoryService {
       });
 
       // 2. Update Counters
-      transaction.update(roomRef, {
-        'occupiedBeds': FieldValue.increment(1),
-      });
+      transaction.update(roomRef, {'occupiedBeds': FieldValue.increment(1)});
       transaction.update(propertyRef, {
         'occupiedBeds': FieldValue.increment(1),
       });
@@ -191,10 +186,9 @@ class InventoryService {
           'occupiedBeds': FieldValue.increment(-1),
           'availableBeds': FieldValue.increment(1),
         });
-      } else if (currentStatus == BedStatus.reserved.name || currentStatus == BedStatus.booked.name) {
-        transaction.update(roomRef, {
-          'availableBeds': FieldValue.increment(1),
-        });
+      } else if (currentStatus == BedStatus.reserved.name ||
+          currentStatus == BedStatus.booked.name) {
+        transaction.update(roomRef, {'availableBeds': FieldValue.increment(1)});
         transaction.update(propertyRef, {
           'availableBeds': FieldValue.increment(1),
         });

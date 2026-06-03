@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -6,7 +7,6 @@ import 'package:triangle_home/screens/room_details_screen.dart';
 import 'package:triangle_home/services/property_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SearchResultsScreen extends StatefulWidget {
   final String searchQuery;
@@ -39,6 +39,7 @@ class SearchResultsScreen extends StatefulWidget {
 class _SearchResultsScreenState extends State<SearchResultsScreen> {
   final PropertyService _propertyService = PropertyService();
   final ScrollController _scrollController = ScrollController();
+  StreamSubscription? _searchSubscription;
 
   String _sortBy = 'Price: Low to High';
   String _propertyType = 'All';
@@ -47,118 +48,59 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
   List<Map<String, dynamic>> _allResults = [];
   List<Map<String, dynamic>> _filteredResults = [];
   bool _isLoading = true;
-  bool _isFetchingMore = false;
-  bool _hasMore = true;
-  DocumentSnapshot? _lastDocument;
 
   @override
   void initState() {
     super.initState();
-    _fetchSearchResults();
-    _scrollController.addListener(_onScroll);
+    _initRealtimeSearch();
   }
 
   @override
   void dispose() {
+    _searchSubscription?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
-        !_isFetchingMore &&
-        _hasMore) {
-      _fetchMoreResults();
-    }
-  }
+  void _initRealtimeSearch() {
+    setState(() => _isLoading = true);
+    _searchSubscription?.cancel();
 
-  Future<void> _fetchSearchResults() async {
-    setState(() {
-      _isLoading = true;
-      _allResults = [];
-      _lastDocument = null;
-      _hasMore = true;
-    });
-
-    try {
-      final results = await _propertyService.getFilteredProperties(
-        city: widget.selectedCity,
-        localities: widget.selectedLocalities,
-        college: widget.selectedCollege,
-        accommodationType: widget.accommodationType,
-        tenantType: widget.tenantType,
-        roomType: widget.roomType,
-        limit: 10,
-      );
-
-      setState(() {
-        _allResults = results;
-        if (results.isNotEmpty) {
-          _lastDocument = results.last['doc'] as DocumentSnapshot;
-        }
-        _hasMore = results.length == 10;
-        _isLoading = false;
-      });
-
-      _applyFilters();
-    } catch (e) {
-      debugPrint('Error fetching search results: $e');
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted && e.toString().contains('permission-denied')) {
-        _showSearchErrorSnackBar('Access denied. Please check your App Check registration.');
-      } else if (mounted) {
-        _showSearchErrorSnackBar('Failed to load properties. Please try again.');
+    double? minP, maxP;
+    if (_priceRange != 'All') {
+      final parts = _priceRange.split('-');
+      if (parts.length == 2) {
+        minP = double.tryParse(parts[0].replaceAll(RegExp(r'[^0-9]'), ''));
+        maxP = double.tryParse(parts[1].replaceAll(RegExp(r'[^0-9]'), ''));
       }
     }
-  }
 
-  void _showSearchErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        action: SnackBarAction(label: 'Retry', onPressed: _fetchSearchResults),
-      ),
-    );
-  }
-
-  Future<void> _fetchMoreResults() async {
-    if (_isFetchingMore || !_hasMore) return;
-
-    setState(() {
-      _isFetchingMore = true;
-    });
-
-    try {
-      final results = await _propertyService.getFilteredProperties(
-        city: widget.selectedCity,
-        localities: widget.selectedLocalities,
-        college: widget.selectedCollege,
-        accommodationType: widget.accommodationType,
-        tenantType: widget.tenantType,
-        roomType: widget.roomType,
-        limit: 10,
-        startAfter: _lastDocument,
-      );
-
-      setState(() {
-        _allResults.addAll(results);
-        if (results.isNotEmpty) {
-          _lastDocument = results.last['doc'] as DocumentSnapshot;
-        }
-        _hasMore = results.length == 10;
-        _isFetchingMore = false;
-      });
-
-      _applyFilters();
-    } catch (e) {
-      debugPrint('Error fetching more results: $e');
-      setState(() {
-        _isFetchingMore = false;
-      });
-    }
+    _searchSubscription = _propertyService
+        .getFilteredPropertiesStream(
+          city: widget.selectedCity,
+          localities: widget.selectedLocalities,
+          college: widget.selectedCollege,
+          accommodationType: widget.accommodationType,
+          tenantType: widget.tenantType,
+          roomType: widget.roomType,
+          minPrice: minP,
+          maxPrice: maxP,
+        )
+        .listen(
+          (results) {
+            if (mounted) {
+              setState(() {
+                _allResults = results;
+                _isLoading = false;
+              });
+              _applyFilters();
+            }
+          },
+          onError: (e) {
+            debugPrint('Search Stream Error: $e');
+            if (mounted) setState(() => _isLoading = false);
+          },
+        );
   }
 
   void _applyFilters() {
@@ -170,15 +112,19 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
           filtered.where((property) {
             final type =
                 property['propertyType']?.toString().toLowerCase() ?? '';
-            final category = 
+            final category =
                 property['category']?.toString().toLowerCase() ?? '';
             switch (_propertyType) {
               case 'PG':
-                return type.contains('pg') || type.contains('paying guest') || category.contains('pg');
+                return type.contains('pg') ||
+                    type.contains('paying guest') ||
+                    category.contains('pg');
               case 'Hostel':
                 return type.contains('hostel') || category.contains('hostel');
               case 'Apartment':
-                return type.contains('apartment') || type.contains('flat') || category.contains('apartment');
+                return type.contains('apartment') ||
+                    type.contains('flat') ||
+                    category.contains('apartment');
               default:
                 return true;
             }
@@ -277,17 +223,11 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                         : ListView.builder(
                           controller: _scrollController,
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                          itemCount: _filteredResults.length + (_isFetchingMore ? 1 : 0),
+                          itemCount: _filteredResults.length,
                           itemBuilder: (context, index) {
-                            if (index == _filteredResults.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: Center(child: CircularProgressIndicator()),
-                              );
-                            }
                             return _buildPropertyCard(_filteredResults[index])
                                 .animate()
-                                .fadeIn(delay: Duration(milliseconds: 50))
+                                .fadeIn(delay: const Duration(milliseconds: 50))
                                 .slideY(begin: 0.1, end: 0);
                           },
                         ),
@@ -298,9 +238,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
             bottom: 20,
             left: 0,
             right: 0,
-            child: Center(
-              child: _buildStickyFilterButton(),
-            ),
+            child: Center(child: _buildStickyFilterButton()),
           ),
         ],
       ),
@@ -536,93 +474,113 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Filters',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _sortBy = 'Price: Low to High';
-                        _propertyType = 'All';
-                        _priceRange = 'All';
-                      });
-                      _applyFilters();
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Reset All'),
-                  ),
-                ],
-              ),
+      builder:
+          (context) => Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  _buildFilterSection('Sort By', [
-                    'Price: Low to High',
-                    'Price: High to Low',
-                    'Rating',
-                    'Distance',
-                  ], _sortBy, (v) => setState(() => _sortBy = v)),
-                  const Divider(),
-                  _buildFilterSection('Property Type', [
-                    'All', 'PG', 'Hostel', 'Apartment'
-                  ], _propertyType, (v) => setState(() => _propertyType = v)),
-                  const Divider(),
-                  _buildFilterSection('Price Range', [
-                    'All', '< ₹5000', '₹5000-₹10000', '> ₹10000'
-                  ], _priceRange, (v) => setState(() => _priceRange = v)),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    _applyFilters();
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Apply Filters',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Filters',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _sortBy = 'Price: Low to High';
+                            _propertyType = 'All';
+                            _priceRange = 'All';
+                          });
+                          _applyFilters();
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Reset All'),
+                      ),
+                    ],
                   ),
                 ),
-              ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      _buildFilterSection(
+                        'Sort By',
+                        [
+                          'Price: Low to High',
+                          'Price: High to Low',
+                          'Rating',
+                          'Distance',
+                        ],
+                        _sortBy,
+                        (v) => setState(() => _sortBy = v),
+                      ),
+                      const Divider(),
+                      _buildFilterSection(
+                        'Property Type',
+                        ['All', 'PG', 'Hostel', 'Apartment'],
+                        _propertyType,
+                        (v) => setState(() => _propertyType = v),
+                      ),
+                      const Divider(),
+                      _buildFilterSection(
+                        'Price Range',
+                        ['All', '< ₹5000', '₹5000-₹10000', '> ₹10000'],
+                        _priceRange,
+                        (v) => setState(() => _priceRange = v),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _applyFilters();
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Apply Filters',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
-  Widget _buildFilterSection(String title, List<String> options, String selectedValue, Function(String) onSelect) {
+  Widget _buildFilterSection(
+    String title,
+    List<String> options,
+    String selectedValue,
+    Function(String) onSelect,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -635,22 +593,23 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: options.map((option) {
-            final isSelected = option == selectedValue;
-            return ChoiceChip(
-              label: Text(option),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) {
-                  onSelect(option);
-                }
-              },
-              selectedColor: AppTheme.primaryColor,
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
-              ),
-            );
-          }).toList(),
+          children:
+              options.map((option) {
+                final isSelected = option == selectedValue;
+                return ChoiceChip(
+                  label: Text(option),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) {
+                      onSelect(option);
+                    }
+                  },
+                  selectedColor: AppTheme.primaryColor,
+                  labelStyle: TextStyle(
+                    color: isSelected ? Colors.white : Colors.black87,
+                  ),
+                );
+              }).toList(),
         ),
         const SizedBox(height: 16),
       ],
@@ -670,33 +629,45 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(height: 20, width: 150, color: Colors.grey[200]),
-                    const SizedBox(height: 8),
-                    Container(height: 14, width: 250, color: Colors.grey[200]),
-                  ],
-                ),
-              ),
-            ],
-          ).animate(onPlay: (controller) => controller.repeat())
-           .shimmer(duration: 1500.ms, color: Colors.grey[100]),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(12),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          height: 20,
+                          width: 150,
+                          color: Colors.grey[200],
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          height: 14,
+                          width: 250,
+                          color: Colors.grey[200],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+              .animate(onPlay: (controller) => controller.repeat())
+              .shimmer(duration: 1500.ms, color: Colors.grey[100]),
         );
       },
     );
   }
+
   Widget _buildPropertyCard(Map<String, dynamic> property) {
     final user = FirebaseAuth.instance.currentUser;
     final propertyId = property['id'] as String? ?? '';
@@ -705,14 +676,18 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
-        onTap: isUnavailable ? null : () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => RoomDetailsScreen(accommodation: property),
-            ),
-          );
-        },
+        onTap:
+            isUnavailable
+                ? null
+                : () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (_) => RoomDetailsScreen(accommodation: property),
+                    ),
+                  );
+                },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -749,7 +724,10 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                     color: Colors.black.withValues(alpha: 0.5),
                     child: Center(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.red,
                           borderRadius: BorderRadius.circular(4),
@@ -816,12 +794,20 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                           fontSize: AppTheme.fontXL,
                           fontWeight: FontWeight.bold,
                           fontFamily: AppTheme.fontFamily,
-                          color: isUnavailable ? Colors.grey : AppTheme.textDarkColor,
+                          color:
+                              isUnavailable
+                                  ? Colors.grey
+                                  : AppTheme.textDarkColor,
                         ),
                       ),
                       Row(
                         children: [
-                          Icon(Icons.star, color: isUnavailable ? Colors.grey : Colors.amber[700], size: 20),
+                          Icon(
+                            Icons.star,
+                            color:
+                                isUnavailable ? Colors.grey : Colors.amber[700],
+                            size: 20,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '${property['rating'] ?? 4.0} (${property['reviewCount'] ?? 0})',
@@ -829,7 +815,10 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                               fontSize: AppTheme.fontBase,
                               fontWeight: FontWeight.w500,
                               fontFamily: AppTheme.fontFamily,
-                              color: isUnavailable ? Colors.grey : AppTheme.textDarkColor,
+                              color:
+                                  isUnavailable
+                                      ? Colors.grey
+                                      : AppTheme.textDarkColor,
                             ),
                           ),
                         ],
@@ -843,14 +832,18 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                       fontSize: AppTheme.fontMD,
                       fontWeight: FontWeight.w600,
                       fontFamily: AppTheme.fontFamily,
-                      color: isUnavailable ? Colors.grey : AppTheme.textDarkColor,
+                      color:
+                          isUnavailable ? Colors.grey : AppTheme.textDarkColor,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     property['location'] ?? '',
                     style: TextStyle(
-                      color: isUnavailable ? Colors.grey[400] : AppTheme.textLightColor,
+                      color:
+                          isUnavailable
+                              ? Colors.grey[400]
+                              : AppTheme.textLightColor,
                       fontSize: AppTheme.fontBase,
                       fontFamily: AppTheme.fontFamily,
                     ),
@@ -860,14 +853,18 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                     children: [
                       Icon(
                         Icons.location_on_outlined,
-                        color: isUnavailable ? Colors.grey[400] : Colors.grey[600],
+                        color:
+                            isUnavailable ? Colors.grey[400] : Colors.grey[600],
                         size: 16,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         property['distance'] ?? '',
                         style: TextStyle(
-                          color: isUnavailable ? Colors.grey[400] : AppTheme.textLightColor,
+                          color:
+                              isUnavailable
+                                  ? Colors.grey[400]
+                                  : AppTheme.textLightColor,
                           fontSize: AppTheme.fontSM,
                           fontFamily: AppTheme.fontFamily,
                         ),
@@ -893,7 +890,10 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                                 child: Text(
                                   amenity.toString(),
                                   style: TextStyle(
-                                    color: isUnavailable ? Colors.grey[400] : AppTheme.textLightColor,
+                                    color:
+                                        isUnavailable
+                                            ? Colors.grey[400]
+                                            : AppTheme.textLightColor,
                                     fontSize: AppTheme.fontSM,
                                     fontFamily: AppTheme.fontFamily,
                                   ),

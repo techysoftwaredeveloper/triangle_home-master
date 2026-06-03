@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum SystemEvent {
@@ -13,7 +14,11 @@ enum SystemEvent {
 class MonitoringService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> logError(String message, {String? stackTrace, Map<String, dynamic>? extra}) async {
+  Future<void> logError(
+    String message, {
+    String? stackTrace,
+    Map<String, dynamic>? extra,
+  }) async {
     try {
       await _firestore.collection('error_logs').add({
         'message': message,
@@ -23,7 +28,7 @@ class MonitoringService {
         ...?extra,
       });
     } catch (e) {
-      print('Critical: Failed to log error to Firestore: $e');
+      debugPrint('Critical: Failed to log error to Firestore: $e');
     }
   }
 
@@ -35,11 +40,15 @@ class MonitoringService {
         'timestamp': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      print('Failed to log event: $e');
+      debugPrint('Failed to log event: $e');
     }
   }
 
-  Future<void> logSystemEvent(SystemEvent event, {required String targetId, Map<String, dynamic>? extraData}) async {
+  Future<void> logSystemEvent(
+    SystemEvent event, {
+    required String targetId,
+    Map<String, dynamic>? extraData,
+  }) async {
     try {
       await _firestore.collection('system_events').add({
         'type': event.name,
@@ -48,7 +57,7 @@ class MonitoringService {
         'data': extraData,
       });
     } catch (e) {
-      print('Failed to log system event: $e');
+      debugPrint('Failed to log system event: $e');
     }
   }
 }

@@ -91,7 +91,8 @@ class SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final bool isSmall = constraints.maxHeight < 120 || constraints.maxWidth < 150;
+        final bool isSmall =
+            constraints.maxHeight < 120 || constraints.maxWidth < 150;
         final double padding = isSmall ? 12.0 : 20.0;
 
         return Container(
@@ -121,14 +122,19 @@ class SummaryCard extends StatelessWidget {
                   children: [
                     Container(
                       padding: EdgeInsets.all(isSmall ? 6 : 8),
-                      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(
+                        color: bg,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       child: Icon(icon, color: color, size: isSmall ? 16 : 20),
                     ),
                     if (percentage != null && !isSmall)
                       Row(
                         children: [
                           Icon(
-                            isUp == false ? Icons.arrow_downward : Icons.arrow_upward,
+                            isUp == false
+                                ? Icons.arrow_downward
+                                : Icons.arrow_upward,
                             color: Colors.green,
                             size: 12,
                           ),
@@ -170,14 +176,17 @@ class SummaryCard extends StatelessWidget {
                     sub!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFF94A3B8),
+                    ),
                   ),
                 ],
               ],
             ),
           ),
         );
-      }
+      },
     );
   }
 }
@@ -199,7 +208,11 @@ class StatusBadge extends StatelessWidget {
       child: Text(
         text.toUpperCase(),
         textAlign: TextAlign.center,
-        style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: color,
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -224,16 +237,21 @@ class PaginationBtn extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Center(
-        child: icon != null
-            ? Icon(icon, size: 16, color: active ? Colors.white : const Color(0xFF64748B))
-            : Text(
-                label!,
-                style: TextStyle(
-                  color: active ? Colors.white : const Color(0xFF1E293B),
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
+        child:
+            icon != null
+                ? Icon(
+                  icon,
+                  size: 16,
+                  color: active ? Colors.white : const Color(0xFF64748B),
+                )
+                : Text(
+                  label!,
+                  style: TextStyle(
+                    color: active ? Colors.white : const Color(0xFF1E293B),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
       ),
     );
   }
@@ -297,7 +315,11 @@ class SearchFilterRow extends StatelessWidget {
     );
   }
 
-  Widget _buildAction(String label, [IconData? icon, bool hasDropdown = false]) {
+  Widget _buildAction(
+    String label, [
+    IconData? icon,
+    bool hasDropdown = false,
+  ]) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -307,11 +329,25 @@ class SearchFilterRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          if (icon != null) ...[Icon(icon, size: 16, color: const Color(0xFF64748B)), const SizedBox(width: 8)],
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+          if (icon != null) ...[
+            Icon(icon, size: 16, color: const Color(0xFF64748B)),
+            const SizedBox(width: 8),
+          ],
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1E293B),
+            ),
+          ),
           if (hasDropdown || icon == null) ...[
             const SizedBox(width: 6),
-            const Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF64748B)),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              size: 16,
+              color: Color(0xFF64748B),
+            ),
           ],
         ],
       ),

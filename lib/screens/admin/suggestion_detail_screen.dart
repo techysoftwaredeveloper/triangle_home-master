@@ -34,23 +34,34 @@ class _SuggestionDetailScreenState extends State<SuggestionDetailScreen> {
   Color _getStatusColor(dynamic s) {
     final status = s?.toString().toLowerCase() ?? 'pending';
     switch (status) {
-      case 'contacted': return Colors.blue;
-      case 'shortlisted': return Colors.purple;
-      case 'converted': return Colors.green;
-      case 'rejected': return Colors.red;
-      default: return Colors.orange;
+      case 'contacted':
+        return Colors.blue;
+      case 'shortlisted':
+        return Colors.purple;
+      case 'converted':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.orange;
     }
   }
 
   void _handleAction(String action) async {
     try {
-      await widget.adminService.updateSuggestionStatus(_currentSuggestion['id'], action);
+      await widget.adminService.updateSuggestionStatus(
+        _currentSuggestion['id'],
+        action,
+      );
       if (mounted) {
         setState(() {
           _currentSuggestion['status'] = action;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Lead updated successfully'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Lead updated successfully'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
@@ -99,7 +110,11 @@ class _SuggestionDetailScreenState extends State<SuggestionDetailScreen> {
                     height: 200,
                     width: double.infinity,
                     color: const Color(0xFFF1F5F9),
-                    child: const Icon(Icons.home_work_outlined, color: Colors.grey, size: 60),
+                    child: const Icon(
+                      Icons.home_work_outlined,
+                      color: Colors.grey,
+                      size: 60,
+                    ),
                   ),
                   Positioned(
                     top: 16,
@@ -112,7 +127,11 @@ class _SuggestionDetailScreenState extends State<SuggestionDetailScreen> {
             const SizedBox(height: 24),
             Text(
               s['business_name'] ?? 'Untitled',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -122,15 +141,28 @@ class _SuggestionDetailScreenState extends State<SuggestionDetailScreen> {
 
             const Divider(height: 48),
             _detailTitle('Business Location'),
-            _iconDetail(Icons.location_on_outlined, s['business_address'] ?? 'Location N/A', ''),
+            _iconDetail(
+              Icons.location_on_outlined,
+              s['business_address'] ?? 'Location N/A',
+              '',
+            ),
 
             const Divider(height: 48),
             _detailTitle('Business Owner'),
-            Text(s['owner_name'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            Text(
+              s['owner_name'] ?? 'N/A',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
             const SizedBox(height: 4),
-            Text(s['owner_phone'] ?? 'N/A', style: const TextStyle(fontSize: 14)),
+            Text(
+              s['owner_phone'] ?? 'N/A',
+              style: const TextStyle(fontSize: 14),
+            ),
             const SizedBox(height: 4),
-            Text(s['owner_email'] ?? 'N/A', style: const TextStyle(fontSize: 14, color: Color(0xFF64748B))),
+            Text(
+              s['owner_email'] ?? 'N/A',
+              style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+            ),
 
             const Divider(height: 48),
             _detailTitle('Suggested By'),
@@ -140,8 +172,14 @@ class _SuggestionDetailScreenState extends State<SuggestionDetailScreen> {
                   radius: 20,
                   backgroundColor: const Color(0xFFF5F3FF),
                   child: Text(
-                    s['suggester_name']?.toString().isNotEmpty == true ? s['suggester_name'][0] : 'U',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED)),
+                    s['suggester_name']?.toString().isNotEmpty == true
+                        ? s['suggester_name'][0]
+                        : 'U',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF7C3AED),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -151,11 +189,18 @@ class _SuggestionDetailScreenState extends State<SuggestionDetailScreen> {
                     children: [
                       Text(
                         s['suggester_name'] ?? 'Unknown User',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                       const Text(
                         'Community Member',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF2563EB), fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF2563EB),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -163,18 +208,48 @@ class _SuggestionDetailScreenState extends State<SuggestionDetailScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Text(s['suggester_phone'] ?? 'No Phone', style: const TextStyle(fontSize: 14)),
+            Text(
+              s['suggester_phone'] ?? 'No Phone',
+              style: const TextStyle(fontSize: 14),
+            ),
             const SizedBox(height: 4),
-            Text(s['suggester_email'] ?? 'No Email', style: const TextStyle(fontSize: 14, color: Color(0xFF64748B))),
+            Text(
+              s['suggester_email'] ?? 'No Email',
+              style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+            ),
 
             const SizedBox(height: 48),
-            _actionBtn('Mark as Contacted', const Color(0xFFF5F3FF), const Color(0xFF7C3AED), Icons.phone_in_talk_outlined, () => _handleAction('contacted')),
+            _actionBtn(
+              'Mark as Contacted',
+              const Color(0xFFF5F3FF),
+              const Color(0xFF7C3AED),
+              Icons.phone_in_talk_outlined,
+              () => _handleAction('contacted'),
+            ),
             const SizedBox(height: 12),
-            _actionBtn('Mark as Shortlisted', const Color(0xFFEFF6FF), const Color(0xFF2563EB), Icons.star_outline_rounded, () => _handleAction('shortlisted')),
+            _actionBtn(
+              'Mark as Shortlisted',
+              const Color(0xFFEFF6FF),
+              const Color(0xFF2563EB),
+              Icons.star_outline_rounded,
+              () => _handleAction('shortlisted'),
+            ),
             const SizedBox(height: 12),
-            _actionBtn('Mark as Converted', const Color(0xFFF0FDF4), const Color(0xFF16A34A), Icons.check_circle_outline_rounded, () => _handleAction('converted')),
+            _actionBtn(
+              'Mark as Converted',
+              const Color(0xFFF0FDF4),
+              const Color(0xFF16A34A),
+              Icons.check_circle_outline_rounded,
+              () => _handleAction('converted'),
+            ),
             const SizedBox(height: 12),
-            _actionBtn('Reject Lead', const Color(0xFFFEF2F2), const Color(0xFFDC2626), Icons.cancel_outlined, () => _handleAction('rejected')),
+            _actionBtn(
+              'Reject Lead',
+              const Color(0xFFFEF2F2),
+              const Color(0xFFDC2626),
+              Icons.cancel_outlined,
+              () => _handleAction('rejected'),
+            ),
             const SizedBox(height: 40),
           ],
         ),
@@ -186,7 +261,12 @@ class _SuggestionDetailScreenState extends State<SuggestionDetailScreen> {
     padding: const EdgeInsets.only(bottom: 16),
     child: Text(
       t.toUpperCase(),
-      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8), letterSpacing: 1),
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: Color(0xFF94A3B8),
+        letterSpacing: 1,
+      ),
     ),
   );
 
@@ -198,27 +278,50 @@ class _SuggestionDetailScreenState extends State<SuggestionDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(t, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-            if (s.isNotEmpty) Text(s, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+            Text(
+              t,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            if (s.isNotEmpty)
+              Text(
+                s,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              ),
           ],
         ),
       ),
     ],
   );
 
-  Widget _actionBtn(String l, Color bg, Color t, IconData i, VoidCallback onTap) => InkWell(
+  Widget _actionBtn(
+    String l,
+    Color bg,
+    Color t,
+    IconData i,
+    VoidCallback onTap,
+  ) => InkWell(
     onTap: onTap,
     borderRadius: BorderRadius.circular(12),
     child: Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(i, size: 18, color: t),
           const SizedBox(width: 10),
-          Text(l, style: TextStyle(color: t, fontWeight: FontWeight.bold, fontSize: 14)),
+          Text(
+            l,
+            style: TextStyle(
+              color: t,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
         ],
       ),
     ),

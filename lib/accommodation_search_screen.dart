@@ -26,7 +26,7 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
   void initState() {
     super.initState();
     _fetchCitiesFromFirestore();
-    _fetchSharingTypesFromProperties();
+    _fetchSharingTypes();
   }
 
   Future<void> _fetchCitiesFromFirestore() async {
@@ -45,7 +45,11 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
       debugPrint('Error fetching cities: $e');
       if (mounted && e.toString().contains('permission-denied')) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Permission denied by Firestore. Please check security rules.')),
+          const SnackBar(
+            content: Text(
+              'Permission denied by Firestore. Please check security rules.',
+            ),
+          ),
         );
       }
     }
@@ -89,21 +93,11 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
     }
   }
 
-  Future<void> _fetchSharingTypesFromProperties() async {
+  Future<void> _fetchSharingTypes() async {
     try {
-      final snapshot =
-          await FirebaseFirestore.instance.collection('properties').get();
-      final Set<String> sharingSet = {};
-
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        if (data['sharing'] != null && data['sharing'] is String) {
-          sharingSet.add(data['sharing'].toString().trim());
-        }
-      }
-
+      final sharingList = await _propertyService.getSharingTypes();
       setState(() {
-        _sharingOptions = sharingSet.toList()..sort();
+        _sharingOptions = sharingList;
       });
     } catch (e) {
       debugPrint('Error fetching sharing types: $e');
@@ -169,6 +163,19 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
   }
 
   Widget _buildCitySelector() {
+    if (_cities.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 10),
+        child: Center(
+          child: SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -186,7 +193,7 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
-                  vertical: 5,
+                  vertical: 8, // Increased for better tap area
                 ),
                 decoration: BoxDecoration(
                   color: isSelected ? AppTheme.primaryColor : Colors.white,
@@ -199,7 +206,7 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
                 child: Text(
                   city,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 12, // Increased for visibility
                     color: isSelected ? Colors.white : Colors.grey[700],
                     fontWeight:
                         isSelected ? FontWeight.w600 : FontWeight.normal,

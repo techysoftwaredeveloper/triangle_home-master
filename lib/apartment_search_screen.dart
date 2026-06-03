@@ -1,7 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/search_results_screen.dart';
+import 'package:triangle_home/services/firebase_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/locality_search_popup.dart';
 
@@ -14,12 +14,15 @@ class ApartmentSearchScreen extends StatefulWidget {
 }
 
 class _ApartmentSearchScreenState extends State<ApartmentSearchScreen> {
-  String _selectedCity = 'Chennai';
-  String _selectedRoomType = '1 BHK';
+  final FirebaseService _firebaseService = FirebaseService();
+  String _selectedCity = 'Kochi';
+  String _selectedRoomType = 'Any';
   final List<String> _selectedLocalities = [];
-  final TextEditingController _collegeSearchController = TextEditingController();
+  final TextEditingController _collegeSearchController =
+      TextEditingController();
 
-  final List<String> _cities = ['Chennai', 'Mangalore', 'Bangalore', 'Kochi'];
+  List<String> _cities = [];
+  List<String> _localities = [];
   final List<String> _roomTypes = [
     'Any',
     '1 RK',
@@ -33,36 +36,38 @@ class _ApartmentSearchScreenState extends State<ApartmentSearchScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.isByArea) {
-      _fetchAreasByCity();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    try {
+      final cities = await _firebaseService.getCities();
+      setState(() {
+        _cities = cities;
+        if (cities.isNotEmpty) {
+          _selectedCity = cities.first;
+        }
+      });
+      if (_selectedCity.isNotEmpty) {
+        _loadLocalities(_selectedCity);
+      }
+    } catch (e) {
+      debugPrint('Error loading initial data: $e');
     }
   }
 
-  Future<void> _fetchAreasByCity() async {
+  Future<void> _loadLocalities(String city) async {
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('cities').get();
-      String? docId;
-      for (final doc in snapshot.docs) {
-        if (doc['name'].toString().toLowerCase() == _selectedCity.toLowerCase()) {
-          docId = doc.id;
-          break;
+      final localities = await _firebaseService.getLocalities(city);
+      setState(() {
+        _localities = localities;
+        if (widget.isByArea) {
+          _selectedLocalities.clear();
+          _selectedLocalities.addAll(localities.take(2));
         }
-      }
-
-      if (docId != null) {
-        final doc = await FirebaseFirestore.instance.collection('cities').doc(docId).get();
-        final data = doc.data();
-        if (data != null && data['areas'] != null) {
-          // Just as an initial example, take first two
-          final areas = List<String>.from(data['areas']);
-          setState(() {
-            _selectedLocalities.clear();
-            _selectedLocalities.addAll(areas.take(2));
-          });
-        }
-      }
+      });
     } catch (e) {
-      debugPrint('Error fetching areas: $e');
+      debugPrint('Error loading localities: $e');
     }
   }
 
@@ -101,7 +106,9 @@ class _ApartmentSearchScreenState extends State<ApartmentSearchScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: Text(
-                widget.isByArea ? 'Search Apartments By Area' : 'Search Apartments Near College/University',
+                widget.isByArea
+                    ? 'Search Apartments By Area'
+                    : 'Search Apartments Near College/University',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
@@ -175,45 +182,54 @@ class _ApartmentSearchScreenState extends State<ApartmentSearchScreen> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: _cities.map((city) {
-                final isSelected = city == _selectedCity;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: InkWell(
-                    onTap: () {
-                      setState(() {
-                        _selectedCity = city;
-                        if (widget.isByArea) {
-                          _fetchAreasByCity();
-                        }
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppTheme.primaryColor : Colors.white,
+              children:
+                  _cities.map((city) {
+                    final isSelected = city == _selectedCity;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedCity = city;
+                            _selectedLocalities.clear();
+                            _loadLocalities(city);
+                          });
+                        },
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                isSelected
+                                    ? AppTheme.primaryColor
+                                    : Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color:
+                                  isSelected
+                                      ? AppTheme.primaryColor
+                                      : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          child: Text(
+                            city,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black87,
+                              fontWeight:
+                                  isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                              fontFamily: 'Outfit',
+                              fontSize: 13,
+                            ),
+                          ),
                         ),
                       ),
-                      child: Text(
-                        city,
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.black87,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                          fontFamily: 'Outfit',
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
+                    );
+                  }).toList(),
             ),
           ),
           const SizedBox(height: 24),
@@ -247,45 +263,46 @@ class _ApartmentSearchScreenState extends State<ApartmentSearchScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _selectedLocalities.map((locality) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        locality,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Outfit',
-                        ),
+              children:
+                  _selectedLocalities.map((locality) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
                       ),
-                      const SizedBox(width: 8),
-                      InkWell(
-                        onTap: () {
-                          setState(() {
-                            _selectedLocalities.remove(locality);
-                          });
-                        },
-                        child: const Icon(
-                          Icons.close,
-                          size: 16,
-                          color: Colors.white,
-                        ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            locality,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Outfit',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedLocalities.remove(locality);
+                              });
+                            },
+                            child: const Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
             ),
           ] else ...[
             Container(
@@ -327,46 +344,32 @@ class _ApartmentSearchScreenState extends State<ApartmentSearchScreen> {
   }
 
   Future<void> _showLocalityPicker() async {
-    try {
-      final snapshot = await FirebaseFirestore.instance.collection('cities').get();
-      String? docId;
-      for (final doc in snapshot.docs) {
-        if (doc['name'].toString().toLowerCase() == _selectedCity.toLowerCase()) {
-          docId = doc.id;
-          break;
-        }
-      }
-
-      if (docId == null) return;
-
-      final doc = await FirebaseFirestore.instance.collection('cities').doc(docId).get();
-      final data = doc.data();
-      if (data != null && data['areas'] != null) {
-        final areas = List<String>.from(data['areas']);
-        if (mounted) {
-          showModalBottomSheet(
-            context: context,
-            backgroundColor: Colors.transparent,
-            isScrollControlled: true,
-            builder: (context) => LocalitySearchPopup(
-              localities: areas,
-              selectedLocalities: _selectedLocalities,
-              onLocalityToggled: (locality) {
-                setState(() {
-                  if (_selectedLocalities.contains(locality)) {
-                    _selectedLocalities.remove(locality);
-                  } else {
-                    _selectedLocalities.add(locality);
-                  }
-                });
-              },
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('Error loading areas for picker: $e');
+    if (_localities.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No localities available')));
+      return;
     }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder:
+          (context) => LocalitySearchPopup(
+            localities: _localities,
+            selectedLocalities: _selectedLocalities,
+            onLocalityToggled: (locality) {
+              setState(() {
+                if (_selectedLocalities.contains(locality)) {
+                  _selectedLocalities.remove(locality);
+                } else if (_selectedLocalities.length < 5) {
+                  _selectedLocalities.add(locality);
+                }
+              });
+            },
+          ),
+    );
   }
 
   Widget _buildRoomTypeCard() {
@@ -403,42 +406,50 @@ class _ApartmentSearchScreenState extends State<ApartmentSearchScreen> {
               return Wrap(
                 spacing: 12,
                 runSpacing: 12,
-                children: _roomTypes.map((type) {
-                  final isSelected = _selectedRoomType == type;
-                  return InkWell(
-                    onTap: () => setState(() => _selectedRoomType = type),
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      width: itemWidth,
-                      height: 44, // Fixed height for a uniform box look
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppTheme.primaryColor.withValues(alpha: 0.08)
-                            : Colors.white,
+                children:
+                    _roomTypes.map((type) {
+                      final isSelected = _selectedRoomType == type;
+                      return InkWell(
+                        onTap: () => setState(() => _selectedRoomType = type),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppTheme.primaryColor
-                              : const Color(0xFFE2E8F0),
-                          width: isSelected ? 1 : 1,
+                        child: Container(
+                          width: itemWidth,
+                          height: 44, // Fixed height for a uniform box look
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color:
+                                isSelected
+                                    ? AppTheme.primaryColor.withValues(
+                                      alpha: 0.08,
+                                    )
+                                    : Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color:
+                                  isSelected
+                                      ? AppTheme.primaryColor
+                                      : const Color(0xFFE2E8F0),
+                              width: isSelected ? 1 : 1,
+                            ),
+                          ),
+                          child: Text(
+                            type,
+                            style: TextStyle(
+                              color:
+                                  isSelected
+                                      ? AppTheme.primaryColor
+                                      : const Color(0xFF64748B),
+                              fontWeight:
+                                  isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                              fontFamily: 'Outfit',
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        type,
-                        style: TextStyle(
-                          color: isSelected
-                              ? AppTheme.primaryColor
-                              : const Color(0xFF64748B),
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.w500,
-                          fontFamily: 'Outfit',
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
+                      );
+                    }).toList(),
               );
             },
           ),
@@ -458,19 +469,22 @@ class _ApartmentSearchScreenState extends State<ApartmentSearchScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => SearchResultsScreen(
-                  searchQuery: widget.isByArea
-                      ? _selectedLocalities.join(', ')
-                      : _collegeSearchController.text,
-                  selectedCity: _selectedCity,
-                  selectedState: '',
-                  searchType: widget.isByArea ? 'By Area' : 'By College',
-                  selectedLocalities: _selectedLocalities,
-                  selectedCollege: widget.isByArea ? '' : _collegeSearchController.text,
-                  accommodationType: 'Apartments',
-                  tenantType: 'Anyone',
-                  roomType: _selectedRoomType,
-                ),
+                builder:
+                    (_) => SearchResultsScreen(
+                      searchQuery:
+                          widget.isByArea
+                              ? _selectedLocalities.join(', ')
+                              : _collegeSearchController.text,
+                      selectedCity: _selectedCity,
+                      selectedState: '',
+                      searchType: widget.isByArea ? 'By Area' : 'By College',
+                      selectedLocalities: _selectedLocalities,
+                      selectedCollege:
+                          widget.isByArea ? '' : _collegeSearchController.text,
+                      accommodationType: 'Apartments',
+                      tenantType: 'Anyone',
+                      roomType: _selectedRoomType,
+                    ),
               ),
             );
           },

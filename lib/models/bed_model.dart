@@ -41,7 +41,8 @@ class BedModel {
       ),
       reservedBy: data['reservedBy'],
       currentResidentId: data['currentResidentId'],
-      reservationExpiresAt: (data['reservationExpiresAt'] as Timestamp?)?.toDate(),
+      reservationExpiresAt:
+          (data['reservationExpiresAt'] as Timestamp?)?.toDate(),
       lastCleanedAt: (data['lastCleanedAt'] as Timestamp?)?.toDate(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -56,8 +57,12 @@ class BedModel {
       'status': status.name,
       'reservedBy': reservedBy,
       'currentResidentId': currentResidentId,
-      'reservationExpiresAt': reservationExpiresAt != null ? Timestamp.fromDate(reservationExpiresAt!) : null,
-      'lastCleanedAt': lastCleanedAt != null ? Timestamp.fromDate(lastCleanedAt!) : null,
+      'reservationExpiresAt':
+          reservationExpiresAt != null
+              ? Timestamp.fromDate(reservationExpiresAt!)
+              : null,
+      'lastCleanedAt':
+          lastCleanedAt != null ? Timestamp.fromDate(lastCleanedAt!) : null,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': FieldValue.serverTimestamp(),
     };

@@ -36,10 +36,22 @@ class HelpSupportScreen extends StatelessWidget {
                     ),
                   ).animate().fadeIn().slideX(begin: -0.1, end: 0),
                   const SizedBox(height: 16),
-                  _buildFaqItem('How do I list my property?', 'You can list your property by clicking on the "List A Property" button in the bottom navigation bar and following the simple registration steps.'),
-                  _buildFaqItem('How do I book a property?', 'Browse through available properties on the home screen, select one you like, and click on "Book Now" to start the process.'),
-                  _buildFaqItem('What payment methods are accepted?', 'We accept all major credit/debit cards, UPI, and net banking through our secure payment gateway.'),
-                  _buildFaqItem('Is my data secure?', 'Yes, we take privacy and security seriously. Your data is encrypted and handled according to our strict privacy policy.'),
+                  _buildFaqItem(
+                    'How do I list my property?',
+                    'You can list your property by clicking on the "List A Property" button in the bottom navigation bar and following the simple registration steps.',
+                  ),
+                  _buildFaqItem(
+                    'How do I book a property?',
+                    'Browse through available properties on the home screen, select one you like, and click on "Book Now" to start the process.',
+                  ),
+                  _buildFaqItem(
+                    'What payment methods are accepted?',
+                    'We accept all major credit/debit cards, UPI, and net banking through our secure payment gateway.',
+                  ),
+                  _buildFaqItem(
+                    'Is my data secure?',
+                    'Yes, we take privacy and security seriously. Your data is encrypted and handled according to our strict privacy policy.',
+                  ),
 
                   const SizedBox(height: 32),
                   const Text(
@@ -93,7 +105,11 @@ class HelpSupportScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(Icons.support_agent_rounded, size: 64, color: Colors.white),
+          const Icon(
+            Icons.support_agent_rounded,
+            size: 64,
+            color: Colors.white,
+          ),
           const SizedBox(height: 16),
           const Text(
             'How can we help you?',
@@ -182,33 +198,43 @@ class HelpSupportScreen extends StatelessWidget {
           ),
         ],
       ),
-      child: ListTile(
-        onTap: onTap,
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        child: ListTile(
+          onTap: onTap,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Icon(icon, color: AppTheme.primaryColor, size: 24),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: AppTheme.fontBase,
-            fontWeight: FontWeight.bold,
-            fontFamily: AppTheme.fontFamily,
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppTheme.primaryColor, size: 24),
+          ),
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontSize: AppTheme.fontBase,
+              fontWeight: FontWeight.bold,
+              fontFamily: AppTheme.fontFamily,
+            ),
+          ),
+          subtitle: Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: AppTheme.fontSM,
+              color: AppTheme.textLightColor,
+              fontFamily: AppTheme.fontFamily,
+            ),
+          ),
+          trailing: const Icon(
+            Icons.chevron_right_rounded,
+            color: AppTheme.textMutedColor,
           ),
         ),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(
-            fontSize: AppTheme.fontSM,
-            color: AppTheme.textLightColor,
-            fontFamily: AppTheme.fontFamily,
-          ),
-        ),
-        trailing: const Icon(Icons.chevron_right_rounded, color: AppTheme.textMutedColor),
       ),
     );
   }

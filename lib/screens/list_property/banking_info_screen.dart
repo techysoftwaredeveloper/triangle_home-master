@@ -8,7 +8,11 @@ class BankingInfoScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onContinue;
   final Map<String, dynamic>? initialData;
 
-  const BankingInfoScreen({super.key, required this.onContinue, this.initialData});
+  const BankingInfoScreen({
+    super.key,
+    required this.onContinue,
+    this.initialData,
+  });
 
   @override
   State<BankingInfoScreen> createState() => _BankingInfoScreenState();
@@ -26,9 +30,13 @@ class _BankingInfoScreenState extends State<BankingInfoScreen> {
   void initState() {
     super.initState();
     final data = widget.initialData ?? {};
-    _accountNameController = TextEditingController(text: data['accountName'] ?? '');
+    _accountNameController = TextEditingController(
+      text: data['accountName'] ?? '',
+    );
     _bankNameController = TextEditingController(text: data['bankName'] ?? '');
-    _accountNumberController = TextEditingController(text: data['accountNumber'] ?? '');
+    _accountNumberController = TextEditingController(
+      text: data['accountNumber'] ?? '',
+    );
     _ifscController = TextEditingController(text: data['ifsc'] ?? '');
     _upiController = TextEditingController(text: data['upiId'] ?? '');
   }
@@ -78,7 +86,13 @@ class _BankingInfoScreenState extends State<BankingInfoScreen> {
               label: 'Select Bank',
               controller: _bankNameController,
               required: true,
-              items: const ['HDFC Bank', 'ICICI Bank', 'SBI', 'Axis Bank', 'Others'],
+              items: const [
+                'HDFC Bank',
+                'ICICI Bank',
+                'SBI',
+                'Axis Bank',
+                'Others',
+              ],
             ),
 
             InputField(
@@ -115,7 +129,7 @@ class _BankingInfoScreenState extends State<BankingInfoScreen> {
                         'accountNumber': _accountNumberController.text,
                         'ifsc': _ifscController.text,
                         'upiId': _upiController.text,
-                      }
+                      },
                     });
                   }
                 },
@@ -123,13 +137,19 @@ class _BankingInfoScreenState extends State<BankingInfoScreen> {
                   backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: 4,
                   shadowColor: AppTheme.primaryColor.withValues(alpha: 0.4),
                 ),
                 child: const Text(
                   'Continue to Photos',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),

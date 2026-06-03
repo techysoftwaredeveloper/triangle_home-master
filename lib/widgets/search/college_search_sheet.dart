@@ -96,190 +96,205 @@ class _CollegeSearchSheetState extends State<CollegeSearchSheet> {
     {
       'name': 'Yenepoya University',
       'location': 'Mangaluru, Karnataka',
-      'image': 'https://demo3.chillipages.com/Yenepoya-2023/yenepoya-ayurveda-college/og.png',
+      'image':
+          'https://demo3.chillipages.com/Yenepoya-2023/yenepoya-ayurveda-college/og.png',
     },
     {
       'name': 'Madras Christian College',
       'location': 'Chennai, Tamil Nadu',
-      'image': 'https://demo3.chillipages.com/Yenepoya-2023/yenepoya-ayurveda-college/og.png',
+      'image':
+          'https://demo3.chillipages.com/Yenepoya-2023/yenepoya-ayurveda-college/og.png',
     },
-     {
+    {
       'name': 'Yenepoya University',
       'location': 'Mangaluru, Karnataka',
-      'image': 'https://demo3.chillipages.com/Yenepoya-2023/yenepoya-ayurveda-college/og.png',
+      'image':
+          'https://demo3.chillipages.com/Yenepoya-2023/yenepoya-ayurveda-college/og.png',
     },
   ];
 
   @override
   Widget build(BuildContext context) {
-    final searchResults = colleges
-        .where((college) =>
-            college['name']!.toLowerCase().contains(query.toLowerCase()))
-        .toList();
+    final searchResults =
+        colleges
+            .where(
+              (college) =>
+                  college['name']!.toLowerCase().contains(query.toLowerCase()),
+            )
+            .toList();
 
     return DraggableScrollableSheet(
       expand: false,
-      builder: (_, controller) => Container(
-        padding: const EdgeInsets.only(top: 16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Search for Your College/Institution',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+      builder:
+          (_, controller) => Container(
+            padding: const EdgeInsets.only(top: 16),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Search for Your College/Institution',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Search Box
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: TextField(
+                    controller: _controller,
+                    onChanged: (val) => setState(() => query = val),
+                    decoration: InputDecoration(
+                      hintText: 'Search for College Name',
+                      prefixIcon: const Icon(Icons.search),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.all(14),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  )
+                ),
+
+                const SizedBox(height: 24),
+
+                // Search Results
+                if (query.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      'Search Results',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...searchResults.map(
+                    (college) => ListTile(
+                      leading: const Icon(
+                        Icons.circle,
+                        size: 12,
+                        color: Colors.indigo,
+                      ),
+                      title: Text(
+                        college['name']!,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      trailing: const Icon(Icons.open_in_new, size: 18),
+                      onTap: () {
+                        Navigator.pop(context, college);
+                      },
+                    ),
+                  ),
+                  const Divider(),
                 ],
-              ),
-            ),
-            const SizedBox(height: 8),
 
-            // Search Box
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: TextField(
-                controller: _controller,
-                onChanged: (val) => setState(() => query = val),
-                decoration: InputDecoration(
-                  hintText: 'Search for College Name',
-                  prefixIcon: const Icon(Icons.search),
-                  isDense: true,
-                  contentPadding: const EdgeInsets.all(14),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Search Results
-            if (query.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  'Search Results',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...searchResults.map((college) => ListTile(
-                    leading: const Icon(Icons.circle, size: 12, color: Colors.indigo),
-                    title: Text(
-                      college['name']!,
-                      style: const TextStyle(fontWeight: FontWeight.w500),
+                // Popular Institutions
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    'Our Popular Institutions',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
                     ),
-                    trailing: const Icon(Icons.open_in_new, size: 18),
-                    onTap: () {
-                      Navigator.pop(context, college);
-                    },
-                  )),
-              const Divider(),
-            ],
-
-            // Popular Institutions
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Our Popular Institutions',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-            SizedBox(
-              height: 80,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: colleges.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 20),
-                itemBuilder: (_, index) {
-                  final college = colleges[index];
-                  return GestureDetector(
-                    onTap: () => Navigator.pop(context, college),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CachedNetworkImage(
-                          imageUrl: college['image']!,
-                          width: 40,
-                          height: 40,
-                          fit: BoxFit.contain,
-                          placeholder: (context, url) => Container(
-                            width: 40,
-                            height: 40,
-                            color: Colors.grey[200],
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
+                SizedBox(
+                  height: 80,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: colleges.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 20),
+                    itemBuilder: (_, index) {
+                      final college = colleges[index];
+                      return GestureDetector(
+                        onTap: () => Navigator.pop(context, college),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CachedNetworkImage(
+                              imageUrl: college['image']!,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.contain,
+                              placeholder:
+                                  (context, url) => Container(
+                                    width: 40,
+                                    height: 40,
+                                    color: Colors.grey[200],
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  ),
+                              errorWidget:
+                                  (context, url, error) => Container(
+                                    width: 40,
+                                    height: 40,
+                                    color: Colors.grey[200],
+                                    child: const Icon(Icons.school, size: 20),
+                                  ),
                             ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            width: 40,
-                            height: 40,
-                            color: Colors.grey[200],
-                            child: const Icon(Icons.school, size: 20),
-                          ),
+                            const SizedBox(height: 6),
+                            Text(
+                              college['name']!,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              college['location']!,
+                              style: const TextStyle(
+                                fontSize: 9,
+                                color: Colors.black54,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          college['name']!,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          college['location']!,
-                          style: const TextStyle(
-                            fontSize: 9,
-                            color: Colors.black54,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
             ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
+          ),
     );
   }
 }

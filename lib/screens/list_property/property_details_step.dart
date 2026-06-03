@@ -7,7 +7,11 @@ class PropertyDetailsStep extends StatefulWidget {
   final Function(Map<String, dynamic>) onContinue;
   final Map<String, dynamic>? initialData;
 
-  const PropertyDetailsStep({super.key, required this.onContinue, this.initialData});
+  const PropertyDetailsStep({
+    super.key,
+    required this.onContinue,
+    this.initialData,
+  });
 
   @override
   State<PropertyDetailsStep> createState() => _PropertyDetailsStepState();
@@ -30,19 +34,29 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
     _doubleRooms = data['doubleRooms'] ?? 0;
     _tripleRooms = data['tripleRooms'] ?? 0;
     _dormitoryBeds = data['dormitoryBeds'] ?? 0;
-    _descriptionController = TextEditingController(text: data['description'] ?? '');
+    _descriptionController = TextEditingController(
+      text: data['description'] ?? '',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    int totalCapacity = _singleRooms + (_doubleRooms * 2) + (_tripleRooms * 3) + _dormitoryBeds;
+    int totalCapacity =
+        _singleRooms + (_doubleRooms * 2) + (_tripleRooms * 3) + _dormitoryBeds;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Gender Preference *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+          const Text(
+            'Gender Preference *',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDarkColor,
+            ),
+          ),
           const SizedBox(height: 12),
           CustomToggleButtons(
             options: const ['Men', 'Women', 'Anyone'],
@@ -51,29 +65,66 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
             activeColor: AppTheme.successColor,
           ),
           const SizedBox(height: 32),
-          const Text('Room Inventory *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+          const Text(
+            'Room Inventory *',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDarkColor,
+            ),
+          ),
           const SizedBox(height: 16),
-          _buildCounterRow('Single Rooms', _singleRooms, (val) => setState(() => _singleRooms = val)),
-          _buildCounterRow('Double Rooms', _doubleRooms, (val) => setState(() => _doubleRooms = val)),
-          _buildCounterRow('Triple Rooms', _tripleRooms, (val) => setState(() => _tripleRooms = val)),
-          _buildCounterRow('Dormitory Beds', _dormitoryBeds, (val) => setState(() => _dormitoryBeds = val)),
-          
+          _buildCounterRow(
+            'Single Rooms',
+            _singleRooms,
+            (val) => setState(() => _singleRooms = val),
+          ),
+          _buildCounterRow(
+            'Double Rooms',
+            _doubleRooms,
+            (val) => setState(() => _doubleRooms = val),
+          ),
+          _buildCounterRow(
+            'Triple Rooms',
+            _tripleRooms,
+            (val) => setState(() => _tripleRooms = val),
+          ),
+          _buildCounterRow(
+            'Dormitory Beds',
+            _dormitoryBeds,
+            (val) => setState(() => _dormitoryBeds = val),
+          ),
+
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppTheme.successColor.withOpacity(0.05),
+              color: AppTheme.successColor.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Total Capacity', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                const Text(
+                  'Total Capacity',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
                 Row(
                   children: [
-                    const Icon(Icons.people_alt_rounded, size: 16, color: AppTheme.successColor),
+                    const Icon(
+                      Icons.people_alt_rounded,
+                      size: 16,
+                      color: AppTheme.successColor,
+                    ),
                     const SizedBox(width: 8),
-                    Text('$totalCapacity Residents', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.successColor)),
+                    Text(
+                      '$totalCapacity Residents',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: AppTheme.successColor,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -84,7 +135,8 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
             label: 'Property Description (Optional)',
             controller: _descriptionController,
             maxLines: 4,
-            hintText: 'Tell us about your property, facilities and environment...',
+            hintText:
+                'Tell us about your property, facilities and environment...',
             activeColor: AppTheme.successColor,
           ),
           const SizedBox(height: 32),
@@ -101,15 +153,23 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                     'dormitoryBeds': _dormitoryBeds,
                     'description': _descriptionController.text,
                     'totalCapacity': totalCapacity,
-                  }
+                  },
                 });
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.successColor,
                 padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('Continue', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Continue',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
         ],
@@ -123,7 +183,13 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 14, color: AppTheme.textLightColor)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppTheme.textLightColor,
+            ),
+          ),
           Row(
             children: [
               IconButton(
@@ -132,7 +198,13 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                 color: AppTheme.textMutedColor,
               ),
               const SizedBox(width: 12),
-              Text('$value', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(
+                '$value',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(width: 12),
               IconButton(
                 onPressed: () => onChanged(value + 1),

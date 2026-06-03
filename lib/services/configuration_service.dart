@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ConfigurationService {
@@ -16,7 +17,7 @@ class ConfigurationService {
         _settings = {..._settings, ...doc.data()!};
       }
     } catch (e) {
-      print('Failed to load dynamic settings: $e');
+      debugPrint('Failed to load dynamic settings: $e');
     }
   }
 
@@ -25,5 +26,6 @@ class ConfigurationService {
   }
 
   int get bookingTimeoutMinutes => getSetting('booking_timeout_minutes', 30);
-  double get platformCommission => (getSetting('platform_commission_percentage', 10)).toDouble();
+  double get platformCommission =>
+      (getSetting('platform_commission_percentage', 10)).toDouble();
 }

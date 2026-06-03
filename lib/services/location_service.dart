@@ -15,7 +15,7 @@ class LocationProvider extends ChangeNotifier {
 
   Future<bool> initializeLocation() async {
     if (_isInitialized) return true;
-    
+
     _isLoading = true;
     _error = '';
     notifyListeners();
@@ -34,7 +34,8 @@ class LocationProvider extends ChangeNotifier {
       }
 
       if (status.isPermanentlyDenied) {
-        _error = 'Location permission is permanently denied. Please enable it in settings.';
+        _error =
+            'Location permission is permanently denied. Please enable it in settings.';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -58,7 +59,7 @@ class LocationProvider extends ChangeNotifier {
           accuracy: LocationAccuracy.high,
         ),
       );
-      
+
       _isInitialized = true;
       _isLoading = false;
       notifyListeners();

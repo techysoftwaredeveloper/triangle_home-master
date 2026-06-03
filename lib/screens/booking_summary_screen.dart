@@ -5,7 +5,6 @@ import 'package:triangle_home/screens/payment/payment_screen.dart';
 import 'package:triangle_home/services/firebase_service.dart';
 import 'package:triangle_home/services/inventory_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
-import 'package:triangle_home/core/constants/enums.dart';
 
 class BookingSummaryScreen extends StatefulWidget {
   final Map<String, dynamic> accommodation;

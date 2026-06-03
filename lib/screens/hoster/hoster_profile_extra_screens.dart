@@ -16,8 +16,8 @@ class _HosterDetailScaffold extends StatelessWidget {
   final bool isLoading;
 
   const _HosterDetailScaffold({
-    required this.title, 
-    required this.child, 
+    required this.title,
+    required this.child,
     this.actions,
     this.isLoading = false,
   });
@@ -30,20 +30,33 @@ class _HosterDetailScaffold extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textDarkColor, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppTheme.textDarkColor,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
-        title: Text(title, style: const TextStyle(color: AppTheme.textDarkColor, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: AppTheme.textDarkColor,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Outfit',
+          ),
+        ),
         actions: actions,
       ),
-      body: isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.all(20), 
-            child: child
-          ),
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.all(20),
+                child: child,
+              ),
     );
   }
 }
@@ -54,7 +67,8 @@ class _RealtimeProfileWrapper extends StatelessWidget {
   final Widget Function(Map<String, dynamic> data) builder;
   final List<Widget>? actions;
 
-  const _RealtimeProfileWrapper({required this.title, required this.builder, this.actions});
+  const _RealtimeProfileWrapper({required this.title, required this.builder})
+    : actions = null;
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +80,9 @@ class _RealtimeProfileWrapper extends StatelessWidget {
       builder: (context, snapshot) {
         return _HosterDetailScaffold(
           title: title,
-          isLoading: snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData,
+          isLoading:
+              snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData,
           actions: actions,
           child: builder(snapshot.data ?? {}),
         );
@@ -83,13 +99,25 @@ Widget _buildCard({required Widget child}) {
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(24),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 5))],
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.02),
+          blurRadius: 15,
+          offset: const Offset(0, 5),
+        ),
+      ],
     ),
     child: child,
   );
 }
 
-Widget _buildDetailRow(IconData icon, String label, {String? value, bool isVerified = false, VoidCallback? onVerify}) {
+Widget _buildDetailRow(
+  IconData icon,
+  String label, {
+  String? value,
+  bool isVerified = false,
+  VoidCallback? onVerify,
+}) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 24),
     child: Row(
@@ -97,7 +125,10 @@ Widget _buildDetailRow(IconData icon, String label, {String? value, bool isVerif
       children: [
         Container(
           padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: AppTheme.primaryColor.withOpacity(0.05), borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Icon(icon, size: 20, color: AppTheme.primaryColor),
         ),
         const SizedBox(width: 16),
@@ -107,15 +138,35 @@ Widget _buildDetailRow(IconData icon, String label, {String? value, bool isVerif
             children: [
               Row(
                 children: [
-                  Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[500], fontFamily: 'Outfit', fontWeight: FontWeight.w500)),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[500],
+                      fontFamily: 'Outfit',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   if (isVerified) ...[
                     const SizedBox(width: 6),
-                    const Icon(Icons.check_circle_rounded, color: AppTheme.successColor, size: 14),
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      color: AppTheme.successColor,
+                      size: 14,
+                    ),
                   ],
                 ],
               ),
               const SizedBox(height: 2),
-              Text(value ?? 'Not Provided', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+              Text(
+                value ?? 'Not Provided',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textDarkColor,
+                  fontFamily: 'Outfit',
+                ),
+              ),
             ],
           ),
         ),
@@ -124,10 +175,19 @@ Widget _buildDetailRow(IconData icon, String label, {String? value, bool isVerif
             onPressed: onVerify,
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              backgroundColor: AppTheme.successColor.withOpacity(0.1),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              backgroundColor: AppTheme.successColor.withValues(alpha: 0.1),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Verify', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.successColor)),
+            child: const Text(
+              'Verify',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.successColor,
+              ),
+            ),
           ),
       ],
     ),
@@ -141,21 +201,37 @@ class HosterBasicInfoScreen extends StatelessWidget {
 
   Future<void> _handlePhoneVerify(BuildContext context, String? phone) async {
     if (phone == null || phone.isEmpty) {
-      Fluttertoast.showToast(msg: 'Please update phone number in edit profile first');
+      Fluttertoast.showToast(
+        msg: 'Please update phone number in edit profile first',
+      );
       return;
     }
-    
+
     final auth = FirebaseAuth.instance;
     await auth.verifyPhoneNumber(
       phoneNumber: phone.startsWith('+') ? phone : '+91$phone',
       verificationCompleted: (PhoneAuthCredential credential) async {
         await auth.currentUser?.linkWithCredential(credential);
-        FirebaseFirestore.instance.collection('users').doc(auth.currentUser?.uid).set({
-          'verification': {'phoneVerified': true}
-        }, SetOptions(merge: true));
+        FirebaseFirestore.instance
+            .collection('users')
+            .doc(auth.currentUser?.uid)
+            .set({
+              'verification': {'phoneVerified': true},
+            }, SetOptions(merge: true));
       },
-      verificationFailed: (e) => Fluttertoast.showToast(msg: 'Failed: ${e.message}'),
-      codeSent: (id, token) => Navigator.push(context, MaterialPageRoute(builder: (_) => VerificationOtpScreen(verificationId: id, phoneNumber: phone))),
+      verificationFailed:
+          (e) => Fluttertoast.showToast(msg: 'Failed: ${e.message}'),
+      codeSent:
+          (id, token) => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (_) => VerificationOtpScreen(
+                    verificationId: id,
+                    phoneNumber: phone,
+                  ),
+            ),
+          ),
       codeAutoRetrievalTimeout: (_) {},
     );
   }
@@ -192,29 +268,43 @@ class HosterBasicInfoScreen extends StatelessWidget {
           }
         }
 
-        final emailVerified = FirebaseAuth.instance.currentUser?.emailVerified ?? false;
+        final emailVerified =
+            FirebaseAuth.instance.currentUser?.emailVerified ?? false;
         final phoneVerified = verif['phoneVerified'] == true;
 
         return _buildCard(
           child: Column(
             children: [
-              _buildDetailRow(Icons.person_outline_rounded, 'Full Name', value: info['name']),
-              _buildDetailRow(Icons.cake_outlined, 'Gender & DOB', value: '${info['gender'] ?? 'Not set'} • $dobStr'),
               _buildDetailRow(
-                Icons.phone_android_outlined, 
-                'Phone Number', 
-                value: info['phone'], 
+                Icons.person_outline_rounded,
+                'Full Name',
+                value: info['name'],
+              ),
+              _buildDetailRow(
+                Icons.cake_outlined,
+                'Gender & DOB',
+                value: '${info['gender'] ?? 'Not set'} • $dobStr',
+              ),
+              _buildDetailRow(
+                Icons.phone_android_outlined,
+                'Phone Number',
+                value: info['phone'],
                 isVerified: phoneVerified,
                 onVerify: () => _handlePhoneVerify(context, info['phone']),
               ),
               _buildDetailRow(
-                Icons.email_outlined, 
-                'Email Address', 
-                value: info['email'], 
+                Icons.email_outlined,
+                'Email Address',
+                value: info['email'],
                 isVerified: emailVerified,
                 onVerify: () => _handleEmailVerify(info['email']),
               ),
-              _buildDetailRow(Icons.location_on_outlined, 'Address', value: '${info['addressLine1'] ?? ""}, ${info['city'] ?? ""}, ${info['state'] ?? ""} - ${info['pincode'] ?? ""}'),
+              _buildDetailRow(
+                Icons.location_on_outlined,
+                'Address',
+                value:
+                    '${info['addressLine1'] ?? ""}, ${info['city'] ?? ""}, ${info['state'] ?? ""} - ${info['pincode'] ?? ""}',
+              ),
             ],
           ),
         );
@@ -237,24 +327,40 @@ class HosterIdentityScreen extends StatelessWidget {
               child: Column(
                 children: [
                   _buildDocRow(
-                    Icons.badge_outlined, 
-                    'Aadhaar Card', 
-                    verif['govIdVerified'] == true ? 'Verified' : (verif['govIdStatus'] == 'pending' ? 'In Review' : 'Required'), 
-                    verif['govIdVerified'] == true ? Colors.green : (verif['govIdStatus'] == 'pending' ? Colors.orange : Colors.grey)
+                    Icons.badge_outlined,
+                    'Aadhaar Card',
+                    verif['govIdVerified'] == true
+                        ? 'Verified'
+                        : (verif['govIdStatus'] == 'pending'
+                            ? 'In Review'
+                            : 'Required'),
+                    verif['govIdVerified'] == true
+                        ? Colors.green
+                        : (verif['govIdStatus'] == 'pending'
+                            ? Colors.orange
+                            : Colors.grey),
                   ),
                   const Divider(height: 32),
                   _buildDocRow(
-                    Icons.credit_card_rounded, 
-                    'PAN Card', 
-                    verif['panVerified'] == true ? 'Verified' : 'Required', 
-                    verif['panVerified'] == true ? Colors.green : Colors.grey
+                    Icons.credit_card_rounded,
+                    'PAN Card',
+                    verif['panVerified'] == true ? 'Verified' : 'Required',
+                    verif['panVerified'] == true ? Colors.green : Colors.grey,
                   ),
                   const Divider(height: 32),
                   _buildDocRow(
-                    Icons.home_work_outlined, 
-                    'Property Proof', 
-                    verif['propertyProofVerified'] == true ? 'Verified' : (verif['propertyProofStatus'] == 'pending' ? 'In Review' : 'Required'), 
-                    verif['propertyProofVerified'] == true ? Colors.green : (verif['propertyProofStatus'] == 'pending' ? Colors.orange : Colors.grey)
+                    Icons.home_work_outlined,
+                    'Property Proof',
+                    verif['propertyProofVerified'] == true
+                        ? 'Verified'
+                        : (verif['propertyProofStatus'] == 'pending'
+                            ? 'In Review'
+                            : 'Required'),
+                    verif['propertyProofVerified'] == true
+                        ? Colors.green
+                        : (verif['propertyProofStatus'] == 'pending'
+                            ? Colors.orange
+                            : Colors.grey),
                   ),
                 ],
               ),
@@ -262,15 +368,41 @@ class HosterIdentityScreen extends StatelessWidget {
             const SizedBox(height: 24),
             _buildCard(
               child: InkWell(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HosterVerificationCenterScreen())),
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const HosterVerificationCenterScreen(),
+                      ),
+                    ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Verification Center', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+                    const Text(
+                      'Verification Center',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: AppTheme.primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-                      child: const Text('Manage Documents', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Manage Documents',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryColor,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -286,16 +418,39 @@ class HosterIdentityScreen extends StatelessWidget {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(10), 
-          decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), 
-          child: Icon(icon, size: 20, color: color)
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 20, color: color),
         ),
         const SizedBox(width: 16),
-        Expanded(child: Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, fontFamily: 'Outfit'))),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Outfit',
+            ),
+          ),
+        ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-          child: Text(status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color, fontFamily: 'Outfit')),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            status,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontFamily: 'Outfit',
+            ),
+          ),
         ),
       ],
     );
@@ -313,10 +468,26 @@ class HosterBusinessInfoScreen extends StatelessWidget {
         return _buildCard(
           child: Column(
             children: [
-              _buildDetailRow(Icons.person_pin_outlined, 'Host Type', value: business['hostType'] ?? 'Individual Owner'),
-              _buildDetailRow(Icons.business_outlined, 'Business Name', value: business['businessName'] ?? 'Not set'),
-              _buildDetailRow(Icons.star_outline_rounded, 'Experience', value: business['experience'] ?? '3-5 Years'),
-              _buildDetailRow(Icons.description_outlined, 'Tax Registration', value: business['taxId'] ?? 'Not provided'),
+              _buildDetailRow(
+                Icons.person_pin_outlined,
+                'Host Type',
+                value: business['hostType'] ?? 'Individual Owner',
+              ),
+              _buildDetailRow(
+                Icons.business_outlined,
+                'Business Name',
+                value: business['businessName'] ?? 'Not set',
+              ),
+              _buildDetailRow(
+                Icons.star_outline_rounded,
+                'Experience',
+                value: business['experience'] ?? '3-5 Years',
+              ),
+              _buildDetailRow(
+                Icons.description_outlined,
+                'Tax Registration',
+                value: business['taxId'] ?? 'Not provided',
+              ),
             ],
           ),
         );
@@ -343,21 +514,47 @@ class HosterBankingScreen extends StatelessWidget {
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: Container(
-                    padding: const EdgeInsets.all(12), 
-                    decoration: BoxDecoration(color: AppTheme.primaryColor.withOpacity(0.05), borderRadius: BorderRadius.circular(16)), 
-                    child: const Icon(Icons.account_balance_rounded, color: AppTheme.primaryColor)
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.account_balance_rounded,
+                      color: AppTheme.primaryColor,
+                    ),
                   ),
-                  title: Text(bank['bankName'] ?? 'No Bank Linked', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Outfit')),
-                  subtitle: Text(bank['accountNumber'] != null ? '**** ${bank['accountNumber'].toString().substring(bank['accountNumber'].toString().length - 4)}' : 'Add account to receive payouts', style: const TextStyle(fontSize: 13, fontFamily: 'Outfit')),
+                  title: Text(
+                    bank['bankName'] ?? 'No Bank Linked',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                  subtitle: Text(
+                    bank['accountNumber'] != null
+                        ? '**** ${bank['accountNumber'].toString().substring(bank['accountNumber'].toString().length - 4)}'
+                        : 'Add account to receive payouts',
+                    style: const TextStyle(fontSize: 13, fontFamily: 'Outfit'),
+                  ),
                 ),
               ),
               if (isVerified) ...[
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    _buildSmallBadge(Icons.check_circle_rounded, 'Bank Verified', Colors.green),
+                    _buildSmallBadge(
+                      Icons.check_circle_rounded,
+                      'Bank Verified',
+                      Colors.green,
+                    ),
                     const SizedBox(width: 12),
-                    _buildSmallBadge(Icons.check_circle_rounded, 'Auto-Payout Active', Colors.blue),
+                    _buildSmallBadge(
+                      Icons.check_circle_rounded,
+                      'Auto-Payout Active',
+                      Colors.blue,
+                    ),
                   ],
                 ),
               ],
@@ -371,13 +568,24 @@ class HosterBankingScreen extends StatelessWidget {
   Widget _buildSmallBadge(IconData icon, String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: color), 
-          const SizedBox(width: 6), 
-          Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color, fontFamily: 'Outfit'))
-        ]
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontFamily: 'Outfit',
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -396,7 +604,9 @@ class HosterPropertySummaryScreen extends StatelessWidget {
         final stats = snapshot.data ?? {};
         return _HosterDetailScaffold(
           title: 'Property Summary',
-          isLoading: snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData,
+          isLoading:
+              snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData,
           child: GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
@@ -405,16 +615,40 @@ class HosterPropertySummaryScreen extends StatelessWidget {
             crossAxisSpacing: 16,
             childAspectRatio: 2,
             children: [
-              _buildGridStat('Total Properties', stats['totalProperties']?.toString() ?? '0', Colors.blue),
-              _buildGridStat('Active Listings', stats['activeListings']?.toString() ?? '0', Colors.green),
-              _buildGridStat('Total Rooms', stats['totalRooms']?.toString() ?? '0', Colors.purple),
-              _buildGridStat('Active Residents', stats['activeResidents']?.toString() ?? '0', Colors.orange),
-              _buildGridStat('Occupancy Rate', '${stats['occupancy'] ?? 0}%', Colors.teal),
-              _buildGridStat('Monthly Revenue', '₹${stats['monthlyRevenue'] ?? 0}', Colors.indigo),
+              _buildGridStat(
+                'Total Properties',
+                stats['totalProperties']?.toString() ?? '0',
+                Colors.blue,
+              ),
+              _buildGridStat(
+                'Active Listings',
+                stats['activeListings']?.toString() ?? '0',
+                Colors.green,
+              ),
+              _buildGridStat(
+                'Total Rooms',
+                stats['totalRooms']?.toString() ?? '0',
+                Colors.purple,
+              ),
+              _buildGridStat(
+                'Active Residents',
+                stats['activeResidents']?.toString() ?? '0',
+                Colors.orange,
+              ),
+              _buildGridStat(
+                'Occupancy Rate',
+                '${stats['occupancy'] ?? 0}%',
+                Colors.teal,
+              ),
+              _buildGridStat(
+                'Monthly Revenue',
+                '₹${stats['monthlyRevenue'] ?? 0}',
+                Colors.indigo,
+              ),
             ],
           ),
         );
-      }
+      },
     );
   }
 
@@ -422,18 +656,39 @@ class HosterPropertySummaryScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white, 
-        borderRadius: BorderRadius.circular(20), 
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey[100]!),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)]
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[500], fontWeight: FontWeight.w600, fontFamily: 'Outfit')),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey[500],
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Outfit',
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color, fontFamily: 'Outfit')),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontFamily: 'Outfit',
+            ),
+          ),
         ],
       ),
     );
@@ -450,10 +705,30 @@ class HosterPerformanceScreen extends StatelessWidget {
         return _buildCard(
           child: Column(
             children: [
-              _buildPerformanceRow(Icons.chat_bubble_outline_rounded, 'Response Rate', '${data['responseRate'] ?? "98"}%', Colors.green),
-              _buildPerformanceRow(Icons.timer_outlined, 'Avg. Response Time', '${data['responseTime'] ?? "12"} mins', Colors.blue),
-              _buildPerformanceRow(Icons.check_circle_outline_rounded, 'Acceptance Rate', '${data['acceptanceRate'] ?? "95"}%', Colors.green),
-              _buildPerformanceRow(Icons.cancel_outlined, 'Cancellation Rate', '${data['cancellationRate'] ?? "3"}%', Colors.red),
+              _buildPerformanceRow(
+                Icons.chat_bubble_outline_rounded,
+                'Response Rate',
+                '${data['responseRate'] ?? "98"}%',
+                Colors.green,
+              ),
+              _buildPerformanceRow(
+                Icons.timer_outlined,
+                'Avg. Response Time',
+                '${data['responseTime'] ?? "12"} mins',
+                Colors.blue,
+              ),
+              _buildPerformanceRow(
+                Icons.check_circle_outline_rounded,
+                'Acceptance Rate',
+                '${data['acceptanceRate'] ?? "95"}%',
+                Colors.green,
+              ),
+              _buildPerformanceRow(
+                Icons.cancel_outlined,
+                'Cancellation Rate',
+                '${data['cancellationRate'] ?? "3"}%',
+                Colors.red,
+              ),
             ],
           ),
         );
@@ -461,19 +736,45 @@ class HosterPerformanceScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPerformanceRow(IconData icon, String label, String value, Color color) {
+  Widget _buildPerformanceRow(
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withOpacity(0.05), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: Icon(icon, size: 18, color: color),
           ),
           const SizedBox(width: 16),
-          Expanded(child: Text(label, style: const TextStyle(fontSize: 14, color: AppTheme.textLightColor, fontFamily: 'Outfit', fontWeight: FontWeight.w500))),
-          Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color, fontFamily: 'Outfit')),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppTheme.textLightColor,
+                fontFamily: 'Outfit',
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontFamily: 'Outfit',
+            ),
+          ),
         ],
       ),
     );
@@ -488,15 +789,36 @@ class HosterReviewsScreen extends StatelessWidget {
       title: 'Reviews & Ratings',
       child: Column(
         children: [
-          _buildReviewItem('Amit Verma', '12 May 2024', 5.0, 'Stayed in Green Park House', 'Great place, very clean and exactly as shown in photos. Host was very responsive and helpful.', 'https://randomuser.me/api/portraits/men/32.jpg'),
+          _buildReviewItem(
+            'Amit Verma',
+            '12 May 2024',
+            5.0,
+            'Stayed in Green Park House',
+            'Great place, very clean and exactly as shown in photos. Host was very responsive and helpful.',
+            'https://randomuser.me/api/portraits/men/32.jpg',
+          ),
           const SizedBox(height: 16),
-          _buildReviewItem('Neha Iyer', '2 May 2024', 4.0, 'Stayed in Sunrise PG', 'Safe and comfortable stay. Food is excellent and the host is cooperative.', 'https://randomuser.me/api/portraits/women/44.jpg'),
+          _buildReviewItem(
+            'Neha Iyer',
+            '2 May 2024',
+            4.0,
+            'Stayed in Sunrise PG',
+            'Safe and comfortable stay. Food is excellent and the host is cooperative.',
+            'https://randomuser.me/api/portraits/women/44.jpg',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildReviewItem(String name, String date, double rating, String stay, String comment, String imageUrl) {
+  Widget _buildReviewItem(
+    String name,
+    String date,
+    double rating,
+    String stay,
+    String comment,
+    String imageUrl,
+  ) {
     return _buildCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -505,18 +827,77 @@ class HosterReviewsScreen extends StatelessWidget {
             children: [
               CircleAvatar(radius: 20, backgroundImage: NetworkImage(imageUrl)),
               const SizedBox(width: 16),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, fontFamily: 'Outfit')), Text(date, style: TextStyle(fontSize: 11, color: Colors.grey[500], fontFamily: 'Outfit'))])),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
+                    Text(
+                      date,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey[500],
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: Colors.amber.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                child: Row(children: [Text(rating.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'Outfit', color: Colors.orange)), const SizedBox(width: 2), const Icon(Icons.star_rounded, color: Colors.orange, size: 14)]),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      rating.toString(),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        fontFamily: 'Outfit',
+                        color: Colors.orange,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Icon(
+                      Icons.star_rounded,
+                      color: Colors.orange,
+                      size: 14,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Text(stay, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primaryColor, fontFamily: 'Outfit')),
+          Text(
+            stay,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryColor,
+              fontFamily: 'Outfit',
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(comment, style: TextStyle(fontSize: 13, color: Colors.grey[600], height: 1.5, fontFamily: 'Outfit')),
+          Text(
+            comment,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[600],
+              height: 1.5,
+              fontFamily: 'Outfit',
+            ),
+          ),
         ],
       ),
     );
@@ -538,24 +919,87 @@ class HosterTrustScoreScreen extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    SizedBox(width: 140, height: 70, child: CustomPaint(painter: HalfGaugePainter(score: score))),
-                    Positioned(bottom: 0, child: Column(children: [Text((score * 100).toInt().toString(), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF0F172A), fontFamily: 'Outfit')), Text('/100', style: TextStyle(fontSize: 12, color: Colors.grey[500], fontFamily: 'Outfit'))])),
+                    SizedBox(
+                      width: 140,
+                      height: 70,
+                      child: CustomPaint(
+                        painter: HalfGaugePainter(score: score),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      child: Column(
+                        children: [
+                          Text(
+                            (score * 100).toInt().toString(),
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                              fontFamily: 'Outfit',
+                            ),
+                          ),
+                          Text(
+                            '/100',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[500],
+                              fontFamily: 'Outfit',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
-              const Text('Excellent Host', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A), fontFamily: 'Outfit')),
+              const Text(
+                'Excellent Host',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                  fontFamily: 'Outfit',
+                ),
+              ),
               const SizedBox(height: 8),
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(5, (index) => const Icon(Icons.star_rounded, color: Colors.amber, size: 24))),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  5,
+                  (index) => const Icon(
+                    Icons.star_rounded,
+                    color: Colors.amber,
+                    size: 24,
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: const Color(0xFFF0FDF4), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.green.withOpacity(0.1))),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.green.withValues(alpha: 0.1),
+                  ),
+                ),
                 child: const Row(
                   children: [
                     Icon(Icons.shield_rounded, color: Colors.green, size: 20),
                     SizedBox(width: 12),
-                    Expanded(child: Text("You're doing great! Keep providing excellent service.", style: TextStyle(fontSize: 13, color: Colors.green, fontWeight: FontWeight.w600, fontFamily: 'Outfit'))),
+                    Expanded(
+                      child: Text(
+                        "You're doing great! Keep providing excellent service.",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Outfit',
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -578,10 +1022,23 @@ class HosterPreferencesScreen extends StatelessWidget {
         return _buildCard(
           child: Column(
             children: [
-              _buildPrefRow('Booking Type', prefs['bookingType'] ?? 'Approval Required'),
-              _buildPrefRow('Preferred Tenants', (prefs['tenantTypes'] as List?)?.join(", ") ?? 'Students, Professionals'),
-              _buildPrefRow('Preferred Gender', prefs['genderPreference'] ?? 'Any'),
-              _buildPrefRow('Preferred Duration', prefs['durationPreference'] ?? 'Long Term'),
+              _buildPrefRow(
+                'Booking Type',
+                prefs['bookingType'] ?? 'Approval Required',
+              ),
+              _buildPrefRow(
+                'Preferred Tenants',
+                (prefs['tenantTypes'] as List?)?.join(", ") ??
+                    'Students, Professionals',
+              ),
+              _buildPrefRow(
+                'Preferred Gender',
+                prefs['genderPreference'] ?? 'Any',
+              ),
+              _buildPrefRow(
+                'Preferred Duration',
+                prefs['durationPreference'] ?? 'Long Term',
+              ),
             ],
           ),
         );
@@ -595,8 +1052,24 @@ class HosterPreferencesScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 14, color: AppTheme.textLightColor, fontFamily: 'Outfit', fontWeight: FontWeight.w500)),
-          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppTheme.textLightColor,
+              fontFamily: 'Outfit',
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDarkColor,
+              fontFamily: 'Outfit',
+            ),
+          ),
         ],
       ),
     );
@@ -616,12 +1089,31 @@ class HosterEmergencyContactScreen extends StatelessWidget {
             color: Colors.transparent,
             child: ListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text(contact['name'] != null ? '${contact['name']} (${contact['relation']})' : 'No Contact Added', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Outfit')),
-              subtitle: Text(contact['phone'] ?? 'Add a contact for safety', style: const TextStyle(fontSize: 13, fontFamily: 'Outfit')),
+              title: Text(
+                contact['name'] != null
+                    ? '${contact['name']} (${contact['relation']})'
+                    : 'No Contact Added',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  fontFamily: 'Outfit',
+                ),
+              ),
+              subtitle: Text(
+                contact['phone'] ?? 'Add a contact for safety',
+                style: const TextStyle(fontSize: 13, fontFamily: 'Outfit'),
+              ),
               trailing: Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), shape: BoxShape.circle),
-                child: const Icon(Icons.phone_rounded, color: Colors.blue, size: 20),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.phone_rounded,
+                  color: Colors.blue,
+                  size: 20,
+                ),
               ),
             ),
           ),
@@ -635,7 +1127,10 @@ class HosterSecurityCenterScreen extends StatelessWidget {
   const HosterSecurityCenterScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    return const _HosterDetailScaffold(title: 'Security Center', child: Center(child: Text('Security & Privacy Settings coming soon')));
+    return const _HosterDetailScaffold(
+      title: 'Security Center',
+      child: Center(child: Text('Security & Privacy Settings coming soon')),
+    );
   }
 }
 
@@ -643,7 +1138,10 @@ class HosterNotificationsScreen extends StatelessWidget {
   const HosterNotificationsScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    return const _HosterDetailScaffold(title: 'Notification Settings', child: Center(child: Text('Notification Preferences coming soon')));
+    return const _HosterDetailScaffold(
+      title: 'Notification Settings',
+      child: Center(child: Text('Notification Preferences coming soon')),
+    );
   }
 }
 
@@ -655,11 +1153,34 @@ class HalfGaugePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height);
     final radius = size.width / 2;
-    final paintBase = Paint()..color = const Color(0xFFF1F5F9)..strokeWidth = 12..style = PaintingStyle.stroke..strokeCap = StrokeCap.round;
-    final paintScore = Paint()..color = const Color(0xFF10B981)..strokeWidth = 12..style = PaintingStyle.stroke..strokeCap = StrokeCap.round;
-    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), 3.14159, 3.14159, false, paintBase);
-    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), 3.14159, 3.14159 * score, false, paintScore);
+    final paintBase =
+        Paint()
+          ..color = const Color(0xFFF1F5F9)
+          ..strokeWidth = 12
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round;
+    final paintScore =
+        Paint()
+          ..color = const Color(0xFF10B981)
+          ..strokeWidth = 12
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      3.14159,
+      3.14159,
+      false,
+      paintBase,
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      3.14159,
+      3.14159 * score,
+      false,
+      paintScore,
+    );
   }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

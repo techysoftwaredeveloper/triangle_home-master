@@ -31,9 +31,24 @@ class _PhotosStepState extends State<PhotosStep> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Add high quality photos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+          const Text(
+            'Add high quality photos',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDarkColor,
+              fontFamily: 'Outfit',
+            ),
+          ),
           const SizedBox(height: 8),
-          const Text('Add at least 5 photos for better visibility', style: TextStyle(fontSize: 12, color: AppTheme.textLightColor, fontFamily: 'Outfit')),
+          const Text(
+            'Add at least 5 photos for better visibility',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.textLightColor,
+              fontFamily: 'Outfit',
+            ),
+          ),
           const SizedBox(height: 32),
           Expanded(
             child: SingleChildScrollView(
@@ -41,7 +56,8 @@ class _PhotosStepState extends State<PhotosStep> {
               child: ImageUploadWidget(
                 imageUrls: _imageUrls,
                 onImageUploaded: (url) => setState(() => _imageUrls.add(url)),
-                onImageRemoved: (index) => setState(() => _imageUrls.removeAt(index)),
+                onImageRemoved:
+                    (index) => setState(() => _imageUrls.removeAt(index)),
                 activeColor: AppTheme.successColor,
               ),
             ),
@@ -50,21 +66,31 @@ class _PhotosStepState extends State<PhotosStep> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _imageUrls.length < 3 ? null : () {
-                widget.onContinue({
-                  'image_urls': _imageUrls,
-                });
-              },
+              onPressed:
+                  _imageUrls.length < 3
+                      ? null
+                      : () {
+                        widget.onContinue({'image_urls': _imageUrls});
+                      },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.successColor,
-                disabledBackgroundColor: AppTheme.successColor.withOpacity(0.5),
+                disabledBackgroundColor: AppTheme.successColor.withValues(
+                  alpha: 0.5,
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 elevation: 0,
               ),
               child: Text(
-                _imageUrls.length < 3 ? 'Upload at least 3 photos' : 'Continue', 
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Outfit')
+                _imageUrls.length < 3 ? 'Upload at least 3 photos' : 'Continue',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  fontFamily: 'Outfit',
+                ),
               ),
             ),
           ),

@@ -7,6 +7,7 @@ import 'package:triangle_home/theme/app_theme.dart';
 
 class ImageCarousel extends StatefulWidget {
   final List<String> images;
+
   /// Optional parallel list of labels for each image (Room, Bathroom, etc.)
   final List<String> imageTags;
 
@@ -48,11 +49,12 @@ class _ImageCarouselState extends State<ImageCarousel> {
       PageRouteBuilder(
         opaque: false,
         barrierColor: Colors.black,
-        pageBuilder: (_, __, ___) => _FullScreenGallery(
-          images: widget.images,
-          imageTags: widget.imageTags,
-          initialIndex: initialIndex,
-        ),
+        pageBuilder:
+            (_, __, ___) => _FullScreenGallery(
+              images: widget.images,
+              imageTags: widget.imageTags,
+              initialIndex: initialIndex,
+            ),
       ),
     );
   }
@@ -93,7 +95,11 @@ class _ImageCarouselState extends State<ImageCarousel> {
                         width: screenWidth,
                         height: 260,
                         color: Colors.grey[300],
-                        child: const Icon(Icons.image, size: 60, color: Colors.grey),
+                        child: const Icon(
+                          Icons.image,
+                          size: 60,
+                          color: Colors.grey,
+                        ),
                       );
                     }
                     return CachedNetworkImage(
@@ -102,18 +108,26 @@ class _ImageCarouselState extends State<ImageCarousel> {
                       fit: BoxFit.cover,
                       width: screenWidth,
                       height: 260,
-                      placeholder: (context, url) => Container(
-                        width: screenWidth,
-                        height: 260,
-                        color: Colors.grey[200],
-                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        width: screenWidth,
-                        height: 260,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.broken_image, size: 48, color: Colors.grey),
-                      ),
+                      placeholder:
+                          (context, url) => Container(
+                            width: screenWidth,
+                            height: 260,
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                      errorWidget:
+                          (context, url, error) => Container(
+                            width: screenWidth,
+                            height: 260,
+                            color: Colors.grey[300],
+                            child: const Icon(
+                              Icons.broken_image,
+                              size: 48,
+                              color: Colors.grey,
+                            ),
+                          ),
                     );
                   },
                 ),
@@ -124,34 +138,44 @@ class _ImageCarouselState extends State<ImageCarousel> {
             Positioned(
               top: MediaQuery.of(context).padding.top + 12,
               left: 16,
-              child: CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.white,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: SvgPicture.asset('assets/images/backicon.svg', width: 18, height: 18),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ).animate().scale(),
+              child:
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: Colors.white,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: SvgPicture.asset(
+                        'assets/images/backicon.svg',
+                        width: 18,
+                        height: 18,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ).animate().scale(),
             ),
 
             // Bookmark button — top-right
             Positioned(
               top: MediaQuery.of(context).padding.top + 12,
               right: 16,
-              child: CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.white,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: Icon(
-                    _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                    color: _isBookmarked ? AppTheme.primaryColor : Colors.grey[700],
-                    size: 20,
-                  ),
-                  onPressed: () => setState(() => _isBookmarked = !_isBookmarked),
-                ),
-              ).animate().scale(),
+              child:
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: Colors.white,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: Icon(
+                        _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                        color:
+                            _isBookmarked
+                                ? AppTheme.primaryColor
+                                : Colors.grey[700],
+                        size: 20,
+                      ),
+                      onPressed:
+                          () => setState(() => _isBookmarked = !_isBookmarked),
+                    ),
+                  ).animate().scale(),
             ),
 
             // Image tag label — bottom-left
@@ -163,7 +187,10 @@ class _ImageCarouselState extends State<ImageCarousel> {
                   duration: const Duration(milliseconds: 250),
                   child: Container(
                     key: ValueKey(_tagForIndex(_currentIndex)),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.55),
                       borderRadius: BorderRadius.circular(20),
@@ -192,7 +219,10 @@ class _ImageCarouselState extends State<ImageCarousel> {
                     opacity: _swipeHintVisible ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 400),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.45),
                         borderRadius: BorderRadius.circular(20),
@@ -200,7 +230,11 @@ class _ImageCarouselState extends State<ImageCarousel> {
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.swipe_outlined, color: Colors.white, size: 14),
+                          Icon(
+                            Icons.swipe_outlined,
+                            color: Colors.white,
+                            size: 14,
+                          ),
                           SizedBox(width: 6),
                           Text(
                             'Swipe to see more photos',
@@ -224,7 +258,10 @@ class _ImageCarouselState extends State<ImageCarousel> {
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: _SegmentedDots(total: images.length, current: _currentIndex),
+                  child: _SegmentedDots(
+                    total: images.length,
+                    current: _currentIndex,
+                  ),
                 ),
               ),
 
@@ -241,7 +278,11 @@ class _ImageCarouselState extends State<ImageCarousel> {
                       color: Colors.black.withValues(alpha: 0.45),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.fullscreen, color: Colors.white, size: 18),
+                    child: const Icon(
+                      Icons.fullscreen,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ),
               ),
@@ -270,7 +311,10 @@ class _ImageCarouselState extends State<ImageCarousel> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+                            color:
+                                isSelected
+                                    ? AppTheme.primaryColor
+                                    : Colors.transparent,
                             width: 2,
                           ),
                         ),
@@ -281,10 +325,18 @@ class _ImageCarouselState extends State<ImageCarousel> {
                             width: 72,
                             height: 54,
                             fit: BoxFit.cover,
-                            placeholder: (context, url) =>
-                                Container(width: 72, height: 54, color: Colors.grey[200]),
-                            errorWidget: (context, url, error) =>
-                                Container(width: 72, height: 54, color: Colors.grey[300]),
+                            placeholder:
+                                (context, url) => Container(
+                                  width: 72,
+                                  height: 54,
+                                  color: Colors.grey[200],
+                                ),
+                            errorWidget:
+                                (context, url, error) => Container(
+                                  width: 72,
+                                  height: 54,
+                                  color: Colors.grey[300],
+                                ),
                           ),
                         ),
                       ),
@@ -408,11 +460,19 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
                   child: CachedNetworkImage(
                     imageUrl: widget.images[index],
                     fit: BoxFit.contain,
-                    placeholder: (context, url) => const Center(
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    ),
-                    errorWidget: (context, url, error) =>
-                        const Icon(Icons.broken_image, color: Colors.grey, size: 60),
+                    placeholder:
+                        (context, url) => const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                    errorWidget:
+                        (context, url, error) => const Icon(
+                          Icons.broken_image,
+                          color: Colors.grey,
+                          size: 60,
+                        ),
                   ),
                 ),
               );
@@ -437,7 +497,11 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
                         color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.close, color: Colors.white, size: 20),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ),
                   Text(
@@ -466,11 +530,16 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
                   duration: const Duration(milliseconds: 200),
                   child: Container(
                     key: ValueKey(_tag(_current)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Text(
                       _tag(_current)!,
@@ -492,7 +561,10 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
             left: 0,
             right: 0,
             child: Center(
-              child: _SegmentedDots(total: widget.images.length, current: _current),
+              child: _SegmentedDots(
+                total: widget.images.length,
+                current: _current,
+              ),
             ),
           ),
         ],
@@ -540,7 +612,8 @@ class _SegmentedDots extends StatelessWidget {
           width: isActive ? 20 : 6,
           height: 6,
           decoration: BoxDecoration(
-            color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.45),
+            color:
+                isActive ? Colors.white : Colors.white.withValues(alpha: 0.45),
             borderRadius: BorderRadius.circular(4),
           ),
         );

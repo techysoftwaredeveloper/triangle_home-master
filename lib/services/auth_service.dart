@@ -94,9 +94,9 @@ final userProvider = StateProvider<User?>((ref) => null);
 //         verificationId: verificationId,
 //         smsCode: smsCode,
 //       );
-      
+
 //       UserCredential userCredential = await _auth.signInWithCredential(credential);
-      
+
 //       if (userCredential.user != null) {
 //         await _createUserInFirestore(userCredential.user!);
 //         return true;
@@ -110,7 +110,7 @@ final userProvider = StateProvider<User?>((ref) => null);
 //   // Create user in Firestore
 //   Future<void> _createUserInFirestore(User user) async {
 //     final userDoc = await _firestore.collection('users').doc(user.uid).get();
-    
+
 //     if (!userDoc.exists) {
 //       await _firestore.collection('users').doc(user.uid).set({
 //         'phoneNumber': user.phoneNumber,

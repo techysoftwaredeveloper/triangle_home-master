@@ -2,7 +2,6 @@
 // import 'package:flutter_animate/flutter_animate.dart';
 // import 'package:url_launcher/url_launcher.dart';
 
-
 // class OwnerSection extends StatelessWidget {
 //   final String owner;
 //   final String phone;
@@ -206,32 +205,24 @@ class OwnerSection extends StatelessWidget {
   final String owner;
   final String phone;
 
-  const OwnerSection({
-    super.key,
-    required this.owner,
-    required this.phone,
-  });
+  const OwnerSection({super.key, required this.owner, required this.phone});
 
+  void _launchDialer(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
 
-
-void _launchDialer(String phoneNumber) async {
-  final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
-
-  try {
-    if (await canLaunchUrl(phoneUri)) {
-      await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
-    } else {
-      debugPrint('⚠️ Cannot launch dialer for: $phoneNumber');
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
+      } else {
+        debugPrint('⚠️ Cannot launch dialer for: $phoneNumber');
+      }
+    } catch (e) {
+      debugPrint('❌ Error launching dialer: $e');
     }
-  } catch (e) {
-    debugPrint('❌ Error launching dialer: $e');
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
-    
     return Container(
       color: Colors.grey[100],
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -315,7 +306,9 @@ void _launchDialer(String phoneNumber) async {
                           const SizedBox(height: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFF1ABC5C),
                               borderRadius: BorderRadius.circular(6),
@@ -347,7 +340,11 @@ void _launchDialer(String phoneNumber) async {
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Divider(height: 1, thickness: 1, color: Color(0xFFE0E0E0)),
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Color(0xFFE0E0E0),
+                ),
                 const SizedBox(height: 12),
 
                 // Buttons
@@ -356,8 +353,11 @@ void _launchDialer(String phoneNumber) async {
                     Expanded(
                       child: TextButton.icon(
                         onPressed: () => _launchDialer(phone),
-                        icon: const Icon(Icons.call,
-                            color: Color(0xFF001F5B), size: 20),
+                        icon: const Icon(
+                          Icons.call,
+                          color: Color(0xFF001F5B),
+                          size: 20,
+                        ),
                         label: const Text(
                           'Enquire Over Call',
                           style: TextStyle(
@@ -379,8 +379,11 @@ void _launchDialer(String phoneNumber) async {
                     Expanded(
                       child: TextButton.icon(
                         onPressed: () {},
-                        icon: const Icon(Icons.share,
-                            color: Color(0xFF001F5B), size: 20),
+                        icon: const Icon(
+                          Icons.share,
+                          color: Color(0xFF001F5B),
+                          size: 20,
+                        ),
                         label: const Text(
                           'Share This Listing',
                           style: TextStyle(
@@ -408,4 +411,3 @@ void _launchDialer(String phoneNumber) async {
     );
   }
 }
-

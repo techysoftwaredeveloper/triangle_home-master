@@ -85,7 +85,8 @@ class _AdminPropertyManagementState extends State<AdminPropertyManagement>
               margin: const EdgeInsets.only(bottom: 16),
               clipBehavior: Clip.antiAlias,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -98,13 +99,17 @@ class _AdminPropertyManagementState extends State<AdminPropertyManagement>
                         height: 180,
                         width: double.infinity,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          height: 180,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.image_not_supported, size: 50),
-                        ),
+                        errorBuilder:
+                            (context, error, stackTrace) => Container(
+                              height: 180,
+                              color: Colors.grey[300],
+                              child: const Icon(
+                                Icons.image_not_supported,
+                                size: 50,
+                              ),
+                            ),
                       ),
-                      GreenBadge(status),
+                      greenBadge(status),
                     ],
                   ),
                   Padding(
@@ -113,7 +118,9 @@ class _AdminPropertyManagementState extends State<AdminPropertyManagement>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          basicInfo['name'] ?? basicInfo['collegeName'] ?? 'Unnamed Property',
+                          basicInfo['name'] ??
+                              basicInfo['collegeName'] ??
+                              'Unnamed Property',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -123,8 +130,11 @@ class _AdminPropertyManagementState extends State<AdminPropertyManagement>
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(Icons.location_on,
-                                size: 16, color: Colors.grey),
+                            const Icon(
+                              Icons.location_on,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
@@ -150,7 +160,8 @@ class _AdminPropertyManagementState extends State<AdminPropertyManagement>
                           children: [
                             if (status != 'approved')
                               ElevatedButton(
-                                onPressed: () => _updateStatus(doc.id, 'approved'),
+                                onPressed:
+                                    () => _updateStatus(doc.id, 'approved'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green,
                                   foregroundColor: Colors.white,
@@ -160,7 +171,8 @@ class _AdminPropertyManagementState extends State<AdminPropertyManagement>
                             const SizedBox(width: 8),
                             if (status != 'rejected')
                               OutlinedButton(
-                                onPressed: () => _updateStatus(doc.id, 'rejected'),
+                                onPressed:
+                                    () => _updateStatus(doc.id, 'rejected'),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: Colors.red,
                                   side: const BorderSide(color: Colors.red),
@@ -181,7 +193,7 @@ class _AdminPropertyManagementState extends State<AdminPropertyManagement>
     );
   }
 
-  Widget GreenBadge(String status) {
+  Widget greenBadge(String status) {
     Color color = Colors.orange;
     if (status == 'approved') color = Colors.green;
     if (status == 'rejected') color = Colors.red;
@@ -217,9 +229,9 @@ class _AdminPropertyManagementState extends State<AdminPropertyManagement>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }

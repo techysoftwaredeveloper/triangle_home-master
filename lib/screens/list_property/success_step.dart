@@ -28,22 +28,37 @@ class ListPropertySuccessScreen extends StatelessWidget {
                   color: AppTheme.successColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_circle_rounded, color: AppTheme.successColor, size: 80),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppTheme.successColor,
+                  size: 80,
+                ),
               ),
               const SizedBox(height: 32),
               const Text(
                 'Listing Submitted!',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Outfit',
+                ),
               ),
               const SizedBox(height: 12),
               const Text(
                 'Your property is under review.\nWe will notify you once it goes live.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.textLightColor, fontSize: 14, height: 1.5),
+                style: TextStyle(
+                  color: AppTheme.textLightColor,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
               ),
               const SizedBox(height: 40),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(16),
@@ -54,14 +69,30 @@ class ListPropertySuccessScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Status', style: TextStyle(fontSize: 13, color: AppTheme.textMutedColor)),
+                        const Text(
+                          'Status',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppTheme.textMutedColor,
+                          ),
+                        ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.amber.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text('Under Review', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 11)),
+                          child: const Text(
+                            'Under Review',
+                            style: TextStyle(
+                              color: Colors.amber,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -69,8 +100,20 @@ class ListPropertySuccessScreen extends StatelessWidget {
                     const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Expected Approval', style: TextStyle(fontSize: 13, color: AppTheme.textMutedColor)),
-                        Text('24 - 48 Hours', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text(
+                          'Expected Approval',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppTheme.textMutedColor,
+                          ),
+                        ),
+                        Text(
+                          '24 - 48 Hours',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -84,9 +127,17 @@ class ListPropertySuccessScreen extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.successColor,
                     padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: const Text('Go to Dashboard', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Go to Dashboard',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -94,7 +145,10 @@ class ListPropertySuccessScreen extends StatelessWidget {
                 onPressed: onAddAnother,
                 child: const Text(
                   'Add Another Property',
-                  style: TextStyle(color: AppTheme.successColor, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: AppTheme.successColor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],

@@ -21,7 +21,6 @@ class BedSelectionSheet extends StatefulWidget {
 }
 
 class _BedSelectionSheetState extends State<BedSelectionSheet> {
-  final InventoryService _inventoryService = InventoryService();
   RoomModel? _selectedRoom;
   BedModel? _selectedBed;
 
@@ -70,7 +69,11 @@ class _BedSelectionSheetState extends State<BedSelectionSheet> {
             children: [
               const Text(
                 'Select Your Bed',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Outfit',
+                ),
               ),
               Text(
                 'Choose a specific room and bed',
@@ -85,36 +88,46 @@ class _BedSelectionSheetState extends State<BedSelectionSheet> {
 
   Widget _buildRoomList() {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('properties')
-          .doc(widget.propertyId)
-          .collection('rooms')
-          .snapshots(),
+      stream:
+          FirebaseFirestore.instance
+              .collection('properties')
+              .doc(widget.propertyId)
+              .collection('rooms')
+              .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
 
-        final rooms = snapshot.data!.docs.map((doc) => RoomModel.fromFirestore(doc)).toList();
+        final rooms =
+            snapshot.data!.docs
+                .map((doc) => RoomModel.fromFirestore(doc))
+                .toList();
 
         if (rooms.isEmpty) {
           return Center(
-            child: Text('No rooms available', style: TextStyle(color: Colors.grey[400])),
+            child: Text(
+              'No rooms available',
+              style: TextStyle(color: Colors.grey[400]),
+            ),
           );
         }
 
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           itemCount: rooms.length,
-          itemBuilder: (context, index) => _RoomSelectionCard(
-            propertyId: widget.propertyId,
-            room: rooms[index],
-            isSelected: _selectedRoom?.id == rooms[index].id,
-            selectedBedId: _selectedBed?.id,
-            onRoomTap: (room) => setState(() {
-              _selectedRoom = room;
-              _selectedBed = null;
-            }),
-            onBedTap: (bed) => setState(() => _selectedBed = bed),
-          ),
+          itemBuilder:
+              (context, index) => _RoomSelectionCard(
+                propertyId: widget.propertyId,
+                room: rooms[index],
+                isSelected: _selectedRoom?.id == rooms[index].id,
+                selectedBedId: _selectedBed?.id,
+                onRoomTap:
+                    (room) => setState(() {
+                      _selectedRoom = room;
+                      _selectedBed = null;
+                    }),
+                onBedTap: (bed) => setState(() => _selectedBed = bed),
+              ),
         );
       },
     );
@@ -127,21 +140,36 @@ class _BedSelectionSheetState extends State<BedSelectionSheet> {
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: canConfirm ? () => widget.onSelected(_selectedRoom!, _selectedBed!) : null,
+          onPressed:
+              canConfirm
+                  ? () => widget.onSelected(_selectedRoom!, _selectedBed!)
+                  : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.successColor,
             padding: const EdgeInsets.symmetric(vertical: 18),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             elevation: 0,
           ),
           child: const Text(
             'Confirm Selection',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
           ),
         ),
       ),
@@ -172,7 +200,10 @@ class _RoomSelectionCard extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: isSelected ? AppTheme.successColor.withOpacity(0.02) : Colors.white,
+        color:
+            isSelected
+                ? AppTheme.successColor.withValues(alpha: 0.02)
+                : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isSelected ? AppTheme.successColor : const Color(0xFFF1F5F9),
@@ -194,19 +225,34 @@ class _RoomSelectionCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Room ${room.roomNumber}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text('${room.roomType.name.toUpperCase()} • Floor ${room.floor}', style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+                        Text(
+                          'Room ${room.roomNumber}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          '${room.roomType.name.toUpperCase()} • Floor ${room.floor}',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 11,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  Text('₹${room.baseRent.toInt()}/mo', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.successColor)),
+                  Text(
+                    '₹${room.baseRent.toInt()}/mo',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.successColor,
+                    ),
+                  ),
                 ],
               ),
             ),
-            if (isSelected) ...[
-              const Divider(height: 1),
-              _buildBedGrid(),
-            ],
+            if (isSelected) ...[const Divider(height: 1), _buildBedGrid()],
           ],
         ),
       ),
@@ -217,37 +263,53 @@ class _RoomSelectionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: isSelected ? AppTheme.successColor.withOpacity(0.1) : const Color(0xFFF8FAFC),
+        color:
+            isSelected
+                ? AppTheme.successColor.withValues(alpha: 0.1)
+                : const Color(0xFFF8FAFC),
         shape: BoxShape.circle,
       ),
-      child: Icon(Icons.meeting_room_rounded, color: isSelected ? AppTheme.successColor : Colors.grey[400], size: 20),
+      child: Icon(
+        Icons.meeting_room_rounded,
+        color: isSelected ? AppTheme.successColor : Colors.grey[400],
+        size: 20,
+      ),
     );
   }
 
   Widget _buildBedGrid() {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('properties')
-          .doc(propertyId)
-          .collection('rooms')
-          .doc(room.id)
-          .collection('beds')
-          .snapshots(),
+      stream:
+          FirebaseFirestore.instance
+              .collection('properties')
+              .doc(propertyId)
+              .collection('rooms')
+              .doc(room.id)
+              .collection('beds')
+              .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const SizedBox(height: 100);
 
-        final beds = snapshot.data!.docs.map((doc) => BedModel.fromFirestore(doc)).toList();
+        final beds =
+            snapshot.data!.docs
+                .map((doc) => BedModel.fromFirestore(doc))
+                .toList();
 
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: beds.map((bed) => _BedChip(
-              bed: bed,
-              isSelected: selectedBedId == bed.id,
-              onTap: () => onBedTap(bed),
-            )).toList(),
+            children:
+                beds
+                    .map(
+                      (bed) => _BedChip(
+                        bed: bed,
+                        isSelected: selectedBedId == bed.id,
+                        onTap: () => onBedTap(bed),
+                      ),
+                    )
+                    .toList(),
           ),
         );
       },
@@ -260,12 +322,16 @@ class _BedChip extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _BedChip({required this.bed, required this.isSelected, required this.onTap});
+  const _BedChip({
+    required this.bed,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final bool isAvailable = bed.status == BedStatus.available;
-    
+
     return InkWell(
       onTap: isAvailable ? onTap : null,
       borderRadius: BorderRadius.circular(12),
@@ -275,18 +341,27 @@ class _BedChip extends StatelessWidget {
           width: 60,
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? AppTheme.successColor : (isAvailable ? Colors.white : Colors.grey[100]),
+            color:
+                isSelected
+                    ? AppTheme.successColor
+                    : (isAvailable ? Colors.white : Colors.grey[100]),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? AppTheme.successColor : const Color(0xFFF1F5F9),
+              color:
+                  isSelected ? AppTheme.successColor : const Color(0xFFF1F5F9),
             ),
           ),
           child: Column(
             children: [
               Icon(
-                isSelected ? Icons.check_circle_rounded : (isAvailable ? Icons.bed_outlined : Icons.block_flipped),
+                isSelected
+                    ? Icons.check_circle_rounded
+                    : (isAvailable ? Icons.bed_outlined : Icons.block_flipped),
                 size: 16,
-                color: isSelected ? Colors.white : (isAvailable ? AppTheme.successColor : Colors.grey),
+                color:
+                    isSelected
+                        ? Colors.white
+                        : (isAvailable ? AppTheme.successColor : Colors.grey),
               ),
               const SizedBox(height: 4),
               Text(
@@ -294,7 +369,12 @@ class _BedChip extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
-                  color: isSelected ? Colors.white : (isAvailable ? AppTheme.textDarkColor : Colors.grey),
+                  color:
+                      isSelected
+                          ? Colors.white
+                          : (isAvailable
+                              ? AppTheme.textDarkColor
+                              : Colors.grey),
                 ),
               ),
             ],

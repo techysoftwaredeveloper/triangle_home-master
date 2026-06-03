@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/hoster_info_screen.dart';
 import 'package:triangle_home/screens/auth/login_screen.dart';
-import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/screens/list_property/intro_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
@@ -18,11 +17,18 @@ class HosterRegistrationCard extends StatelessWidget {
 
     // 1. If logged in, check role
     if (user != null && !user.isAnonymous) {
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final userDoc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
       if (!context.mounted) return;
 
       if (userDoc.exists && userDoc.data()?['role'] == 'hoster') {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const HosterDashboardScreen()));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
+        );
         return;
       }
     }
@@ -31,27 +37,31 @@ class HosterRegistrationCard extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ListPropertyIntroScreen(
-          onGetStarted: () {
-            // After intro, if still not logged in, go to Login
-            if (user == null || user.isAnonymous) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => LoginScreen(isStudent: false)),
-              );
-            } else {
-              // Already logged in but not a hoster, go to application form
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => HosterInfoScreen(
-                    phoneNumber: user?.phoneNumber ?? '',
-                  ),
-                ),
-              );
-            }
-          },
-        ),
+        builder:
+            (_) => ListPropertyIntroScreen(
+              onGetStarted: () {
+                // After intro, if still not logged in, go to Login
+                if (user == null || user.isAnonymous) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => LoginScreen(isStudent: false),
+                    ),
+                  );
+                } else {
+                  // Already logged in but not a hoster, go to application form
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (_) => HosterInfoScreen(
+                            phoneNumber: user.phoneNumber ?? '',
+                          ),
+                    ),
+                  );
+                }
+              },
+            ),
       ),
     );
   }
@@ -63,18 +73,18 @@ class HosterRegistrationCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppTheme.primaryColor.withOpacity(0.05), Colors.white],
+          colors: [AppTheme.primaryColor.withValues(alpha: 0.05), Colors.white],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppTheme.primaryColor.withOpacity(0.1),
+          color: AppTheme.primaryColor.withValues(alpha: 0.1),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -87,7 +97,7 @@ class HosterRegistrationCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
+                color: AppTheme.primaryColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

@@ -33,7 +33,11 @@ class _SavedPaymentsScreenState extends State<SavedPaymentsScreen> {
 
   final List<Map<String, dynamic>> _upiIds = [
     {'id': 'upi_1', 'id_name': 'johnbravo@okaxis', 'bank': 'HDFC Bank'},
-    {'id': 'upi_2', 'id_name': '9876543210@paytm', 'bank': 'Paytm Payments Bank'},
+    {
+      'id': 'upi_2',
+      'id_name': '9876543210@paytm',
+      'bank': 'Paytm Payments Bank',
+    },
   ];
 
   @override
@@ -121,15 +125,22 @@ class _SavedPaymentsScreenState extends State<SavedPaymentsScreen> {
                   ..._upiIds.asMap().entries.map((entry) {
                     return _buildUPIItem(entry.value, entry.key);
                   }),
-                  _buildAddButton(Icons.account_balance_wallet_outlined, 'Add New UPI ID'),
+                  _buildAddButton(
+                    Icons.account_balance_wallet_outlined,
+                    'Add New UPI ID',
+                  ),
 
                   const SizedBox(height: 40),
-                  
+
                   // --- Security Note ---
                   Center(
                     child: Column(
                       children: [
-                        Icon(Icons.lock_outline_rounded, color: AppTheme.textMutedColor, size: 20),
+                        Icon(
+                          Icons.lock_outline_rounded,
+                          color: AppTheme.textMutedColor,
+                          size: 20,
+                        ),
                         const SizedBox(height: 8),
                         Text(
                           'Your payment details are encrypted\nand stored securely by Triangle Homes.',
@@ -167,7 +178,11 @@ class _SavedPaymentsScreenState extends State<SavedPaymentsScreen> {
           const SizedBox(width: 4),
           Text(
             label,
-            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -195,70 +210,107 @@ class _SavedPaymentsScreenState extends State<SavedPaymentsScreen> {
         setState(() => _savedCards.removeAt(index));
       },
       child: Container(
-        height: 180,
-        width: double.infinity,
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: card['color'],
-          borderRadius: BorderRadius.circular(AppTheme.radiusXL),
-          boxShadow: [
-            BoxShadow(
-              color: card['color'].withValues(alpha: 0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                FaIcon(
-                  card['type'] == 'Visa' ? FontAwesomeIcons.ccVisa : FontAwesomeIcons.ccMastercard,
-                  color: Colors.white,
-                  size: 32,
-                ),
-                const Icon(Icons.contactless_outlined, color: Colors.white60, size: 24),
-              ],
-            ),
-            Text(
-              '****  ****  ****  ${card['last4']}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                letterSpacing: 2,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Outfit',
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('CARD HOLDER', style: TextStyle(color: Colors.white60, fontSize: 8, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(card['cardHolder'], style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('EXPIRES', style: TextStyle(color: Colors.white60, fontSize: 8, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(card['expiry'], style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-                  ],
+            height: 180,
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: card['color'],
+              borderRadius: BorderRadius.circular(AppTheme.radiusXL),
+              boxShadow: [
+                BoxShadow(
+                  color: card['color'].withValues(alpha: 0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
-          ],
-        ),
-      ).animate().fadeIn(delay: Duration(milliseconds: 100 * index)).slideX(begin: 0.1, end: 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    FaIcon(
+                      card['type'] == 'Visa'
+                          ? FontAwesomeIcons.ccVisa
+                          : FontAwesomeIcons.ccMastercard,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                    const Icon(
+                      Icons.contactless_outlined,
+                      color: Colors.white60,
+                      size: 24,
+                    ),
+                  ],
+                ),
+                Text(
+                  '****  ****  ****  ${card['last4']}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Outfit',
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'CARD HOLDER',
+                          style: TextStyle(
+                            color: Colors.white60,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          card['cardHolder'],
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'EXPIRES',
+                          style: TextStyle(
+                            color: Colors.white60,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          card['expiry'],
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          )
+          .animate()
+          .fadeIn(delay: Duration(milliseconds: 100 * index))
+          .slideX(begin: 0.1, end: 0),
     );
   }
 
@@ -272,23 +324,56 @@ class _SavedPaymentsScreenState extends State<SavedPaymentsScreen> {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
+        child: Material(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppTheme.radiusLG),
-          border: Border.all(color: AppTheme.dividerColor.withValues(alpha: 0.5)),
-        ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          leading: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: AppTheme.successColor.withValues(alpha: 0.1), shape: BoxShape.circle),
-            child: const Icon(Icons.account_balance_rounded, color: AppTheme.successColor, size: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppTheme.radiusLG),
+              border: Border.all(
+                color: AppTheme.dividerColor.withValues(alpha: 0.5),
+              ),
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.successColor.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.account_balance_rounded,
+                  color: AppTheme.successColor,
+                  size: 20,
+                ),
+              ),
+              title: Text(
+                upi['id_name'],
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  fontFamily: 'Outfit',
+                ),
+              ),
+              subtitle: Text(
+                upi['bank'],
+                style: TextStyle(color: AppTheme.textLightColor, fontSize: 12),
+              ),
+              trailing: const Icon(
+                Icons.more_vert,
+                color: AppTheme.textMutedColor,
+              ),
+            ),
           ),
-          title: Text(upi['id_name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'Outfit')),
-          subtitle: Text(upi['bank'], style: TextStyle(color: AppTheme.textLightColor, fontSize: 12)),
-          trailing: const Icon(Icons.more_vert, color: AppTheme.textMutedColor),
         ),
-      ).animate().fadeIn(delay: Duration(milliseconds: 300 + (50 * index))).slideX(begin: 0.05, end: 0),
+      )
+          .animate()
+          .fadeIn(delay: Duration(milliseconds: 300 + (50 * index)))
+          .slideX(begin: 0.05, end: 0),
     );
   }
 
@@ -304,9 +389,21 @@ class _SavedPaymentsScreenState extends State<SavedPaymentsScreen> {
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Text('Remove', style: TextStyle(color: AppTheme.errorColor, fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Outfit')),
+          Text(
+            'Remove',
+            style: TextStyle(
+              color: AppTheme.errorColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              fontFamily: 'Outfit',
+            ),
+          ),
           SizedBox(width: 8),
-          Icon(Icons.delete_outline_rounded, color: AppTheme.errorColor, size: 24),
+          Icon(
+            Icons.delete_outline_rounded,
+            color: AppTheme.errorColor,
+            size: 24,
+          ),
         ],
       ),
     );
@@ -321,7 +418,10 @@ class _SavedPaymentsScreenState extends State<SavedPaymentsScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            border: Border.all(color: AppTheme.accentColor, style: BorderStyle.solid),
+            border: Border.all(
+              color: AppTheme.accentColor,
+              style: BorderStyle.solid,
+            ),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -331,7 +431,12 @@ class _SavedPaymentsScreenState extends State<SavedPaymentsScreen> {
               const SizedBox(width: 8),
               Text(
                 label,
-                style: const TextStyle(color: AppTheme.accentColor, fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'Outfit'),
+                style: const TextStyle(
+                  color: AppTheme.accentColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  fontFamily: 'Outfit',
+                ),
               ),
             ],
           ),

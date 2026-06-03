@@ -9,7 +9,8 @@ class SuggestPropertyFormScreen extends StatefulWidget {
   const SuggestPropertyFormScreen({super.key});
 
   @override
-  State<SuggestPropertyFormScreen> createState() => _SuggestPropertyFormScreenState();
+  State<SuggestPropertyFormScreen> createState() =>
+      _SuggestPropertyFormScreenState();
 }
 
 class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
@@ -62,7 +63,11 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
     if (user != null) {
       _phoneController.text = user.phoneNumber ?? '';
 
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
       if (doc.exists && mounted) {
         final data = doc.data() as Map<String, dynamic>;
         final info = data['info'] as Map<String, dynamic>? ?? {};
@@ -96,7 +101,9 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
     if (_currentStep < 2) {
       if (_currentStep == 0) {
         if (_nameController.text.isEmpty || _phoneController.text.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill in your basic details')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please fill in your basic details')),
+          );
           return;
         }
       }
@@ -108,7 +115,10 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
 
   void _previousStep() {
     if (_currentStep > 0) {
-      _pageController.previousPage(duration: 400.ms, curve: Curves.easeInOutCubic);
+      _pageController.previousPage(
+        duration: 400.ms,
+        curve: Curves.easeInOutCubic,
+      );
     } else {
       Navigator.pop(context);
     }
@@ -144,18 +154,24 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       };
 
-      await FirebaseFirestore.instance.collection('property_suggestions').add(suggestionData);
+      await FirebaseFirestore.instance
+          .collection('property_suggestions')
+          .add(suggestionData);
 
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => SuggestPropertySuccessScreen(suggestionData: suggestionData),
+          builder:
+              (_) =>
+                  SuggestPropertySuccessScreen(suggestionData: suggestionData),
         ),
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -174,12 +190,21 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textDarkColor, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppTheme.textDarkColor,
+            size: 20,
+          ),
           onPressed: _previousStep,
         ),
         title: const Text(
           'Property Form',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.primaryColor),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Outfit',
+            color: AppTheme.primaryColor,
+          ),
         ),
       ),
       body: Column(
@@ -188,13 +213,29 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
           if (!isKeyboardVisible) ...[
             const SizedBox(height: 12),
             Text(
-              'Step ${_currentStep + 1} of 3',
-              style: const TextStyle(fontSize: 12, color: AppTheme.textLightColor, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
-            ).animate(key: ValueKey(_currentStep)).fadeIn().slideY(begin: 0.1, end: 0),
+                  'Step ${_currentStep + 1} of 3',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textLightColor,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Outfit',
+                  ),
+                )
+                .animate(key: ValueKey(_currentStep))
+                .fadeIn()
+                .slideY(begin: 0.1, end: 0),
             const SizedBox(height: 4),
             Text(
-              _currentStep == 0 ? 'Tell us about yourself' : _currentStep == 1 ? 'Owner information' : 'Property details',
-              style: const TextStyle(fontSize: 13, color: AppTheme.textLightColor, fontFamily: 'Outfit'),
+              _currentStep == 0
+                  ? 'Tell us about yourself'
+                  : _currentStep == 1
+                  ? 'Owner information'
+                  : 'Property details',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppTheme.textLightColor,
+                fontFamily: 'Outfit',
+              ),
             ),
             const SizedBox(height: 16),
           ],
@@ -222,7 +263,10 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
   Widget _buildProgressBar(bool isKeyboardVisible) {
     return AnimatedContainer(
       duration: 300.ms,
-      padding: EdgeInsets.symmetric(horizontal: 40, vertical: isKeyboardVisible ? 10 : 20),
+      padding: EdgeInsets.symmetric(
+        horizontal: 40,
+        vertical: isKeyboardVisible ? 10 : 20,
+      ),
       child: Row(
         children: [
           _buildStepCircle(0, 'Suggester', isKeyboardVisible),
@@ -247,21 +291,39 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: isActive ? AppTheme.primaryColor : const Color(0xFFF1F5F9),
-            border: Border.all(color: isActive ? AppTheme.primaryColor : const Color(0xFFE2E8F0), width: 2),
-            boxShadow: isActive ? [BoxShadow(color: AppTheme.primaryColor.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 4))] : [],
+            border: Border.all(
+              color: isActive ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
+              width: 2,
+            ),
+            boxShadow:
+                isActive
+                    ? [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                    : [],
           ),
           child: Center(
-            child: isCompleted
-                ? Icon(Icons.check, color: Colors.white, size: isKeyboardVisible ? 12 : 16)
-                : Text(
-                    '${step + 1}',
-                    style: TextStyle(
-                      color: isActive ? Colors.white : AppTheme.textLightColor,
-                      fontSize: isKeyboardVisible ? 11 : 14,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Outfit',
+            child:
+                isCompleted
+                    ? Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: isKeyboardVisible ? 12 : 16,
+                    )
+                    : Text(
+                      '${step + 1}',
+                      style: TextStyle(
+                        color:
+                            isActive ? Colors.white : AppTheme.textLightColor,
+                        fontSize: isKeyboardVisible ? 11 : 14,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Outfit',
+                      ),
                     ),
-                  ),
           ),
         ),
         if (!isKeyboardVisible) ...[
@@ -303,7 +365,11 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
             children: [
               _buildRoleOption('student', 'Student', Icons.school_outlined),
               const SizedBox(width: 12),
-              _buildRoleOption('professional', 'Professional', Icons.business_center_outlined),
+              _buildRoleOption(
+                'professional',
+                'Professional',
+                Icons.business_center_outlined,
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -315,18 +381,40 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
             children: [
               _buildToggleOption(true, 'Yes, I stay here', Icons.home_rounded),
               const SizedBox(width: 12),
-              _buildToggleOption(false, 'No, I don\'t stay here', Icons.home_outlined),
+              _buildToggleOption(
+                false,
+                'No, I don\'t stay here',
+                Icons.home_outlined,
+              ),
             ],
           ),
 
           const SizedBox(height: 24),
           _buildSectionTitle('Your Details'),
           const SizedBox(height: 16),
-          _buildTextField(controller: _nameController, label: 'Full Name', hint: 'Your name', icon: Icons.person_outline),
+          _buildTextField(
+            controller: _nameController,
+            label: 'Full Name',
+            hint: 'Your name',
+            icon: Icons.person_outline,
+          ),
           const SizedBox(height: 16),
-          _buildTextField(controller: _emailController, label: 'Email Address', hint: 'email@gmail.com', icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress, required: false),
+          _buildTextField(
+            controller: _emailController,
+            label: 'Email Address',
+            hint: 'email@gmail.com',
+            icon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+            required: false,
+          ),
           const SizedBox(height: 16),
-          _buildTextField(controller: _phoneController, label: 'Phone Number', hint: '+91 00000 00000', icon: Icons.phone_outlined, keyboardType: TextInputType.phone),
+          _buildTextField(
+            controller: _phoneController,
+            label: 'Phone Number',
+            hint: '+91 00000 00000',
+            icon: Icons.phone_outlined,
+            keyboardType: TextInputType.phone,
+          ),
           const SizedBox(height: 40),
         ],
       ),
@@ -341,13 +429,38 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
         children: [
           _buildSectionTitle('Owner Details'),
           const SizedBox(height: 12),
-          const Text('Provide details of the property owner if known.', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8), fontFamily: 'Outfit')),
+          const Text(
+            'Provide details of the property owner if known.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xFF94A3B8),
+              fontFamily: 'Outfit',
+            ),
+          ),
           const SizedBox(height: 24),
-          _buildTextField(controller: _ownerNameController, label: 'Owner Full Name', hint: 'e.g. John Doe', icon: Icons.person_outline),
+          _buildTextField(
+            controller: _ownerNameController,
+            label: 'Owner Full Name',
+            hint: 'e.g. John Doe',
+            icon: Icons.person_outline,
+          ),
           const SizedBox(height: 16),
-          _buildTextField(controller: _ownerPhoneController, label: 'Owner Phone Number', hint: '+91 98765 43210', icon: Icons.phone_outlined, keyboardType: TextInputType.phone),
+          _buildTextField(
+            controller: _ownerPhoneController,
+            label: 'Owner Phone Number',
+            hint: '+91 98765 43210',
+            icon: Icons.phone_outlined,
+            keyboardType: TextInputType.phone,
+          ),
           const SizedBox(height: 16),
-          _buildTextField(controller: _ownerEmailController, label: 'Owner Email (Optional)', hint: 'johndoe@gmail.com', icon: Icons.email_outlined, required: false, keyboardType: TextInputType.emailAddress),
+          _buildTextField(
+            controller: _ownerEmailController,
+            label: 'Owner Email (Optional)',
+            hint: 'johndoe@gmail.com',
+            icon: Icons.email_outlined,
+            required: false,
+            keyboardType: TextInputType.emailAddress,
+          ),
           const SizedBox(height: 40),
         ],
       ),
@@ -362,9 +475,20 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
         children: [
           _buildSectionTitle('Property Details'),
           const SizedBox(height: 24),
-          _buildTextField(controller: _businessNameController, label: 'Property / Business Name', hint: 'e.g. Sunrise Hostels', icon: Icons.business_outlined),
+          _buildTextField(
+            controller: _businessNameController,
+            label: 'Property / Business Name',
+            hint: 'e.g. Sunrise Hostels',
+            icon: Icons.business_outlined,
+          ),
           const SizedBox(height: 16),
-          _buildTextField(controller: _businessAddressController, label: 'Full Address', hint: 'e.g. Kozhikode, Kerala', icon: Icons.location_on_outlined, maxLines: 2),
+          _buildTextField(
+            controller: _businessAddressController,
+            label: 'Full Address',
+            hint: 'e.g. Kozhikode, Kerala',
+            icon: Icons.location_on_outlined,
+            maxLines: 2,
+          ),
           const SizedBox(height: 16),
           _buildDropdown('Category', _selectedCategory, _categories),
 
@@ -375,15 +499,41 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
             const SizedBox(height: 16),
             _buildSectionTitle('Residency Details'),
             const SizedBox(height: 16),
-            _buildTextField(controller: _ambianceController, label: 'Ambiance', hint: 'e.g. Peaceful, Studious', icon: Icons.mood_rounded),
+            _buildTextField(
+              controller: _ambianceController,
+              label: 'Ambiance',
+              hint: 'e.g. Peaceful, Studious',
+              icon: Icons.mood_rounded,
+            ),
             const SizedBox(height: 16),
-            _buildTextField(controller: _amenitiesController, label: 'Key Amenities', hint: 'e.g. WiFi, Laundry, AC', icon: Icons.settings_input_component_rounded),
+            _buildTextField(
+              controller: _amenitiesController,
+              label: 'Key Amenities',
+              hint: 'e.g. WiFi, Laundry, AC',
+              icon: Icons.settings_input_component_rounded,
+            ),
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(child: _buildTextField(controller: _depositController, label: 'Security Deposit', hint: '₹5000', icon: Icons.security_rounded, keyboardType: TextInputType.number)),
+                Expanded(
+                  child: _buildTextField(
+                    controller: _depositController,
+                    label: 'Security Deposit',
+                    hint: '₹5000',
+                    icon: Icons.security_rounded,
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: _buildTextField(controller: _rentController, label: 'Monthly Rent', hint: '₹6500', icon: Icons.payments_rounded, keyboardType: TextInputType.number)),
+                Expanded(
+                  child: _buildTextField(
+                    controller: _rentController,
+                    label: 'Monthly Rent',
+                    hint: '₹6500',
+                    icon: Icons.payments_rounded,
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
               ],
             ),
           ],
@@ -404,18 +554,40 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
           duration: 300.ms,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
           decoration: BoxDecoration(
-            color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.05) : Colors.white,
+            color:
+                isSelected
+                    ? AppTheme.primaryColor.withValues(alpha: 0.05)
+                    : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected ? AppTheme.primaryColor : const Color(0xFFF1F5F9),
+              color:
+                  isSelected ? AppTheme.primaryColor : const Color(0xFFF1F5F9),
               width: isSelected ? 2 : 1,
             ),
           ),
           child: Row(
             children: [
-              Icon(icon, color: isSelected ? AppTheme.primaryColor : const Color(0xFF94A3B8), size: 18),
+              Icon(
+                icon,
+                color:
+                    isSelected
+                        ? AppTheme.primaryColor
+                        : const Color(0xFF94A3B8),
+                size: 18,
+              ),
               const SizedBox(width: 8),
-              Text(title, style: TextStyle(fontSize: 14, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, fontFamily: 'Outfit', color: isSelected ? AppTheme.primaryColor : AppTheme.textDarkColor)),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontFamily: 'Outfit',
+                  color:
+                      isSelected
+                          ? AppTheme.primaryColor
+                          : AppTheme.textDarkColor,
+                ),
+              ),
             ],
           ),
         ),
@@ -433,18 +605,42 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
           duration: 300.ms,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
           decoration: BoxDecoration(
-            color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.05) : Colors.white,
+            color:
+                isSelected
+                    ? AppTheme.primaryColor.withValues(alpha: 0.05)
+                    : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected ? AppTheme.primaryColor : const Color(0xFFF1F5F9),
+              color:
+                  isSelected ? AppTheme.primaryColor : const Color(0xFFF1F5F9),
               width: isSelected ? 2 : 1,
             ),
           ),
           child: Row(
             children: [
-              Icon(icon, color: isSelected ? AppTheme.primaryColor : const Color(0xFF94A3B8), size: 18),
+              Icon(
+                icon,
+                color:
+                    isSelected
+                        ? AppTheme.primaryColor
+                        : const Color(0xFF94A3B8),
+                size: 18,
+              ),
               const SizedBox(width: 8),
-              Expanded(child: Text(title, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, fontFamily: 'Outfit', color: isSelected ? AppTheme.primaryColor : AppTheme.textDarkColor))),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    fontFamily: 'Outfit',
+                    color:
+                        isSelected
+                            ? AppTheme.primaryColor
+                            : AppTheme.textDarkColor,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -455,7 +651,13 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title.toUpperCase(),
-      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: Color(0xFF94A3B8), letterSpacing: 1.2),
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        fontFamily: 'Outfit',
+        color: Color(0xFF94A3B8),
+        letterSpacing: 1.2,
+      ),
     );
   }
 
@@ -471,25 +673,56 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textLightColor, fontFamily: 'Outfit')),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textLightColor,
+            fontFamily: 'Outfit',
+          ),
+        ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
-          style: const TextStyle(fontFamily: 'Outfit', fontSize: 14, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            fontFamily: 'Outfit',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 13),
-            prefixIcon: Icon(icon, color: AppTheme.primaryColor.withValues(alpha: 0.6), size: 18),
+            prefixIcon: Icon(
+              icon,
+              color: AppTheme.primaryColor.withValues(alpha: 0.6),
+              size: 18,
+            ),
             filled: true,
             fillColor: const Color(0xFFF8FAFC),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFFF1F5F9))),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFF1F5F9)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(
+                color: AppTheme.primaryColor,
+                width: 1,
+              ),
+            ),
             contentPadding: const EdgeInsets.symmetric(vertical: 14),
           ),
-          validator: required ? (v) => (v == null || v.isEmpty) ? 'Required' : null : null,
+          validator:
+              required
+                  ? (v) => (v == null || v.isEmpty) ? 'Required' : null
+                  : null,
         ),
       ],
     );
@@ -499,7 +732,15 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textLightColor, fontFamily: 'Outfit')),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textLightColor,
+            fontFamily: 'Outfit',
+          ),
+        ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -510,13 +751,25 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
           ),
           child: DropdownButtonFormField<String>(
             initialValue: value,
-            style: const TextStyle(fontFamily: 'Outfit', fontSize: 14, color: AppTheme.textDarkColor, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontFamily: 'Outfit',
+              fontSize: 14,
+              color: AppTheme.textDarkColor,
+              fontWeight: FontWeight.w500,
+            ),
             decoration: InputDecoration(
-              prefixIcon: Icon(Icons.category_outlined, color: AppTheme.primaryColor.withValues(alpha: 0.6), size: 18),
+              prefixIcon: Icon(
+                Icons.category_outlined,
+                color: AppTheme.primaryColor.withValues(alpha: 0.6),
+                size: 18,
+              ),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(vertical: 14),
             ),
-            items: items.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+            items:
+                items
+                    .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                    .toList(),
             onChanged: (v) => setState(() => _selectedCategory = v!),
           ),
         ),
@@ -527,10 +780,21 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
   Widget _buildBottomAction(bool isKeyboardVisible) {
     return AnimatedContainer(
       duration: 300.ms,
-      padding: EdgeInsets.fromLTRB(24, isKeyboardVisible ? 8 : 16, 24, isKeyboardVisible ? 8 : 24),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        isKeyboardVisible ? 8 : 16,
+        24,
+        isKeyboardVisible ? 8 : 24,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -542,19 +806,41 @@ class _SuggestPropertyFormScreenState extends State<SuggestPropertyFormScreen> {
               onPressed: _isSubmitting ? null : _nextStep,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 elevation: 0,
               ),
-              child: _isSubmitting
-                  ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(_currentStep == 2 ? 'Submit' : 'Next Step', style: TextStyle(fontSize: isKeyboardVisible ? 14 : 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
-                        const SizedBox(width: 8),
-                        Icon(_currentStep == 2 ? Icons.check_circle_outline_rounded : Icons.arrow_forward_ios_rounded, size: isKeyboardVisible ? 16 : 18),
-                      ],
-                    ),
+              child:
+                  _isSubmitting
+                      ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                      : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _currentStep == 2 ? 'Submit' : 'Next Step',
+                            style: TextStyle(
+                              fontSize: isKeyboardVisible ? 14 : 16,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Outfit',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            _currentStep == 2
+                                ? Icons.check_circle_outline_rounded
+                                : Icons.arrow_forward_ios_rounded,
+                            size: isKeyboardVisible ? 16 : 18,
+                          ),
+                        ],
+                      ),
             ),
           ),
         ],

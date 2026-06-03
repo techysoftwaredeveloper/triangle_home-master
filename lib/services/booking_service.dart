@@ -31,15 +31,25 @@ class BookingService {
       final existingBooking = await _bookingRepo.findByIdempotency(requestId);
 
       if (existingBooking.docs.isNotEmpty) {
-        return existingBooking.docs.first.id; // Return existing if already processed
+        return existingBooking
+            .docs
+            .first
+            .id; // Return existing if already processed
       }
 
       // 2. Perform Atomic Transaction for Availability & Creation
-      final String bookingId = await _firestore.runTransaction((transaction) async {
-        final propertyDoc = await transaction.get(_firestore.collection('properties').doc(propertyId));
+      final String bookingId = await _firestore.runTransaction((
+        transaction,
+      ) async {
+        final propertyDoc = await transaction.get(
+          _firestore.collection('properties').doc(propertyId),
+        );
 
         if (!propertyDoc.exists) {
-          throw const BookingFailure('Property not found', code: ErrorCodes.propertyNotFound);
+          throw const BookingFailure(
+            'Property not found',
+            code: ErrorCodes.propertyNotFound,
+          );
         }
 
         final data = propertyDoc.data()!;
@@ -47,7 +57,10 @@ class BookingService {
         final int currentOccupancy = data['currentOccupancy'] ?? 0;
 
         if (currentOccupancy >= capacity) {
-          throw const BookingFailure('No beds available', code: ErrorCodes.roomFull);
+          throw const BookingFailure(
+            'No beds available',
+            code: ErrorCodes.roomFull,
+          );
         }
 
         final timeout = _configService.bookingTimeoutMinutes;
@@ -62,7 +75,9 @@ class BookingService {
           'status': BookingStatus.inquiryCreated.name,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
-          'expiryTime': Timestamp.fromDate(DateTime.now().add(Duration(minutes: timeout))),
+          'expiryTime': Timestamp.fromDate(
+            DateTime.now().add(Duration(minutes: timeout)),
+          ),
         });
 
         return newBookingRef.id;
@@ -83,7 +98,12 @@ class BookingService {
   }
 
   /// Updates booking status with transition guards and atomic occupancy management
-  Future<void> updateBookingStatus(String bookingId, BookingStatus newStatus, {String? reason, String? performerId}) async {
+  Future<void> updateBookingStatus(
+    String bookingId,
+    BookingStatus newStatus, {
+    String? reason,
+    String? performerId,
+  }) async {
     try {
       await _firestore.runTransaction((transaction) async {
         final bookingRef = _firestore.collection('bookings').doc(bookingId);
@@ -93,43 +113,116 @@ class BookingService {
           throw const BookingFailure('Booking not found');
         }
 
-        final currentStatusName = bookingDoc.data()?['status'] as String? ?? 'inquiryCreated';
+        final currentStatusName =
+            bookingDoc.data()?['status'] as String? ?? 'inquiryCreated';
         final currentStatus = BookingStatus.values.firstWhere(
-          (e) => e.name == currentStatusName, 
-          orElse: () => BookingStatus.inquiryCreated
+          (e) => e.name == currentStatusName,
+          orElse: () => BookingStatus.inquiryCreated,
         );
 
         // 1. Validate Transition
-        if (!StateTransitionGuard.isValidBookingTransition(currentStatus, newStatus)) {
-          throw BookingFailure('Invalid status transition from $currentStatusName to ${newStatus.name}');
+        if (!StateTransitionGuard.isValidBookingTransition(
+          currentStatus,
+          newStatus,
+        )) {
+          throw BookingFailure(
+            'Invalid status transition from $currentStatusName to ${newStatus.name}',
+          );
         }
 
-        // 2. Handle Occupancy Side Effects
+        // 2. Handle Occupancy & Bed Inventory Side Effects
         final propertyId = bookingDoc.data()?['property_id'] as String?;
-        if (propertyId != null) {
-          final propertyRef = _firestore.collection('properties').doc(propertyId);
+        final roomId = bookingDoc.data()?['roomId'] as String?;
+        final bedId = bookingDoc.data()?['bedId'] as String?;
 
-          // If becoming confirmed, increment occupancy
-          if (newStatus == BookingStatus.bookingConfirmed && currentStatus != BookingStatus.bookingConfirmed) {
-            transaction.update(propertyRef, {
-              'currentOccupancy': FieldValue.increment(1),
-              'updatedAt': FieldValue.serverTimestamp(),
-            });
+        if (propertyId != null) {
+          final propertyRef = _firestore
+              .collection('properties')
+              .doc(propertyId);
+
+          // SOURCE OF TRUTH: Bed Inventory
+          if (bedId != null && roomId != null) {
+            final bedRef = propertyRef
+                .collection('rooms')
+                .doc(roomId)
+                .collection('beds')
+                .doc(bedId);
+            final bedDoc = await transaction.get(bedRef);
+
+            if (!bedDoc.exists) {
+              throw const BookingFailure('Bed not found in inventory');
+            }
+
+            final bedStatus = bedDoc.data()?['status'];
+
+            // Transition: Confirming Booking
+            if (newStatus == BookingStatus.bookingConfirmed &&
+                currentStatus != BookingStatus.bookingConfirmed) {
+              if (bedStatus != BedStatus.available.name &&
+                  bedStatus != BedStatus.reserved.name) {
+                throw const BookingFailure('Bed is no longer available');
+              }
+              transaction.update(bedRef, {
+                'status': BedStatus.booked.name,
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+              // Cache update on property
+              transaction.update(propertyRef, {
+                'currentOccupancy': FieldValue.increment(1),
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+            }
+
+            // Transition: Checking In
+            if (newStatus == BookingStatus.checkedIn &&
+                currentStatus != BookingStatus.checkedIn) {
+              transaction.update(bedRef, {
+                'status': BedStatus.occupied.name,
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+            }
+
+            // Transition: Cancellation/Checkout
+            if ((newStatus == BookingStatus.cancelled &&
+                    currentStatus == BookingStatus.bookingConfirmed) ||
+                (newStatus == BookingStatus.checkedOut &&
+                    currentStatus == BookingStatus.checkedIn) ||
+                (newStatus == BookingStatus.reservationExpired)) {
+              transaction.update(bedRef, {
+                'status': BedStatus.available.name,
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+              transaction.update(propertyRef, {
+                'currentOccupancy': FieldValue.increment(-1),
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+            }
+          } else {
+            // Fallback for property-level only occupancy if no bed selected
+            if (newStatus == BookingStatus.bookingConfirmed &&
+                currentStatus != BookingStatus.bookingConfirmed) {
+              transaction.update(propertyRef, {
+                'currentOccupancy': FieldValue.increment(1),
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+            }
+            if ((newStatus == BookingStatus.cancelled &&
+                    currentStatus == BookingStatus.bookingConfirmed) ||
+                (newStatus == BookingStatus.checkedOut &&
+                    currentStatus == BookingStatus.checkedIn)) {
+              transaction.update(propertyRef, {
+                'currentOccupancy': FieldValue.increment(-1),
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+            }
           }
 
           // If checking in, set release eligibility on escrow
           if (newStatus == BookingStatus.checkedIn) {
             transaction.update(_firestore.collection('escrow').doc(bookingId), {
-              'releaseEligibleAt': Timestamp.fromDate(DateTime.now().add(const Duration(hours: 48))),
-              'updatedAt': FieldValue.serverTimestamp(),
-            });
-          }
-
-          // If cancelling from confirmed or checking out, decrement occupancy
-          if ((newStatus == BookingStatus.cancelled && currentStatus == BookingStatus.bookingConfirmed) ||
-              (newStatus == BookingStatus.checkedOut && currentStatus == BookingStatus.checkedIn)) {
-            transaction.update(propertyRef, {
-              'currentOccupancy': FieldValue.increment(-1),
+              'releaseEligibleAt': Timestamp.fromDate(
+                DateTime.now().add(const Duration(hours: 48)),
+              ),
               'updatedAt': FieldValue.serverTimestamp(),
             });
           }
@@ -138,25 +231,29 @@ class BookingService {
         // 3. Update Booking
         transaction.update(bookingRef, {
           'status': newStatus.name,
-          if (newStatus == BookingStatus.checkedIn) 'checkedInAt': FieldValue.serverTimestamp(),
+          if (newStatus == BookingStatus.checkedIn)
+            'checkedInAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         });
       });
 
       // 4. Handle Financial Side Effects
       if (newStatus == BookingStatus.paymentSuccess) {
-        final bookingDoc = await _firestore.collection('bookings').doc(bookingId).get();
+        final bookingDoc =
+            await _firestore.collection('bookings').doc(bookingId).get();
         final data = bookingDoc.data()!;
         await _escrowService.createEscrow(
           bookingId: bookingId,
           deposit: (data['pricing_breakdown']?['deposit'] ?? 0).toDouble(),
           rent: (data['pricing_breakdown']?['rent'] ?? 0).toDouble(),
-          platformFee: (data['pricing_breakdown']?['serviceFee'] ?? 0).toDouble(),
+          platformFee:
+              (data['pricing_breakdown']?['serviceFee'] ?? 0).toDouble(),
         );
       }
 
       // 5. Handle Permission Unlocking (Side Effect)
-      final bookingDoc = await _firestore.collection('bookings').doc(bookingId).get();
+      final bookingDoc =
+          await _firestore.collection('bookings').doc(bookingId).get();
       final userId = bookingDoc.data()?['user_id'];
       final propertyId = bookingDoc.data()?['property_id'];
 
@@ -167,9 +264,9 @@ class BookingService {
             userId: userId,
             bookingId: bookingId,
           );
-        } else if (newStatus == BookingStatus.cancelled || 
-                   newStatus == BookingStatus.reservationExpired ||
-                   newStatus == BookingStatus.refunded) {
+        } else if (newStatus == BookingStatus.cancelled ||
+            newStatus == BookingStatus.reservationExpired ||
+            newStatus == BookingStatus.refunded) {
           await _permissionService.revokePrivateAccess(propertyId, userId);
         }
       }
@@ -193,11 +290,12 @@ class BookingService {
   Future<void> cancelExpiredBookings() async {
     try {
       final now = Timestamp.now();
-      final expiredBookings = await _firestore
-          .collection('bookings')
-          .where('status', isEqualTo: BookingStatus.reservationPending.name)
-          .where('expiryTime', isLessThan: now)
-          .get();
+      final expiredBookings =
+          await _firestore
+              .collection('bookings')
+              .where('status', isEqualTo: BookingStatus.reservationPending.name)
+              .where('expiryTime', isLessThan: now)
+              .get();
 
       for (final doc in expiredBookings.docs) {
         await updateBookingStatus(doc.id, BookingStatus.reservationExpired);
@@ -207,11 +305,15 @@ class BookingService {
     }
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getStudentBookings(String studentId) {
+  Stream<QuerySnapshot<Map<String, dynamic>>> getStudentBookings(
+    String studentId,
+  ) {
     return _bookingRepo.getStudentBookingsQuery(studentId).snapshots();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getHosterBookings(String hosterId) {
+  Stream<QuerySnapshot<Map<String, dynamic>>> getHosterBookings(
+    String hosterId,
+  ) {
     return _firestore
         .collection('bookings')
         .where('hoster_id', isEqualTo: hosterId)

@@ -38,7 +38,8 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
           body: LayoutBuilder(
             builder: (context, constraints) {
               final bool isNarrow = constraints.maxWidth < 900;
-              final double sidebarWidth = isNarrow ? 80 : 240; // Wider sidebar for desktop
+              final double sidebarWidth =
+                  isNarrow ? 80 : 240; // Wider sidebar for desktop
 
               return Row(
                 children: [
@@ -58,7 +59,9 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
                               ),
                             ),
                             child: ClipRRect(
-                              borderRadius: const BorderRadius.only(topLeft: Radius.circular(32)),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(32),
+                              ),
                               child: _buildMainContent(),
                             ),
                           ),
@@ -68,10 +71,10 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
                   ),
                 ],
               );
-            }
+            },
           ),
         );
-      }
+      },
     );
   }
 
@@ -86,12 +89,14 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
         return Container(
           height: 80,
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          decoration: const BoxDecoration(
-            color: Color(0xFF0F172A),
-          ),
+          decoration: const BoxDecoration(color: Color(0xFF0F172A)),
           child: Row(
             children: [
-              const Icon(Icons.change_history_rounded, color: Color(0xFFA855F7), size: 28),
+              const Icon(
+                Icons.change_history_rounded,
+                color: Color(0xFFA855F7),
+                size: 28,
+              ),
               if (!isVerySmall) ...[
                 const SizedBox(width: 12),
                 const Text(
@@ -127,7 +132,10 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
                         Expanded(
                           child: Text(
                             'Search...',
-                            style: TextStyle(color: Colors.white38, fontSize: 13),
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 13,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -144,19 +152,33 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
               Stack(
                 alignment: Alignment.center,
                 children: [
-                  const Icon(Icons.notifications_outlined, color: Colors.white70, size: 24),
+                  const Icon(
+                    Icons.notifications_outlined,
+                    color: Colors.white70,
+                    size: 24,
+                  ),
                   if (notificationCount > 0)
                     Positioned(
                       right: 0,
                       top: 0,
                       child: Container(
                         padding: const EdgeInsets.all(2),
-                        decoration: const BoxDecoration(color: Color(0xFFE11D48), shape: BoxShape.circle),
-                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE11D48),
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
                         child: Text(
                           notificationCount.toString(),
-                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                          textAlign: TextAlign.center
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ),
@@ -179,7 +201,11 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
                     child: const Center(
                       child: Text(
                         'SA',
-                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -188,14 +214,18 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
                     const Text(
                       'Super Admin',
                       style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Outfit'
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Outfit',
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Icon(Icons.keyboard_arrow_down, color: Colors.white60, size: 18),
+                    const Icon(
+                      Icons.keyboard_arrow_down,
+                      color: Colors.white60,
+                      size: 18,
+                    ),
                   ],
                 ],
               ),
@@ -212,25 +242,99 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
     return Container(
       width: width,
       color: const Color(0xFF0F172A),
-      padding: EdgeInsets.fromLTRB(0, MediaQuery.of(context).padding.top + 16, 0, 24),
+      padding: EdgeInsets.fromLTRB(
+        0,
+        MediaQuery.of(context).padding.top + 16,
+        0,
+        24,
+      ),
       child: Column(
         children: [
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  _buildNavItem(0, Icons.auto_awesome_mosaic_rounded, 'Operations', width, isNarrow),
-                  _buildNavItem(1, Icons.home_rounded, 'Overview', width, isNarrow),
-                  _buildNavItem(2, Icons.assignment_turned_in_rounded, 'Approvals', width, isNarrow,
-                      badge: pendingApprovals > 0 ? pendingApprovals.toString() : null),
-                  _buildNavItem(3, Icons.business_rounded, 'Listings', width, isNarrow),
-                  _buildNavItem(4, Icons.people_rounded, 'Users', width, isNarrow),
-                  _buildNavItem(5, Icons.calendar_today_rounded, 'Bookings', width, isNarrow),
-                  _buildNavItem(6, Icons.account_balance_wallet_rounded, 'Payments', width, isNarrow),
-                  _buildNavItem(7, Icons.lightbulb_rounded, 'Suggestions', width, isNarrow),
-                  _buildNavItem(8, Icons.analytics_rounded, 'Reports', width, isNarrow),
-                  _buildNavItem(9, Icons.security_rounded, 'Moderation', width, isNarrow),
-                  _buildNavItem(10, Icons.settings_rounded, 'Settings', width, isNarrow),
+                  _buildNavItem(
+                    0,
+                    Icons.auto_awesome_mosaic_rounded,
+                    'Operations',
+                    width,
+                    isNarrow,
+                  ),
+                  _buildNavItem(
+                    1,
+                    Icons.home_rounded,
+                    'Overview',
+                    width,
+                    isNarrow,
+                  ),
+                  _buildNavItem(
+                    2,
+                    Icons.assignment_turned_in_rounded,
+                    'Approvals',
+                    width,
+                    isNarrow,
+                    badge:
+                        pendingApprovals > 0
+                            ? pendingApprovals.toString()
+                            : null,
+                  ),
+                  _buildNavItem(
+                    3,
+                    Icons.business_rounded,
+                    'Listings',
+                    width,
+                    isNarrow,
+                  ),
+                  _buildNavItem(
+                    4,
+                    Icons.people_rounded,
+                    'Users',
+                    width,
+                    isNarrow,
+                  ),
+                  _buildNavItem(
+                    5,
+                    Icons.calendar_today_rounded,
+                    'Bookings',
+                    width,
+                    isNarrow,
+                  ),
+                  _buildNavItem(
+                    6,
+                    Icons.account_balance_wallet_rounded,
+                    'Payments',
+                    width,
+                    isNarrow,
+                  ),
+                  _buildNavItem(
+                    7,
+                    Icons.lightbulb_rounded,
+                    'Suggestions',
+                    width,
+                    isNarrow,
+                  ),
+                  _buildNavItem(
+                    8,
+                    Icons.analytics_rounded,
+                    'Reports',
+                    width,
+                    isNarrow,
+                  ),
+                  _buildNavItem(
+                    9,
+                    Icons.security_rounded,
+                    'Moderation',
+                    width,
+                    isNarrow,
+                  ),
+                  _buildNavItem(
+                    10,
+                    Icons.settings_rounded,
+                    'Settings',
+                    width,
+                    isNarrow,
+                  ),
                 ],
               ),
             ),
@@ -244,14 +348,24 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label, double width, bool isNarrow, {String? badge}) {
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    String label,
+    double width,
+    bool isNarrow, {
+    String? badge,
+  }) {
     bool isActive = _activeNavIndex == index;
     return GestureDetector(
       onTap: () => setState(() => _activeNavIndex = index),
       child: Container(
         width: width - (isNarrow ? 16 : 32),
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        padding: EdgeInsets.symmetric(vertical: 12, horizontal: isNarrow ? 0 : 16),
+        padding: EdgeInsets.symmetric(
+          vertical: 12,
+          horizontal: isNarrow ? 0 : 16,
+        ),
         decoration: BoxDecoration(
           color: isActive ? const Color(0xFF1E293B) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
@@ -262,9 +376,14 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
           alignment: isNarrow ? Alignment.center : Alignment.centerLeft,
           children: [
             Row(
-              mainAxisAlignment: isNarrow ? MainAxisAlignment.center : MainAxisAlignment.start,
+              mainAxisAlignment:
+                  isNarrow ? MainAxisAlignment.center : MainAxisAlignment.start,
               children: [
-                Icon(icon, color: isActive ? const Color(0xFF6366F1) : Colors.white60, size: 22),
+                Icon(
+                  icon,
+                  color: isActive ? const Color(0xFF6366F1) : Colors.white60,
+                  size: 22,
+                ),
                 if (!isNarrow) ...[
                   const SizedBox(width: 12),
                   Text(
@@ -284,14 +403,21 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
                 right: isNarrow ? -2 : 0,
                 top: isNarrow ? -4 : 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEF4444),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    badge, 
-                    style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)
+                    badge,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -309,17 +435,27 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
       decoration: BoxDecoration(
         color: const Color(0xFF6366F1).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
+        border: Border.all(
+          color: const Color(0xFF6366F1).withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.auto_awesome_rounded, color: Color(0xFFA855F7), size: 20),
+          const Icon(
+            Icons.auto_awesome_rounded,
+            color: Color(0xFFA855F7),
+            size: 20,
+          ),
           if (!isNarrow) ...[
             const SizedBox(width: 12),
             const Text(
               'Quick Actions',
-              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ],
@@ -332,7 +468,11 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
       onTap: () async {
         await FirebaseAuth.instance.signOut();
         if (!mounted) return;
-        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const SplashScreen()), (route) => false);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const SplashScreen()),
+          (route) => false,
+        );
       },
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -340,7 +480,14 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
           const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
           if (!isNarrow) ...[
             const SizedBox(width: 12),
-            const Text('Logout', style: TextStyle(color: Colors.redAccent, fontSize: 14, fontWeight: FontWeight.bold)),
+            const Text(
+              'Logout',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ],
       ),
@@ -354,11 +501,17 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
 
         switch (_activeNavIndex) {
           case 0:
-            return OpsDashboardTab(adminService: _adminService, isNarrow: isNarrow);
+            return OpsDashboardTab(
+              adminService: _adminService,
+              isNarrow: isNarrow,
+            );
           case 1:
             return OverviewTab(adminService: _adminService, isNarrow: isNarrow);
           case 2:
-            return ApprovalsTab(adminService: _adminService, isNarrow: isNarrow);
+            return ApprovalsTab(
+              adminService: _adminService,
+              isNarrow: isNarrow,
+            );
           case 3:
             return ListingsTab(adminService: _adminService, isNarrow: isNarrow);
           case 4:
@@ -368,11 +521,17 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
           case 6:
             return PaymentsTab(adminService: _adminService, isNarrow: isNarrow);
           case 7:
-            return SuggestionsTab(adminService: _adminService, isNarrow: isNarrow);
+            return SuggestionsTab(
+              adminService: _adminService,
+              isNarrow: isNarrow,
+            );
           case 8:
             return ReportTab(adminService: _adminService, isNarrow: isNarrow);
           case 9:
-            return ModerationTab(adminService: _adminService, isNarrow: isNarrow);
+            return ModerationTab(
+              adminService: _adminService,
+              isNarrow: isNarrow,
+            );
           case 10:
             return SettingsTab(adminService: _adminService, isNarrow: isNarrow);
           default:

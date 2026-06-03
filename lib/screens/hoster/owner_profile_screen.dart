@@ -19,7 +19,7 @@ class OwnerProfileScreen extends StatefulWidget {
 
 class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controllers
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -38,17 +38,40 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
   bool _isSaving = false;
   bool _isLoading = true;
   Map<String, dynamic>? _userData;
-  
+
   // Preferences
   String _prefTenant = 'Students';
   String _prefGender = 'Any';
 
   final List<String> _indianStates = [
-    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 
-    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 
-    'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 
-    'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 
-    'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
+    'Andhra Pradesh',
+    'Arunachal Pradesh',
+    'Assam',
+    'Bihar',
+    'Chhattisgarh',
+    'Goa',
+    'Gujarat',
+    'Haryana',
+    'Himachal Pradesh',
+    'Jharkhand',
+    'Karnataka',
+    'Kerala',
+    'Madhya Pradesh',
+    'Maharashtra',
+    'Manipur',
+    'Meghalaya',
+    'Mizoram',
+    'Nagaland',
+    'Odisha',
+    'Punjab',
+    'Rajasthan',
+    'Sikkim',
+    'Tamil Nadu',
+    'Telangana',
+    'Tripura',
+    'Uttar Pradesh',
+    'Uttarakhand',
+    'West Bengal',
   ];
 
   @override
@@ -62,7 +85,11 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     if (user == null) return;
 
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
       if (doc.exists) {
         _userData = doc.data();
         final info = _userData?['info'] as Map? ?? {};
@@ -80,7 +107,7 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
           _selectedGender = info['gender'] ?? 'Male';
           if (info['dob'] != null) _dob = (info['dob'] as Timestamp).toDate();
           _profileImageUrl = info['profileImage'];
-          
+
           _prefTenant = prefs['tenantType'] ?? 'Students';
           _prefGender = prefs['genderPreference'] ?? 'Any';
 
@@ -95,20 +122,25 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+    );
     if (picked != null) setState(() => _newImageFile = File(picked.path));
   }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isSaving = true);
     final user = FirebaseAuth.instance.currentUser;
-    
+
     try {
       String? imageUrl = _profileImageUrl;
       if (_newImageFile != null) {
-        final ref = FirebaseStorage.instance.ref().child('profile_images/${user!.uid}.jpg');
+        final ref = FirebaseStorage.instance.ref().child(
+          'profile_images/${user!.uid}.jpg',
+        );
         await ref.putFile(_newImageFile!);
         imageUrl = await ref.getDownloadURL();
       }
@@ -134,15 +166,24 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      await FirebaseFirestore.instance.collection('users').doc(user!.uid).update(updateData);
-      
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .update(updateData);
+
       if (mounted) {
-        Fluttertoast.showToast(msg: 'Profile saved successfully!', backgroundColor: AppTheme.successColor);
+        Fluttertoast.showToast(
+          msg: 'Profile saved successfully!',
+          backgroundColor: AppTheme.successColor,
+        );
         Navigator.pop(context);
       }
     } catch (e) {
       debugPrint('Error saving owner profile: $e');
-      Fluttertoast.showToast(msg: 'Failed to save profile', backgroundColor: Colors.red);
+      Fluttertoast.showToast(
+        msg: 'Failed to save profile',
+        backgroundColor: Colors.red,
+      );
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -150,7 +191,8 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_isLoading)
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -202,7 +244,7 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
       leading: Padding(
         padding: const EdgeInsets.all(8.0),
         child: CircleAvatar(
-          backgroundColor: Colors.white.withOpacity(0.2),
+          backgroundColor: Colors.white.withValues(alpha: 0.2),
           child: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
             onPressed: () => Navigator.pop(context),
@@ -234,12 +276,21 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
                 children: const [
                   Text(
                     'Owner Profile',
-                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Outfit',
+                    ),
                   ),
                   SizedBox(height: 4),
                   Text(
                     'Manage your properties and hosts\nfrom one place',
-                    style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'Outfit'),
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontFamily: 'Outfit',
+                    ),
                   ),
                 ],
               ),
@@ -260,7 +311,13 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
         border: Border.all(color: Colors.grey[100]!),
       ),
       child: Row(
@@ -270,9 +327,23 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Profile Completion', style: TextStyle(fontSize: 12, color: AppTheme.textLightColor, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Profile Completion',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textLightColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                const Text('78%', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+                const Text(
+                  '78%',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textDarkColor,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
@@ -280,7 +351,9 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
                     value: 0.78,
                     minHeight: 6,
                     backgroundColor: Color(0xFFF1F5F9),
-                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.successColor),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppTheme.successColor,
+                    ),
                   ),
                 ),
               ],
@@ -294,11 +367,25 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Verification Status', style: TextStyle(fontSize: 12, color: AppTheme.textLightColor, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Verification Status',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textLightColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 12),
-                _buildVerifMiniRow('Email Verified', user?.emailVerified ?? false),
+                _buildVerifMiniRow(
+                  'Email Verified',
+                  user?.emailVerified ?? false,
+                ),
                 _buildVerifMiniRow('Phone Verified', true),
-                _buildVerifMiniRow('Identity Verification', verif['govIdVerified'] == true, isPending: verif['govIdStatus'] == 'pending'),
+                _buildVerifMiniRow(
+                  'Identity Verification',
+                  verif['govIdVerified'] == true,
+                  isPending: verif['govIdStatus'] == 'pending',
+                ),
               ],
             ),
           ),
@@ -307,17 +394,49 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     );
   }
 
-  Widget _buildVerifMiniRow(String label, bool isDone, {bool isPending = false}) {
+  Widget _buildVerifMiniRow(
+    String label,
+    bool isDone, {
+    bool isPending = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          Icon(isDone ? Icons.check_circle : (isPending ? Icons.access_time_filled : Icons.circle_outlined), 
-               size: 14, color: isDone ? Colors.green : (isPending ? Colors.orange : Colors.grey)),
+          Icon(
+            isDone
+                ? Icons.check_circle
+                : (isPending
+                    ? Icons.access_time_filled
+                    : Icons.circle_outlined),
+            size: 14,
+            color:
+                isDone
+                    ? Colors.green
+                    : (isPending ? Colors.orange : Colors.grey),
+          ),
           const SizedBox(width: 6),
-          Expanded(child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textDarkColor))),
-          if (isPending) const Text('Pending', style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
-          if (!isDone && !isPending) const Icon(Icons.chevron_right, size: 12, color: Colors.grey),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textDarkColor,
+              ),
+            ),
+          ),
+          if (isPending)
+            const Text(
+              'Pending',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.orange,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          if (!isDone && !isPending)
+            const Icon(Icons.chevron_right, size: 12, color: Colors.grey),
         ],
       ),
     );
@@ -327,30 +446,58 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Profile Photo', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+        const Text(
+          'Profile Photo',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textDarkColor,
+          ),
+        ),
         const SizedBox(height: 16),
         Row(
           children: [
             Stack(
               children: [
                 Container(
-                  width: 80, height: 80,
-                  decoration: BoxDecoration(color: const Color(0xFFF1F5F9), shape: BoxShape.circle),
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    shape: BoxShape.circle,
+                  ),
                   child: ClipOval(
-                    child: _newImageFile != null 
-                      ? Image.file(_newImageFile!, fit: BoxFit.cover)
-                      : (_profileImageUrl != null 
-                          ? CachedNetworkImage(imageUrl: _profileImageUrl!, fit: BoxFit.cover)
-                          : const Icon(Icons.person, size: 45, color: Color(0xFF94A3B8))),
+                    child:
+                        _newImageFile != null
+                            ? Image.file(_newImageFile!, fit: BoxFit.cover)
+                            : (_profileImageUrl != null
+                                ? CachedNetworkImage(
+                                  imageUrl: _profileImageUrl!,
+                                  fit: BoxFit.cover,
+                                )
+                                : const Icon(
+                                  Icons.person,
+                                  size: 45,
+                                  color: Color(0xFF94A3B8),
+                                )),
                   ),
                 ),
                 Positioned(
-                  bottom: 0, right: 0, 
+                  bottom: 0,
+                  right: 0,
                   child: Container(
-                    padding: const EdgeInsets.all(4), 
-                    decoration: BoxDecoration(color: AppTheme.successColor, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)), 
-                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 12)
-                  )
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.successColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 12,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -359,21 +506,45 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Add your photo', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Add your photo',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 4),
-                  const Text('A clear photo helps build trust with tenants.', style: TextStyle(fontSize: 12, color: AppTheme.textLightColor)),
-                  const Text('JPG, PNG up to 5MB', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                  const Text(
+                    'A clear photo helps build trust with tenants.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textLightColor,
+                    ),
+                  ),
+                  const Text(
+                    'JPG, PNG up to 5MB',
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
                 ],
               ),
             ),
             OutlinedButton(
               onPressed: _pickImage,
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppTheme.successColor), 
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                side: const BorderSide(color: AppTheme.successColor),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
               ),
-              child: const Text('Edit Photo', style: TextStyle(color: AppTheme.successColor, fontWeight: FontWeight.bold, fontSize: 13)),
+              child: const Text(
+                'Edit Photo',
+                style: TextStyle(
+                  color: AppTheme.successColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ],
         ),
@@ -385,47 +556,89 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Basic Information', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+        const Text(
+          'Basic Information',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textDarkColor,
+          ),
+        ),
         const SizedBox(height: 16),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(flex: 3, child: _buildLabeledTextField('Full Name *', _nameController, Icons.person_outline, 'JIBIN N ANTONY')),
+            Expanded(
+              flex: 3,
+              child: _buildLabeledTextField(
+                'Full Name *',
+                _nameController,
+                Icons.person_outline,
+                'JIBIN N ANTONY',
+              ),
+            ),
             const SizedBox(width: 16),
             Expanded(
               flex: 4,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Gender *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+                  const Text(
+                    'Gender *',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textDarkColor,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Row(
-                    children: ['Male', 'Female', 'Other'].map((g) => Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: InkWell(
-                          onTap: () => setState(() => _selectedGender = g),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: _selectedGender == g ? AppTheme.successColor : Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: _selectedGender == g ? AppTheme.successColor : Colors.grey[300]!),
-                            ),
-                            child: Center(
-                              child: Text(
-                                g, 
-                                style: TextStyle(
-                                  fontSize: 11, 
-                                  fontWeight: FontWeight.bold, 
-                                  color: _selectedGender == g ? Colors.white : AppTheme.textLightColor
-                                )
-                              )
-                            ),
-                          ),
-                        ),
-                      ),
-                    )).toList(),
+                    children:
+                        ['Male', 'Female', 'Other']
+                            .map(
+                              (g) => Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 4),
+                                  child: InkWell(
+                                    onTap:
+                                        () =>
+                                            setState(() => _selectedGender = g),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            _selectedGender == g
+                                                ? AppTheme.successColor
+                                                : Colors.white,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color:
+                                              _selectedGender == g
+                                                  ? AppTheme.successColor
+                                                  : Colors.grey[300]!,
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          g,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color:
+                                                _selectedGender == g
+                                                    ? Colors.white
+                                                    : AppTheme.textLightColor,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
                   ),
                 ],
               ),
@@ -433,7 +646,11 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
           ],
         ),
         const SizedBox(height: 20),
-        _buildLabeledDateField('Date of Birth *', _dob, (d) => setState(() => _dob = d)),
+        _buildLabeledDateField(
+          'Date of Birth *',
+          _dob,
+          (d) => setState(() => _dob = d),
+        ),
       ],
     );
   }
@@ -443,13 +660,38 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Contact Information', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+        const Text(
+          'Contact Information',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textDarkColor,
+          ),
+        ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildLabeledTextField('Phone Number *', _phoneController, Icons.phone_android_outlined, '+91 89214 94013', isVerified: true, readOnly: true)),
+            Expanded(
+              child: _buildLabeledTextField(
+                'Phone Number *',
+                _phoneController,
+                Icons.phone_android_outlined,
+                '+91 89214 94013',
+                isVerified: true,
+                readOnly: true,
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _buildLabeledTextField('Email Address *', _emailController, Icons.email_outlined, 'jibinantony@gmail.com', isVerified: user?.emailVerified ?? false, readOnly: true)),
+            Expanded(
+              child: _buildLabeledTextField(
+                'Email Address *',
+                _emailController,
+                Icons.email_outlined,
+                'jibinantony@gmail.com',
+                isVerified: user?.emailVerified ?? false,
+                readOnly: true,
+              ),
+            ),
           ],
         ),
       ],
@@ -460,21 +702,58 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Address Information', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+        const Text(
+          'Address Information',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textDarkColor,
+          ),
+        ),
         const SizedBox(height: 16),
-        _buildLabeledTextField('Address Line 1 *', _address1Controller, Icons.location_on_outlined, 'Sunrise PG, Near Cochin University'),
+        _buildLabeledTextField(
+          'Address Line 1 *',
+          _address1Controller,
+          Icons.location_on_outlined,
+          'Sunrise PG, Near Cochin University',
+        ),
         const SizedBox(height: 16),
-        _buildLabeledTextField('Address Line 2 (Optional)', _address2Controller, Icons.location_on_outlined, 'Pulinchodu, Kalamassery'),
+        _buildLabeledTextField(
+          'Address Line 2 (Optional)',
+          _address2Controller,
+          Icons.location_on_outlined,
+          'Pulinchodu, Kalamassery',
+        ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildLabeledTextField('City *', _cityController, Icons.business_outlined, 'Kochi')),
+            Expanded(
+              child: _buildLabeledTextField(
+                'City *',
+                _cityController,
+                Icons.business_outlined,
+                'Kochi',
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: _buildLabeledDropdownField('State *', _indianStates, _selectedState, (v) => setState(() => _selectedState = v!))),
+            Expanded(
+              child: _buildLabeledDropdownField(
+                'State *',
+                _indianStates,
+                _selectedState,
+                (v) => setState(() => _selectedState = v!),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
-        _buildLabeledTextField('Pincode *', _pincodeController, Icons.pin_drop_outlined, '682022', keyboardType: TextInputType.number),
+        _buildLabeledTextField(
+          'Pincode *',
+          _pincodeController,
+          Icons.pin_drop_outlined,
+          '682022',
+          keyboardType: TextInputType.number,
+        ),
       ],
     );
   }
@@ -486,37 +765,82 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Identity Verification', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+            const Text(
+              'Identity Verification',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textDarkColor,
+              ),
+            ),
             TextButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VerificationCenterScreen())),
-              child: Row(children: const [Text('View Documents', style: TextStyle(fontSize: 12, color: AppTheme.successColor, fontWeight: FontWeight.bold)), Icon(Icons.chevron_right, size: 14, color: AppTheme.successColor)]),
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const VerificationCenterScreen(),
+                    ),
+                  ),
+              child: Row(
+                children: const [
+                  Text(
+                    'View Documents',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.successColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 14,
+                    color: AppTheme.successColor,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         const SizedBox(height: 8),
         _buildIdentityTile(
-          'Aadhaar Card', 
-          verif['aadhaarNumber'] ?? 'XXXX XXXX 1234', 
-          verif['govIdStatus'] == 'pending' ? 'Pending Review' : (verif['govIdVerified'] == true ? 'Verified' : 'Not Uploaded'), 
-          verif['govIdVerified'] == true ? Colors.green : (verif['govIdStatus'] == 'pending' ? Colors.orange : Colors.grey), 
-          'https://cdn-icons-png.flaticon.com/512/11104/11104118.png'
+          'Aadhaar Card',
+          verif['aadhaarNumber'] ?? 'XXXX XXXX 1234',
+          verif['govIdStatus'] == 'pending'
+              ? 'Pending Review'
+              : (verif['govIdVerified'] == true ? 'Verified' : 'Not Uploaded'),
+          verif['govIdVerified'] == true
+              ? Colors.green
+              : (verif['govIdStatus'] == 'pending'
+                  ? Colors.orange
+                  : Colors.grey),
+          'https://cdn-icons-png.flaticon.com/512/11104/11104118.png',
         ),
         const SizedBox(height: 12),
         _buildIdentityTile(
-          'PAN Card', 
-          verif['panNumber'] ?? 'ABCDE1234F', 
-          verif['panVerified'] == true ? 'Verified' : 'Not Uploaded', 
-          verif['panVerified'] == true ? Colors.green : Colors.grey, 
-          'https://cdn-icons-png.flaticon.com/512/10703/10703478.png'
+          'PAN Card',
+          verif['panNumber'] ?? 'ABCDE1234F',
+          verif['panVerified'] == true ? 'Verified' : 'Not Uploaded',
+          verif['panVerified'] == true ? Colors.green : Colors.grey,
+          'https://cdn-icons-png.flaticon.com/512/10703/10703478.png',
         ),
       ],
     );
   }
 
-  Widget _buildIdentityTile(String title, String subtitle, String status, Color color, String iconUrl) {
+  Widget _buildIdentityTile(
+    String title,
+    String subtitle,
+    String status,
+    Color color,
+    String iconUrl,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFF1F5F9))),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
       child: Row(
         children: [
           Image.network(iconUrl, width: 28, height: 28),
@@ -525,20 +849,50 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textDarkColor,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(fontSize: 11, color: AppTheme.textLightColor, fontWeight: FontWeight.w600)),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.textLightColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
             child: Row(
               children: [
-                Icon(status == 'Verified' ? Icons.check_circle : Icons.access_time_filled, size: 12, color: color),
+                Icon(
+                  status == 'Verified'
+                      ? Icons.check_circle
+                      : Icons.access_time_filled,
+                  size: 12,
+                  color: color,
+                ),
                 const SizedBox(width: 6),
-                Text(status, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+                Text(
+                  status,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           ),
@@ -556,8 +910,25 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Host Preferences', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
-            TextButton(onPressed: () {}, child: const Text('Edit Preferences', style: TextStyle(fontSize: 12, color: AppTheme.successColor, fontWeight: FontWeight.bold))),
+            const Text(
+              'Host Preferences',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textDarkColor,
+              ),
+            ),
+            TextButton(
+              onPressed: () {},
+              child: const Text(
+                'Edit Preferences',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.successColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -569,7 +940,11 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
                 ['Students', 'Professionals', 'Families'],
                 _prefTenant,
                 (v) => setState(() => _prefTenant = v),
-                [Icons.school_outlined, Icons.work_outline, Icons.people_outline],
+                [
+                  Icons.school_outlined,
+                  Icons.work_outline,
+                  Icons.people_outline,
+                ],
               ),
             ),
             const SizedBox(width: 16),
@@ -579,7 +954,11 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
                 ['Male', 'Female', 'Any'],
                 _prefGender,
                 (v) => setState(() => _prefGender = v),
-                [Icons.person_outline, Icons.person_pin_outlined, Icons.people_alt_outlined],
+                [
+                  Icons.person_outline,
+                  Icons.person_pin_outlined,
+                  Icons.people_alt_outlined,
+                ],
               ),
             ),
           ],
@@ -588,14 +967,31 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     );
   }
 
-  Widget _buildPreferenceCard(String title, List<String> options, String current, Function(String) onTap, List<IconData> icons) {
+  Widget _buildPreferenceCard(
+    String title,
+    List<String> options,
+    String current,
+    Function(String) onTap,
+    List<IconData> icons,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFF1F5F9))),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.textLightColor)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textLightColor,
+            ),
+          ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -607,11 +1003,29 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: isSelected ? AppTheme.successColor.withOpacity(0.1) : const Color(0xFFF8FAFC), shape: BoxShape.circle),
-                      child: Icon(icons[i], size: 18, color: isSelected ? AppTheme.successColor : Colors.grey),
+                      decoration: BoxDecoration(
+                        color:
+                            isSelected
+                                ? AppTheme.successColor.withValues(alpha: 0.1)
+                                : const Color(0xFFF8FAFC),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        icons[i],
+                        size: 18,
+                        color: isSelected ? AppTheme.successColor : Colors.grey,
+                      ),
                     ),
                     const SizedBox(height: 6),
-                    Text(options[i], style: TextStyle(fontSize: 9, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? AppTheme.successColor : Colors.grey)),
+                    Text(
+                      options[i],
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? AppTheme.successColor : Colors.grey,
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -624,15 +1038,55 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
 
   Widget _buildBottomButton() {
     return Positioned(
-      bottom: 0, left: 0, right: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
         child: ElevatedButton.icon(
           onPressed: _isSaving ? null : _saveProfile,
-          icon: _isSaving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.save_as_outlined, color: Colors.white, size: 20),
-          label: Text(_isSaving ? 'Saving...' : 'Save Profile', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Outfit')),
-          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successColor, minimumSize: const Size(double.infinity, 56), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
+          icon:
+              _isSaving
+                  ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                  : const Icon(
+                    Icons.save_as_outlined,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+          label: Text(
+            _isSaving ? 'Saving...' : 'Save Profile',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              fontFamily: 'Outfit',
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.successColor,
+            minimumSize: const Size(double.infinity, 56),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 0,
+          ),
         ),
       ),
     );
@@ -640,28 +1094,81 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
 
   // --- Helpers ---
 
-  Widget _buildLabeledTextField(String label, TextEditingController controller, IconData icon, String hint, {bool isVerified = false, bool readOnly = false, TextInputType? keyboardType}) {
+  Widget _buildLabeledTextField(
+    String label,
+    TextEditingController controller,
+    IconData icon,
+    String hint, {
+    bool isVerified = false,
+    bool readOnly = false,
+    TextInputType? keyboardType,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textDarkColor,
+          ),
+        ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           readOnly: readOnly,
           keyboardType: keyboardType,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, fontFamily: 'Outfit'),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Outfit',
+          ),
           decoration: InputDecoration(
             hintText: hint,
             prefixIcon: Icon(icon, color: AppTheme.successColor, size: 18),
-            suffixIcon: isVerified ? Container(
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.green.withOpacity(0.2))),
-              child: Row(mainAxisSize: MainAxisSize.min, children: const [Text('Verified', style: TextStyle(color: Colors.green, fontSize: 9, fontWeight: FontWeight.bold)), SizedBox(width: 4), Icon(Icons.check_circle, color: Colors.green, size: 12)]),
-            ) : null,
-            filled: true, fillColor: const Color(0xFFF8FAFC),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            suffixIcon:
+                isVerified
+                    ? Container(
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.green.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Text(
+                            'Verified',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 12,
+                          ),
+                        ],
+                      ),
+                    )
+                    : null,
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
             contentPadding: const EdgeInsets.symmetric(vertical: 16),
           ),
           validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
@@ -670,20 +1177,57 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     );
   }
 
-  Widget _buildLabeledDropdownField(String label, List<String> items, String? value, Function(String?) onChanged) {
+  Widget _buildLabeledDropdownField(
+    String label,
+    List<String> items,
+    String? value,
+    Function(String?) onChanged,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textDarkColor,
+          ),
+        ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: DropdownButtonFormField<String>(
-            value: value,
-            items: items.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, fontFamily: 'Outfit')))).toList(),
+            initialValue: value,
+            items:
+                items
+                    .map(
+                      (s) => DropdownMenuItem(
+                        value: s,
+                        child: Text(
+                          s,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Outfit',
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
             onChanged: onChanged,
-            decoration: const InputDecoration(border: InputBorder.none, prefixIcon: Icon(Icons.map_outlined, color: AppTheme.successColor, size: 18)),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              prefixIcon: Icon(
+                Icons.map_outlined,
+                color: AppTheme.successColor,
+                size: 18,
+              ),
+            ),
             validator: (v) => v == null ? 'Required' : null,
           ),
         ),
@@ -691,30 +1235,66 @@ class _OwnerProfileScreenState extends State<OwnerProfileScreen> {
     );
   }
 
-  Widget _buildLabeledDateField(String label, DateTime? current, Function(DateTime) onSelected) {
+  Widget _buildLabeledDateField(
+    String label,
+    DateTime? current,
+    Function(DateTime) onSelected,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textDarkColor,
+          ),
+        ),
         const SizedBox(height: 8),
         InkWell(
           onTap: () async {
             final picked = await showDatePicker(
               context: context,
               initialDate: current ?? DateTime(1990),
-              firstDate: DateTime(1950), lastDate: DateTime.now(),
-              builder: (context, child) => Theme(data: Theme.of(context).copyWith(colorScheme: const ColorScheme.light(primary: AppTheme.successColor)), child: child!),
+              firstDate: DateTime(1950),
+              lastDate: DateTime.now(),
+              builder:
+                  (context, child) => Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: const ColorScheme.light(
+                        primary: AppTheme.successColor,
+                      ),
+                    ),
+                    child: child!,
+                  ),
             );
             if (picked != null) onSelected(picked);
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today_outlined, color: AppTheme.successColor, size: 18),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  color: AppTheme.successColor,
+                  size: 18,
+                ),
                 const SizedBox(width: 12),
-                Text(current != null ? DateFormat('dd MMM yyyy').format(current) : 'Select Date', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, fontFamily: 'Outfit')),
+                Text(
+                  current != null
+                      ? DateFormat('dd MMM yyyy').format(current)
+                      : 'Select Date',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Outfit',
+                  ),
+                ),
                 const Spacer(),
                 const Icon(Icons.arrow_drop_down, color: Colors.grey),
               ],

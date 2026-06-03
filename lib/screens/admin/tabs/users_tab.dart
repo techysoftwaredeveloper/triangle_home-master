@@ -19,7 +19,8 @@ class UsersTab extends StatefulWidget {
   State<UsersTab> createState() => _UsersTabState();
 }
 
-class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin {
+class _UsersTabState extends State<UsersTab>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -57,9 +58,16 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
                 children: [
                   const Icon(Icons.error_outline, size: 48, color: Colors.red),
                   const SizedBox(height: 16),
-                  const Text('Data Fetching Error', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const Text(
+                    'Data Fetching Error',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
                   const SizedBox(height: 8),
-                  Text(snapshot.error.toString(), style: const TextStyle(fontSize: 12, color: Colors.grey), textAlign: TextAlign.center),
+                  Text(
+                    snapshot.error.toString(),
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () => setState(() {}),
@@ -74,34 +82,42 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
         final allUsers = snapshot.data ?? [];
 
         // Dynamic Filtering
-        final filteredUsers = allUsers.where((u) {
-          final info = u['info'] as Map<String, dynamic>? ?? {};
-          final name = info['name']?.toString().toLowerCase() ?? '';
-          final email = info['email']?.toString().toLowerCase() ?? '';
-          final phone = info['phoneNumber']?.toString().toLowerCase() ?? '';
+        final filteredUsers =
+            allUsers.where((u) {
+              final info = u['info'] as Map<String, dynamic>? ?? {};
+              final name = info['name']?.toString().toLowerCase() ?? '';
+              final email = info['email']?.toString().toLowerCase() ?? '';
+              final phone = info['phoneNumber']?.toString().toLowerCase() ?? '';
 
-          final matchesSearch = name.contains(_searchQuery) ||
-                                email.contains(_searchQuery) ||
-                                phone.contains(_searchQuery);
+              final matchesSearch =
+                  name.contains(_searchQuery) ||
+                  email.contains(_searchQuery) ||
+                  phone.contains(_searchQuery);
 
-          // Support both top-level and nested role
-          final permissions = u['permissions'] as Map<String, dynamic>? ?? {};
-          final role = (u['role'] ?? permissions['role'])?.toString().toLowerCase() ?? '';
-          final isActive = u['is_active'] as bool? ?? true;
+              // Support both top-level and nested role
+              final permissions =
+                  u['permissions'] as Map<String, dynamic>? ?? {};
+              final role =
+                  (u['role'] ?? permissions['role'])
+                      ?.toString()
+                      .toLowerCase() ??
+                  '';
+              final isActive = u['is_active'] as bool? ?? true;
 
-          switch (_tabController.index) {
-            case 1: // Students
-              return matchesSearch && (role == 'student' || role == 'user' || role == '');
-            case 2: // Professionals
-              return matchesSearch && role == 'professional';
-            case 3: // Hosters
-              return matchesSearch && role == 'hoster';
-            case 4: // Inactive
-              return matchesSearch && !isActive;
-            default: // All
-              return matchesSearch;
-          }
-        }).toList();
+              switch (_tabController.index) {
+                case 1: // Students
+                  return matchesSearch &&
+                      (role == 'student' || role == 'user' || role == '');
+                case 2: // Professionals
+                  return matchesSearch && role == 'professional';
+                case 3: // Hosters
+                  return matchesSearch && role == 'hoster';
+                case 4: // Inactive
+                  return matchesSearch && !isActive;
+                default: // All
+                  return matchesSearch;
+              }
+            }).toList();
 
         return SingleChildScrollView(
           padding: EdgeInsets.all(widget.isNarrow ? 16 : 32),
@@ -109,14 +125,24 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
             children: [
               TabHeader(
                 title: 'Users Hub',
-                subtitle: widget.isNarrow ? 'Community' : 'Manage all platform users',
+                subtitle:
+                    widget.isNarrow ? 'Community' : 'Manage all platform users',
                 isNarrow: widget.isNarrow,
                 actions: [
                   if (!widget.isNarrow)
-                    _buildHeaderAction('Export', Icons.file_download_outlined, isOutline: true, onPressed: _handleExport),
-                  if (!widget.isNarrow)
-                    const SizedBox(width: 12),
-                  _buildHeaderAction('Add', Icons.add, hasDropdown: true, onPressed: _handleAddUser),
+                    _buildHeaderAction(
+                      'Export',
+                      Icons.file_download_outlined,
+                      isOutline: true,
+                      onPressed: _handleExport,
+                    ),
+                  if (!widget.isNarrow) const SizedBox(width: 12),
+                  _buildHeaderAction(
+                    'Add',
+                    Icons.add,
+                    hasDropdown: true,
+                    onPressed: _handleAddUser,
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
@@ -128,11 +154,14 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
               const SizedBox(height: 24),
               if (!widget.isNarrow) _buildTableHeader(),
               const SizedBox(height: 12),
-              if (snapshot.connectionState == ConnectionState.waiting && allUsers.isEmpty)
-                const Center(child: Padding(
-                  padding: EdgeInsets.all(60.0),
-                  child: CircularProgressIndicator(),
-                ))
+              if (snapshot.connectionState == ConnectionState.waiting &&
+                  allUsers.isEmpty)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(60.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
               else
                 _buildUsersList(filteredUsers),
               const SizedBox(height: 32),
@@ -140,28 +169,37 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
             ],
           ),
         );
-      }
+      },
     );
   }
 
   Widget _buildSummaryCards(List<Map<String, dynamic>> users) {
-    final students = users.where((u) {
-        final permissions = u['permissions'] as Map<String, dynamic>? ?? {};
-        final r = (u['role'] ?? permissions['role'])?.toString().toLowerCase() ?? '';
-        return r == 'student' || r == 'user' || r == '';
-    }).length;
+    final students =
+        users.where((u) {
+          final permissions = u['permissions'] as Map<String, dynamic>? ?? {};
+          final r =
+              (u['role'] ?? permissions['role'])?.toString().toLowerCase() ??
+              '';
+          return r == 'student' || r == 'user' || r == '';
+        }).length;
 
-    final professionals = users.where((u) {
-        final permissions = u['permissions'] as Map<String, dynamic>? ?? {};
-        final r = (u['role'] ?? permissions['role'])?.toString().toLowerCase() ?? '';
-        return r == 'professional';
-    }).length;
+    final professionals =
+        users.where((u) {
+          final permissions = u['permissions'] as Map<String, dynamic>? ?? {};
+          final r =
+              (u['role'] ?? permissions['role'])?.toString().toLowerCase() ??
+              '';
+          return r == 'professional';
+        }).length;
 
-    final hosters = users.where((u) {
-        final permissions = u['permissions'] as Map<String, dynamic>? ?? {};
-        final r = (u['role'] ?? permissions['role'])?.toString().toLowerCase() ?? '';
-        return r == 'hoster';
-    }).length;
+    final hosters =
+        users.where((u) {
+          final permissions = u['permissions'] as Map<String, dynamic>? ?? {};
+          final r =
+              (u['role'] ?? permissions['role'])?.toString().toLowerCase() ??
+              '';
+          return r == 'hoster';
+        }).length;
 
     final inactive = users.where((u) => (u['is_active'] == false)).length;
 
@@ -173,57 +211,90 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
-            count: users.length.toString(),
-            label: 'Total Users',
-            bg: const Color(0xFFEFF6FF),
-            color: const Color(0xFF2563EB),
-            icon: Icons.people_rounded,
-            percentage: '12.6%',
-            isUp: true,
-          )),
+          _wrapInSizedBox(
+            cardWidth,
+            cardHeight,
+            SummaryCard(
+              count: users.length.toString(),
+              label: 'Total Users',
+              bg: const Color(0xFFEFF6FF),
+              color: const Color(0xFF2563EB),
+              icon: Icons.people_rounded,
+              percentage: '12.6%',
+              isUp: true,
+            ),
+          ),
           const SizedBox(width: 16),
-          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
-            count: students.toString(),
-            label: 'Students',
-            bg: const Color(0xFFF0FDF4),
-            color: const Color(0xFF16A34A),
-            icon: Icons.school_rounded,
-            sub: users.isEmpty ? '0% of total' : '${((students / users.length) * 100).toStringAsFixed(1)}% of total',
-          )),
+          _wrapInSizedBox(
+            cardWidth,
+            cardHeight,
+            SummaryCard(
+              count: students.toString(),
+              label: 'Students',
+              bg: const Color(0xFFF0FDF4),
+              color: const Color(0xFF16A34A),
+              icon: Icons.school_rounded,
+              sub:
+                  users.isEmpty
+                      ? '0% of total'
+                      : '${((students / users.length) * 100).toStringAsFixed(1)}% of total',
+            ),
+          ),
           const SizedBox(width: 16),
-          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
-            count: professionals.toString(),
-            label: 'Professionals',
-            bg: const Color(0xFFF5F3FF),
-            color: const Color(0xFF7C3AED),
-            icon: Icons.business_center_rounded,
-            sub: users.isEmpty ? '0% of total' : '${((professionals / users.length) * 100).toStringAsFixed(1)}% of total',
-          )),
+          _wrapInSizedBox(
+            cardWidth,
+            cardHeight,
+            SummaryCard(
+              count: professionals.toString(),
+              label: 'Professionals',
+              bg: const Color(0xFFF5F3FF),
+              color: const Color(0xFF7C3AED),
+              icon: Icons.business_center_rounded,
+              sub:
+                  users.isEmpty
+                      ? '0% of total'
+                      : '${((professionals / users.length) * 100).toStringAsFixed(1)}% of total',
+            ),
+          ),
           const SizedBox(width: 16),
-          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
-            count: hosters.toString(),
-            label: 'Hosters',
-            bg: const Color(0xFFFFF7ED),
-            color: const Color(0xFFD97706),
-            icon: Icons.person_pin_rounded,
-            sub: users.isEmpty ? '0% of total' : '${((hosters / users.length) * 100).toStringAsFixed(1)}% of total',
-          )),
+          _wrapInSizedBox(
+            cardWidth,
+            cardHeight,
+            SummaryCard(
+              count: hosters.toString(),
+              label: 'Hosters',
+              bg: const Color(0xFFFFF7ED),
+              color: const Color(0xFFD97706),
+              icon: Icons.person_pin_rounded,
+              sub:
+                  users.isEmpty
+                      ? '0% of total'
+                      : '${((hosters / users.length) * 100).toStringAsFixed(1)}% of total',
+            ),
+          ),
           const SizedBox(width: 16),
-          _wrapInSizedBox(cardWidth, cardHeight, SummaryCard(
-            count: inactive.toString(),
-            label: 'Inactive',
-            bg: const Color(0xFFFEF2F2),
-            color: const Color(0xFFDC2626),
-            icon: Icons.block_rounded,
-            sub: users.isEmpty ? '0% of total' : '${((inactive / users.length) * 100).toStringAsFixed(1)}% of total',
-          )),
+          _wrapInSizedBox(
+            cardWidth,
+            cardHeight,
+            SummaryCard(
+              count: inactive.toString(),
+              label: 'Inactive',
+              bg: const Color(0xFFFEF2F2),
+              color: const Color(0xFFDC2626),
+              icon: Icons.block_rounded,
+              sub:
+                  users.isEmpty
+                      ? '0% of total'
+                      : '${((inactive / users.length) * 100).toStringAsFixed(1)}% of total',
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _wrapInSizedBox(double w, double h, Widget child) => SizedBox(width: w, height: h, child: child);
+  Widget _wrapInSizedBox(double w, double h, Widget child) =>
+      SizedBox(width: w, height: h, child: child);
 
   Widget _buildCategoryTabs(List<Map<String, dynamic>> users) {
     return Container(
@@ -237,23 +308,39 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
         unselectedLabelColor: const Color(0xFF64748B),
         indicatorColor: const Color(0xFF2563EB),
         indicatorWeight: 3,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Outfit'),
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+          fontFamily: 'Outfit',
+        ),
         tabs: [
           Tab(text: 'All (${users.length})'),
-          Tab(text: 'Students (${users.where((u) {
-            final p = u['permissions'] as Map<String, dynamic>? ?? {};
-            final r = (u['role'] ?? p['role'])?.toString().toLowerCase() ?? '';
-            return r == 'student' || r == 'user' || r.isEmpty;
-          }).length})'),
-          Tab(text: 'Pros (${users.where((u) {
-            final p = u['permissions'] as Map<String, dynamic>? ?? {};
-            return (u['role'] ?? p['role'])?.toString().toLowerCase() == 'professional';
-          }).length})'),
-          Tab(text: 'Hosters (${users.where((u) {
-            final p = u['permissions'] as Map<String, dynamic>? ?? {};
-            return (u['role'] ?? p['role'])?.toString().toLowerCase() == 'hoster';
-          }).length})'),
-          Tab(text: 'Blocked (${users.where((u) => (u['is_active'] == false)).length})'),
+          Tab(
+            text:
+                'Students (${users.where((u) {
+                  final p = u['permissions'] as Map<String, dynamic>? ?? {};
+                  final r = (u['role'] ?? p['role'])?.toString().toLowerCase() ?? '';
+                  return r == 'student' || r == 'user' || r.isEmpty;
+                }).length})',
+          ),
+          Tab(
+            text:
+                'Pros (${users.where((u) {
+                  final p = u['permissions'] as Map<String, dynamic>? ?? {};
+                  return (u['role'] ?? p['role'])?.toString().toLowerCase() == 'professional';
+                }).length})',
+          ),
+          Tab(
+            text:
+                'Hosters (${users.where((u) {
+                  final p = u['permissions'] as Map<String, dynamic>? ?? {};
+                  return (u['role'] ?? p['role'])?.toString().toLowerCase() == 'hoster';
+                }).length})',
+          ),
+          Tab(
+            text:
+                'Blocked (${users.where((u) => (u['is_active'] == false)).length})',
+          ),
         ],
       ),
     );
@@ -295,9 +382,16 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildSmallFilter(String label, IconData? icon, {bool hasDropdown = false}) {
+  Widget _buildSmallFilter(
+    String label,
+    IconData? icon, {
+    bool hasDropdown = false,
+  }) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: label.isEmpty ? 10 : 12, vertical: 10),
+      padding: EdgeInsets.symmetric(
+        horizontal: label.isEmpty ? 10 : 12,
+        vertical: 10,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -305,9 +399,27 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
       ),
       child: Row(
         children: [
-          if (icon != null) Icon(icon, size: 16, color: const Color(0xFF64748B)),
-          if (label.isNotEmpty) ...[const SizedBox(width: 8), Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)))],
-          if (hasDropdown) ...[const SizedBox(width: 8), const Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF64748B))],
+          if (icon != null)
+            Icon(icon, size: 16, color: const Color(0xFF64748B)),
+          if (label.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+          ],
+          if (hasDropdown) ...[
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              size: 16,
+              color: Color(0xFF64748B),
+            ),
+          ],
         ],
       ),
     );
@@ -332,7 +444,12 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
   Widget _tableLabel(String text) {
     return Text(
       text,
-      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8), letterSpacing: 0.5),
+      style: const TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.bold,
+        color: Color(0xFF94A3B8),
+        letterSpacing: 0.5,
+      ),
     );
   }
 
@@ -352,13 +469,32 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(color: Color(0xFFEFF6FF), shape: BoxShape.circle),
-              child: const Icon(Icons.people_outline, size: 40, color: Color(0xFF3B82F6)),
+              decoration: const BoxDecoration(
+                color: Color(0xFFEFF6FF),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.people_outline,
+                size: 40,
+                color: Color(0xFF3B82F6),
+              ),
             ),
             const SizedBox(height: 20),
-            const Text('No community members found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)), textAlign: TextAlign.center),
+            const Text(
+              'No community members found',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Color(0xFF1E293B),
+              ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
-            const Text('Try clear all filters or adjust your search to see more results', style: TextStyle(fontSize: 12, color: Color(0xFF64748B)), textAlign: TextAlign.center),
+            const Text(
+              'Try clear all filters or adjust your search to see more results',
+              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
             TextButton.icon(
               onPressed: () {
@@ -366,49 +502,57 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
                 _tabController.index = 0;
               },
               icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Reset All Filters', style: TextStyle(fontWeight: FontWeight.bold)),
+              label: const Text(
+                'Reset All Filters',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
       );
     }
     return Column(
-      children: users.map((u) {
-        final info = u['info'] as Map<String, dynamic>? ?? {};
-        final permissions = u['permissions'] as Map<String, dynamic>? ?? {};
-        final rawRole = (u['role'] ?? permissions['role'])?.toString() ?? 'student';
-        final isActive = u['is_active'] as bool? ?? true;
+      children:
+          users.map((u) {
+            final info = u['info'] as Map<String, dynamic>? ?? {};
+            final permissions = u['permissions'] as Map<String, dynamic>? ?? {};
+            final rawRole =
+                (u['role'] ?? permissions['role'])?.toString() ?? 'student';
+            final isActive = u['is_active'] as bool? ?? true;
 
-        return _UserCard(
-          id: u['id'],
-          name: info['name']?.toString() ?? 'Unknown User',
-          displayId: u['id']?.toString().substring(0, 8).toUpperCase() ?? 'USR-NEW',
-          role: _formatRole(rawRole),
-          rawRole: rawRole,
-          phone: info['phoneNumber']?.toString() ?? 'No Phone',
-          email: info['email']?.toString() ?? 'No Email',
-          joined: _formatDate(u['createdAt']),
-          status: isActive ? 'Active' : 'Inactive',
-          isActive: isActive,
-          isNarrow: widget.isNarrow,
-          onAction: (action) {
-            if (action == 'view') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => UserProfileViewScreen(
-                    userId: u['id'],
-                    adminService: widget.adminService,
-                    initialData: u,
-                  ),
-                ),
-              );
-            } else {
-              _handleUserAction(u['id'], action);
-            }
-          },
-        );
-      }).toList(),
+            return _UserCard(
+              id: u['id'],
+              name: info['name']?.toString() ?? 'Unknown User',
+              displayId:
+                  u['id']?.toString().substring(0, 8).toUpperCase() ??
+                  'USR-NEW',
+              role: _formatRole(rawRole),
+              rawRole: rawRole,
+              phone: info['phoneNumber']?.toString() ?? 'No Phone',
+              email: info['email']?.toString() ?? 'No Email',
+              joined: _formatDate(u['createdAt']),
+              status: isActive ? 'Active' : 'Inactive',
+              isActive: isActive,
+              isNarrow: widget.isNarrow,
+              onAction: (action) {
+                if (action == 'view') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => UserProfileViewScreen(
+                            userId: u['id'],
+                            adminService: widget.adminService,
+                            initialData: u,
+                          ),
+                    ),
+                  );
+                } else {
+                  _handleUserAction(u['id'], action);
+                }
+              },
+            );
+          }).toList(),
     );
   }
 
@@ -436,7 +580,10 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Action completed successfully'), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text('Action completed successfully'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
@@ -449,11 +596,15 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
   }
 
   void _handleExport() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Exporting community list...')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Exporting community list...')),
+    );
   }
 
   void _handleAddUser() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add User feature coming soon')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Add User feature coming soon')),
+    );
   }
 
   String _formatRole(dynamic role) {
@@ -467,7 +618,8 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
 
   String _formatDate(dynamic date) {
     if (date == null) return 'N/A';
-    if (date is Timestamp) return DateFormat('dd MMM yyyy').format(date.toDate());
+    if (date is Timestamp)
+      return DateFormat('dd MMM yyyy').format(date.toDate());
     return date.toString();
   }
 
@@ -477,8 +629,14 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
       children: [
         Expanded(
           child: Text(
-            widget.isNarrow ? 'Showing $count members' : 'Showing 1 to $count of $count members',
-            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+            widget.isNarrow
+                ? 'Showing $count members'
+                : 'Showing 1 to $count of $count members',
+            style: const TextStyle(
+              fontSize: 11,
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.bold,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -494,7 +652,13 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildHeaderAction(String label, IconData icon, {bool isOutline = false, bool hasDropdown = false, VoidCallback? onPressed}) {
+  Widget _buildHeaderAction(
+    String label,
+    IconData icon, {
+    bool isOutline = false,
+    bool hasDropdown = false,
+    VoidCallback? onPressed,
+  }) {
     return InkWell(
       onTap: onPressed,
       borderRadius: BorderRadius.circular(10),
@@ -507,7 +671,11 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
         ),
         child: Row(
           children: [
-            Icon(icon, color: isOutline ? const Color(0xFF64748B) : Colors.white, size: 18),
+            Icon(
+              icon,
+              color: isOutline ? const Color(0xFF64748B) : Colors.white,
+              size: 18,
+            ),
             const SizedBox(width: 8),
             Text(
               label,
@@ -519,7 +687,11 @@ class _UsersTabState extends State<UsersTab> with SingleTickerProviderStateMixin
             ),
             if (hasDropdown) ...[
               const SizedBox(width: 8),
-              Icon(Icons.keyboard_arrow_down, color: isOutline ? const Color(0xFF64748B) : Colors.white, size: 16),
+              Icon(
+                Icons.keyboard_arrow_down,
+                color: isOutline ? const Color(0xFF64748B) : Colors.white,
+                size: 16,
+              ),
             ],
           ],
         ),
@@ -577,7 +749,13 @@ class _UserCard extends StatelessWidget {
                 CircleAvatar(
                   radius: 20,
                   backgroundColor: const Color(0xFFF1F5F9),
-                  child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'U', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                  child: Text(
+                    name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -589,15 +767,31 @@ class _UserCard extends StatelessWidget {
                           Flexible(
                             child: Text(
                               name,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)),
-                              maxLines: 1, overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Color(0xFF1E293B),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.check_circle, color: Color(0xFF2563EB), size: 12),
+                          const Icon(
+                            Icons.check_circle,
+                            color: Color(0xFF2563EB),
+                            size: 12,
+                          ),
                         ],
                       ),
-                      Text(displayId, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold)),
+                      Text(
+                        displayId,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFF94A3B8),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -611,7 +805,10 @@ class _UserCard extends StatelessWidget {
               flex: 2,
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: _getRoleColor(role).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -619,7 +816,11 @@ class _UserCard extends StatelessWidget {
                   child: Text(
                     role,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: _getRoleColor(role), fontSize: 9, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: _getRoleColor(role),
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -632,8 +833,21 @@ class _UserCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(phone, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                  Text(email, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                  Text(
+                    phone,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  Text(
+                    email,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -642,7 +856,14 @@ class _UserCard extends StatelessWidget {
           if (!isNarrow)
             Expanded(
               flex: 2,
-              child: Text(joined, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+              child: Text(
+                joined,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF475569),
+                ),
+              ),
             ),
 
           // 5. Status
@@ -650,39 +871,91 @@ class _UserCard extends StatelessWidget {
             flex: isNarrow ? 1 : 2,
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              alignment: isNarrow ? Alignment.centerRight : Alignment.centerLeft,
+              alignment:
+                  isNarrow ? Alignment.centerRight : Alignment.centerLeft,
               child: StatusBadge(text: status, color: _getStatusColor(status)),
             ),
           ),
 
           const SizedBox(width: 8),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Color(0xFFCBD5E1), size: 18),
+            icon: const Icon(
+              Icons.more_vert,
+              color: Color(0xFFCBD5E1),
+              size: 18,
+            ),
             onSelected: onAction,
             offset: const Offset(0, 40),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Color(0xFFF1F5F9))),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFFF1F5F9)),
+            ),
             elevation: 8,
             shadowColor: Colors.black12,
-            itemBuilder: (context) => [
-              PopupMenuItem(value: 'view', child: _buildPopupItem(Icons.visibility_outlined, 'View Profile')),
-              PopupMenuItem(
-                value: isActive ? 'deactivate' : 'activate',
-                child: _buildPopupItem(
-                  isActive ? Icons.block_flipped : Icons.check_circle_outline,
-                  isActive ? 'Deactivate User' : 'Activate User',
-                  color: isActive ? Colors.red : Colors.green,
-                )
-              ),
-              PopupMenuItem(value: 'promote', child: _buildPopupItem(Icons.admin_panel_settings_outlined, 'Promote to Admin')),
-              const PopupMenuDivider(height: 1),
-              const PopupMenuItem(
-                enabled: false,
-                child: Text('CHANGE ROLE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8), letterSpacing: 0.5))
-              ),
-              PopupMenuItem(value: 'role_student', child: _roleItem('Student', rawRole == 'student', Icons.school_outlined)),
-              PopupMenuItem(value: 'role_professional', child: _roleItem('Professional', rawRole == 'professional', Icons.business_center_outlined)),
-              PopupMenuItem(value: 'role_hoster', child: _roleItem('Hoster', rawRole == 'hoster', Icons.person_pin_outlined)),
-            ],
+            itemBuilder:
+                (context) => [
+                  PopupMenuItem(
+                    value: 'view',
+                    child: _buildPopupItem(
+                      Icons.visibility_outlined,
+                      'View Profile',
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: isActive ? 'deactivate' : 'activate',
+                    child: _buildPopupItem(
+                      isActive
+                          ? Icons.block_flipped
+                          : Icons.check_circle_outline,
+                      isActive ? 'Deactivate User' : 'Activate User',
+                      color: isActive ? Colors.red : Colors.green,
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'promote',
+                    child: _buildPopupItem(
+                      Icons.admin_panel_settings_outlined,
+                      'Promote to Admin',
+                    ),
+                  ),
+                  const PopupMenuDivider(height: 1),
+                  const PopupMenuItem(
+                    enabled: false,
+                    child: Text(
+                      'CHANGE ROLE',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF94A3B8),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'role_student',
+                    child: _roleItem(
+                      'Student',
+                      rawRole == 'student',
+                      Icons.school_outlined,
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'role_professional',
+                    child: _roleItem(
+                      'Professional',
+                      rawRole == 'professional',
+                      Icons.business_center_outlined,
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'role_hoster',
+                    child: _roleItem(
+                      'Hoster',
+                      rawRole == 'hoster',
+                      Icons.person_pin_outlined,
+                    ),
+                  ),
+                ],
           ),
         ],
       ),
@@ -710,14 +983,19 @@ class _UserCard extends StatelessWidget {
   Widget _roleItem(String label, bool isCurrent, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: isCurrent ? const Color(0xFF2563EB) : const Color(0xFF94A3B8)),
+        Icon(
+          icon,
+          size: 18,
+          color: isCurrent ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
+        ),
         const SizedBox(width: 12),
         Text(
           label,
           style: TextStyle(
             fontSize: 13,
             fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-            color: isCurrent ? const Color(0xFF2563EB) : const Color(0xFF475569),
+            color:
+                isCurrent ? const Color(0xFF2563EB) : const Color(0xFF475569),
             fontFamily: 'Outfit',
           ),
         ),
@@ -731,20 +1009,29 @@ class _UserCard extends StatelessWidget {
 
   Color _getRoleColor(String role) {
     switch (role) {
-      case 'Student': return const Color(0xFF2563EB);
-      case 'Hoster': return const Color(0xFFD97706);
-      case 'Professional': return const Color(0xFF7C3AED);
-      default: return Colors.grey;
+      case 'Student':
+        return const Color(0xFF2563EB);
+      case 'Hoster':
+        return const Color(0xFFD97706);
+      case 'Professional':
+        return const Color(0xFF7C3AED);
+      default:
+        return Colors.grey;
     }
   }
 
   Color _getStatusColor(String s) {
     switch (s) {
-      case 'Active': return const Color(0xFF16A34A);
-      case 'Inactive': return const Color(0xFF64748B);
-      case 'Blocked': return const Color(0xFFDC2626);
-      case 'Pending': return const Color(0xFFD97706);
-      default: return Colors.grey;
+      case 'Active':
+        return const Color(0xFF16A34A);
+      case 'Inactive':
+        return const Color(0xFF64748B);
+      case 'Blocked':
+        return const Color(0xFFDC2626);
+      case 'Pending':
+        return const Color(0xFFD97706);
+      default:
+        return Colors.grey;
     }
   }
 }

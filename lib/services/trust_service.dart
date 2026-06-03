@@ -19,7 +19,7 @@ class TrustService {
     final data = userDoc.data()!;
     final verif = data['verification'] as Map? ?? {};
     final info = data['info'] as Map? ?? {};
-    
+
     double score = 0;
 
     if (data['emailVerified'] == true) score += emailWeight;

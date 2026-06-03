@@ -2,8 +2,6 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:triangle_home/screens/list_property/intro_screen.dart';
 import 'package:triangle_home/screens/list_property/host_profile_step.dart';
 import 'package:triangle_home/screens/list_property/host_verification_step.dart';
 import 'package:triangle_home/screens/list_property/property_basics_step.dart';
@@ -17,7 +15,6 @@ import 'package:triangle_home/screens/list_property/review_submit_step.dart';
 import 'package:triangle_home/screens/list_property/success_step.dart';
 import '../hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/services/isar_service.dart';
-import 'package:triangle_home/services/firebase_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/list_property/progress_bar.dart';
 
@@ -58,16 +55,24 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
     }
 
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
       if (doc.exists) {
         final userData = doc.data() as Map<String, dynamic>;
-        final hosterInfo = (userData['info'] as Map?)?.cast<String, dynamic>() ?? {};
+        final hosterInfo =
+            (userData['info'] as Map?)?.cast<String, dynamic>() ?? {};
 
         if (_propertyData['hostProfile'] == null) {
           _propertyData['hostProfile'] = {
             'name': hosterInfo['name'] ?? '',
             'email': hosterInfo['email'] ?? '',
-            'phone': hosterInfo['phone'] ?? user.phoneNumber?.replaceFirst('+91', '') ?? '',
+            'phone':
+                hosterInfo['phone'] ??
+                user.phoneNumber?.replaceFirst('+91', '') ??
+                '',
             'hostType': hosterInfo['hostType'] ?? 'Property Owner',
           };
         }
@@ -87,11 +92,8 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
   void _saveDraft() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    
-    final draft = {
-      ..._propertyData,
-      'last_step': _currentPage,
-    };
+
+    final draft = {..._propertyData, 'last_step': _currentPage};
     await _isarService.savePropertyDraft(user.uid, jsonEncode(draft));
   }
 
@@ -122,11 +124,11 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
       if (Navigator.of(context).canPop()) {
         Navigator.pop(context);
       } else {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => HosterDashboardScreen()),
-            (route) => false,
-          );
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => HosterDashboardScreen()),
+          (route) => false,
+        );
       }
     }
   }
@@ -135,9 +137,10 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
     setState(() => _isSubmitting = true);
     try {
       final user = FirebaseAuth.instance.currentUser!;
-      
+
       // Real-time URLs are already uploaded in previous steps
-      final List<String> imageUrls = (_propertyData['image_urls'] as List?)?.cast<String>() ?? [];
+      final List<String> imageUrls =
+          (_propertyData['image_urls'] as List?)?.cast<String>() ?? [];
       final Map<String, dynamic>? verification = _propertyData['verification'];
       final Map<String, dynamic>? documents = _propertyData['documents'];
 
@@ -186,7 +189,11 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
       }
 
       // Add Hoster Info for Admin convenience
-      final userData = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final userData =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
       if (userData.exists) {
         final info = userData.data()?['info'] as Map? ?? {};
         finalData['hosterName'] = info['name'] ?? 'Unknown';
@@ -197,7 +204,7 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
       await FirebaseFirestore.instance.collection('properties').add(finalData);
 
       // Flatten and map based on how individual steps save data
-      
+
       // Basic Info
       if (_propertyData['propertyBasics'] != null) {
         final basics = _propertyData['propertyBasics'] as Map<String, dynamic>;
@@ -243,7 +250,10 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
 
       if (mounted) setState(() => _isSubmitted = true);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -251,8 +261,9 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isInitialLoading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    
+    if (_isInitialLoading)
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+
     if (_isSubmitted) {
       return ListPropertySuccessScreen(
         onGoToDashboard: () {
@@ -266,15 +277,16 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
             );
           }
         },
-        onAddAnother: () => setState(() {
-          _isSubmitted = false;
-          _currentPage = 0;
-          _propertyData = {};
-          // Clear draft from Isar when starting fresh
-          final user = FirebaseAuth.instance.currentUser;
-          if (user != null) _isarService.clearPropertyDraft(user.uid);
-          _pageController.jumpToPage(0);
-        }),
+        onAddAnother:
+            () => setState(() {
+              _isSubmitted = false;
+              _currentPage = 0;
+              _propertyData = {};
+              // Clear draft from Isar when starting fresh
+              final user = FirebaseAuth.instance.currentUser;
+              if (user != null) _isarService.clearPropertyDraft(user.uid);
+              _pageController.jumpToPage(0);
+            }),
       );
     }
 
@@ -285,42 +297,71 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textDarkColor, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppTheme.textDarkColor,
+            size: 20,
+          ),
           onPressed: _previousPage,
         ),
         title: Text(
           _currentPage == 9 ? 'Review & Submit' : 'List Your Property',
-          style: const TextStyle(color: AppTheme.textDarkColor, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+          style: const TextStyle(
+            color: AppTheme.textDarkColor,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Outfit',
+          ),
         ),
       ),
       body: Column(
         children: [
-          if (_currentPage < 9) ProgressBar(currentStep: _currentPage, totalSteps: 9),
+          if (_currentPage < 9)
+            ProgressBar(currentStep: _currentPage, totalSteps: 9),
           Expanded(
             child: PageView(
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(),
               onPageChanged: _onPageChanged,
               children: [
-                HostProfileStep(onContinue: _nextPage, initialData: _propertyData),
-                HostVerificationStep(onContinue: _nextPage, initialData: _propertyData),
-                PropertyBasicsStep(onContinue: _nextPage, initialData: _propertyData),
+                HostProfileStep(
+                  onContinue: _nextPage,
+                  initialData: _propertyData,
+                ),
+                HostVerificationStep(
+                  onContinue: _nextPage,
+                  initialData: _propertyData,
+                ),
+                PropertyBasicsStep(
+                  onContinue: _nextPage,
+                  initialData: _propertyData,
+                ),
                 LocationStep(onContinue: _nextPage, initialData: _propertyData),
-                PropertyDetailsStep(onContinue: _nextPage, initialData: _propertyData),
-                AmenitiesStep(onContinue: _nextPage, initialData: _propertyData),
+                PropertyDetailsStep(
+                  onContinue: _nextPage,
+                  initialData: _propertyData,
+                ),
+                AmenitiesStep(
+                  onContinue: _nextPage,
+                  initialData: _propertyData,
+                ),
                 PhotosStep(onContinue: _nextPage, initialData: _propertyData),
                 PricingStep(onContinue: _nextPage, initialData: _propertyData),
-                DocumentsStep(onContinue: _nextPage, initialData: _propertyData),
-                      ReviewSubmitStep(
-                        propertyData: _propertyData,
-                        onSubmit: _finalSubmit,
-                        isSubmitting: _isSubmitting,
-                        onEdit: (step) => _pageController.animateToPage(
-                          step,
-                          duration: const Duration(milliseconds: 600),
-                          curve: Curves.easeInOutCubic,
-                        ),
+                DocumentsStep(
+                  onContinue: _nextPage,
+                  initialData: _propertyData,
+                ),
+                ReviewSubmitStep(
+                  propertyData: _propertyData,
+                  onSubmit: _finalSubmit,
+                  isSubmitting: _isSubmitting,
+                  onEdit:
+                      (step) => _pageController.animateToPage(
+                        step,
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.easeInOutCubic,
                       ),
+                ),
               ],
             ),
           ),

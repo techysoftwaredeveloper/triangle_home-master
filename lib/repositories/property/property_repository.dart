@@ -8,7 +8,10 @@ class PropertyRepository {
     try {
       return await _firestore.collection('properties').doc(id).get();
     } on FirebaseException catch (e) {
-      throw PropertyFailure('Failed to fetch property: ${e.message}', code: e.code);
+      throw PropertyFailure(
+        'Failed to fetch property: ${e.message}',
+        code: e.code,
+      );
     } catch (e) {
       throw PropertyFailure('Unexpected error fetching property: $e');
     }
@@ -21,7 +24,10 @@ class PropertyRepository {
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } on FirebaseException catch (e) {
-      throw PropertyFailure('Failed to update occupancy: ${e.message}', code: e.code);
+      throw PropertyFailure(
+        'Failed to update occupancy: ${e.message}',
+        code: e.code,
+      );
     } catch (e) {
       throw PropertyFailure('Unexpected error updating occupancy: $e');
     }
@@ -34,7 +40,10 @@ class PropertyRepository {
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } on FirebaseException catch (e) {
-      throw PropertyFailure('Failed to set occupancy: ${e.message}', code: e.code);
+      throw PropertyFailure(
+        'Failed to set occupancy: ${e.message}',
+        code: e.code,
+      );
     } catch (e) {
       throw PropertyFailure('Unexpected error setting occupancy: $e');
     }

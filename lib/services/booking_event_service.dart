@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 
@@ -23,12 +24,14 @@ class BookingEventService {
         if (extraData != null) 'data': extraData,
       });
     } catch (e) {
-      print('Failed to log booking event: $e');
+      debugPrint('Failed to log booking event: $e');
     }
   }
 
   /// Gets the history of events for a specific booking
-  Stream<QuerySnapshot<Map<String, dynamic>>> getBookingHistory(String bookingId) {
+  Stream<QuerySnapshot<Map<String, dynamic>>> getBookingHistory(
+    String bookingId,
+  ) {
     return _firestore
         .collection('booking_events')
         .where('booking_id', isEqualTo: bookingId)

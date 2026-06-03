@@ -14,25 +14,35 @@ class RoomInfo extends StatefulWidget {
   final double rating;
   final int reviewCount;
   final int totalBeds;
+
   /// Per-sharing prices: {1: price, 2: price, 3: price, 4: price}
   final Map<int, int> sharingPrices;
+
   /// Per-sharing available rooms count: {1: count, 2: count, ...}
   final Map<int, int> availabilityBySharing;
+
   /// Per-BHK available units: {0: count, 1: count, ...} (0-based index)
   final Map<int, int> availabilityByBhk;
+
   /// Currently selected BHK index (apartments only)
   final int selectedBhkIndex;
+
   /// Area (sq ft) for currently selected BHK config
   final int bhkArea;
+
   /// Gender allowed: 'Boys', 'Girls', 'Unisex', or ''
   final String gender;
+
   /// Project status: 'Ready to Move', 'Under Construction', etc.
   final String projectStatus;
+
   /// Property category: 'Apartment', 'Gated Community', etc.
   final String propertyCategory;
+
   /// Distance descriptors, e.g. ['500m to VTU', '2km to Bus Stop']
   final List<String> distances;
   final Function(int)? onTenantSelected;
+
   /// Called with 0-based BHK index when user selects a BHK option
   final Function(int)? onBhkSelected;
 
@@ -83,7 +93,9 @@ class _RoomInfoState extends State<RoomInfo> {
 
   Future<void> _openMaps() async {
     final query = Uri.encodeComponent(widget.city);
-    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+    final url = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$query',
+    );
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     }
@@ -176,14 +188,23 @@ class _RoomInfoState extends State<RoomInfo> {
                     onTap: _openMaps,
                     child: Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 7,
+                      ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.location_on_outlined, color: Colors.white, size: 14),
+                          Icon(
+                            Icons.location_on_outlined,
+                            color: Colors.white,
+                            size: 14,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'View On Map',
@@ -208,7 +229,10 @@ class _RoomInfoState extends State<RoomInfo> {
                   child: Wrap(
                     spacing: 8,
                     runSpacing: 6,
-                    children: widget.distances.map((d) => _DistanceChip(label: d)).toList(),
+                    children:
+                        widget.distances
+                            .map((d) => _DistanceChip(label: d))
+                            .toList(),
                   ),
                 ),
             ],
@@ -248,31 +272,39 @@ class _RoomInfoState extends State<RoomInfo> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeInOut,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color: isUnavailable
-                      ? Colors.grey.shade200
-                      : isSelected
+                  color:
+                      isUnavailable
+                          ? Colors.grey.shade200
+                          : isSelected
                           ? AppTheme.primaryColor
                           : Colors.white,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: isUnavailable
-                        ? Colors.grey.shade300
-                        : isSelected
+                    color:
+                        isUnavailable
+                            ? Colors.grey.shade300
+                            : isSelected
                             ? AppTheme.primaryColor
                             : Colors.grey.shade300,
                     width: 1.5,
                   ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: AppTheme.primaryColor.withValues(alpha: 0.22),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : [],
+                  boxShadow:
+                      isSelected
+                          ? [
+                            BoxShadow(
+                              color: AppTheme.primaryColor.withValues(
+                                alpha: 0.22,
+                              ),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                          : [],
                 ),
                 child: Text(
                   bhkLabels[index],
@@ -280,9 +312,10 @@ class _RoomInfoState extends State<RoomInfo> {
                     fontSize: 13,
                     fontFamily: 'Outfit',
                     fontWeight: FontWeight.w600,
-                    color: isUnavailable
-                        ? Colors.grey.shade400
-                        : isSelected
+                    color:
+                        isUnavailable
+                            ? Colors.grey.shade400
+                            : isSelected
                             ? Colors.white
                             : AppTheme.textColor,
                   ),
@@ -306,8 +339,11 @@ class _RoomInfoState extends State<RoomInfo> {
             padding: const EdgeInsets.only(top: 6),
             child: Row(
               children: [
-                const Icon(Icons.grid_view_outlined,
-                    size: 13, color: AppTheme.textLightColor),
+                const Icon(
+                  Icons.grid_view_outlined,
+                  size: 13,
+                  color: AppTheme.textLightColor,
+                ),
                 const SizedBox(width: 5),
                 Text(
                   '${widget.bhkArea} sq ft carpet area',
@@ -359,16 +395,18 @@ class _RoomInfoState extends State<RoomInfo> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: isUnavailable
-                            ? Colors.grey.shade200
-                            : isSelected
+                        color:
+                            isUnavailable
+                                ? Colors.grey.shade200
+                                : isSelected
                                 ? AppTheme.primaryColor
                                 : Colors.white,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isUnavailable
-                              ? Colors.grey.shade300
-                              : isSelected
+                          color:
+                              isUnavailable
+                                  ? Colors.grey.shade300
+                                  : isSelected
                                   ? AppTheme.primaryColor
                                   : Colors.grey.shade300,
                           width: 1.5,
@@ -381,9 +419,10 @@ class _RoomInfoState extends State<RoomInfo> {
                             fontSize: 14,
                             fontFamily: 'Outfit',
                             fontWeight: FontWeight.w600,
-                            color: isUnavailable
-                                ? Colors.grey.shade400
-                                : isSelected
+                            color:
+                                isUnavailable
+                                    ? Colors.grey.shade400
+                                    : isSelected
                                     ? Colors.white
                                     : AppTheme.textColor,
                           ),
@@ -454,9 +493,12 @@ class _ApartmentBadgeRow extends StatelessWidget {
       spacing: 8,
       children: [
         if (statusBadge != null)
-          _Pill(label: statusBadge.$1, icon: statusBadge.$2, color: statusBadge.$3),
-        if (catBadge != null)
-          _Pill(label: catBadge.$1, icon: catBadge.$2),
+          _Pill(
+            label: statusBadge.$1,
+            icon: statusBadge.$2,
+            color: statusBadge.$3,
+          ),
+        if (catBadge != null) _Pill(label: catBadge.$1, icon: catBadge.$2),
       ],
     );
   }
@@ -464,10 +506,18 @@ class _ApartmentBadgeRow extends StatelessWidget {
   (String, IconData, Color)? _resolveStatus(String s) {
     final sl = s.toLowerCase();
     if (sl.contains('ready') || sl.contains('move')) {
-      return ('Ready to Move', Icons.check_circle_outline, const Color(0xFF1ABC5C));
+      return (
+        'Ready to Move',
+        Icons.check_circle_outline,
+        const Color(0xFF1ABC5C),
+      );
     }
     if (sl.contains('under') || sl.contains('construct')) {
-      return ('Under Construction', Icons.construction_outlined, const Color(0xFFFF9800));
+      return (
+        'Under Construction',
+        Icons.construction_outlined,
+        const Color(0xFFFF9800),
+      );
     }
     if (sl.contains('new') || sl.contains('launch')) {
       return ('New Launch', Icons.fiber_new_outlined, const Color(0xFF2196F3));
@@ -494,17 +544,24 @@ class _BhkAvailabilityStatus extends StatelessWidget {
   final int index; // 0-based
   final Map<int, int> availability;
 
-  const _BhkAvailabilityStatus({required this.index, required this.availability});
+  const _BhkAvailabilityStatus({
+    required this.index,
+    required this.availability,
+  });
 
   @override
   Widget build(BuildContext context) {
     final avail = availability[index];
     if (avail == null) return const SizedBox.shrink();
 
-    final (label, color) = avail == 0
-        ? ('Not Available', const Color(0xFFE53935))
-        : avail <= 2
-            ? ('Only $avail unit${avail == 1 ? '' : 's'} left', const Color(0xFFFF9800))
+    final (label, color) =
+        avail == 0
+            ? ('Not Available', const Color(0xFFE53935))
+            : avail <= 2
+            ? (
+              'Only $avail unit${avail == 1 ? '' : 's'} left',
+              const Color(0xFFFF9800),
+            )
             : ('$avail units available', const Color(0xFF1ABC5C));
 
     return Row(
@@ -546,7 +603,11 @@ class _BadgeRow extends StatelessWidget {
       children: [
         if (typeBadge != null) _Pill(label: typeBadge.$1, icon: typeBadge.$2),
         if (genderBadge != null)
-          _Pill(label: genderBadge.$1, icon: genderBadge.$2, color: genderBadge.$3),
+          _Pill(
+            label: genderBadge.$1,
+            icon: genderBadge.$2,
+            color: genderBadge.$3,
+          ),
       ],
     );
   }
@@ -630,8 +691,11 @@ class _DistanceChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.directions_walk_outlined,
-              color: Colors.white.withValues(alpha: 0.85), size: 11),
+          Icon(
+            Icons.directions_walk_outlined,
+            color: Colors.white.withValues(alpha: 0.85),
+            size: 11,
+          ),
           const SizedBox(width: 4),
           Text(
             label,
@@ -659,10 +723,14 @@ class _AvailabilityStatus extends StatelessWidget {
     final avail = availability[count];
     if (avail == null) return const SizedBox.shrink();
 
-    final (label, color) = avail == 0
-        ? ('Not Available', const Color(0xFFE53935))
-        : avail <= 2
-            ? ('Only $avail room${avail == 1 ? '' : 's'} left', const Color(0xFFFF9800))
+    final (label, color) =
+        avail == 0
+            ? ('Not Available', const Color(0xFFE53935))
+            : avail <= 2
+            ? (
+              'Only $avail room${avail == 1 ? '' : 's'} left',
+              const Color(0xFFFF9800),
+            )
             : ('$avail rooms available', const Color(0xFF1ABC5C));
 
     return Row(
@@ -731,11 +799,19 @@ class _RatingRow extends StatelessWidget {
         ],
         if (totalBeds > 0) ...[
           const SizedBox(width: 12),
-          Container(width: 1, height: 12, color: Colors.white.withValues(alpha: 0.35)),
+          Container(
+            width: 1,
+            height: 12,
+            color: Colors.white.withValues(alpha: 0.35),
+          ),
           const SizedBox(width: 12),
           Row(
             children: [
-              Icon(Icons.bed_outlined, color: Colors.white.withValues(alpha: 0.8), size: 14),
+              Icon(
+                Icons.bed_outlined,
+                color: Colors.white.withValues(alpha: 0.8),
+                size: 14,
+              ),
               const SizedBox(width: 4),
               Text(
                 '$totalBeds beds available',
@@ -754,7 +830,9 @@ class _RatingRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF1ABC5C).withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(5),
-            border: Border.all(color: const Color(0xFF1ABC5C).withValues(alpha: 0.5)),
+            border: Border.all(
+              color: const Color(0xFF1ABC5C).withValues(alpha: 0.5),
+            ),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
@@ -783,7 +861,10 @@ class _PricingHint extends StatelessWidget {
   final int selectedCount;
   final Map<int, int> sharingPrices;
 
-  const _PricingHint({required this.selectedCount, required this.sharingPrices});
+  const _PricingHint({
+    required this.selectedCount,
+    required this.sharingPrices,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -804,11 +885,17 @@ class _PricingHint extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.primaryColor.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.15)),
+        border: Border.all(
+          color: AppTheme.primaryColor.withValues(alpha: 0.15),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline_rounded, size: 14, color: AppTheme.primaryColor),
+          const Icon(
+            Icons.info_outline_rounded,
+            size: 14,
+            color: AppTheme.primaryColor,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

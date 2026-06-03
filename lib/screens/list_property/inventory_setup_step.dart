@@ -27,11 +27,12 @@ class _InventorySetupStepState extends State<InventorySetupStep> {
   void _addRoom() {
     showDialog(
       context: context,
-      builder: (context) => _AddRoomDialog(
-        onAdd: (roomData) {
-          setState(() => _pendingRooms.add(roomData));
-        },
-      ),
+      builder:
+          (context) => _AddRoomDialog(
+            onAdd: (roomData) {
+              setState(() => _pendingRooms.add(roomData));
+            },
+          ),
     );
   }
 
@@ -70,9 +71,9 @@ class _InventorySetupStepState extends State<InventorySetupStep> {
       widget.onComplete();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -87,16 +88,21 @@ class _InventorySetupStepState extends State<InventorySetupStep> {
         children: [
           _buildHeader(),
           Expanded(
-            child: _pendingRooms.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.all(20),
-                    itemCount: _pendingRooms.length,
-                    itemBuilder: (context, index) => _RoomPreviewCard(
-                      data: _pendingRooms[index],
-                      onDelete: () => setState(() => _pendingRooms.removeAt(index)),
+            child:
+                _pendingRooms.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: _pendingRooms.length,
+                      itemBuilder:
+                          (context, index) => _RoomPreviewCard(
+                            data: _pendingRooms[index],
+                            onDelete:
+                                () => setState(
+                                  () => _pendingRooms.removeAt(index),
+                                ),
+                          ),
                     ),
-                  ),
           ),
           _buildBottomActions(),
         ],
@@ -114,12 +120,20 @@ class _InventorySetupStepState extends State<InventorySetupStep> {
         children: [
           const Text(
             'Inventory Setup',
-            style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Outfit',
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Define rooms and beds for your property',
-            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -133,9 +147,15 @@ class _InventorySetupStepState extends State<InventorySetupStep> {
         children: [
           Icon(Icons.bed_rounded, size: 64, color: Colors.grey[200]),
           const SizedBox(height: 16),
-          const Text('No rooms added yet', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          const Text(
+            'No rooms added yet',
+            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          const Text('Click "Add Room" to start building your inventory', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          const Text(
+            'Click "Add Room" to start building your inventory',
+            style: TextStyle(color: Colors.grey, fontSize: 12),
+          ),
         ],
       ),
     );
@@ -146,7 +166,13 @@ class _InventorySetupStepState extends State<InventorySetupStep> {
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -156,9 +182,17 @@ class _InventorySetupStepState extends State<InventorySetupStep> {
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: const BorderSide(color: AppTheme.successColor),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('Add Room', style: TextStyle(color: AppTheme.successColor, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Add Room',
+                style: TextStyle(
+                  color: AppTheme.successColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -168,12 +202,28 @@ class _InventorySetupStepState extends State<InventorySetupStep> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.successColor,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 0,
               ),
-              child: _isLoading
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Finish Setup', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child:
+                  _isLoading
+                      ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                      : const Text(
+                        'Finish Setup',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
             ),
           ),
         ],
@@ -202,21 +252,38 @@ class _RoomPreviewCard extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-            child: const Icon(Icons.meeting_room_rounded, color: AppTheme.successColor),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.meeting_room_rounded,
+              color: AppTheme.successColor,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Room ${data['number']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                Text('${data['type'].toString().split('.').last.toUpperCase()} • Floor ${data['floor']}', 
-                  style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  'Room ${data['number']}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  '${data['type'].toString().split('.').last.toUpperCase()} • Floor ${data['floor']}',
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
               ],
             ),
           ),
-          IconButton(onPressed: onDelete, icon: const Icon(Icons.delete_outline, color: Colors.red)),
+          IconButton(
+            onPressed: onDelete,
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+          ),
         ],
       ),
     );
@@ -242,13 +309,20 @@ class _AddRoomDialogState extends State<_AddRoomDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add New Room', style: TextStyle(fontWeight: FontWeight.bold)),
+      title: const Text(
+        'Add New Room',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildField('Room Number (e.g. 101)', _numberController, TextInputType.text),
+            _buildField(
+              'Room Number (e.g. 101)',
+              _numberController,
+              TextInputType.text,
+            ),
             const SizedBox(height: 16),
             _buildTypeDropdown(),
             const SizedBox(height: 16),
@@ -256,27 +330,45 @@ class _AddRoomDialogState extends State<_AddRoomDialog> {
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(child: _buildField('Monthly Rent', _rentController, TextInputType.number)),
+                Expanded(
+                  child: _buildField(
+                    'Monthly Rent',
+                    _rentController,
+                    TextInputType.number,
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: _buildField('Security Deposit', _depositController, TextInputType.number)),
+                Expanded(
+                  child: _buildField(
+                    'Security Deposit',
+                    _depositController,
+                    TextInputType.number,
+                  ),
+                ),
               ],
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
         ElevatedButton(
           onPressed: () {
             if (_numberController.text.isEmpty) return;
-            
+
             // Auto-generate bed names (A, B, C...) based on type
             int bedCount = 1;
             if (_selectedType == RoomType.double) bedCount = 2;
             if (_selectedType == RoomType.triple) bedCount = 3;
             if (_selectedType == RoomType.dormitory) bedCount = 4;
 
-            final List<String> beds = List.generate(bedCount, (i) => String.fromCharCode(65 + i));
+            final List<String> beds = List.generate(
+              bedCount,
+              (i) => String.fromCharCode(65 + i),
+            );
 
             widget.onAdd({
               'number': _numberController.text,
@@ -288,14 +380,21 @@ class _AddRoomDialogState extends State<_AddRoomDialog> {
             });
             Navigator.pop(context);
           },
-          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successColor, foregroundColor: Colors.white),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.successColor,
+            foregroundColor: Colors.white,
+          ),
           child: const Text('Add'),
         ),
       ],
     );
   }
 
-  Widget _buildField(String label, TextEditingController controller, TextInputType type) {
+  Widget _buildField(
+    String label,
+    TextEditingController controller,
+    TextInputType type,
+  ) {
     return TextField(
       controller: controller,
       keyboardType: type,
@@ -303,21 +402,35 @@ class _AddRoomDialogState extends State<_AddRoomDialog> {
         labelText: label,
         filled: true,
         fillColor: Colors.grey[50],
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
       ),
     );
   }
 
   Widget _buildTypeDropdown() {
     return DropdownButtonFormField<RoomType>(
-      value: _selectedType,
-      items: RoomType.values.map((t) => DropdownMenuItem(value: t, child: Text(t.name.toUpperCase()))).toList(),
+      initialValue: _selectedType,
+      items:
+          RoomType.values
+              .map(
+                (t) => DropdownMenuItem(
+                  value: t,
+                  child: Text(t.name.toUpperCase()),
+                ),
+              )
+              .toList(),
       onChanged: (val) => setState(() => _selectedType = val!),
       decoration: InputDecoration(
         labelText: 'Room Type',
         filled: true,
         fillColor: Colors.grey[50],
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
       ),
     );
   }

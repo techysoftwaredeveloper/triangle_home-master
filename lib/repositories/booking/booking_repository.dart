@@ -9,7 +9,10 @@ class BookingRepository {
     try {
       return await _firestore.collection('bookings').doc(id).get();
     } on FirebaseException catch (e) {
-      throw BookingFailure('Failed to fetch booking: ${e.message}', code: e.code);
+      throw BookingFailure(
+        'Failed to fetch booking: ${e.message}',
+        code: e.code,
+      );
     } catch (e) {
       throw BookingFailure('Unexpected error fetching booking: $e');
     }
@@ -22,13 +25,18 @@ class BookingRepository {
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } on FirebaseException catch (e) {
-      throw BookingFailure('Failed to update booking status: ${e.message}', code: e.code);
+      throw BookingFailure(
+        'Failed to update booking status: ${e.message}',
+        code: e.code,
+      );
     } catch (e) {
       throw BookingFailure('Unexpected error updating booking status: $e');
     }
   }
 
-  Future<QuerySnapshot<Map<String, dynamic>>> findByIdempotency(String requestId) async {
+  Future<QuerySnapshot<Map<String, dynamic>>> findByIdempotency(
+    String requestId,
+  ) async {
     try {
       return await _firestore
           .collection('bookings')
@@ -36,7 +44,10 @@ class BookingRepository {
           .limit(1)
           .get();
     } on FirebaseException catch (e) {
-      throw BookingFailure('Idempotency check failed: ${e.message}', code: e.code);
+      throw BookingFailure(
+        'Idempotency check failed: ${e.message}',
+        code: e.code,
+      );
     } catch (e) {
       throw BookingFailure('Unexpected error during idempotency check: $e');
     }

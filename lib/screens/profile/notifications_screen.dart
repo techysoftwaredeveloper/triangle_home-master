@@ -73,7 +73,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _firebaseService.getNotifications(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -82,7 +83,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           }
 
           final docs = snapshot.data?.docs ?? [];
-          final unreadCount = docs.where((doc) => !(doc.data()['is_read'] as bool? ?? false)).length;
+          final unreadCount =
+              docs
+                  .where((doc) => !(doc.data()['is_read'] as bool? ?? false))
+                  .length;
 
           return CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -111,7 +115,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   if (unreadCount > 0)
                     IconButton(
                       onPressed: _markAllRead,
-                      icon: const Icon(Icons.done_all_rounded, color: Colors.white, size: 22),
+                      icon: const Icon(
+                        Icons.done_all_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                       tooltip: 'Mark all as read',
                     ),
                   const SizedBox(width: 8),
@@ -129,9 +137,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          unreadCount > 0 
-                            ? 'You have $unreadCount new updates' 
-                            : 'You\'re all caught up!',
+                          unreadCount > 0
+                              ? 'You have $unreadCount new updates'
+                              : 'You\'re all caught up!',
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 14,
@@ -141,14 +149,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         const SizedBox(height: 8),
                         if (unreadCount > 0)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Text(
                               'Priority Updates',
-                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                       ],
@@ -185,11 +200,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             final data = doc.data();
                             final isRead = data['is_read'] as bool? ?? false;
                             final type = data['type'] as String? ?? 'general';
-                            final title = data['title'] as String? ?? 'Notification';
+                            final title =
+                                data['title'] as String? ?? 'Notification';
                             final body = data['body'] as String? ?? '';
                             final timestamp = data['createdAt'];
 
-                            return _buildNotificationCard(doc.id, isRead, type, title, body, timestamp, index);
+                            return _buildNotificationCard(
+                              doc.id,
+                              isRead,
+                              type,
+                              title,
+                              body,
+                              timestamp,
+                              index,
+                            );
                           },
                         ),
                       ],
@@ -203,7 +227,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildNotificationCard(String id, bool isRead, String type, String title, String body, dynamic timestamp, int index) {
+  Widget _buildNotificationCard(
+    String id,
+    bool isRead,
+    String type,
+    String title,
+    String body,
+    dynamic timestamp,
+    int index,
+  ) {
     return Dismissible(
       key: Key(id),
       direction: DismissDirection.endToStart,
@@ -228,7 +260,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.delete_outline_rounded, color: AppTheme.errorColor, size: 24),
+            const Icon(
+              Icons.delete_outline_rounded,
+              color: AppTheme.errorColor,
+              size: 24,
+            ),
           ],
         ),
       ),
@@ -236,104 +272,124 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppTheme.radiusLG),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            border: Border.all(
-              color: isRead ? Colors.transparent : AppTheme.accentColor.withValues(alpha: 0.1),
-              width: 1,
-            ),
-          ),
-          child: InkWell(
-            onTap: () => _markAsRead(id, isRead),
-            borderRadius: BorderRadius.circular(AppTheme.radiusLG),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _getIconColor(type).withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      _getIcon(type),
-                      color: _getIconColor(type),
-                      size: 24,
-                    ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppTheme.radiusLG),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                ],
+                border: Border.all(
+                  color:
+                      isRead
+                          ? Colors.transparent
+                          : AppTheme.accentColor.withValues(alpha: 0.1),
+                  width: 1,
+                ),
+              ),
+              child: InkWell(
+                onTap: () => _markAsRead(id, isRead),
+                borderRadius: BorderRadius.circular(AppTheme.radiusLG),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _getIconColor(type).withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _getIcon(type),
+                          color: _getIconColor(type),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Text(
-                                title,
-                                style: TextStyle(
-                                  fontWeight: isRead ? FontWeight.w600 : FontWeight.bold,
-                                  fontSize: 14,
-                                  fontFamily: AppTheme.fontFamily,
-                                  color: AppTheme.textColor,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    title,
+                                    style: TextStyle(
+                                      fontWeight:
+                                          isRead
+                                              ? FontWeight.w600
+                                              : FontWeight.bold,
+                                      fontSize: 14,
+                                      fontFamily: AppTheme.fontFamily,
+                                      color: AppTheme.textColor,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _formatTime(timestamp),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color:
+                                        isRead
+                                            ? AppTheme.textMutedColor
+                                            : AppTheme.accentColor,
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontWeight:
+                                        isRead
+                                            ? FontWeight.normal
+                                            : FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(height: 6),
                             Text(
-                              _formatTime(timestamp),
+                              body,
                               style: TextStyle(
-                                fontSize: 11,
-                                color: isRead ? AppTheme.textMutedColor : AppTheme.accentColor,
+                                fontSize: 13,
+                                color:
+                                    isRead
+                                        ? AppTheme.textLightColor
+                                        : AppTheme.textColor.withValues(
+                                          alpha: 0.8,
+                                        ),
                                 fontFamily: AppTheme.fontFamily,
-                                fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                                height: 1.4,
                               ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          body,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isRead ? AppTheme.textLightColor : AppTheme.textColor.withValues(alpha: 0.8),
-                            fontFamily: AppTheme.fontFamily,
-                            height: 1.4,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (!isRead)
-                    Container(
-                      margin: const EdgeInsets.only(left: 8, top: 4),
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppTheme.accentColor,
-                        shape: BoxShape.circle,
                       ),
-                    ),
-                ],
+                      if (!isRead)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8, top: 4),
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppTheme.accentColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
-        ).animate().fadeIn(delay: Duration(milliseconds: 50 * index)).slideX(begin: 0.05, end: 0),
+            )
+            .animate()
+            .fadeIn(delay: Duration(milliseconds: 50 * index))
+            .slideX(begin: 0.05, end: 0),
       ),
     );
   }
@@ -386,21 +442,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.cloud_off_rounded, size: 64, color: AppTheme.errorColor),
+          const Icon(
+            Icons.cloud_off_rounded,
+            size: 64,
+            color: AppTheme.errorColor,
+          ),
           const SizedBox(height: 20),
           const Text(
             'Connection lost',
-            style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold, fontSize: 18),
+            style: TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
           const SizedBox(height: 8),
-          const Text('Please check your internet and try again.', style: TextStyle(color: Colors.grey)),
+          const Text(
+            'Please check your internet and try again.',
+            style: TextStyle(color: Colors.grey),
+          ),
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () => setState(() {}),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryColor,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text('Reload'),
           ),
@@ -420,11 +489,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) return;
 
-      final snapshot = await FirebaseFirestore.instance
-          .collection('notifications')
-          .where('user_id', isEqualTo: userId)
-          .where('is_read', isEqualTo: false)
-          .get();
+      final snapshot =
+          await FirebaseFirestore.instance
+              .collection('notifications')
+              .where('user_id', isEqualTo: userId)
+              .where('is_read', isEqualTo: false)
+              .get();
 
       if (snapshot.docs.isEmpty) return;
 
@@ -441,7 +511,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             backgroundColor: AppTheme.textDarkColor,
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(20),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }

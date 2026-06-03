@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:triangle_home/search_results_screen.dart';
 import 'package:triangle_home/services/firebase_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
-import 'package:triangle_home/widgets/college_search_popup.dart';
-import 'package:triangle_home/widgets/locality_search_popup.dart';
 
 class SearchScreen extends StatefulWidget {
   final String? initialSearchType;
@@ -90,42 +88,21 @@ class _SearchScreenState extends State<SearchScreen> {
         context: context,
         backgroundColor: Colors.transparent,
         isScrollControlled: true,
-        builder: (context) => CollegeSearchPopup(
-          colleges: _colleges,
-          onCollegeSelected: (college) {
-            setState(() {
-              _selectedCollege = college;
-            });
-          },
-        ),
+        builder:
+            (context) => _buildCollegeSelectionSheet(),
       );
     } else {
       showModalBottomSheet(
         context: context,
         backgroundColor: Colors.transparent,
         isScrollControlled: true,
-        builder: (context) => LocalitySearchPopup(
-          localities: _localities,
-          selectedLocalities: _selectedLocalities,
-          onLocalityToggled: (locality) {
-            setState(() {
-              if (_selectedLocalities.contains(locality)) {
-                _selectedLocalities.remove(locality);
-              } else if (_selectedLocalities.length < 5) {
-                _selectedLocalities.add(locality);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('You can select up to 5 localities')),
-                );
-              }
-            });
-          },
-        ),
+        builder:
+            (context) => _buildLocalitySelectionSheet(),
       );
     }
   }
 
-  Widget _buildAreaBottomSheet() {
+  Widget _buildLocalitySelectionSheet() {
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.6,
@@ -207,7 +184,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                     setState(() {
                                       if (isSelected) {
                                         _selectedLocalities.remove(locality);
-                                      } else if (_selectedLocalities.length < 5) {
+                                      } else if (_selectedLocalities.length <
+                                          5) {
                                         _selectedLocalities.add(locality);
                                       } else {
                                         ScaffoldMessenger.of(
@@ -234,13 +212,16 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildCollegeBottomSheet() {
+  Widget _buildCollegeSelectionSheet() {
     String searchQuery = '';
     return StatefulBuilder(
       builder: (context, setModalState) {
-        final filteredColleges = _colleges
-            .where((c) => c.toLowerCase().contains(searchQuery.toLowerCase()))
-            .toList();
+        final filteredColleges =
+            _colleges
+                .where(
+                  (c) => c.toLowerCase().contains(searchQuery.toLowerCase()),
+                )
+                .toList();
 
         return DraggableScrollableSheet(
           expand: false,
@@ -408,10 +389,41 @@ class _SearchScreenState extends State<SearchScreen> {
             'https://upload.wikimedia.org/wikipedia/en/2/2e/Yenepoya_University_Logo.png',
       },
       {
+        'name': 'IIT Delhi',
+        'location': 'New Delhi',
+        'logo': 'https://home.iitd.ac.in/images/logo.png',
+      },
+      {
+        'name': 'IIM Ahmedabad',
+        'location': 'Ahmedabad, Gujarat',
+        'logo': 'https://www.iima.ac.in/sites/default/files/iima-logo.png',
+      },
+      {
         'name': 'Madras Christian College',
         'location': 'Chennai, Tamil Nadu',
         'logo':
             'https://upload.wikimedia.org/wikipedia/en/0/0d/Madras_Christian_College_logo.png',
+      },
+      {
+        'name': 'BITS Pilani',
+        'location': 'Pilani, Rajasthan',
+        'logo': 'https://www.bits-pilani.ac.in/wp-content/uploads/bits-logo.png',
+      },
+      {
+        'name': 'Manipal Academy',
+        'location': 'Manipal, Karnataka',
+        'logo': 'https://manipal.edu/content/dam/manipal/mu/images/logo.png',
+      },
+      {
+        'name': 'SRM University',
+        'location': 'Chennai, Tamil Nadu',
+        'logo': 'https://www.srmist.edu.in/wp-content/uploads/2021/01/logo.png',
+      },
+      {
+        'name': 'Chandigarh University',
+        'location': 'Mohali, Punjab',
+        'logo':
+            'https://www.cuchd.in/assets/images/chandigarh-university-logo.png',
       },
     ];
 
@@ -704,7 +716,9 @@ class _SearchScreenState extends State<SearchScreen> {
                             style: TextStyle(
                               color: isSelected ? Colors.white : Colors.black87,
                               fontWeight:
-                                  isSelected ? FontWeight.w600 : FontWeight.w400,
+                                  isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
                               fontFamily: 'Outfit',
                               fontSize: 13,
                             ),
@@ -958,7 +972,9 @@ class _SearchScreenState extends State<SearchScreen> {
                 child: _buildPreferenceButton(
                   'Paying Guest Hostels',
                   _selectedAccommodationType == 'Paying Guest Hostels',
-                  () => setState(() => _selectedAccommodationType = 'Paying Guest Hostels'),
+                  () => setState(
+                    () => _selectedAccommodationType = 'Paying Guest Hostels',
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -966,7 +982,8 @@ class _SearchScreenState extends State<SearchScreen> {
                 child: _buildPreferenceButton(
                   'Apartments',
                   _selectedAccommodationType == 'Apartments',
-                  () => setState(() => _selectedAccommodationType = 'Apartments'),
+                  () =>
+                      setState(() => _selectedAccommodationType = 'Apartments'),
                 ),
               ),
             ],
@@ -1030,51 +1047,76 @@ class _SearchScreenState extends State<SearchScreen> {
           const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, constraints) {
-              final options = isApartment
-                  ? ['Any', '1 RK', '1 BHK', '2 BHK', '3 BHK', '4 BHK', '4+ BHK']
-                  : ['Any', 'Single', '2 Sharing', '3 Sharing', '4 Sharing'];
+              final options =
+                  isApartment
+                      ? [
+                        'Any',
+                        '1 RK',
+                        '1 BHK',
+                        '2 BHK',
+                        '3 BHK',
+                        '4 BHK',
+                        '4+ BHK',
+                      ]
+                      : [
+                        'Any',
+                        'Single',
+                        '2 Sharing',
+                        '3 Sharing',
+                        '4 Sharing',
+                      ];
 
               final crossAxisCount = isApartment ? 4 : 3;
-              final itemWidth = (constraints.maxWidth - ((crossAxisCount - 1) * 12)) / crossAxisCount;
+              final itemWidth =
+                  (constraints.maxWidth - ((crossAxisCount - 1) * 12)) /
+                  crossAxisCount;
 
               return Wrap(
                 spacing: 12,
                 runSpacing: 12,
-                children: options.map((type) {
-                  final isSelected = _selectedRoomType == type;
-                  return InkWell(
-                    onTap: () => setState(() => _selectedRoomType = type),
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      width: itemWidth,
-                      height: 44,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppTheme.primaryColor.withValues(alpha: 0.08)
-                            : Colors.white,
+                children:
+                    options.map((type) {
+                      final isSelected = _selectedRoomType == type;
+                      return InkWell(
+                        onTap: () => setState(() => _selectedRoomType = type),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppTheme.primaryColor
-                              : const Color(0xFFE2E8F0),
+                        child: Container(
+                          width: itemWidth,
+                          height: 44,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color:
+                                isSelected
+                                    ? AppTheme.primaryColor.withValues(
+                                      alpha: 0.08,
+                                    )
+                                    : Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color:
+                                  isSelected
+                                      ? AppTheme.primaryColor
+                                      : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          child: Text(
+                            type,
+                            style: TextStyle(
+                              color:
+                                  isSelected
+                                      ? AppTheme.primaryColor
+                                      : const Color(0xFF64748B),
+                              fontWeight:
+                                  isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                              fontFamily: 'Outfit',
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        type,
-                        style: TextStyle(
-                          color: isSelected
-                              ? AppTheme.primaryColor
-                              : const Color(0xFF64748B),
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.w500,
-                          fontFamily: 'Outfit',
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
+                      );
+                    }).toList(),
               );
             },
           ),
@@ -1083,7 +1125,11 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildPreferenceButton(String text, bool isSelected, VoidCallback onTap) {
+  Widget _buildPreferenceButton(
+    String text,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -1091,7 +1137,10 @@ class _SearchScreenState extends State<SearchScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.05) : Colors.white,
+          color:
+              isSelected
+                  ? AppTheme.primaryColor.withValues(alpha: 0.05)
+                  : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),

@@ -7,10 +7,7 @@ import 'package:triangle_home/screens/room_details_screen.dart';
 class WishlistCard extends StatelessWidget {
   final Map<String, dynamic> item;
 
-  const WishlistCard({
-    super.key,
-    required this.item,
-  });
+  const WishlistCard({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -33,26 +30,28 @@ class WishlistCard extends StatelessWidget {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
+                ),
                 child: CachedNetworkImage(
                   imageUrl: item['image'],
                   height: 200,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    height: 200,
-                    color: Colors.grey[200],
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
+                  placeholder:
+                      (context, url) => Container(
+                        height: 200,
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                       ),
-                    ),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    height: 200,
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.error),
-                  ),
+                  errorWidget:
+                      (context, url, error) => Container(
+                        height: 200,
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.error),
+                      ),
                 ),
               ),
               if (item['isBooked'])
@@ -151,10 +150,7 @@ class WishlistCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   item['location'],
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -170,7 +166,9 @@ class WishlistCard extends StatelessWidget {
                                 (_) => LoginScreen(
                                   isStudent: true,
                                   onLoginNavigateTo: RoomDetailsScreen(
-                                    accommodation: Map<String, dynamic>.from(item),
+                                    accommodation: Map<String, dynamic>.from(
+                                      item,
+                                    ),
                                   ),
                                 ),
                           ),

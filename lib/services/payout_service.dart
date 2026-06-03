@@ -32,7 +32,7 @@ class PayoutService {
       'performedBy': adminId,
       'timestamp': FieldValue.serverTimestamp(),
     });
-    
+
     // In a real scenario, this would trigger the actual bank transfer via Razorpay Route/Marketplace
   }
 }

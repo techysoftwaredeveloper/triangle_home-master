@@ -19,7 +19,8 @@ class ApprovalsTab extends StatefulWidget {
   State<ApprovalsTab> createState() => _ApprovalsTabState();
 }
 
-class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderStateMixin {
+class _ApprovalsTabState extends State<ApprovalsTab>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -46,30 +47,51 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
 
         // Mock additional items to match the image counts
         final List<Map<String, dynamic>> displayItems = List.from(allItems);
-        if (displayItems.isEmpty && snapshot.connectionState != ConnectionState.waiting) {
-           _addMockData(displayItems);
+        if (displayItems.isEmpty &&
+            snapshot.connectionState != ConnectionState.waiting) {
+          _addMockData(displayItems);
         }
 
-        final hosterRequests = displayItems.where((i) => i['type'] == 'hoster').toList();
-        final propertyListings = displayItems.where((i) => i['type'] == 'property').toList();
-        final userVerifications = displayItems.where((i) => i['type'] == 'user_verification').toList();
-        final otherRequests = displayItems.where((i) => i['type'] == 'other').toList();
+        final hosterRequests =
+            displayItems.where((i) => i['type'] == 'hoster').toList();
+        final propertyListings =
+            displayItems.where((i) => i['type'] == 'property').toList();
+        final userVerifications =
+            displayItems
+                .where((i) => i['type'] == 'user_verification')
+                .toList();
+        final otherRequests =
+            displayItems.where((i) => i['type'] == 'other').toList();
 
         // Filter based on tab
         List<Map<String, dynamic>> filteredItems;
         switch (_tabController.index) {
-          case 1: filteredItems = hosterRequests; break;
-          case 2: filteredItems = propertyListings; break;
-          case 3: filteredItems = userVerifications; break;
-          case 4: filteredItems = otherRequests; break;
-          default: filteredItems = displayItems; break;
+          case 1:
+            filteredItems = hosterRequests;
+            break;
+          case 2:
+            filteredItems = propertyListings;
+            break;
+          case 3:
+            filteredItems = userVerifications;
+            break;
+          case 4:
+            filteredItems = otherRequests;
+            break;
+          default:
+            filteredItems = displayItems;
+            break;
         }
 
         if (_searchQuery.isNotEmpty) {
-          filteredItems = filteredItems.where((item) {
-            final title = (item['name'] ?? item['info']?['name'] ?? '').toString().toLowerCase();
-            return title.contains(_searchQuery.toLowerCase());
-          }).toList();
+          filteredItems =
+              filteredItems.where((item) {
+                final title =
+                    (item['name'] ?? item['info']?['name'] ?? '')
+                        .toString()
+                        .toLowerCase();
+                return title.contains(_searchQuery.toLowerCase());
+              }).toList();
         }
 
         return SingleChildScrollView(
@@ -85,11 +107,14 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
               const SizedBox(height: 24),
               _buildSearchAndFilterRow(),
               const SizedBox(height: 24),
-              if (snapshot.connectionState == ConnectionState.waiting && allItems.isEmpty)
-                const Center(child: Padding(
-                  padding: EdgeInsets.all(40.0),
-                  child: CircularProgressIndicator(),
-                ))
+              if (snapshot.connectionState == ConnectionState.waiting &&
+                  allItems.isEmpty)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(40.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
               else
                 _buildItemsList(filteredItems),
               const SizedBox(height: 40),
@@ -98,7 +123,7 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
             ],
           ),
         );
-      }
+      },
     );
   }
 
@@ -179,12 +204,21 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
           children: const [
             Text(
               'Approvals',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF0F172A), fontFamily: 'Outfit'),
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+                fontFamily: 'Outfit',
+              ),
             ),
             SizedBox(height: 4),
             Text(
               'Review and take action on pending requests',
-              style: TextStyle(color: Color(0xFF64748B), fontSize: 15, fontFamily: 'Outfit'),
+              style: TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 15,
+                fontFamily: 'Outfit',
+              ),
             ),
           ],
         ),
@@ -201,10 +235,18 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
               SizedBox(width: 10),
               Text(
                 'Filter',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF0F172A),
+                ),
               ),
               SizedBox(width: 4),
-              Icon(Icons.keyboard_arrow_down, size: 18, color: Color(0xFF64748B)),
+              Icon(
+                Icons.keyboard_arrow_down,
+                size: 18,
+                color: Color(0xFF64748B),
+              ),
             ],
           ),
         ),
@@ -215,7 +257,8 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
   Widget _buildSummaryRow(List<Map<String, dynamic>> items) {
     final hosterCount = items.where((i) => i['type'] == 'hoster').length;
     final propertyCount = items.where((i) => i['type'] == 'property').length;
-    final userCount = items.where((i) => i['type'] == 'user_verification').length;
+    final userCount =
+        items.where((i) => i['type'] == 'user_verification').length;
     final otherCount = items.where((i) => i['type'] == 'other').length;
 
     return SingleChildScrollView(
@@ -278,7 +321,8 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
   Widget _buildTabNavigation(List<Map<String, dynamic>> items) {
     final hosterCount = items.where((i) => i['type'] == 'hoster').length;
     final propertyCount = items.where((i) => i['type'] == 'property').length;
-    final userCount = items.where((i) => i['type'] == 'user_verification').length;
+    final userCount =
+        items.where((i) => i['type'] == 'user_verification').length;
     final otherCount = items.where((i) => i['type'] == 'other').length;
 
     return Container(
@@ -293,7 +337,11 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
         unselectedLabelColor: const Color(0xFF64748B),
         indicatorColor: const Color(0xFF6366F1),
         indicatorWeight: 3,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'Outfit'),
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          fontFamily: 'Outfit',
+        ),
         tabs: [
           Tab(text: 'All (${items.length})'),
           Tab(text: 'Hoster Requests ($hosterCount)'),
@@ -328,7 +376,10 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
                     decoration: const InputDecoration(
                       hintText: 'Search approvals...',
                       border: InputBorder.none,
-                      hintStyle: TextStyle(fontSize: 14, color: Color(0xFF94A3B8)),
+                      hintStyle: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF94A3B8),
+                      ),
                     ),
                   ),
                 ),
@@ -349,10 +400,18 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
             children: const [
               Text(
                 'Newest First',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF0F172A),
+                ),
               ),
               SizedBox(width: 12),
-              Icon(Icons.keyboard_arrow_down, size: 20, color: Color(0xFF64748B)),
+              Icon(
+                Icons.keyboard_arrow_down,
+                size: 20,
+                color: Color(0xFF64748B),
+              ),
             ],
           ),
         ),
@@ -365,17 +424,27 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
       return Container(
         height: 200,
         alignment: Alignment.center,
-        child: const Text('No matching requests found', style: TextStyle(color: Color(0xFF64748B))),
+        child: const Text(
+          'No matching requests found',
+          style: TextStyle(color: Color(0xFF64748B)),
+        ),
       );
     }
 
     return Column(
-      children: items.map((item) => _ApprovalItemCard(
-        item: item,
-        onApprove: () => _handleAction(item['id'], item['type'], 'approve'),
-        onReject: () => _handleAction(item['id'], item['type'], 'reject'),
-        onDetails: () => _viewDetails(item),
-      )).toList(),
+      children:
+          items
+              .map(
+                (item) => _ApprovalItemCard(
+                  item: item,
+                  onApprove:
+                      () => _handleAction(item['id'], item['type'], 'approve'),
+                  onReject:
+                      () => _handleAction(item['id'], item['type'], 'reject'),
+                  onDetails: () => _viewDetails(item),
+                ),
+              )
+              .toList(),
     );
   }
 
@@ -384,25 +453,29 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => PropertyDetailScreen(
-            property: item,
-            adminService: widget.adminService,
-          ),
+          builder:
+              (context) => PropertyDetailScreen(
+                property: item,
+                adminService: widget.adminService,
+              ),
         ),
       );
     } else if (item['type'] == 'hoster') {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => HosterDetailScreen(
-            request: item,
-            adminService: widget.adminService,
-          ),
+          builder:
+              (context) => HosterDetailScreen(
+                request: item,
+                adminService: widget.adminService,
+              ),
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Details view for this request type is coming soon')),
+        const SnackBar(
+          content: Text('Details view for this request type is coming soon'),
+        ),
       );
     }
   }
@@ -417,7 +490,9 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${type[0].toUpperCase()}${type.substring(1)} ${action == 'approve' ? 'approved' : 'rejected'} successfully'),
+            content: Text(
+              '${type[0].toUpperCase()}${type.substring(1)} ${action == 'approve' ? 'approved' : 'rejected'} successfully',
+            ),
             backgroundColor: action == 'approve' ? Colors.green : Colors.orange,
           ),
         );
@@ -425,7 +500,10 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Failed to update: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -443,8 +521,15 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(color: Color(0xFF2563EB), shape: BoxShape.circle),
-            child: const Icon(Icons.info_outline, color: Colors.white, size: 18),
+            decoration: const BoxDecoration(
+              color: Color(0xFF2563EB),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.info_outline,
+              color: Colors.white,
+              size: 18,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -453,7 +538,11 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
               children: const [
                 Text(
                   'Need help reviewing approvals?',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Color(0xFF1E293B),
+                  ),
                 ),
                 SizedBox(height: 2),
                 Text(
@@ -472,10 +561,18 @@ class _ApprovalsTabState extends State<ApprovalsTab> with SingleTickerProviderSt
                 foregroundColor: const Color(0xFF0F172A),
                 elevation: 0,
                 side: const BorderSide(color: Color(0xFFE2E8F0)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
-              child: const Text('View Guidelines', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              child: const Text(
+                'View Guidelines',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
             ),
           ),
         ],
@@ -513,19 +610,31 @@ class _SummaryStatCard extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(16)),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Icon(icon, color: iconColor, size: 24),
           ),
           const SizedBox(height: 16),
           Text(
             count,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B), letterSpacing: 0.2),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF64748B),
+              letterSpacing: 0.2,
+            ),
           ),
         ],
       ),
@@ -601,9 +710,16 @@ class _ApprovalItemCard extends StatelessWidget {
                   children: [
                     Text(
                       typeLabel,
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: typeColor),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: typeColor,
+                      ),
                     ),
-                    _StatusBadge(text: 'Pending', color: const Color(0xFFF59E0B)),
+                    _StatusBadge(
+                      text: 'Pending',
+                      color: const Color(0xFFF59E0B),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -629,7 +745,8 @@ class _ApprovalItemCard extends StatelessWidget {
 
   Widget _buildThumbnail(IconData icon, Color color) {
     final images = item['images'] as List? ?? [];
-    final imageUrl = images.isNotEmpty ? images.first : 'https://via.placeholder.com/90';
+    final imageUrl =
+        images.isNotEmpty ? images.first : 'https://via.placeholder.com/90';
 
     return Stack(
       children: [
@@ -664,7 +781,11 @@ class _ApprovalItemCard extends StatelessWidget {
 
   Widget _buildMainInfo(Map<String, dynamic> item, String type) {
     final name = item['name'] ?? 'Unknown';
-    final requester = item['info']?['name'] ?? item['hosterName'] ?? item['requesterName'] ?? 'Unknown';
+    final requester =
+        item['info']?['name'] ??
+        item['hosterName'] ??
+        item['requesterName'] ??
+        'Unknown';
     final email = item['info']?['email'] ?? item['email'] ?? '';
     final phone = item['info']?['phoneNumber'] ?? '';
     final location = item['location'] ?? '';
@@ -674,16 +795,34 @@ class _ApprovalItemCard extends StatelessWidget {
       children: [
         Text(
           name,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0F172A),
+          ),
         ),
         const SizedBox(height: 4),
         Row(
           children: [
-            const Text('Requested by: ', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-            Text(requester, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            const Text(
+              'Requested by: ',
+              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            ),
+            Text(
+              requester,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
+            ),
             if (item['isVerified'] == true) ...[
               const SizedBox(width: 4),
-              const Icon(Icons.check_circle, size: 14, color: Color(0xFF3B82F6)),
+              const Icon(
+                Icons.check_circle,
+                size: 14,
+                color: Color(0xFF3B82F6),
+              ),
             ],
           ],
         ),
@@ -703,10 +842,13 @@ class _ApprovalItemCard extends StatelessWidget {
   }
 
   Widget _buildMetaInfo(Map<String, dynamic> item, String type) {
-    final dateStr = item['createdAt'] is Timestamp 
-      ? DateFormat('dd MMM yyyy, hh:mm a').format((item['createdAt'] as Timestamp).toDate())
-      : 'N/A';
-    
+    final dateStr =
+        item['createdAt'] is Timestamp
+            ? DateFormat(
+              'dd MMM yyyy, hh:mm a',
+            ).format((item['createdAt'] as Timestamp).toDate())
+            : 'N/A';
+
     final String label;
     final String value;
     final Color valueColor;
@@ -728,11 +870,31 @@ class _ApprovalItemCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        const Text('Requested on', style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-        Text(dateStr, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+        const Text(
+          'Requested on',
+          style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+        ),
+        Text(
+          dateStr,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF475569),
+          ),
+        ),
         const SizedBox(height: 12),
-        Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-        Text(value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: valueColor)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: valueColor,
+          ),
+        ),
       ],
     );
   }
@@ -740,20 +902,44 @@ class _ApprovalItemCard extends StatelessWidget {
   Widget _buildTags(Map<String, dynamic> item, String type) {
     List<String> tags = [];
     if (type == 'hoster') {
-      tags = [item['category'] ?? 'PG Hostel', '${item['propertyCount'] ?? 0} Properties'];
+      tags = [
+        item['category'] ?? 'PG Hostel',
+        '${item['propertyCount'] ?? 0} Properties',
+      ];
     } else if (type == 'property') {
-      tags = [item['category'] ?? 'PG Accommodation', '${item['rooms'] ?? 0} Rooms'];
+      tags = [
+        item['category'] ?? 'PG Accommodation',
+        '${item['rooms'] ?? 0} Rooms',
+      ];
     }
 
     if (tags.isEmpty) return const SizedBox.shrink();
 
     return Wrap(
       spacing: 8,
-      children: tags.map((t) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
-        child: Text(t, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
-      )).toList(),
+      children:
+          tags
+              .map(
+                (t) => Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    t,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF475569),
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
     );
   }
 
@@ -762,7 +948,10 @@ class _ApprovalItemCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: const BoxDecoration(
         color: Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(24), bottomRight: Radius.circular(24)),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
       ),
       child: Row(
         children: [
@@ -837,8 +1026,11 @@ class _ActionButton extends StatelessWidget {
           children: [
             Flexible(
               child: Text(
-                label, 
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -863,10 +1055,17 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Text(
         text,
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

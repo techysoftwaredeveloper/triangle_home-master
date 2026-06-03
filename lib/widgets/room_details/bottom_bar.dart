@@ -6,8 +6,6 @@ import 'package:triangle_home/screens/booking_summary_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 import 'package:triangle_home/widgets/inventory/bed_selection_sheet.dart';
-import 'package:triangle_home/models/room_model.dart';
-import 'package:triangle_home/models/bed_model.dart';
 
 /// CTA flow for Hostel/PG:
 ///   Step 0 (no selection)  → "Check Availability" (disabled, or shows picker prompt)
@@ -67,25 +65,26 @@ class _BottomBarState extends State<BottomBar> {
 
   void _handleCheckAvailability() {
     if (!_hasSelection) return;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => BedSelectionSheet(
-        propertyId: widget.accommodation['id'] ?? '',
-        onSelected: (room, bed) {
-          Navigator.pop(context);
-          setState(() {
-            _step = _CtaStep.availabilityConfirmed;
-            // Store selection in accommodation map for flow continuity
-            widget.accommodation['selectedRoomId'] = room.id;
-            widget.accommodation['selectedBedId'] = bed.id;
-            widget.accommodation['selectedRoomNumber'] = room.roomNumber;
-            widget.accommodation['selectedBedNumber'] = bed.bedNumber;
-          });
-        },
-      ),
+      builder:
+          (context) => BedSelectionSheet(
+            propertyId: widget.accommodation['id'] ?? '',
+            onSelected: (room, bed) {
+              Navigator.pop(context);
+              setState(() {
+                _step = _CtaStep.availabilityConfirmed;
+                // Store selection in accommodation map for flow continuity
+                widget.accommodation['selectedRoomId'] = room.id;
+                widget.accommodation['selectedBedId'] = bed.id;
+                widget.accommodation['selectedRoomNumber'] = room.roomNumber;
+                widget.accommodation['selectedBedNumber'] = bed.bedNumber;
+              });
+            },
+          ),
     );
   }
 
@@ -101,10 +100,11 @@ class _BottomBarState extends State<BottomBar> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => LoginScreen(
-            isStudent: true,
-            onLoginNavigateTo: bookingSummary,
-          ),
+          builder:
+              (_) => LoginScreen(
+                isStudent: true,
+                onLoginNavigateTo: bookingSummary,
+              ),
         ),
       );
     } else {
@@ -126,24 +126,26 @@ class _BottomBarState extends State<BottomBar> {
     // Placeholder — can open chat or phone
     final phone = widget.accommodation['phone'] as String?;
     if (phone != null && phone.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Contact: $phone')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Contact: $phone')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final effectiveDeposit = widget.deposit > 0
-        ? widget.deposit
-        : (() {
-            final d = widget.accommodation['deposit'] ??
-                widget.accommodation['initialDeposit'];
-            if (d is int) return d;
-            if (d is double) return d.toInt();
-            if (d is String) return int.tryParse(d.replaceAll(',', '')) ?? 0;
-            return widget.price > 0 ? widget.price + 1500 : 0;
-          })();
+    final effectiveDeposit =
+        widget.deposit > 0
+            ? widget.deposit
+            : (() {
+              final d =
+                  widget.accommodation['deposit'] ??
+                  widget.accommodation['initialDeposit'];
+              if (d is int) return d;
+              if (d is double) return d.toInt();
+              if (d is String) return int.tryParse(d.replaceAll(',', '')) ?? 0;
+              return widget.price > 0 ? widget.price + 1500 : 0;
+            })();
 
     return Container(
       decoration: BoxDecoration(
@@ -184,9 +186,11 @@ class _BottomBarState extends State<BottomBar> {
                 children: [
                   // Price + breakdown toggle
                   GestureDetector(
-                    onTap: widget.price > 0
-                        ? () => setState(() => _showBreakdown = !_showBreakdown)
-                        : null,
+                    onTap:
+                        widget.price > 0
+                            ? () =>
+                                setState(() => _showBreakdown = !_showBreakdown)
+                            : null,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -242,15 +246,16 @@ class _BottomBarState extends State<BottomBar> {
 
                   // Primary CTA
                   Expanded(
-                    child: _step == _CtaStep.initial
-                        ? _CheckAvailabilityButton(
-                            enabled: _hasSelection,
-                            onTap: _handleCheckAvailability,
-                          )
-                        : _ApplyButton(
-                            label: _isApartment ? 'Book Now' : 'Apply Now',
-                            onTap: () => _handleApply(context),
-                          ),
+                    child:
+                        _step == _CtaStep.initial
+                            ? _CheckAvailabilityButton(
+                              enabled: _hasSelection,
+                              onTap: _handleCheckAvailability,
+                            )
+                            : _ApplyButton(
+                              label: _isApartment ? 'Book Now' : 'Apply Now',
+                              onTap: () => _handleApply(context),
+                            ),
                   ),
                 ],
               ),
@@ -341,7 +346,10 @@ class _SecondaryActions extends StatelessWidget {
   final VoidCallback onScheduleVisit;
   final VoidCallback onContact;
 
-  const _SecondaryActions({required this.onScheduleVisit, required this.onContact});
+  const _SecondaryActions({
+    required this.onScheduleVisit,
+    required this.onContact,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -448,12 +456,29 @@ class _PriceBreakdown extends StatelessWidget {
           _Row(label: 'Monthly Rent', value: '₹$price'),
           _Row(label: 'Initial Deposit (refundable)', value: '₹$deposit'),
           if (maintenanceCharge > 0)
-            _Row(label: 'Maintenance Charges', value: '₹$maintenanceCharge', isSmall: true),
+            _Row(
+              label: 'Maintenance Charges',
+              value: '₹$maintenanceCharge',
+              isSmall: true,
+            ),
           if (additionalCosts > 0)
-            _Row(label: 'Additional Costs', value: '₹$additionalCosts', isSmall: true),
-          _Row(label: 'Included', value: 'See amenities', isHighlight: false, isSmall: true),
+            _Row(
+              label: 'Additional Costs',
+              value: '₹$additionalCosts',
+              isSmall: true,
+            ),
+          _Row(
+            label: 'Included',
+            value: 'See amenities',
+            isHighlight: false,
+            isSmall: true,
+          ),
           const Divider(height: 16),
-          _Row(label: 'Due at move-in', value: '₹${price + deposit}', isBold: true),
+          _Row(
+            label: 'Due at move-in',
+            value: '₹${price + deposit}',
+            isBold: true,
+          ),
         ],
       ),
     );

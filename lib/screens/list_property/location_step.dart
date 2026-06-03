@@ -86,11 +86,27 @@ class _LocationStepState extends State<LocationStep> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.location_on_rounded, color: AppTheme.successColor, size: 32),
+                    Icon(
+                      Icons.location_on_rounded,
+                      color: AppTheme.successColor,
+                      size: 32,
+                    ),
                     const SizedBox(height: 8),
-                    const Text('Mark on Map', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const Text(
+                      'Mark on Map',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    const Text('Drag pin to exact location', style: TextStyle(fontSize: 11, color: AppTheme.textMutedColor)),
+                    const Text(
+                      'Drag pin to exact location',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.textMutedColor,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -107,16 +123,24 @@ class _LocationStepState extends State<LocationStep> {
                         'locality': _localityController.text,
                         'city': _cityController.text,
                         'pincode': _pincodeController.text,
-                      }
+                      },
                     });
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.successColor,
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: const Text('Continue', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Continue',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],

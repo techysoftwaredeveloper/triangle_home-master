@@ -4,9 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:triangle_home/screens/home_screen.dart';
 import 'package:triangle_home/screens/admin/admin_dashboard_redesign.dart';
-import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
 import 'package:triangle_home/hoster_info_screen.dart';
-import 'package:triangle_home/student_info_screen.dart';
 import 'package:triangle_home/services/auth_production_service.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
@@ -38,12 +36,6 @@ class _SplashScreenState extends State<SplashScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      // ✅ Automatic Anonymous Sign-in for guests to satisfy Firestore Rules
-      try {
-        await FirebaseAuth.instance.signInAnonymously();
-      } catch (e) {
-        debugPrint('Guest sign-in failed: $e');
-      }
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -72,20 +64,30 @@ class _SplashScreenState extends State<SplashScreen> {
 
       // 2. Check for active hoster workflow drafts & requests
       final propertyDraft = await _isarService.getPropertyDraft(uid);
-      final hosterAppDraft = await _isarService.getAdminCache('hoster_application_draft_$uid');
+      final hosterAppDraft = await _isarService.getAdminCache(
+        'hoster_application_draft_$uid',
+      );
       final onboardingIntent = await _isarService.getUserIntent();
-      
+
       // Check Firestore for a pending/rejected request if not already a hoster
       bool hasHosterRequest = false;
       if (role != UserRole.hoster) {
-        final requestDoc = await FirebaseFirestore.instance.collection('hoster_requests').doc(uid).get();
+        final requestDoc =
+            await FirebaseFirestore.instance
+                .collection('hoster_requests')
+                .doc(uid)
+                .get();
         if (requestDoc.exists) {
           hasHosterRequest = true;
         }
       }
 
       // If they have any hoster-related draft, intent, or existing request, stay in hoster flow
-      if (onboardingIntent == 'hoster' || hosterAppDraft != null || propertyDraft != null || role == UserRole.hoster || hasHosterRequest) {
+      if (onboardingIntent == 'hoster' ||
+          hosterAppDraft != null ||
+          propertyDraft != null ||
+          role == UserRole.hoster ||
+          hasHosterRequest) {
         // If they are already an approved hoster, clear the "intent" as it's now a reality
         if (role == UserRole.hoster && status == 'approved') {
           await _isarService.clearUserIntent();
@@ -93,33 +95,69 @@ class _SplashScreenState extends State<SplashScreen> {
 
         // RESUME WORKFLOW logic
         if (propertyDraft != null && status == 'approved') {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ListPropertyScreen()));
-        } else if (hosterAppDraft != null || hasHosterRequest || (role == UserRole.hoster && status != 'approved')) {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HosterInfoScreen(phoneNumber: user.phoneNumber ?? '')));
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+          );
+        } else if (hosterAppDraft != null ||
+            hasHosterRequest ||
+            (role == UserRole.hoster && status != 'approved')) {
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (_) => HosterInfoScreen(phoneNumber: user.phoneNumber ?? ''),
+            ),
+          );
         } else if (role == UserRole.hoster && status == 'approved') {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HosterDashboardScreen()));
-        } else if (onboardingIntent == 'hoster' && (role == UserRole.none || role == UserRole.student)) {
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
+          );
+        } else if (onboardingIntent == 'hoster' &&
+            (role == UserRole.none || role == UserRole.student)) {
           // New hoster registration resume
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HosterInfoScreen(phoneNumber: user.phoneNumber ?? '')));
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (_) => HosterInfoScreen(phoneNumber: user.phoneNumber ?? ''),
+            ),
+          );
         } else {
           // Fallback hoster destination
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HosterInfoScreen(phoneNumber: user.phoneNumber ?? '')));
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (_) => HosterInfoScreen(phoneNumber: user.phoneNumber ?? ''),
+            ),
+          );
         }
         return;
       }
 
       // 3. Student / Guest flow
       if (role == UserRole.student || role == UserRole.none) {
-        if (role == UserRole.none && !user.isAnonymous) {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => StudentInfoScreen(phoneNumber: user.phoneNumber ?? '')));
-        } else {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
-        }
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
         return;
       }
 
       // 4. Ultimate fallback
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
     } catch (e) {
       debugPrint('Splash screen error: $e');
       if (mounted) {
@@ -169,29 +207,39 @@ class _SplashScreenState extends State<SplashScreen> {
                 children: [
                   // Logo Animation
                   SvgPicture.asset(
-                    'assets/images/Logo.svg',
-                    width: 120,
-                    height: 120,
-                    colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                  ).animate()
-                    .fadeIn(duration: 1200.ms, curve: Curves.easeOut)
-                    .scale(begin: const Offset(0.8, 0.8), end: const Offset(1.0, 1.0), duration: 1200.ms, curve: Curves.easeOutBack),
+                        'assets/images/Logo.svg',
+                        width: 120,
+                        height: 120,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                      )
+                      .animate()
+                      .fadeIn(duration: 1200.ms, curve: Curves.easeOut)
+                      .scale(
+                        begin: const Offset(0.8, 0.8),
+                        end: const Offset(1.0, 1.0),
+                        duration: 1200.ms,
+                        curve: Curves.easeOutBack,
+                      ),
 
                   const SizedBox(height: 32),
 
                   // Text Animation
                   const Text(
-                    'TRIANGLE HOMES',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontFamily: 'outfit',
-                      fontWeight: FontWeight.w400,
-                      letterSpacing: 8, // Wide spacing as seen in image
-                    ),
-                  ).animate()
-                    .fadeIn(delay: 600.ms, duration: 1000.ms)
-                    .slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
+                        'TRIANGLE HOMES',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontFamily: 'outfit',
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 8, // Wide spacing as seen in image
+                        ),
+                      )
+                      .animate()
+                      .fadeIn(delay: 600.ms, duration: 1000.ms)
+                      .slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
                 ],
               ),
             ),

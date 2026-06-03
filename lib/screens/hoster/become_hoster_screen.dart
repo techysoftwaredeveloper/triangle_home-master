@@ -24,7 +24,7 @@ class BecomeHosterScreen extends StatefulWidget {
 
 class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controllers
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -41,7 +41,7 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
   String? _selectedState;
   String? _profileImageUrl;
   File? _newImageFile;
-  
+
   String _selectedPropertyType = 'Hostel';
   bool _isTermsAccepted = false;
   bool _isLoading = true;
@@ -64,11 +64,34 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
   ];
 
   final List<String> _indianStates = [
-    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 
-    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 
-    'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 
-    'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 
-    'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
+    'Andhra Pradesh',
+    'Arunachal Pradesh',
+    'Assam',
+    'Bihar',
+    'Chhattisgarh',
+    'Goa',
+    'Gujarat',
+    'Haryana',
+    'Himachal Pradesh',
+    'Jharkhand',
+    'Karnataka',
+    'Kerala',
+    'Madhya Pradesh',
+    'Maharashtra',
+    'Manipur',
+    'Meghalaya',
+    'Mizoram',
+    'Nagaland',
+    'Odisha',
+    'Punjab',
+    'Rajasthan',
+    'Sikkim',
+    'Tamil Nadu',
+    'Telangana',
+    'Tripura',
+    'Uttar Pradesh',
+    'Uttarakhand',
+    'West Bengal',
   ];
 
   @override
@@ -76,7 +99,7 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
     super.initState();
     _loadInitialData();
     _listenToStatusChanges();
-    
+
     // Add auto-save listeners
     _nameController.addListener(_saveLocalDraft);
     _emailController.addListener(_saveLocalDraft);
@@ -109,42 +132,44 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
         .doc(user.uid)
         .snapshots()
         .listen((doc) {
-      if (doc.exists && mounted) {
-        final data = doc.data() as Map<String, dynamic>;
-        setState(() {
-          _userBaseData = data;
-        });
-        
-        final perms = data['permissions'] as Map? ?? {};
-        if (perms['role'] == 'hoster' && perms['status'] == 'approved') {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => HosterDashboardScreen()),
-            (route) => false,
-          );
+          if (doc.exists && mounted) {
+            final data = doc.data() as Map<String, dynamic>;
+            setState(() {
+              _userBaseData = data;
+            });
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('🎉 Your hoster account has been approved! Welcome aboard.'),
-              backgroundColor: AppTheme.successColor,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
-    });
+            final perms = data['permissions'] as Map? ?? {};
+            if (perms['role'] == 'hoster' && perms['status'] == 'approved') {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => HosterDashboardScreen()),
+                (route) => false,
+              );
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    '🎉 Your hoster account has been approved! Welcome aboard.',
+                  ),
+                  backgroundColor: AppTheme.successColor,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          }
+        });
 
     _statusSubscription = FirebaseFirestore.instance
         .collection('hoster_requests')
         .doc(user.uid)
         .snapshots()
         .listen((doc) {
-      if (doc.exists && mounted) {
-        setState(() {
-          _existingRequest = doc.data();
+          if (doc.exists && mounted) {
+            setState(() {
+              _existingRequest = doc.data();
+            });
+          }
         });
-      }
-    });
   }
 
   Future<void> _loadInitialData() async {
@@ -156,7 +181,9 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
 
     // 1. Check local draft
     final isar = IsarService();
-    final draftJson = await isar.getAdminCache('hoster_application_draft_${user.uid}');
+    final draftJson = await isar.getAdminCache(
+      'hoster_application_draft_${user.uid}',
+    );
     if (draftJson != null) {
       final draft = jsonDecode(draftJson);
       _nameController.text = draft['name'] ?? '';
@@ -170,30 +197,43 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
     }
 
     // 2. Fetch User Data
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final userDoc =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
     if (userDoc.exists) {
       _userBaseData = userDoc.data();
       final info = _userBaseData?['info'] as Map? ?? {};
       final prefs = _userBaseData?['host_preferences'] as Map? ?? {};
-      
-      if (_nameController.text.isEmpty) _nameController.text = info['name'] ?? '';
-      if (_emailController.text.isEmpty) _emailController.text = info['email'] ?? user.email ?? '';
+
+      if (_nameController.text.isEmpty)
+        _nameController.text = info['name'] ?? '';
+      if (_emailController.text.isEmpty)
+        _emailController.text = info['email'] ?? user.email ?? '';
       _phoneController.text = info['phone'] ?? user.phoneNumber ?? '';
-      if (_address1Controller.text.isEmpty) _address1Controller.text = info['addressLine1'] ?? '';
+      if (_address1Controller.text.isEmpty)
+        _address1Controller.text = info['addressLine1'] ?? '';
       _address2Controller.text = info['addressLine2'] ?? '';
-      if (_cityController.text.isEmpty) _cityController.text = info['city'] ?? '';
-      if (_pincodeController.text.isEmpty) _pincodeController.text = info['pincode'] ?? '';
+      if (_cityController.text.isEmpty)
+        _cityController.text = info['city'] ?? '';
+      if (_pincodeController.text.isEmpty)
+        _pincodeController.text = info['pincode'] ?? '';
       _selectedState ??= info['state'];
       _selectedGender ??= info['gender'];
       if (info['dob'] != null) _dob = (info['dob'] as Timestamp).toDate();
       _profileImageUrl = info['profileImage'];
-      
+
       _preferredTenants = List<String>.from(prefs['tenantTypes'] ?? []);
       _prefGender = prefs['genderPreference'];
     }
 
     // 3. Fetch from hoster_requests
-    final doc = await FirebaseFirestore.instance.collection('hoster_requests').doc(user.uid).get();
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('hoster_requests')
+            .doc(user.uid)
+            .get();
 
     if (!mounted) return;
 
@@ -221,12 +261,18 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
       'state': _selectedState,
       'propertyType': _selectedPropertyType,
     };
-    IsarService().saveAdminCache('hoster_application_draft_${user.uid}', jsonEncode(draft));
+    IsarService().saveAdminCache(
+      'hoster_application_draft_${user.uid}',
+      jsonEncode(draft),
+    );
   }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+    );
     if (picked != null) setState(() => _newImageFile = File(picked.path));
   }
 
@@ -263,10 +309,12 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
 
     try {
       final user = FirebaseAuth.instance.currentUser!;
-      
+
       String? imageUrl = _profileImageUrl;
       if (_newImageFile != null) {
-        final ref = FirebaseStorage.instance.ref().child('profile_images/${user.uid}.jpg');
+        final ref = FirebaseStorage.instance.ref().child(
+          'profile_images/${user.uid}.jpg',
+        );
         await ref.putFile(_newImageFile!);
         imageUrl = await ref.getDownloadURL();
       }
@@ -309,7 +357,7 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
         'permissions': {
           'role': 'hoster',
-          'status': 'pending', 
+          'status': 'pending',
           'updatedAt': FieldValue.serverTimestamp(),
         },
         'info': submissionData['info'],
@@ -318,7 +366,7 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
       }, SetOptions(merge: true));
 
       if (!mounted) return;
-      
+
       final isar = IsarService();
       await isar.clearAdminCache('hoster_application_draft_${user.uid}');
       await isar.clearUserIntent();
@@ -326,7 +374,9 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
       _showSuccessDialog();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -337,47 +387,76 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: AppTheme.successColor.withValues(alpha: 0.1), shape: BoxShape.circle),
-              child: const Icon(Icons.check_circle_rounded, color: AppTheme.successColor, size: 60),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
             ),
-            const SizedBox(height: 24),
-            const Text('Application Submitted!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
-            const SizedBox(height: 12),
-            const Text(
-              'Your hoster application has been sent for review. We will verify your details and notify you soon.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppTheme.textLightColor, fontFamily: 'Outfit'),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => ListPropertyScreen()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.successColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.successColor.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppTheme.successColor,
+                    size: 60,
+                  ),
                 ),
-                child: const Text('Start Listing Property', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
-              ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Application Submitted!',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Outfit',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Your hoster application has been sent for review. We will verify your details and notify you soon.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppTheme.textLightColor,
+                    fontFamily: 'Outfit',
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => ListPropertyScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.successColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text(
+                      'Start Listing Property',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -397,7 +476,8 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_isLoading)
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
     final status = _existingRequest?['status'] as String?;
 
@@ -406,11 +486,11 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          status == 'pending' 
-              ? _buildPendingState() 
-              : status == 'rejected' 
-                  ? _buildRejectedState() 
-                  : _buildMainForm(),
+          status == 'pending'
+              ? _buildPendingState()
+              : status == 'rejected'
+              ? _buildRejectedState()
+              : _buildMainForm(),
         ],
       ),
     );
@@ -439,21 +519,46 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                           _buildStatusDashboard()
                               .animate()
                               .fadeIn(duration: 400.ms)
-                              .slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
+                              .slideY(
+                                begin: 0.1,
+                                end: 0,
+                                curve: Curves.easeOutQuad,
+                              ),
                           const SizedBox(height: 32),
-                          _buildPhotoSection().animate().fadeIn(delay: 100.ms).slideY(begin: 0.1, end: 0),
+                          _buildPhotoSection()
+                              .animate()
+                              .fadeIn(delay: 100.ms)
+                              .slideY(begin: 0.1, end: 0),
                           const SizedBox(height: 32),
-                          _buildBasicInfoSection().animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0),
+                          _buildBasicInfoSection()
+                              .animate()
+                              .fadeIn(delay: 200.ms)
+                              .slideY(begin: 0.1, end: 0),
                           const SizedBox(height: 32),
-                          _buildContactSection().animate().fadeIn(delay: 300.ms).slideY(begin: 0.1, end: 0),
+                          _buildContactSection()
+                              .animate()
+                              .fadeIn(delay: 300.ms)
+                              .slideY(begin: 0.1, end: 0),
                           const SizedBox(height: 32),
-                          _buildAddressSection().animate().fadeIn(delay: 400.ms).slideY(begin: 0.1, end: 0),
+                          _buildAddressSection()
+                              .animate()
+                              .fadeIn(delay: 400.ms)
+                              .slideY(begin: 0.1, end: 0),
                           const SizedBox(height: 32),
-                          _buildIdentitySection().animate().fadeIn(delay: 600.ms).slideY(begin: 0.1, end: 0),
+                          _buildIdentitySection()
+                              .animate()
+                              .fadeIn(delay: 600.ms)
+                              .slideY(begin: 0.1, end: 0),
                           const SizedBox(height: 32),
-                          _buildPreferencesSection().animate().fadeIn(delay: 700.ms).slideY(begin: 0.1, end: 0),
+                          _buildPreferencesSection()
+                              .animate()
+                              .fadeIn(delay: 700.ms)
+                              .slideY(begin: 0.1, end: 0),
                           const SizedBox(height: 32),
-                          _buildTermsCheckbox().animate().fadeIn(delay: 800.ms).slideY(begin: 0.1, end: 0),
+                          _buildTermsCheckbox()
+                              .animate()
+                              .fadeIn(delay: 800.ms)
+                              .slideY(begin: 0.1, end: 0),
                         ],
                       ),
                     ),
@@ -499,7 +604,8 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                 child: Image.network(
                   'https://img.freepik.com/free-vector/professional-services-concept-illustration_114360-12822.jpg?w=1080',
                   headers: const {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'User-Agent':
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Referer': 'https://www.freepik.com/',
                   },
                   fit: BoxFit.contain,
@@ -524,7 +630,11 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                           color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -583,7 +693,7 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
             color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -594,17 +704,27 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                 alignment: Alignment.center,
                 children: [
                   SizedBox(
-                    height: 64, width: 64,
+                    height: 64,
+                    width: 64,
                     child: CircularProgressIndicator(
                       value: completion,
                       strokeWidth: 6,
-                      backgroundColor: AppTheme.successColor.withValues(alpha: 0.1),
-                      valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.successColor),
+                      backgroundColor: AppTheme.successColor.withValues(
+                        alpha: 0.1,
+                      ),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        AppTheme.successColor,
+                      ),
                     ),
                   ),
                   Text(
                     '${(completion * 100).toInt()}%',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit'),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textDarkColor,
+                      fontFamily: 'Outfit',
+                    ),
                   ),
                 ],
               ),
@@ -613,11 +733,23 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Profile Completion', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+                    Text(
+                      'Profile Completion',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textDarkColor,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
                     SizedBox(height: 4),
                     Text(
                       'Complete your profile to start hosting',
-                      style: TextStyle(fontSize: 12, color: AppTheme.textLightColor, fontFamily: 'Outfit'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textLightColor,
+                        fontFamily: 'Outfit',
+                      ),
                     ),
                   ],
                 ),
@@ -631,9 +763,17 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildVerifIndicator('Email', _userBaseData?['emailVerified'] == true || FirebaseAuth.instance.currentUser?.emailVerified == true),
-              _buildVerifIndicator('Phone', true), 
-              _buildVerifIndicator('Identity', verif['govIdVerified'] == true, isPending: verif['govIdStatus'] == 'pending'),
+              _buildVerifIndicator(
+                'Email',
+                _userBaseData?['emailVerified'] == true ||
+                    FirebaseAuth.instance.currentUser?.emailVerified == true,
+              ),
+              _buildVerifIndicator('Phone', true),
+              _buildVerifIndicator(
+                'Identity',
+                verif['govIdVerified'] == true,
+                isPending: verif['govIdStatus'] == 'pending',
+              ),
             ],
           ),
         ],
@@ -641,32 +781,42 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
     );
   }
 
-  Widget _buildVerifIndicator(String label, bool isDone, {bool isPending = false}) {
-    final color = isDone ? AppTheme.successColor : (isPending ? AppTheme.warningColor : Colors.grey[300]!);
+  Widget _buildVerifIndicator(
+    String label,
+    bool isDone, {
+    bool isPending = false,
+  }) {
+    final color =
+        isDone
+            ? AppTheme.successColor
+            : (isPending ? AppTheme.warningColor : Colors.grey[300]!);
     return Column(
       children: [
         Container(
-          width: 36, height: 36,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             color: isDone ? color.withValues(alpha: 0.1) : Colors.white,
             shape: BoxShape.circle,
             border: Border.all(color: color, width: 1.5),
           ),
           child: Icon(
-            isDone ? Icons.check_rounded : (isPending ? Icons.pending_rounded : Icons.circle_outlined), 
-            size: 20, 
-            color: color
+            isDone
+                ? Icons.check_rounded
+                : (isPending ? Icons.pending_rounded : Icons.circle_outlined),
+            size: 20,
+            color: color,
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          label, 
+          label,
           style: TextStyle(
-            fontSize: 11, 
-            fontWeight: isDone ? FontWeight.bold : FontWeight.w500, 
-            color: isDone ? color : AppTheme.textMutedColor, 
-            fontFamily: 'Outfit'
-          )
+            fontSize: 11,
+            fontWeight: isDone ? FontWeight.bold : FontWeight.w500,
+            color: isDone ? color : AppTheme.textMutedColor,
+            fontFamily: 'Outfit',
+          ),
         ),
       ],
     );
@@ -678,14 +828,28 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
       children: [
         const Padding(
           padding: EdgeInsets.only(left: 4, bottom: 16),
-          child: Text('Profile Photo', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+          child: Text(
+            'Profile Photo',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDarkColor,
+              fontFamily: 'Outfit',
+            ),
+          ),
         ),
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 5))],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -693,30 +857,46 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                 alignment: Alignment.bottomRight,
                 children: [
                   Container(
-                    width: 90, height: 90,
+                    width: 90,
+                    height: 90,
                     decoration: BoxDecoration(
                       color: AppTheme.successColor.withValues(alpha: 0.05),
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppTheme.successColor.withValues(alpha: 0.1), width: 1),
+                      border: Border.all(
+                        color: AppTheme.successColor.withValues(alpha: 0.1),
+                        width: 1,
+                      ),
                     ),
                     child: ClipOval(
-                      child: _newImageFile != null 
-                        ? Image.file(_newImageFile!, fit: BoxFit.cover)
-                        : (_profileImageUrl != null 
-                            ? CachedNetworkImage(imageUrl: _profileImageUrl!, fit: BoxFit.cover)
-                            : Icon(Icons.person_rounded, size: 45, color: Colors.grey[300])),
+                      child:
+                          _newImageFile != null
+                              ? Image.file(_newImageFile!, fit: BoxFit.cover)
+                              : (_profileImageUrl != null
+                                  ? CachedNetworkImage(
+                                    imageUrl: _profileImageUrl!,
+                                    fit: BoxFit.cover,
+                                  )
+                                  : Icon(
+                                    Icons.person_rounded,
+                                    size: 45,
+                                    color: Colors.grey[300],
+                                  )),
                     ),
                   ),
                   GestureDetector(
                     onTap: _pickImage,
                     child: Container(
-                      padding: const EdgeInsets.all(8), 
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: AppTheme.successColor,
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
-                      ), 
-                      child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 14)
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt_rounded,
+                        color: Colors.white,
+                        size: 14,
+                      ),
                     ),
                   ),
                 ],
@@ -726,9 +906,24 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Update your photo', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+                    Text(
+                      'Update your photo',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textDarkColor,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
                     SizedBox(height: 6),
-                    Text('A clear photo builds trust with potential tenants.', style: TextStyle(fontSize: 12, color: AppTheme.textLightColor, fontFamily: 'Outfit')),
+                    Text(
+                      'A clear photo builds trust with potential tenants.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textLightColor,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -745,9 +940,15 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
       children: [
         const Padding(
           padding: EdgeInsets.only(left: 4, bottom: 20),
-          child: Text('Basic Information',
-              style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+          child: Text(
+            'Basic Information',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDarkColor,
+              fontFamily: 'Outfit',
+            ),
+          ),
         ),
         _buildTextField('Full Name *', _nameController, Icons.person_rounded),
         const SizedBox(height: 24),
@@ -756,43 +957,72 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
           children: [
             const Padding(
               padding: EdgeInsets.only(left: 4, bottom: 12),
-              child: Text('Gender *',
-                  style: TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+              child: Text(
+                'Gender *',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textDarkColor,
+                  fontFamily: 'Outfit',
+                ),
+              ),
             ),
             Row(
-              children: ['Male', 'Female', 'Other']
-                  .map((g) => Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: InkWell(
-                            onTap: () => setState(() => _selectedGender = g),
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              decoration: BoxDecoration(
-                                color: _selectedGender == g ? AppTheme.successColor : const Color(0xFFF9FAFB),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                    color: _selectedGender == g ? AppTheme.successColor : Colors.transparent),
+              children:
+                  ['Male', 'Female', 'Other']
+                      .map(
+                        (g) => Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: InkWell(
+                              onTap: () => setState(() => _selectedGender = g),
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      _selectedGender == g
+                                          ? AppTheme.successColor
+                                          : const Color(0xFFF9FAFB),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color:
+                                        _selectedGender == g
+                                            ? AppTheme.successColor
+                                            : Colors.transparent,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    g,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color:
+                                          _selectedGender == g
+                                              ? Colors.white
+                                              : AppTheme.textLightColor,
+                                      fontFamily: 'Outfit',
+                                    ),
+                                  ),
+                                ),
                               ),
-                              child: Center(
-                                  child: Text(g,
-                                      style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: _selectedGender == g ? Colors.white : AppTheme.textLightColor,
-                                          fontFamily: 'Outfit'))),
                             ),
                           ),
                         ),
-                      ))
-                  .toList(),
+                      )
+                      .toList(),
             ),
           ],
         ),
         const SizedBox(height: 24),
-        _buildDateField('Date of Birth *', _dob, (d) => setState(() => _dob = d)),
+        _buildDateField(
+          'Date of Birth *',
+          _dob,
+          (d) => setState(() => _dob = d),
+        ),
       ],
     );
   }
@@ -803,14 +1033,31 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
       children: [
         const Padding(
           padding: EdgeInsets.only(left: 4, bottom: 20),
-          child: Text('Contact Information',
-              style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+          child: Text(
+            'Contact Information',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDarkColor,
+              fontFamily: 'Outfit',
+            ),
+          ),
         ),
-        _buildTextField('Phone Number *', _phoneController, Icons.phone_android_rounded, isVerified: true, readOnly: true),
+        _buildTextField(
+          'Phone Number *',
+          _phoneController,
+          Icons.phone_android_rounded,
+          isVerified: true,
+          readOnly: true,
+        ),
         const SizedBox(height: 20),
-        _buildTextField('Email Address *', _emailController, Icons.email_rounded,
-            isVerified: FirebaseAuth.instance.currentUser?.emailVerified ?? false, readOnly: true),
+        _buildTextField(
+          'Email Address *',
+          _emailController,
+          Icons.email_rounded,
+          isVerified: FirebaseAuth.instance.currentUser?.emailVerified ?? false,
+          readOnly: true,
+        ),
       ],
     );
   }
@@ -821,36 +1068,56 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
       children: [
         const Padding(
           padding: EdgeInsets.only(left: 4, bottom: 20),
-          child: Text('Address Information', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+          child: Text(
+            'Address Information',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDarkColor,
+              fontFamily: 'Outfit',
+            ),
+          ),
         ),
-        _buildTextField('Address Line 1 *', _address1Controller, Icons.location_on_rounded),
+        _buildTextField(
+          'Address Line 1 *',
+          _address1Controller,
+          Icons.location_on_rounded,
+        ),
         const SizedBox(height: 20),
-        _buildTextField('Address Line 2 (Optional)', _address2Controller, Icons.location_on_rounded, isRequired: false),
+        _buildTextField(
+          'Address Line 2 (Optional)',
+          _address2Controller,
+          Icons.location_on_rounded,
+          isRequired: false,
+        ),
         const SizedBox(height: 20),
         Row(
           children: [
-            Expanded(child: _buildTextField('City *', _cityController, Icons.apartment_rounded)),
+            Expanded(
+              child: _buildTextField(
+                'City *',
+                _cityController,
+                Icons.apartment_rounded,
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: _buildDropdownField('State *', _indianStates, _selectedState, (v) => setState(() => _selectedState = v!))),
+            Expanded(
+              child: _buildDropdownField(
+                'State *',
+                _indianStates,
+                _selectedState,
+                (v) => setState(() => _selectedState = v!),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 20),
-        _buildTextField('Pincode *', _pincodeController, Icons.pin_drop_rounded, keyboardType: TextInputType.number),
-      ],
-    );
-  }
-
-  Widget _buildBusinessSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 20),
-          child: Text('Business Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+        _buildTextField(
+          'Pincode *',
+          _pincodeController,
+          Icons.pin_drop_rounded,
+          keyboardType: TextInputType.number,
         ),
-        _buildTextField('Business Name (Optional)', _businessNameController, Icons.business_center_rounded, isRequired: false),
-        const SizedBox(height: 20),
-        _buildPropertyTypeDropdown('Primary Property Type', _propertyTypes, _selectedPropertyType, (v) => setState(() => _selectedPropertyType = v!)),
       ],
     );
   }
@@ -865,57 +1132,117 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
           children: [
             const Padding(
               padding: EdgeInsets.only(left: 4),
-              child: Text('Identity Verification', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+              child: Text(
+                'Identity Verification',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textDarkColor,
+                  fontFamily: 'Outfit',
+                ),
+              ),
             ),
             TextButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HosterVerificationCenterScreen())),
-              child: const Row(children: [Text('Details', style: TextStyle(fontSize: 12, color: AppTheme.successColor, fontWeight: FontWeight.bold, fontFamily: 'Outfit')), Icon(Icons.chevron_right_rounded, size: 16, color: AppTheme.successColor)]),
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const HosterVerificationCenterScreen(),
+                    ),
+                  ),
+              child: const Row(
+                children: [
+                  Text(
+                    'Details',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.successColor,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: AppTheme.successColor,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         const SizedBox(height: 12),
         _buildIdentityTile(
-          'Aadhaar Card', 
-          verif['govIdFrontUrl'] != null ? 'Documents Uploaded' : 'Not Uploaded', 
-          verif['govIdStatus'] == 'pending' ? 'In Review' : (verif['govIdVerified'] == true ? 'Verified' : 'Required'), 
-          verif['govIdVerified'] == true ? Colors.green : (verif['govIdStatus'] == 'pending' ? Colors.orange : Colors.grey), 
-          'https://cdn-icons-png.flaticon.com/512/11104/11104118.png'
+          'Aadhaar Card',
+          verif['govIdFrontUrl'] != null
+              ? 'Documents Uploaded'
+              : 'Not Uploaded',
+          verif['govIdStatus'] == 'pending'
+              ? 'In Review'
+              : (verif['govIdVerified'] == true ? 'Verified' : 'Required'),
+          verif['govIdVerified'] == true
+              ? Colors.green
+              : (verif['govIdStatus'] == 'pending'
+                  ? Colors.orange
+                  : Colors.grey),
+          'https://cdn-icons-png.flaticon.com/512/11104/11104118.png',
         ),
         const SizedBox(height: 12),
         _buildIdentityTile(
-          'PAN Card', 
-          verif['panFrontUrl'] != null ? 'Documents Uploaded' : 'Not Uploaded', 
-          verif['panVerified'] == true ? 'Verified' : 'Required', 
-          verif['panVerified'] == true ? Colors.green : Colors.grey, 
-          'https://cdn-icons-png.flaticon.com/512/10703/10703478.png'
+          'PAN Card',
+          verif['panFrontUrl'] != null ? 'Documents Uploaded' : 'Not Uploaded',
+          verif['panVerified'] == true ? 'Verified' : 'Required',
+          verif['panVerified'] == true ? Colors.green : Colors.grey,
+          'https://cdn-icons-png.flaticon.com/512/10703/10703478.png',
         ),
       ],
     );
   }
 
-  Widget _buildIdentityTile(String title, String subtitle, String status, Color color, String iconUrl) {
+  Widget _buildIdentityTile(
+    String title,
+    String subtitle,
+    String status,
+    Color color,
+    String iconUrl,
+  ) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HosterVerificationCenterScreen())),
+          onTap:
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const HosterVerificationCenterScreen(),
+                ),
+              ),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20), 
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.grey[100]!),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
                   child: Image.network(iconUrl, width: 24, height: 24),
                 ),
                 const SizedBox(width: 16),
@@ -923,20 +1250,55 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textDarkColor,
+                          fontFamily: 'Outfit',
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      Text(subtitle, style: const TextStyle(fontSize: 12, color: AppTheme.textLightColor, fontFamily: 'Outfit')),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textLightColor,
+                          fontFamily: 'Outfit',
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   child: Row(
                     children: [
-                      Icon(status == 'Verified' ? Icons.check_circle_rounded : Icons.pending_rounded, size: 14, color: color),
+                      Icon(
+                        status == 'Verified'
+                            ? Icons.check_circle_rounded
+                            : Icons.pending_rounded,
+                        size: 14,
+                        color: color,
+                      ),
                       const SizedBox(width: 6),
-                      Text(status, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+                      Text(
+                        status,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Outfit',
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -957,11 +1319,36 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
           children: [
             const Padding(
               padding: EdgeInsets.only(left: 4),
-              child: Text('Host Preferences', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+              child: Text(
+                'Host Preferences',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textDarkColor,
+                  fontFamily: 'Outfit',
+                ),
+              ),
             ),
             TextButton(
-              onPressed: () {}, 
-              child: const Row(children: [Text('Settings', style: TextStyle(fontSize: 12, color: AppTheme.successColor, fontWeight: FontWeight.bold, fontFamily: 'Outfit')), Icon(Icons.settings_rounded, size: 14, color: AppTheme.successColor)])
+              onPressed: () {},
+              child: const Row(
+                children: [
+                  Text(
+                    'Settings',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.successColor,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                  Icon(
+                    Icons.settings_rounded,
+                    size: 14,
+                    color: AppTheme.successColor,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -980,7 +1367,11 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                     _preferredTenants.add(v);
                   }
                 }),
-                [Icons.school_rounded, Icons.work_rounded, Icons.people_rounded],
+                [
+                  Icons.school_rounded,
+                  Icons.work_rounded,
+                  Icons.people_rounded,
+                ],
               ),
             ),
             const SizedBox(width: 12),
@@ -990,7 +1381,11 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                 ['Male', 'Female', 'Any'],
                 _prefGender != null ? [_prefGender!] : [],
                 (v) => setState(() => _prefGender = v),
-                [Icons.person_rounded, Icons.person_pin_rounded, Icons.people_alt_rounded],
+                [
+                  Icons.person_rounded,
+                  Icons.person_pin_rounded,
+                  Icons.people_alt_rounded,
+                ],
               ),
             ),
           ],
@@ -999,19 +1394,39 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
     );
   }
 
-  Widget _buildPreferenceCard(String title, List<String> options, List<String> current, Function(String) onTap, List<IconData> icons) {
+  Widget _buildPreferenceCard(
+    String title,
+    List<String> options,
+    List<String> current,
+    Function(String) onTap,
+    List<IconData> icons,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white, 
-        borderRadius: BorderRadius.circular(24), 
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.grey[100]!),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textLightColor, fontFamily: 'Outfit')),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textLightColor,
+              fontFamily: 'Outfit',
+            ),
+          ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1025,21 +1440,42 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppTheme.successColor.withValues(alpha: 0.1) : const Color(0xFFF8FAFC), 
+                        color:
+                            isSelected
+                                ? AppTheme.successColor.withValues(alpha: 0.1)
+                                : const Color(0xFFF8FAFC),
                         shape: BoxShape.circle,
-                        border: isSelected ? Border.all(color: AppTheme.successColor.withValues(alpha: 0.2)) : null,
+                        border:
+                            isSelected
+                                ? Border.all(
+                                  color: AppTheme.successColor.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                )
+                                : null,
                       ),
-                      child: Icon(icons[i], size: 20, color: isSelected ? AppTheme.successColor : Colors.grey[400]),
+                      child: Icon(
+                        icons[i],
+                        size: 20,
+                        color:
+                            isSelected
+                                ? AppTheme.successColor
+                                : Colors.grey[400],
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      options[i], 
+                      options[i],
                       style: TextStyle(
-                        fontSize: 10, 
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, 
-                        color: isSelected ? AppTheme.successColor : AppTheme.textLightColor,
-                        fontFamily: 'Outfit'
-                      )
+                        fontSize: 10,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.w500,
+                        color:
+                            isSelected
+                                ? AppTheme.successColor
+                                : AppTheme.textLightColor,
+                        fontFamily: 'Outfit',
+                      ),
                     ),
                   ],
                 ),
@@ -1061,8 +1497,10 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
         child: CheckboxListTile(
           value: _isTermsAccepted,
           onChanged: (v) => setState(() => _isTermsAccepted = v!),
-          title: const Text('I agree to the Terms & Conditions and Privacy Policy of Triangle Homes.',
-              style: TextStyle(fontSize: 12, fontFamily: 'Outfit')),
+          title: const Text(
+            'I agree to the Terms & Conditions and Privacy Policy of Triangle Homes.',
+            style: TextStyle(fontSize: 12, fontFamily: 'Outfit'),
+          ),
           activeColor: AppTheme.successColor,
           controlAffinity: ListTileControlAffinity.leading,
           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1073,38 +1511,69 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
 
   Widget _buildBottomButton() {
     return Positioned(
-      bottom: 0, left: 0, right: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
       child: Container(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
         decoration: BoxDecoration(
-          color: Colors.white, 
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5))],
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
           borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
         ),
         child: ElevatedButton(
           onPressed: _isSubmitting ? null : _submitRequest,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.successColor, 
-            minimumSize: const Size(double.infinity, 64), 
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            backgroundColor: AppTheme.successColor,
+            minimumSize: const Size(double.infinity, 64),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             elevation: 0,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (_isSubmitting)
-                const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+                const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 3,
+                  ),
+                )
               else
-                const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 22),
+                const Icon(
+                  Icons.rocket_launch_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
               const SizedBox(width: 12),
               Text(
-                _isSubmitting ? 'Submitting...' : 'Submit Application', 
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'Outfit')
+                _isSubmitting ? 'Submitting...' : 'Submit Application',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  fontFamily: 'Outfit',
+                ),
               ),
             ],
           ),
         ),
-      ).animate().slideY(begin: 1, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
+      ).animate().slideY(
+        begin: 1,
+        end: 0,
+        duration: 600.ms,
+        curve: Curves.easeOutCubic,
+      ),
     );
   }
 
@@ -1130,7 +1599,10 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                       size: 64,
                       color: AppTheme.warningColor,
                     ),
-                  ).animate().scale(duration: const Duration(milliseconds: 500), curve: Curves.easeOutBack),
+                  ).animate().scale(
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeOutBack,
+                  ),
                   const SizedBox(height: 32),
                   const Text(
                     'Application Under Review',
@@ -1179,18 +1651,31 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                     color: AppTheme.errorColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.error_outline_rounded, size: 64, color: AppTheme.errorColor),
+                  child: const Icon(
+                    Icons.error_outline_rounded,
+                    size: 64,
+                    color: AppTheme.errorColor,
+                  ),
                 ),
                 const SizedBox(height: 32),
                 const Text(
                   'Application Rejected',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Outfit',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Unfortunately, your application was not approved at this time. Reason: ${note.isEmpty ? "Does not meet requirements." : note}',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 14, color: AppTheme.textLightColor, fontFamily: 'Outfit', height: 1.5),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textLightColor,
+                    fontFamily: 'Outfit',
+                    height: 1.5,
+                  ),
                 ),
                 const SizedBox(height: 40),
                 SizedBox(
@@ -1198,8 +1683,16 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
                   height: 56,
                   child: ElevatedButton(
                     onPressed: _reApply,
-                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
-                    child: const Text('Re-Apply Now', style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                    ),
+                    child: const Text(
+                      'Re-Apply Now',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1222,7 +1715,15 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           const SizedBox(width: 8),
-          Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Outfit',
+            ),
+          ),
         ],
       ),
     );
@@ -1232,22 +1733,33 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
     final info = _existingRequest?['info'] as Map? ?? {};
     final business = _existingRequest?['business'] as Map? ?? {};
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        children: [
-          _summaryRow(Icons.person_outline, 'Name', info['name'] ?? ''),
-          const Divider(height: 24),
-          _summaryRow(Icons.business_outlined, 'Type', business['propertyType'] ?? ''),
-          const Divider(height: 24),
-          _summaryRow(Icons.phone_android_outlined, 'Contact', info['phone'] ?? ''),
-        ],
-      ),
-    ).animate().fadeIn(delay: const Duration(milliseconds: 400)).slideY(begin: 0.1, end: 0);
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            children: [
+              _summaryRow(Icons.person_outline, 'Name', info['name'] ?? ''),
+              const Divider(height: 24),
+              _summaryRow(
+                Icons.business_outlined,
+                'Type',
+                business['propertyType'] ?? '',
+              ),
+              const Divider(height: 24),
+              _summaryRow(
+                Icons.phone_android_outlined,
+                'Contact',
+                info['phone'] ?? '',
+              ),
+            ],
+          ),
+        )
+        .animate()
+        .fadeIn(delay: const Duration(milliseconds: 400))
+        .slideY(begin: 0.1, end: 0);
   }
 
   Widget _summaryRow(IconData icon, String label, String value) {
@@ -1257,12 +1769,21 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
         const SizedBox(width: 12),
         Text(
           '$label:',
-          style: const TextStyle(fontSize: 13, color: AppTheme.textLightColor, fontFamily: 'Outfit'),
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppTheme.textLightColor,
+            fontFamily: 'Outfit',
+          ),
         ),
         const Spacer(),
         Text(
           value,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'Outfit', color: AppTheme.textDarkColor),
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Outfit',
+            color: AppTheme.textDarkColor,
+          ),
         ),
       ],
     );
@@ -1270,29 +1791,75 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
 
   // --- Helper Widgets ---
 
-  Widget _buildTextField(String label, TextEditingController controller, IconData icon, {bool isVerified = false, bool readOnly = false, TextInputType? keyboardType, bool isRequired = true}) {
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller,
+    IconData icon, {
+    bool isVerified = false,
+    bool readOnly = false,
+    TextInputType? keyboardType,
+    bool isRequired = true,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 10),
-          child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDarkColor,
+              fontFamily: 'Outfit',
+            ),
+          ),
         ),
         TextFormField(
           controller: controller,
           readOnly: readOnly,
           keyboardType: keyboardType,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, fontFamily: 'Outfit', color: AppTheme.textDarkColor),
-          validator: (v) => (isRequired && (v == null || v.isEmpty)) ? 'Required' : null,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Outfit',
+            color: AppTheme.textDarkColor,
+          ),
+          validator:
+              (v) =>
+                  (isRequired && (v == null || v.isEmpty)) ? 'Required' : null,
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: AppTheme.successColor, size: 20),
-            suffixIcon: isVerified ? const Icon(Icons.check_circle, color: Colors.green, size: 20) : null,
-            filled: true, 
-            fillColor: readOnly ? const Color(0xFFF1F5F9) : const Color(0xFFF9FAFB),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppTheme.successColor, width: 1)),
-            errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.red, width: 1)),
+            suffixIcon:
+                isVerified
+                    ? const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 20,
+                    )
+                    : null,
+            filled: true,
+            fillColor:
+                readOnly ? const Color(0xFFF1F5F9) : const Color(0xFFF9FAFB),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(
+                color: AppTheme.successColor,
+                width: 1,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Colors.red, width: 1),
+            ),
             contentPadding: const EdgeInsets.symmetric(vertical: 18),
           ),
         ),
@@ -1300,36 +1867,75 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
     );
   }
 
-  Widget _buildDropdownField(String label, List<String> items, String? value, Function(String?) onChanged) {
+  Widget _buildDropdownField(
+    String label,
+    List<String> items,
+    String? value,
+    Function(String?) onChanged,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 10),
-          child: Text(label,
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDarkColor,
+              fontFamily: 'Outfit',
+            ),
+          ),
         ),
         DropdownButtonFormField<String>(
           isExpanded: true,
-          value: value,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textLightColor),
-          items: items
-              .map((s) => DropdownMenuItem(
-                  value: s,
-                  child: Text(s,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, fontFamily: 'Outfit'),
-                      overflow: TextOverflow.ellipsis)))
-              .toList(),
+          initialValue: value,
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: AppTheme.textLightColor,
+          ),
+          items:
+              items
+                  .map(
+                    (s) => DropdownMenuItem(
+                      value: s,
+                      child: Text(
+                        s,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Outfit',
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(),
           onChanged: onChanged,
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.map_rounded, color: AppTheme.successColor, size: 20),
+            prefixIcon: const Icon(
+              Icons.map_rounded,
+              color: AppTheme.successColor,
+              size: 20,
+            ),
             filled: true,
             fillColor: const Color(0xFFF9FAFB),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
             focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppTheme.successColor, width: 1)),
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(
+                color: AppTheme.successColor,
+                width: 1,
+              ),
+            ),
             contentPadding: const EdgeInsets.symmetric(vertical: 18),
           ),
         ),
@@ -1337,36 +1943,75 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
     );
   }
 
-  Widget _buildPropertyTypeDropdown(String label, List<String> items, String value, Function(String?) onChanged) {
+  Widget _buildPropertyTypeDropdown(
+    String label,
+    List<String> items,
+    String value,
+    Function(String?) onChanged,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 10),
-          child: Text(label,
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDarkColor,
+              fontFamily: 'Outfit',
+            ),
+          ),
         ),
         DropdownButtonFormField<String>(
           isExpanded: true,
-          value: value,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textLightColor),
-          items: items
-              .map((s) => DropdownMenuItem(
-                  value: s,
-                  child: Text(s,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, fontFamily: 'Outfit'),
-                      overflow: TextOverflow.ellipsis)))
-              .toList(),
+          initialValue: value,
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: AppTheme.textLightColor,
+          ),
+          items:
+              items
+                  .map(
+                    (s) => DropdownMenuItem(
+                      value: s,
+                      child: Text(
+                        s,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Outfit',
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(),
           onChanged: onChanged,
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.home_work_rounded, color: AppTheme.successColor, size: 20),
+            prefixIcon: const Icon(
+              Icons.home_work_rounded,
+              color: AppTheme.successColor,
+              size: 20,
+            ),
             filled: true,
             fillColor: const Color(0xFFF9FAFB),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
             focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppTheme.successColor, width: 1)),
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(
+                color: AppTheme.successColor,
+                width: 1,
+              ),
+            ),
             contentPadding: const EdgeInsets.symmetric(vertical: 18),
           ),
         ),
@@ -1374,15 +2019,25 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
     );
   }
 
-  Widget _buildDateField(String label, DateTime? current, Function(DateTime) onSelected) {
+  Widget _buildDateField(
+    String label,
+    DateTime? current,
+    Function(DateTime) onSelected,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 10),
-          child: Text(label,
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textDarkColor, fontFamily: 'Outfit')),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDarkColor,
+              fontFamily: 'Outfit',
+            ),
+          ),
         ),
         InkWell(
           onTap: () async {
@@ -1415,16 +2070,28 @@ class _BecomeHosterScreenState extends State<BecomeHosterScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today_rounded, color: AppTheme.successColor, size: 20),
+                const Icon(
+                  Icons.calendar_today_rounded,
+                  color: AppTheme.successColor,
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
-                Text(current != null ? DateFormat('dd MMM yyyy').format(current) : 'Select Date',
-                    style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Outfit',
-                        color: AppTheme.textDarkColor)),
+                Text(
+                  current != null
+                      ? DateFormat('dd MMM yyyy').format(current)
+                      : 'Select Date',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Outfit',
+                    color: AppTheme.textDarkColor,
+                  ),
+                ),
                 const Spacer(),
-                const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textLightColor),
+                const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: AppTheme.textLightColor,
+                ),
               ],
             ),
           ),

@@ -20,7 +20,8 @@ class _DocumentsStepState extends State<DocumentsStep> {
   @override
   void initState() {
     super.initState();
-    if (widget.initialData != null && widget.initialData!['documents'] != null) {
+    if (widget.initialData != null &&
+        widget.initialData!['documents'] != null) {
       final docs = widget.initialData!['documents'] as Map<String, dynamic>;
       _ownershipUrl = docs['ownershipUrl'];
       _utilityUrl = docs['utilityUrl'];
@@ -38,12 +39,20 @@ class _DocumentsStepState extends State<DocumentsStep> {
         children: [
           const Text(
             'Property Documents',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Outfit',
+            ),
           ),
           const SizedBox(height: 8),
           const Text(
             'Upload necessary proofs to verify ownership',
-            style: TextStyle(fontSize: 13, color: AppTheme.textLightColor, fontFamily: 'Outfit'),
+            style: TextStyle(
+              fontSize: 13,
+              color: AppTheme.textLightColor,
+              fontFamily: 'Outfit',
+            ),
           ),
           const SizedBox(height: 32),
           RealtimeDocumentUpload(
@@ -73,26 +82,39 @@ class _DocumentsStepState extends State<DocumentsStep> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: (_ownershipUrl != null && _utilityUrl != null)
-                ? () {
-                    widget.onContinue({
-                      'documents': {
-                        'ownershipUrl': _ownershipUrl,
-                        'utilityUrl': _utilityUrl,
-                        'additionalUrl': _additionalUrl,
-                        'isCompleted': true,
+              onPressed:
+                  (_ownershipUrl != null && _utilityUrl != null)
+                      ? () {
+                        widget.onContinue({
+                          'documents': {
+                            'ownershipUrl': _ownershipUrl,
+                            'utilityUrl': _utilityUrl,
+                            'additionalUrl': _additionalUrl,
+                            'isCompleted': true,
+                          },
+                        });
                       }
-                    });
-                  }
-                : null,
+                      : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.successColor,
-                disabledBackgroundColor: AppTheme.successColor.withOpacity(0.5),
+                disabledBackgroundColor: AppTheme.successColor.withValues(
+                  alpha: 0.5,
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 elevation: 0,
               ),
-              child: const Text('Review & Submit', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Outfit')),
+              child: const Text(
+                'Review & Submit',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  fontFamily: 'Outfit',
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 20),

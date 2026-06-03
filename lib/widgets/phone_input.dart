@@ -3,7 +3,6 @@
 // import 'package:flutter_animate/flutter_animate.dart';
 // import 'package:triangle_home/screens/otp_verification_screen.dart';
 
-
 // class PhoneInput extends StatefulWidget {
 //   const PhoneInput({super.key});
 
@@ -111,7 +110,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/screens/otp_verification_screen.dart';
 
-
 class PhoneInput extends StatefulWidget {
   const PhoneInput({super.key});
 
@@ -140,16 +138,17 @@ class _PhoneInputState extends State<PhoneInput> {
   void _handleSubmit() {
     final isValid = _validatePhoneNumber(_phoneController.text);
     setState(() {
-      _errorText = isValid ? null : 'Please enter a valid 10-digit phone number';
+      _errorText =
+          isValid ? null : 'Please enter a valid 10-digit phone number';
     });
 
     if (isValid) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => OtpVerificationScreen(
-            phoneNumber: _phoneController.text,
-          ),
+          builder:
+              (context) =>
+                  OtpVerificationScreen(phoneNumber: _phoneController.text),
         ),
       );
     }
@@ -161,78 +160,82 @@ class _PhoneInputState extends State<PhoneInput> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: TextFormField(
-            key: _formKey,
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-            decoration: InputDecoration(
-              hintText: '10 Digit Phone Number',
-              errorText: _errorText,
-              prefixIcon: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                margin: const EdgeInsets.only(right: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _countryCode,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.arrow_drop_down,
-                      color: Colors.grey,
-                      size: 20,
-                    ),
-                    Container(
-                      height: 24,
-                      width: 1,
-                      color: Colors.grey.withValues(alpha: 0.5),
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
-                  ],
+              child: TextFormField(
+                key: _formKey,
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
                 ),
+                decoration: InputDecoration(
+                  hintText: '10 Digit Phone Number',
+                  errorText: _errorText,
+                  prefixIcon: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    margin: const EdgeInsets.only(right: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _countryCode,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.arrow_drop_down,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
+                        Container(
+                          height: 24,
+                          width: 1,
+                          color: Colors.grey.withValues(alpha: 0.5),
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                      ],
+                    ),
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10),
+                ],
+                onFieldSubmitted: (_) => _handleSubmit(),
+                onChanged: (value) {
+                  if (_errorText != null) {
+                    setState(() {
+                      _errorText = null;
+                    });
+                  }
+                },
               ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
-            ),
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(10),
-            ],
-            onFieldSubmitted: (_) => _handleSubmit(),
-            onChanged: (value) {
-              if (_errorText != null) {
-                setState(() {
-                  _errorText = null;
-                });
-              }
-            },
-          ),
-        ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-          .shimmer(delay: 3.seconds, duration: 1.seconds)
-          .then(delay: 10.seconds),
+            )
+            .animate(onPlay: (controller) => controller.repeat(reverse: true))
+            .shimmer(delay: 3.seconds, duration: 1.seconds)
+            .then(delay: 10.seconds),
       ],
     );
   }

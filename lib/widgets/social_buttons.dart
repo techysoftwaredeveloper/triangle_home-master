@@ -46,10 +46,7 @@ class SocialLoginButtons extends StatelessWidget {
         const SizedBox(width: 16),
         _buildSocialButton(
           context: context,
-          icon: const FaIcon(
-            FontAwesomeIcons.apple,
-            color: Colors.black,
-          ),
+          icon: const FaIcon(FontAwesomeIcons.apple, color: Colors.black),
           onPressed: onAppleTap ?? () {},
         ),
       ],
@@ -62,29 +59,28 @@ class SocialLoginButtons extends StatelessWidget {
     required VoidCallback onPressed,
   }) {
     return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 70,
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white,
+          onTap: onPressed,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.grey.withValues(alpha: 0.2),
+          child: Container(
+            width: 70,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+            ),
+            child: Center(child: icon),
           ),
-        ),
-        child: Center(child: icon),
-      ),
-    ).animate()
-      .scaleXY(begin: 1, end: 0.95, duration: 100.ms)
-      .then(delay: 50.ms)
-      .scaleXY(begin: 0.95, end: 1, duration: 150.ms)
-      .then()
-      .callback(
-        callback: (_) => {},
-        //triggerOnce: true,
-        delay: 50.ms,
-      );
+        )
+        .animate()
+        .scaleXY(begin: 1, end: 0.95, duration: 100.ms)
+        .then(delay: 50.ms)
+        .scaleXY(begin: 0.95, end: 1, duration: 150.ms)
+        .then()
+        .callback(
+          callback: (_) => {},
+          //triggerOnce: true,
+          delay: 50.ms,
+        );
   }
 }
