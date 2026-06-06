@@ -28,8 +28,9 @@ class _SupportHubScreenState extends State<SupportHubScreen>
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null)
+    if (user == null) {
       return const Scaffold(body: Center(child: Text('Please login')));
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),

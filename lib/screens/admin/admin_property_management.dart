@@ -16,10 +16,17 @@ class _AdminPropertyManagementState extends State<AdminPropertyManagement>
   late TabController _tabController;
   final FirebaseService _firebaseService = FirebaseService();
 
+  num _parseNum(dynamic v) {
+    if (v == null) return 0;
+    if (v is num) return v;
+    if (v is String) return num.tryParse(v) ?? 0;
+    return 0;
+  }
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -37,10 +44,12 @@ class _AdminPropertyManagementState extends State<AdminPropertyManagement>
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
+          isScrollable: true,
           tabs: const [
             Tab(text: 'Pending'),
             Tab(text: 'Approved'),
             Tab(text: 'Rejected'),
+            Tab(text: 'Occupancy'),
           ],
         ),
       ),
@@ -50,8 +59,69 @@ class _AdminPropertyManagementState extends State<AdminPropertyManagement>
           _buildPropertyList('pending'),
           _buildPropertyList('approved'),
           _buildPropertyList('rejected'),
+          _buildOccupancyList(),
         ],
       ),
+    );
+  }
+
+  Widget _buildOccupancyList() {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _firebaseService.getAllPropertiesAdmin(status: 'approved'),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+        if (docs.isEmpty) {
+          return const Center(child: Text('No active properties to track occupancy'));
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: docs.length,
+          itemBuilder: (context, index) {
+            final doc = docs[index];
+            final data = doc.data();
+            final propertyId = doc.id;
+            final basicInfo = data['basicInfo'] ?? {};
+            final details = data['propertyDetails'] ?? {};
+            final capacity = _parseNum(details['totalCapacity'] ?? data['capacity']).toInt();
+
+            return StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('bookings')
+                  .where('property_id', isEqualTo: propertyId)
+                  .where('status', whereIn: ['confirmed', 'active', 'checkedin'])
+                  .snapshots(),
+              builder: (context, bookingSnapshot) {
+                final residents = bookingSnapshot.data?.size ?? 0;
+                final occupancy = capacity > 0 ? (residents / capacity * 100).round() : 0;
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    leading: const CircleAvatar(
+                      backgroundColor: Color(0xFFDCFCE7),
+                      child: Icon(Icons.home_work, color: Color(0xFF16A34A)),
+                    ),
+                    title: Text(basicInfo['name'] ?? 'Property #$index', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('Capacity: $capacity | Residents: $residents'),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('$occupancy%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF16A34A))),
+                        const Text('Occupancy', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 

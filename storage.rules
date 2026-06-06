@@ -16,7 +16,7 @@ service firebase.storage {
     // Profile Images: User can upload and update their own profile photo
     match /profile_images/{userId} {
       allow read: if true;
-      allow write: if isOwner(userId.replace(".jpg", ""));
+      allow write: if isSignedIn() && (request.auth.uid == userId || request.auth.uid == userId.replace(".jpg", ""));
     }
 
     // Verification Documents: Secure folder for sensitive IDs

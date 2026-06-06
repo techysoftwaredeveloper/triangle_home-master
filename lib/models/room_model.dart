@@ -3,8 +3,10 @@ import 'package:triangle_home/core/constants/enums.dart';
 
 class RoomModel {
   final String id;
+  final String propertyId;
   final String roomNumber;
   final RoomType roomType;
+  final String occupancyType; // e.g., "Single Occupancy", "Double Sharing"
   final int floor;
   final int totalBeds;
   final int availableBeds;
@@ -12,13 +14,17 @@ class RoomModel {
   final double baseRent;
   final double baseDeposit;
   final List<String> amenities;
+  final List<String> images;
+  final String genderRestriction; // "Man", "Woman", "Anyone"
   final DateTime createdAt;
   final DateTime updatedAt;
 
   RoomModel({
     required this.id,
+    required this.propertyId,
     required this.roomNumber,
     required this.roomType,
+    required this.occupancyType,
     required this.floor,
     required this.totalBeds,
     required this.availableBeds,
@@ -26,6 +32,8 @@ class RoomModel {
     required this.baseRent,
     required this.baseDeposit,
     required this.amenities,
+    required this.images,
+    required this.genderRestriction,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -34,11 +42,13 @@ class RoomModel {
     final data = doc.data() as Map<String, dynamic>;
     return RoomModel(
       id: doc.id,
+      propertyId: data['propertyId'] ?? '',
       roomNumber: data['roomNumber'] ?? '',
       roomType: RoomType.values.firstWhere(
         (e) => e.name == (data['roomType'] ?? 'single'),
         orElse: () => RoomType.single,
       ),
+      occupancyType: data['occupancyType'] ?? '',
       floor: data['floor'] ?? 0,
       totalBeds: data['totalBeds'] ?? 0,
       availableBeds: data['availableBeds'] ?? 0,
@@ -46,6 +56,8 @@ class RoomModel {
       baseRent: (data['baseRent'] ?? 0).toDouble(),
       baseDeposit: (data['baseDeposit'] ?? 0).toDouble(),
       amenities: List<String>.from(data['amenities'] ?? []),
+      images: List<String>.from(data['images'] ?? []),
+      genderRestriction: data['genderRestriction'] ?? 'Anyone',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -53,8 +65,10 @@ class RoomModel {
 
   Map<String, dynamic> toFirestore() {
     return {
+      'propertyId': propertyId,
       'roomNumber': roomNumber,
       'roomType': roomType.name,
+      'occupancyType': occupancyType,
       'floor': floor,
       'totalBeds': totalBeds,
       'availableBeds': availableBeds,
@@ -62,6 +76,8 @@ class RoomModel {
       'baseRent': baseRent,
       'baseDeposit': baseDeposit,
       'amenities': amenities,
+      'images': images,
+      'genderRestriction': genderRestriction,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': FieldValue.serverTimestamp(),
     };

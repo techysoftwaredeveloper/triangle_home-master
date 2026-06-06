@@ -16,8 +16,9 @@ class HosterService {
   // Helper to recursively sanitize data for JSON encoding
   dynamic _sanitize(dynamic value) {
     if (value is Timestamp) return value.toDate().toIso8601String();
-    if (value is Map)
+    if (value is Map) {
       return value.map((k, v) => MapEntry(k.toString(), _sanitize(v)));
+    }
     if (value is List) return value.map(_sanitize).toList();
     return value;
   }
@@ -60,6 +61,13 @@ class HosterService {
     };
   }
 
+  num _parseNum(dynamic v) {
+    if (v == null) return 0;
+    if (v is num) return v;
+    if (v is String) return num.tryParse(v) ?? 0;
+    return 0;
+  }
+
   Stream<Map<String, dynamic>> getDetailedHosterStatsStream(String hosterId) {
     // 1. Initial cached emission
     final cachedStream = Stream.fromFuture(
@@ -96,8 +104,8 @@ class HosterService {
         for (var doc in properties.docs) {
           final data = doc.data();
           final details = data['propertyDetails'] as Map? ?? {};
-          totalCapacity += (details['totalCapacity'] as num?)?.toInt() ?? 0;
-          totalRooms += (details['totalRooms'] as num?)?.toInt() ?? 0;
+          totalCapacity += _parseNum(details['totalCapacity']).toInt();
+          totalRooms += _parseNum(details['totalRooms']).toInt();
           if (data['status'] == 'approved' || data['status'] == 'active') {
             activeListings++;
           }
@@ -166,31 +174,62 @@ class HosterService {
                 .where((doc) => doc.data()['status'] == 'pending')
                 .length;
 
-        // Calculate profile completion
-        int totalFields = 8;
+        // Calculate profile completion — 10 meaningful fields
+        const int totalFields = 10;
         int filledFields = 0;
-        if (hostInfo['name'] != null && hostInfo['name'].toString().isNotEmpty)
-          filledFields++;
-        if (hostInfo['email'] != null &&
-            hostInfo['email'].toString().isNotEmpty)
-          filledFields++;
-        if (hostInfo['phone'] != null &&
-            hostInfo['phone'].toString().isNotEmpty)
-          filledFields++;
-        if (hostInfo['profileImage'] != null) filledFields++;
-        if (userData['host_preferences'] != null) filledFields++;
-        if (verif['govIdVerified'] == true) filledFields++;
-        if (verif['panVerified'] == true) filledFields++;
-        if (userData['bank_info'] != null) filledFields++;
 
-        final completion = totalFields > 0 ? (filledFields / totalFields) : 0.0;
+        // 1. Name
+        if (hostInfo['name'] != null &&
+            hostInfo['name'].toString().isNotEmpty) {
+          filledFields++;
+        }
+        // 2. Email present
+        if ((hostInfo['email'] ?? userData['email'] ?? '').toString().isNotEmpty) {
+          filledFields++;
+        }
+        // 3. Phone present
+        if ((hostInfo['phone'] ?? userData['phone'] ?? '').toString().isNotEmpty) {
+          filledFields++;
+        }
+        // 4. Profile photo
+        if (hostInfo['profileImage'] != null) filledFields++;
+
+        // 5. Email verified (Firebase Auth OR Firestore flag)
+        if (userData['emailVerified'] == true ||
+            verif['emailVerified'] == true) {
+          filledFields++;
+        }
+        // 6. Phone verified
+        if (verif['phoneVerified'] == true) filledFields++;
+
+        // 7. Aadhaar / Gov ID uploaded or verified
+        if (verif['govIdVerified'] == true ||
+            verif['aadhaarVerified'] == true ||
+            (verif['govIdFrontUrl'] ?? verif['aadhaarFrontUrl']) != null) {
+          filledFields++;
+        }
+        // 8. PAN uploaded or verified
+        if (verif['panVerified'] == true ||
+            (verif['panFrontUrl'] ?? verif['panUrl']) != null) {
+          filledFields++;
+        }
+        // 9. Host preferences set
+        if (userData['host_preferences'] != null) filledFields++;
+
+        // 10. Bank info linked
+        if (userData['bank_info'] != null ||
+            (userData['onboardingData'] as Map?)?['bankAccNo'] != null) {
+          filledFields++;
+        }
+
+        final completion = filledFields / totalFields;
 
         // Revenue Chart Data
         final chartData = _generateRevenueChartData(payments.docs);
 
         final stats = {
-          'hosterName': hostInfo['name'] ?? 'Jibin',
-          'hosterRole': userData['hosterRole'] ?? 'Host & Property Manager',
+          'hosterName': hostInfo['name'] ?? 'Host',
+          'hosterRole': userData['hosterRole'] ?? 'Partner Hoster',
           'profileImage': hostInfo['profileImage'],
           'totalCapacity': totalCapacity,
           'totalRooms': totalRooms,
@@ -203,8 +242,8 @@ class HosterService {
               (userData['permissions'] is Map &&
                   userData['permissions']['status'] == 'approved') ||
               (userData['status'] == 'approved'),
-          'rating': userData['rating'] ?? 4.7,
-          'reviewCount': userData['reviewCount'] ?? 128,
+          'rating': userData['rating'] ?? 0.0,
+          'reviewCount': userData['reviewCount'] ?? 0,
           'occupancy': occupancy,
           'vacantBeds': vacantBeds,
           'activeResidents': activeResidents,
@@ -223,6 +262,65 @@ class HosterService {
             bookings.docs,
             payments.docs,
           ),
+
+          // ── Extra profile fields for menu subtitles ──────────────
+          'email': hostInfo['email'] ?? userData['email'] ?? '',
+          'phone': hostInfo['phone'] ?? userData['phone'] ?? '',
+          'gender': hostInfo['gender'] ?? '',
+          'dob': hostInfo['dob'] ?? '',
+
+          // Contact verification (strict)
+          'emailVerifiedFlag': userData['emailVerified'] == true ||
+              verif['emailVerified'] == true,
+          'phoneVerifiedFlag': verif['phoneVerified'] == true,
+
+          // KYC / Identity — separate verified vs uploaded
+          'aadhaarVerified': verif['govIdVerified'] == true ||
+              verif['aadhaarVerified'] == true,
+          'panVerified': verif['panVerified'] == true,
+          'aadhaarUrl': verif['govIdFrontUrl'] ?? verif['aadhaarFrontUrl'],
+          'panUrl': verif['panFrontUrl'] ?? verif['panUrl'],
+
+          // Business & Property proof
+          'businessProofVerified': verif['businessProofVerified'] == true,
+          'businessProofUrl': verif['businessProofFrontUrl'] ??
+              verif['businessProofUrl'],
+          'propertyProofVerified': verif['propertyProofVerified'] == true,
+          'propertyProofUrl': verif['propertyProofFrontUrl'] ??
+              verif['propertyProofUrl'],
+
+          // Bank / Payout
+          'bankName': (userData['bank_info'] as Map?)?['bankName'] ??
+              (userData['onboardingData'] as Map?)?['bankName'] ?? '',
+          'bankAccountNo': (userData['bank_info'] as Map?)?['accountNumber'] ??
+              (userData['onboardingData'] as Map?)?['bankAccNo'] ?? '',
+          'bankIfsc': (userData['bank_info'] as Map?)?['ifsc'] ??
+              (userData['onboardingData'] as Map?)?['bankIfsc'] ?? '',
+          'bankVerified': (userData['bank_info'] as Map?)?['verified'] == true,
+          'upiVerified': (userData['bank_info'] as Map?)?['upiVerified'] == true,
+          'hasBankInfo': userData['bank_info'] != null ||
+              ((userData['onboardingData'] as Map?)?['bankAccNo'] != null),
+
+          // Host preferences
+          'prefBookingType': (userData['host_preferences'] as Map?)?['bookingType'] ?? '',
+          'prefTenants': (userData['host_preferences'] as Map?)?['preferredTenants'] ?? [],
+          'prefGender': (userData['host_preferences'] as Map?)?['preferredGender'] ?? '',
+          'prefDuration': (userData['host_preferences'] as Map?)?['preferredDuration'] ?? '',
+
+          // Emergency contact
+          'emergencyContactName':
+              (userData['emergency_contact'] as Map?)?['name'] ??
+              (userData['onboardingData'] as Map?)?['emergencyName'] ?? '',
+          'emergencyContactPhone':
+              (userData['emergency_contact'] as Map?)?['phone'] ??
+              (userData['onboardingData'] as Map?)?['emergencyPhone'] ?? '',
+
+          // Address
+          'address': hostInfo['address'] ??
+              (userData['onboardingData'] as Map?)?['address1'] ?? '',
+          'city': hostInfo['city'] ??
+              (userData['onboardingData'] as Map?)?['city'] ?? '',
+          'state': (userData['onboardingData'] as Map?)?['state'] ?? '',
         };
 
         // Cache the sanitized result
@@ -241,6 +339,7 @@ class HosterService {
   List<double> _generateRevenueChartData(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> payments,
   ) {
+    if (payments.isEmpty) return [0, 0, 0, 0, 0, 0, 0];
     return [40, 60, 45, 80, 50, 70, 95];
   }
 

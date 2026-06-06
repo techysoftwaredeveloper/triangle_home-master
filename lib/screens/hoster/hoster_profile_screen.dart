@@ -1,13 +1,10 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:triangle_home/screens/hoster/hoster_profile_details_screen.dart';
-import 'package:triangle_home/screens/hoster/hoster_profile_extra_screens.dart';
-import 'package:triangle_home/screens/hoster/owner_profile_edit_screen.dart';
+import 'package:triangle_home/screens/hoster/partner_onboarding_screen.dart';
+import 'package:triangle_home/screens/hoster/hoster_profile_detail_screen.dart';
 import 'package:triangle_home/services/hoster_service.dart';
-import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/logout_confirmation_dialog.dart';
 import 'package:triangle_home/splash_screen.dart';
 
@@ -24,35 +21,45 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
 
   Stream<Map<String, dynamic>>? _profileDataStream;
 
+  static const _green = Color(0xFF1B4332);
+  static const _greenMid = Color(0xFF2D6A4F);
+  static const _accent = Color(0xFF40916C);
+  static const _verified = Color(0xFF16A34A);
+  static const _verifiedBg = Color(0xFFDCFCE7);
+
   @override
   void initState() {
     super.initState();
     final user = _auth.currentUser;
     if (user != null) {
-      _profileDataStream = _hosterService.getHosterProfileStatsStream(user.uid);
+      _profileDataStream =
+          _hosterService.getHosterProfileStatsStream(user.uid);
     }
   }
 
   void _handleSignOut() {
     showDialog(
       context: context,
-      builder:
-          (context) => LogoutConfirmationDialog(
-            onConfirm: () async {
-              await _auth.signOut();
-              if (!context.mounted) return;
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const SplashScreen()),
-                (route) => false,
-              );
-            },
-          ),
+      builder: (context) => LogoutConfirmationDialog(
+        onConfirm: () async {
+          await _auth.signOut();
+          if (!context.mounted) return;
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const SplashScreen()),
+            (route) => false,
+          );
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_profileDataStream == null) {
+      return const Scaffold(body: Center(child: Text('Not logged in')));
+    }
+
     return StreamBuilder<Map<String, dynamic>>(
       stream: _profileDataStream,
       builder: (context, snapshot) {
@@ -62,433 +69,390 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-
         final stats = snapshot.data ?? {};
-        final user = _auth.currentUser;
-        final name = stats['hosterName'] ?? 'Hoster Name';
-        final profileImage = stats['profileImage'];
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF8FAFC),
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            centerTitle: true,
-            title: const Text(
-              'Hoster Profile',
-              style: TextStyle(
-                color: AppTheme.textDarkColor,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Outfit',
-              ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(
-                  Icons.more_vert_rounded,
-                  color: AppTheme.textDarkColor,
+          backgroundColor: const Color(0xFFF5F5F5),
+          body: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // ── Header SliverAppBar ───────────────────────────────
+              SliverAppBar(
+                expandedHeight: 290,
+                pinned: true,
+                backgroundColor: _green,
+                elevation: 0,
+                title: const Text(
+                  'Hoster Profile',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    fontFamily: 'Outfit',
+                  ),
                 ),
-                onPressed: () {},
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.more_vert_rounded,
+                        color: Colors.white),
+                    onPressed: () {},
+                  ),
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  background: _buildHeader(stats),
+                ),
+              ),
+
+              // ── Content ───────────────────────────────────────────
+              SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _buildVerificationStatus(stats),
+                    const SizedBox(height: 14),
+                    _buildProfileCompletion(stats),
+                    const SizedBox(height: 14),
+                    _buildMenuTiles(stats),
+                    const SizedBox(height: 14),
+                    _buildLogoutButton(),
+                    const SizedBox(height: 90),
+                  ]),
+                ),
               ),
             ],
-          ),
-          body: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                _buildProfileHeader(stats),
-                const SizedBox(height: 24),
-                _buildVerificationStatus(stats),
-                const SizedBox(height: 24),
-                _buildProfileCompletionCard(stats),
-                const SizedBox(height: 24),
-                _buildMenuOptions(),
-                const SizedBox(height: 32),
-                _buildLogoutButton(),
-                const SizedBox(height: 100),
-              ],
-            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildProfileHeader(Map<String, dynamic> stats) {
-    final name = stats['hosterName'] ?? 'Jibin';
-    final imageUrl = stats['profileImage'];
-    final rating = stats['rating'] ?? 4.7;
-    final reviews = stats['reviewCount'] ?? 128;
+  // ── Dark green header ───────────────────────────────────────────────────────
+  Widget _buildHeader(Map<String, dynamic> stats) {
+    final imageUrl = stats['profileImage'] as String?;
     final isVerified = stats['hosterVerified'] == true;
+    final name = (stats['hosterName'] ?? 'Host').toString();
+    final role = (stats['hosterRole'] ?? 'Individual Owner').toString();
+    final rating = (stats['rating'] as num?)?.toDouble() ?? 0.0;
+    final reviews = (stats['reviewCount'] as num?)?.toInt() ?? 0;
+    final totalProps = stats['totalProperties']?.toString() ?? '0';
+    final totalRooms = stats['totalRooms']?.toString() ?? '0';
+    final activeListings = stats['activeListings']?.toString() ?? '0';
 
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryColor,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [_green, _greenMid],
+        ),
       ),
-      child: Column(
-        children: [
-          if (isVerified)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(100),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(
-                        Icons.shield_rounded,
-                        color: AppTheme.successColor,
-                        size: 14,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 52, 20, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Avatar row
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 12,
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 44,
+                          backgroundColor: Colors.white24,
+                          backgroundImage: imageUrl != null
+                              ? CachedNetworkImageProvider(imageUrl)
+                              : null,
+                          child: imageUrl == null
+                              ? const Icon(Icons.person_rounded,
+                                  size: 42, color: Colors.white)
+                              : null,
+                        ),
                       ),
-                      SizedBox(width: 6),
-                      Text(
-                        'Hoster Verified',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Outfit',
+                      // Edit button
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: _accent,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Icon(Icons.edit_rounded,
+                              color: Colors.white, size: 12),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-          Stack(
-            alignment: Alignment.bottomRight,
-            children: [
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Outfit',
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          role,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.75),
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.star_rounded,
+                                color: Colors.amber, size: 14),
+                            const SizedBox(width: 3),
+                            Text(
+                              '$rating ($reviews)',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isVerified)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _verifiedBg,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.verified_rounded,
+                              color: _verified, size: 12),
+                          SizedBox(width: 4),
+                          Text(
+                            'Hoster Verified',
+                            style: TextStyle(
+                              color: _verified,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Stats row
               Container(
-                padding: const EdgeInsets.all(4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.15)),
                 ),
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.white10,
-                  backgroundImage:
-                      imageUrl != null
-                          ? CachedNetworkImageProvider(imageUrl)
-                          : null,
-                  child:
-                      imageUrl == null
-                          ? const Icon(
-                            Icons.person_rounded,
-                            size: 45,
-                            color: Colors.white54,
-                          )
-                          : null,
-                ),
-              ),
-              if (isVerified)
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppTheme.successColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppTheme.primaryColor, width: 3),
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            name,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Outfit',
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Individual Owner',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 14,
-                  fontFamily: 'Outfit',
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                width: 4,
-                height: 4,
-                decoration: const BoxDecoration(
-                  color: Colors.white38,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Icon(Icons.star_rounded, color: Colors.amber, size: 18),
-              const SizedBox(width: 4),
-              Text(
-                '$rating ($reviews)',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _statPill(Icons.home_work_outlined, totalProps,
+                        'Properties'),
+                    _vDivider(),
+                    _statPill(Icons.meeting_room_outlined, totalRooms, 'Rooms'),
+                    _vDivider(),
+                    _statPill(
+                        Icons.list_alt_rounded, activeListings, 'Active Listings'),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildHeaderStat(
-                stats['totalProperties']?.toString() ?? '0',
-                'Properties',
-              ),
-              _buildHeaderStat(stats['totalRooms']?.toString() ?? '0', 'Rooms'),
-              _buildHeaderStat(
-                stats['activeListings']?.toString() ?? '0',
-                'Active Listings',
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
-    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+    );
   }
 
-  Widget _buildHeaderStat(String val, String label) {
-    IconData icon;
-    switch (label) {
-      case 'Properties':
-        icon = Icons.home_work_rounded;
-        break;
-      case 'Rooms':
-        icon = Icons.meeting_room_rounded;
-        break;
-      default:
-        icon = Icons.list_alt_rounded;
-    }
-
+  Widget _statPill(IconData icon, String val, String label) {
     return Column(
       children: [
-        Row(
-          children: [
-            Icon(icon, color: Colors.white.withValues(alpha: 0.7), size: 16),
-            const SizedBox(width: 6),
-            Text(
-              val,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
+        Icon(icon, color: Colors.white70, size: 18),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.6),
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        Text(val,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            )),
+        Text(label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.65),
+              fontSize: 10,
+            )),
       ],
     );
   }
 
+  Widget _vDivider() => Container(
+        width: 1,
+        height: 48,
+        color: Colors.white.withValues(alpha: 0.2),
+      );
+
+  // ── Verification Status (list rows with ticks) ──────────────────────────────
   Widget _buildVerificationStatus(Map<String, dynamic> stats) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
+    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          const Text(
+            'Verification Status',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _verifRow('Email Verified', stats['emailVerified'] == true),
+          _verifRow('Phone Verified', stats['phoneVerified'] == true),
+          _verifRow('Identity Verified', stats['identityVerified'] == true),
+          _verifRow('Hoster Verified', stats['hosterVerified'] == true,
+              isLast: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _verifRow(String label, bool done, {bool isLast = false}) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
             children: [
-              const Text(
-                'Verification Status',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textDarkColor,
-                  fontFamily: 'Outfit',
+              Icon(
+                done
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                color: done ? _verified : const Color(0xFFCBD5E1),
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF334155),
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-              const Icon(
-                Icons.verified_user_rounded,
-                color: AppTheme.successColor,
-                size: 20,
+              Icon(
+                done
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                color: done ? _verified : const Color(0xFFCBD5E1),
+                size: 18,
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          _buildVerifItem('Email Verified', stats['emailVerified'] == true),
-          _buildVerifItem('Phone Verified', stats['phoneVerified'] == true),
-          _buildVerifItem(
-            'Identity Verified',
-            stats['identityVerified'] == true,
-          ),
-          _buildVerifItem('Hoster Approved', stats['hosterVerified'] == true),
-        ],
-      ),
+        ),
+        if (!isLast)
+          const Divider(height: 1, color: Color(0xFFF1F5F9), thickness: 1),
+      ],
     );
   }
 
-  Widget _buildVerifItem(String label, bool isVerified) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: (isVerified
-                      ? AppTheme.successColor
-                      : AppTheme.warningColor)
-                  .withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isVerified ? Icons.check_rounded : Icons.pending_rounded,
-              color: isVerified ? AppTheme.successColor : AppTheme.warningColor,
-              size: 14,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppTheme.textLightColor,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            isVerified ? 'Verified' : 'Pending',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: isVerified ? AppTheme.successColor : AppTheme.warningColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // ── Profile Completion (circular ring) ──────────────────────────────────────
+  Widget _buildProfileCompletion(Map<String, dynamic> stats) {
+    final double pct = ((stats['profileCompletion'] ?? 0.0) as num).toDouble();
+    final int pctInt = (pct * 100).toInt();
 
-  Widget _buildProfileCompletionCard(Map<String, dynamic> stats) {
-    final completion = (stats['profileCompletion'] as num? ?? 0.0).toDouble();
-    final percentage = (completion * 100).toInt();
-
-    if (percentage == 100) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.successColor.withValues(alpha: 0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
+    return _card(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Text(
+            'Profile Completion',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 16),
           Row(
             children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 64,
-                    height: 64,
-                    child: CircularProgressIndicator(
-                      value: completion,
-                      strokeWidth: 6,
-                      backgroundColor: const Color(0xFFF1F5F9),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        AppTheme.successColor,
+              // Circular ring
+              SizedBox(
+                width: 80,
+                height: 80,
+                child: CustomPaint(
+                  painter: _RingPainter(pct),
+                  child: Center(
+                    child: Text(
+                      '$pctInt%',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
                       ),
                     ),
                   ),
-                  Text(
-                    '$percentage%',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textDarkColor,
-                      fontFamily: 'Outfit',
-                    ),
-                  ),
-                ],
+                ),
               ),
               const SizedBox(width: 20),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Profile Completion',
-                      style: TextStyle(
+                      pctInt >= 90
+                          ? 'Almost done!'
+                          : pctInt >= 60
+                              ? 'Almost there!'
+                              : 'Getting started',
+                      style: const TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: AppTheme.textDarkColor,
-                        fontFamily: 'Outfit',
+                        color: Color(0xFF1E293B),
                       ),
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Complete your profile to build trust with tenants.',
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Complete your profile\nto build more trust.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppTheme.textLightColor,
+                        color: Color(0xFF64748B),
+                        height: 1.4,
                       ),
                     ),
                   ],
@@ -496,29 +460,30 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const OwnerProfileEditScreen(),
-                    ),
-                  ),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const PartnerOnboardingScreen()),
+              ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E293B),
+                backgroundColor: const Color(0xFF1B4332),
                 foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 13),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 16),
                 elevation: 0,
               ),
               child: const Text(
                 'Complete Now',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),
@@ -527,182 +492,260 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
     );
   }
 
-  Widget _buildMenuOptions() {
+  // ── 12 separate menu cards with real data subtitles ──────────────────────────
+  Widget _buildMenuTiles(Map<String, dynamic> s) {
+    // helpers
+    String masked(String acc) {
+      if (acc.length > 4) return '•••• ${acc.substring(acc.length - 4)}';
+      return acc.isEmpty ? 'Not added' : acc;
+    }
+
+    String kycStatus() {
+      int count = 0;
+      if (s['aadhaarVerified'] == true) count++;
+      if (s['panVerified'] == true) count++;
+      if (s['drivingLicenseVerified'] == true) count++;
+      if (s['passportVerified'] == true) count++;
+      return count == 0 ? 'No documents' : '$count doc${count > 1 ? 's' : ''} verified';
+    }
+
+    String bankSubtitle() {
+      final name = (s['bankName'] as String?) ?? '';
+      final acc = (s['bankAccountNo'] as String?) ?? '';
+      if (name.isNotEmpty) return '$name  ${masked(acc)}';
+      if (acc.isNotEmpty) return masked(acc);
+      return 'Not configured';
+    }
+
+    String prefSubtitle() {
+      final tenants = s['prefTenants'];
+      if (tenants is List && tenants.isNotEmpty) {
+        return tenants.take(2).join(', ');
+      }
+      final gender = (s['prefGender'] as String?) ?? '';
+      return gender.isNotEmpty ? gender : 'Not set';
+    }
+
+    String emergencySubtitle() {
+      final name = (s['emergencyContactName'] as String?) ?? '';
+      final phone = (s['emergencyContactPhone'] as String?) ?? '';
+      if (name.isNotEmpty) return name;
+      if (phone.isNotEmpty) return phone;
+      return 'Not added';
+    }
+
+    final name = (s['hosterName'] as String?) ?? '';
+    final email = (s['email'] as String?) ?? '';
+    final phone = (s['phone'] as String?) ?? '';
+    final basicSub = [name, email.isNotEmpty ? email : phone]
+        .where((v) => v.isNotEmpty)
+        .take(1)
+        .join(' · ');
+
+    final tiles = [
+      (
+        icon: Icons.person_outline_rounded,
+        color: const Color(0xFF6366F1),
+        title: 'Basic Information',
+        sub: basicSub.isNotEmpty ? basicSub : 'Name, gender, address',
+        section: HosterProfileSection.basicInfo,
+      ),
+      (
+        icon: Icons.shield_outlined,
+        color: const Color(0xFF0EA5E9),
+        title: 'Identity & Compliance',
+        sub: kycStatus(),
+        section: HosterProfileSection.identity,
+      ),
+      (
+        icon: Icons.business_center_outlined,
+        color: const Color(0xFF8B5CF6),
+        title: 'Business Information',
+        sub: (s['hosterRole'] as String?)?.isNotEmpty == true
+            ? s['hosterRole'] as String
+            : 'Host type & experience',
+        section: HosterProfileSection.business,
+      ),
+      (
+        icon: Icons.account_balance_outlined,
+        color: const Color(0xFF10B981),
+        title: 'Banking & Payouts',
+        sub: bankSubtitle(),
+        section: HosterProfileSection.banking,
+      ),
+      (
+        icon: Icons.home_work_outlined,
+        color: const Color(0xFF3B82F6),
+        title: 'Property Summary',
+        sub: '${s['totalProperties'] ?? 0} properties · ${s['activeListings'] ?? 0} active',
+        section: HosterProfileSection.propertySummary,
+      ),
+      (
+        icon: Icons.analytics_outlined,
+        color: const Color(0xFFF59E0B),
+        title: 'Performance',
+        sub: '${s['occupancy'] ?? 0}% occupancy · ${s['activeResidents'] ?? 0} residents',
+        section: HosterProfileSection.performance,
+      ),
+      (
+        icon: Icons.star_outline_rounded,
+        color: const Color(0xFFEF4444),
+        title: 'Reviews & Ratings',
+        sub: '${(s['rating'] as num?)?.toStringAsFixed(1) ?? '0.0'} ★  (${s['reviewCount'] ?? 0} reviews)',
+        section: HosterProfileSection.reviews,
+      ),
+      (
+        icon: Icons.verified_user_outlined,
+        color: const Color(0xFF06B6D4),
+        title: 'Trust Score',
+        sub: s['hosterVerified'] == true ? 'Verified host' : 'Pending verification',
+        section: HosterProfileSection.trustScore,
+      ),
+      (
+        icon: Icons.tune_rounded,
+        color: const Color(0xFF84CC16),
+        title: 'Preferences',
+        sub: prefSubtitle(),
+        section: HosterProfileSection.preferences,
+      ),
+      (
+        icon: Icons.contact_emergency_outlined,
+        color: const Color(0xFFF97316),
+        title: 'Emergency Contact',
+        sub: emergencySubtitle(),
+        section: HosterProfileSection.emergency,
+      ),
+      (
+        icon: Icons.security_outlined,
+        color: const Color(0xFF6B7280),
+        title: 'Security Center',
+        sub: 'Password & 2FA settings',
+        section: HosterProfileSection.security,
+      ),
+      (
+        icon: Icons.notifications_none_rounded,
+        color: const Color(0xFFEC4899),
+        title: 'Notification Settings',
+        sub: 'Manage alerts & reminders',
+        section: HosterProfileSection.notifications,
+      ),
+    ];
+
+    return Column(
+      children: tiles.map((t) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _infoTile(
+            _circleIcon(t.icon, t.color),
+            t.title,
+            t.sub,
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => HosterProfileDetailScreen(
+                  section: t.section,
+                  stats: s,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _infoTile(Widget leading, String title, String subtitle,
+      VoidCallback onTap) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
-      child: Column(
-        children: [
-          _buildMenuTile(
-            Icons.person_outline_rounded,
-            'Basic Information',
-            color: Colors.blue,
-            page: const HosterBasicInfoScreen(),
-          ),
-          _buildMenuTile(
-            Icons.assignment_ind_outlined,
-            'Identity & Compliance',
-            color: Colors.purple,
-            page: const HosterIdentityScreen(),
-          ),
-          _buildMenuTile(
-            Icons.business_center_outlined,
-            'Business Information',
-            color: Colors.orange,
-            page: const HosterBusinessInfoScreen(),
-          ),
-          _buildMenuTile(
-            Icons.account_balance_outlined,
-            'Banking & Payouts',
-            color: Colors.green,
-            page: const HosterBankingScreen(),
-          ),
-          _buildMenuTile(
-            Icons.home_work_outlined,
-            'Property Summary',
-            color: Colors.indigo,
-            page: const HosterPropertySummaryScreen(),
-          ),
-          _buildMenuTile(
-            Icons.insights_rounded,
-            'Performance',
-            color: Colors.red,
-            page: const HosterPerformanceScreen(),
-          ),
-          _buildMenuTile(
-            Icons.star_outline_rounded,
-            'Reviews & Ratings',
-            color: Colors.amber,
-            page: const HosterReviewsScreen(),
-          ),
-          _buildMenuTile(
-            Icons.speed_rounded,
-            'Trust Score',
-            color: Colors.teal,
-            page: const HosterTrustScoreScreen(),
-          ),
-          _buildMenuTile(
-            Icons.tune_rounded,
-            'Preferences',
-            color: Colors.cyan,
-            page: const HosterPreferencesScreen(),
-          ),
-          _buildMenuTile(
-            Icons.contact_phone_outlined,
-            'Emergency Contact',
-            color: Colors.deepOrange,
-            page: const HosterEmergencyContactScreen(),
-          ),
-          _buildMenuTile(
-            Icons.security_outlined,
-            'Security Center',
-            color: Colors.blueGrey,
-            page: const HosterSecurityCenterScreen(),
-          ),
-          _buildMenuTile(
-            Icons.notifications_none_rounded,
-            'Notification Settings',
-            isLast: true,
-            color: Colors.pink,
-            page: const HosterNotificationsScreen(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuTile(
-    IconData icon,
-    String label, {
-    bool isLast = false,
-    required Color color,
-    Widget? page,
-  }) {
-    return Column(
-      children: [
-        Material(
-          color: Colors.transparent,
-          child: ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          child: Row(
+            children: [
+              leading,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF94A3B8),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
               ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            title: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textDarkColor,
-                fontFamily: 'Outfit',
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFFCBD5E1),
+                size: 20,
               ),
-            ),
-            trailing: const Icon(
-              Icons.chevron_right_rounded,
-              color: AppTheme.textMutedColor,
-              size: 20,
-            ),
-            onTap: () {
-              if (page != null) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => page),
-                );
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const HosterProfileDetailsScreen(),
-                  ),
-                );
-              }
-            },
+            ],
           ),
         ),
-        if (!isLast)
-          const Divider(
-            height: 1,
-            indent: 64,
-            endIndent: 20,
-            color: Color(0xFFF1F5F9),
-          ),
-      ],
+      ),
     );
   }
 
+  Widget _circleIcon(IconData icon, Color color) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(icon, color: color, size: 18),
+    );
+  }
+
+  // ── Logout ───────────────────────────────────────────────────────────────────
   Widget _buildLogoutButton() {
     return InkWell(
       onTap: _handleSignOut,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: AppTheme.errorColor.withOpacity(0.1),
+          color: const Color(0xFFFEF2F2),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.errorColor.withOpacity(0.1)),
+          border: Border.all(color: const Color(0xFFFEE2E2)),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.logout_rounded, color: AppTheme.errorColor, size: 20),
-            SizedBox(width: 12),
+            Icon(Icons.logout_rounded, color: Color(0xFFEF4444), size: 20),
+            SizedBox(width: 10),
             Text(
-              'Logout Account',
+              'Sign Out',
               style: TextStyle(
-                color: AppTheme.errorColor,
+                color: Color(0xFFEF4444),
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontSize: 15,
               ),
             ),
           ],
@@ -710,4 +753,58 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
       ),
     );
   }
+
+  // ── Shared card wrapper ───────────────────────────────────────────────────────
+  Widget _card({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: child,
+    );
+  }
+}
+
+// ── Ring painter ──────────────────────────────────────────────────────────────
+class _RingPainter extends CustomPainter {
+  final double progress;
+  const _RingPainter(this.progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final radius = (size.width - 10) / 2;
+    const startAngle = -math.pi / 2;
+
+    // Track
+    canvas.drawCircle(
+      Offset(cx, cy),
+      radius,
+      Paint()
+        ..color = const Color(0xFFF1F5F9)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 8,
+    );
+
+    // Progress arc
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(cx, cy), radius: radius),
+      startAngle,
+      2 * math.pi * progress.clamp(0, 1),
+      false,
+      Paint()
+        ..color = const Color(0xFF1B4332)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 8
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_RingPainter old) => old.progress != progress;
 }

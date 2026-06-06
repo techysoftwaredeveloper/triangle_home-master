@@ -9,9 +9,17 @@ import 'package:triangle_home/models/property_private_details.dart';
 import 'package:uuid/uuid.dart';
 
 class PropertyService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
+  final FirebaseAuth _auth;
+
+  PropertyService({
+    FirebaseFirestore? firestore,
+    FirebaseStorage? storage,
+    FirebaseAuth? auth,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _storage = storage ?? FirebaseStorage.instance,
+        _auth = auth ?? FirebaseAuth.instance;
 
   // ==================== IMAGE HANDLING ====================
 
@@ -53,8 +61,11 @@ class PropertyService {
           }.where((t) => t.length > 2).toList();
 
       // 2. Add Geo-Aware identifiers for multi-city scale
+      final String cityName = (data['city'] ?? '').toString().trim();
+      final String localityName = (data['locality'] ?? '').toString().trim();
+
       final String cityId =
-          data['city']?.toString().toLowerCase().replaceAll(' ', '_') ??
+          cityName.toLowerCase().replaceAll(' ', '_') ??
           'unknown';
       final String stateId =
           data['state']?.toString().toLowerCase().replaceAll(' ', '_') ??
@@ -65,6 +76,8 @@ class PropertyService {
         'search_terms': searchTerms,
         'city_id': cityId,
         'state_id': stateId,
+        'city_normalized': cityName.toLowerCase(),
+        'locality_normalized': localityName.toLowerCase(),
         'status': PropertyStatus.pending.name,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -129,6 +142,43 @@ class PropertyService {
 
   // ==================== SEARCH & PAGINATION ====================
 
+  /// Get property stats
+  Stream<Map<String, dynamic>> getPropertyStats(String propertyId) {
+    return _firestore
+        .collection('propertyStats')
+        .doc(propertyId)
+        .snapshots()
+        .map((doc) => doc.data() ?? {});
+  }
+
+  /// Get rooms for a property
+  Stream<List<Map<String, dynamic>>> getPropertyRooms(String propertyId) {
+    return _firestore
+        .collection('rooms')
+        .where('propertyId', isEqualTo: propertyId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
+  }
+
+  /// Get beds for a property
+  Stream<List<Map<String, dynamic>>> getPropertyBeds(String propertyId) {
+    return _firestore
+        .collection('beds')
+        .where('propertyId', isEqualTo: propertyId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
+  }
+
+  /// Get reviews for a property
+  Stream<List<Map<String, dynamic>>> getPropertyReviews(String propertyId) {
+    return _firestore
+        .collection('reviews')
+        .where('property_id', isEqualTo: propertyId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
+  }
+
   /// Real-time stream for properties with city and status filters
   Stream<List<Map<String, dynamic>>> getPropertiesStream({
     String? city,
@@ -139,7 +189,7 @@ class PropertyService {
         .where('status', isEqualTo: status.name);
 
     if (city != null && city.isNotEmpty && city != 'Global') {
-      query = query.where('city', isEqualTo: city);
+      query = query.where('city_normalized', isEqualTo: city.toLowerCase().trim());
     }
 
     return query
@@ -193,7 +243,7 @@ class PropertyService {
         .where('status', isEqualTo: PropertyStatus.approved.name);
 
     if (city != null && city.isNotEmpty && city != 'Global') {
-      query = query.where('city', isEqualTo: city);
+      query = query.where('city_normalized', isEqualTo: city.toLowerCase().trim());
     }
 
     return query.orderBy('createdAt', descending: true).snapshots().map((snapshot) {
@@ -303,7 +353,7 @@ class PropertyService {
       }
 
       if (city != null) {
-        query = query.where('city', isEqualTo: city);
+        query = query.where('city_normalized', isEqualTo: city.toLowerCase().trim());
       }
 
       query = query.limit(limit);
@@ -334,7 +384,7 @@ class PropertyService {
       Query<Map<String, dynamic>> query = _firestore.collection('properties');
 
       if (city != null && city.isNotEmpty) {
-        query = query.where('city', isEqualTo: city);
+        query = query.where('city_normalized', isEqualTo: city.toLowerCase().trim());
       }
 
       // Add status filter for security

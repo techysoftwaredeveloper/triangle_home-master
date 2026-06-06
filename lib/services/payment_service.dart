@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/core/errors/failures.dart';
-import 'package:triangle_home/services/booking_service.dart';
 
 class PaymentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

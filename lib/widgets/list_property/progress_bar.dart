@@ -4,11 +4,13 @@ import 'package:triangle_home/theme/app_theme.dart';
 class ProgressBar extends StatelessWidget {
   final int currentStep;
   final int totalSteps;
+  final double? completionPercentage;
 
   const ProgressBar({
     super.key,
     required this.currentStep,
     this.totalSteps = 9,
+    this.completionPercentage,
   });
 
   @override
@@ -45,14 +47,28 @@ class ProgressBar extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                _getStepTitle(currentStep),
-                style: const TextStyle(
-                  color: AppTheme.textDarkColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _getStepTitle(currentStep),
+                    style: const TextStyle(
+                      color: AppTheme.textDarkColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppTheme.fontFamily,
+                    ),
+                  ),
+                  if (completionPercentage != null)
+                    Text(
+                      'Overall Completion: ${(completionPercentage! * 100).toInt()}%',
+                      style: const TextStyle(
+                        color: AppTheme.successColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
               ),
               Text(
                 'Step ${currentStep + 1} of $totalSteps',

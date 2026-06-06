@@ -360,7 +360,7 @@ class OverviewTab extends StatelessWidget {
       child: Row(
         children: [
           _buildActionCard(
-            data?['pendingHosters']?.toString() ?? '3',
+            data?['pendingHosters']?.toString() ?? '0',
             'Pending Host Approvals',
             const Color(0xFFFEE2E2),
             const Color(0xFFEF4444),
@@ -369,7 +369,7 @@ class OverviewTab extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           _buildActionCard(
-            data?['reportedListings']?.toString() ?? '2',
+            data?['reportedListings']?.toString() ?? '0',
             'Reported Listings',
             const Color(0xFFFFEDD5),
             const Color(0xFFF59E0B),
@@ -378,7 +378,7 @@ class OverviewTab extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           _buildActionCard(
-            data?['failedPayments']?.toString() ?? '5',
+            data?['failedPayments']?.toString() ?? '0',
             'Failed Payments',
             const Color(0xFFFEF9C3),
             const Color(0xFFEAB308),
@@ -387,7 +387,7 @@ class OverviewTab extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           _buildActionCard(
-            data?['pendingApprovals']?.toString() ?? '4',
+            data?['pendingApprovals']?.toString() ?? '0',
             'Verification Requests',
             const Color(0xFFF3E8FF),
             const Color(0xFFA855F7),
@@ -396,7 +396,7 @@ class OverviewTab extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           _buildActionCard(
-            '1',
+            '0',
             'Suspicious Account',
             const Color(0xFFFCE7F3),
             const Color(0xFFEC4899),
@@ -485,8 +485,8 @@ class OverviewTab extends StatelessWidget {
       children: [
         _buildStatBox(
           'Students',
-          data?['totalStudents']?.toString() ?? '1,284',
-          '12.5%',
+          data?['totalStudents']?.toString() ?? '0',
+          '0%',
           true,
           const Color(0xFFEFF6FF),
           const Color(0xFF3B82F6),
@@ -494,8 +494,8 @@ class OverviewTab extends StatelessWidget {
         ),
         _buildStatBox(
           'Hosters',
-          data?['totalHosters']?.toString() ?? '342',
-          '8.3%',
+          data?['totalHosters']?.toString() ?? '0',
+          '0%',
           true,
           const Color(0xFFF0FDF4),
           const Color(0xFF10B981),
@@ -503,8 +503,8 @@ class OverviewTab extends StatelessWidget {
         ),
         _buildStatBox(
           'Active Listings',
-          data?['activeProperties']?.toString() ?? '1,076',
-          '15.2%',
+          data?['activeProperties']?.toString() ?? '0',
+          '0%',
           true,
           const Color(0xFFF5F3FF),
           const Color(0xFF8B5CF6),
@@ -512,8 +512,8 @@ class OverviewTab extends StatelessWidget {
         ),
         _buildStatBox(
           'Occupancy Rate',
-          '${data?['occupancyRate'] ?? '78.6'}%',
-          '6.1%',
+          '${data?['occupancyRate'] ?? '0.0'}%',
+          '0%',
           true,
           const Color(0xFFFDF4FF),
           const Color(0xFFD946EF),
@@ -521,8 +521,8 @@ class OverviewTab extends StatelessWidget {
         ),
         _buildStatBox(
           'Revenue',
-          '₹${NumberFormat.currency(locale: 'en_IN', symbol: '', decimalDigits: 0).format(data?['totalRevenue'] ?? 485250)}',
-          '18.7%',
+          '₹${NumberFormat.currency(locale: 'en_IN', symbol: '', decimalDigits: 0).format(data?['totalRevenue'] ?? 0)}',
+          '0%',
           true,
           const Color(0xFFFFF7ED),
           const Color(0xFFF59E0B),
@@ -723,38 +723,7 @@ class OverviewTab extends StatelessWidget {
 
   Widget _buildRecentActivity(Map<String, dynamic>? data) {
     final activities = (data?['recentActivities'] as List?) ?? [];
-
-    // Default mock data if empty to match image
-    final displayActivities =
-        activities.isNotEmpty
-            ? activities
-            : [
-              {
-                'title': 'Sunrise Hostels approved by Admin',
-                'subtitle': 'Kozhikode, Kerala',
-                'time': '10:30 AM',
-              },
-              {
-                'title': 'New hoster registration',
-                'subtitle': 'John Doe',
-                'time': '09:45 AM',
-              },
-              {
-                'title': 'New property suggestion submitted',
-                'subtitle': 'Green Valley PG, Calicut',
-                'time': '09:20 AM',
-              },
-              {
-                'title': 'Payment received',
-                'subtitle': 'Room A-203, Sunrise Hostels',
-                'time': '08:50 AM',
-              },
-              {
-                'title': 'Listing reported',
-                'subtitle': 'Comfort Living PG',
-                'time': '08:15 AM',
-              },
-            ];
+    final displayActivities = activities;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -768,15 +737,26 @@ class OverviewTab extends StatelessWidget {
         children: [
           _buildSectionHeader('Recent Activity', trailing: 'View All'),
           const SizedBox(height: 24),
-          ...displayActivities.map(
-            (a) => _buildActivityItem(
-              a['title'] ?? '',
-              a['subtitle'] ?? '',
-              a['time'] ?? '',
-              _getActivityIcon(a['title'] ?? ''),
-              _getActivityColor(a['title'] ?? ''),
+          if (displayActivities.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 48.0),
+                child: Text(
+                  'No recent activity logs',
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                ),
+              ),
+            )
+          else
+            ...displayActivities.map(
+              (a) => _buildActivityItem(
+                a['title'] ?? '',
+                a['subtitle'] ?? '',
+                a['time'] ?? '',
+                _getActivityIcon(a['title'] ?? ''),
+                _getActivityColor(a['title'] ?? ''),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -785,13 +765,16 @@ class OverviewTab extends StatelessWidget {
   IconData _getActivityIcon(String title) {
     title = title.toLowerCase();
     if (title.contains('approved')) return Icons.home_work_outlined;
-    if (title.contains('registration') || title.contains('user'))
+    if (title.contains('registration') || title.contains('user')) {
       return Icons.person_outline;
+    }
     if (title.contains('suggestion')) return Icons.lightbulb_outline;
-    if (title.contains('payment') || title.contains('received'))
+    if (title.contains('payment') || title.contains('received')) {
       return Icons.payments_outlined;
-    if (title.contains('report') || title.contains('listing'))
+    }
+    if (title.contains('report') || title.contains('listing')) {
       return Icons.flag_outlined;
+    }
     return Icons.notifications_outlined;
   }
 
@@ -800,10 +783,12 @@ class OverviewTab extends StatelessWidget {
     if (title.contains('approved')) return const Color(0xFF10B981);
     if (title.contains('registration')) return const Color(0xFF3B82F6);
     if (title.contains('suggestion')) return const Color(0xFF8B5CF6);
-    if (title.contains('payment') || title.contains('received'))
+    if (title.contains('payment') || title.contains('received')) {
       return const Color(0xFFF59E0B);
-    if (title.contains('report') || title.contains('listing'))
+    }
+    if (title.contains('report') || title.contains('listing')) {
       return const Color(0xFFEF4444);
+    }
     return const Color(0xFF64748B);
   }
 
@@ -1153,17 +1138,7 @@ class OverviewTab extends StatelessWidget {
 
   Widget _buildTopCities(Map<String, dynamic>? data) {
     final topCities = (data?['topCities'] as List?) ?? [];
-
-    final displayCities =
-        topCities.isNotEmpty
-            ? topCities
-            : [
-              {'name': 'Kozhikode', 'count': 312},
-              {'name': 'Calicut', 'count': 210},
-              {'name': 'Kannur', 'count': 146},
-              {'name': 'Thrissur', 'count': 98},
-              {'name': 'Kochi', 'count': 76},
-            ];
+    final displayCities = topCities;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -1177,15 +1152,26 @@ class OverviewTab extends StatelessWidget {
         children: [
           _buildSectionHeader('Top Cities by Listings', trailing: 'This Month'),
           const SizedBox(height: 32),
-          ...displayCities.map((c) {
-            final count = c['count'] as int;
-            final max = (displayCities.first['count'] as int);
-            return _buildCityProgress(
-              c['name'],
-              count,
-              count / (max > 0 ? max : 1),
-            );
-          }),
+          if (displayCities.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 48.0),
+                child: Text(
+                  'No listings data available',
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                ),
+              ),
+            )
+          else
+            ...displayCities.map((c) {
+              final count = c['count'] as int;
+              final max = (displayCities.first['count'] as int);
+              return _buildCityProgress(
+                c['name'],
+                count,
+                count / (max > 0 ? max : 1),
+              );
+            }),
         ],
       ),
     );

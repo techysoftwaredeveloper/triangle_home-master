@@ -6,7 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/screens/admin/admin_login_screen.dart';
 import 'package:triangle_home/screens/auth/otp_verification_screen.dart';
-import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
+import 'package:triangle_home/screens/hoster/partner_onboarding_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/screens/list_property/intro_screen.dart';
 import 'package:triangle_home/services/isar_service.dart';
@@ -133,10 +133,11 @@ class _LoginScreenState extends State<LoginScreen> {
           .signInWithCredential(credential);
 
       final User? user = userCredential.user;
-      if (user == null)
+      if (user == null) {
         throw Exception(
           'Firebase User is null after successful Google Sign-In',
         );
+      }
 
       if (!mounted) return;
 
@@ -178,7 +179,9 @@ class _LoginScreenState extends State<LoginScreen> {
         final userData =
             userDoc.exists ? (userDoc.data() as Map<String, dynamic>) : null;
         final bool isAlreadyHoster =
-            userData != null && userData['role'] == 'hoster';
+            userData != null &&
+                (userData['role'] == 'hoster' ||
+                    userData['onboardingStatus'] == 'submitted');
 
         if (isAlreadyHoster) {
           Navigator.pushAndRemoveUntil(
@@ -190,7 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // If they chose "List Your Property" but are a new user or not yet marked as hoster
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const BecomeHosterScreen()),
+            MaterialPageRoute(builder: (_) => const PartnerOnboardingScreen()),
             (route) => false,
           );
         }

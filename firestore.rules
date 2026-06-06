@@ -26,6 +26,7 @@ service cloud.firestore {
 
     function hasRole(role) {
       return userExists() &&
+             'role' in getUserData() &&
              getUserData().role == role;
     }
 
@@ -36,27 +37,28 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         // users/{uid}.role
-        (userExists() && getUserData().role in ['admin', 'superadmin']) ||
+        (userExists() && 'role' in getUserData() && getUserData().role in ['admin', 'superadmin']) ||
         // users/{uid}.permissions.role
-        (userExists() && getUserData().permissions.role in ['admin', 'superadmin']) ||
+        (userExists() && 'permissions' in getUserData() && getUserData().permissions != null && 'role' in getUserData().permissions && getUserData().permissions.role in ['admin', 'superadmin']) ||
         // admins collection
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
         // custom claims
-        request.auth.token.role in ['admin', 'superadmin']
+        ('role' in request.auth.token && request.auth.token.role in ['admin', 'superadmin'])
       );
     }
 
     function isSuperAdmin() {
       return isSignedIn() && (
         // users/{uid}.role
-        (userExists() && getUserData().role == 'superadmin') ||
+        (userExists() && 'role' in getUserData() && getUserData().role == 'superadmin') ||
         // admins collection role
         (
           exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+          'role' in get(/databases/$(database)/documents/admins/$(request.auth.uid)).data &&
           get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'superadmin'
         ) ||
         // custom claim
-        request.auth.token.role == 'superadmin'
+        ('role' in request.auth.token && request.auth.token.role == 'superadmin')
       );
     }
 
@@ -74,7 +76,10 @@ service cloud.firestore {
       // User creates own account with initial roles
       allow create: if isSignedIn() &&
                     request.auth.uid == userId &&
-                    request.resource.data.role in ['student', 'hoster', 'professional'];
+                    (
+                      !('role' in request.resource.data) ||
+                      request.resource.data.role in ['student', 'hoster', 'professional', 'owner', 'manager', 'agency']
+                    );
 
       // User updates own profile
       allow update: if (
@@ -85,7 +90,7 @@ service cloud.firestore {
         // If role is changed, it must be to an allowed public role
         (
           !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) ||
-          request.resource.data.role in ['student', 'hoster', 'professional']
+          request.resource.data.role in ['student', 'hoster', 'professional', 'owner', 'manager', 'agency']
         )
       ) || isAdmin();
 
@@ -138,6 +143,25 @@ service cloud.firestore {
         allow read: if true;
         allow write: if isAdmin() || hasRole('hoster');
       }
+    }
+
+    // =========================================================
+    // REDESIGN TOP-LEVEL COLLECTIONS (V2)
+    // =========================================================
+
+    match /rooms/{roomId} {
+      allow read: if true;
+      allow write: if isAdmin() || hasRole('hoster');
+    }
+
+    match /beds/{bedId} {
+      allow read: if true;
+      allow write: if isAdmin() || hasRole('hoster');
+    }
+
+    match /propertyStats/{propertyId} {
+      allow read: if true;
+      allow write: if isAdmin() || hasRole('hoster');
     }
 
     match /unlocked_data/{permissionId} {
@@ -255,6 +279,46 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /auditLogs/{logId} {
+      allow read, create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    match /activityLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /adminStats/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /occupancyStats/{propertyId} {
+      allow read: if isAdmin() || hasRole('hoster');
+      allow write: if false;
+    }
+
+    match /revenueStats/{propertyId} {
+      allow read: if isAdmin() || hasRole('hoster');
+      allow write: if false;
+    }
+
+    match /complianceStats/{propertyId} {
+      allow read: if isAdmin() || hasRole('hoster');
+      allow write: if false;
+    }
+
+    match /complianceAlerts/{alertId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /propertyApprovals/{approvalId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
     match /audit_logs/{logId} {
       allow read, create: if isAdmin();
       allow update, delete: if false;
@@ -267,7 +331,7 @@ service cloud.firestore {
 
     match /hoster_requests/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow update: if isAdmin();
     }
 
@@ -292,6 +356,22 @@ service cloud.firestore {
         isAdmin()
       );
       allow delete: if isAdmin();
+    }
+
+    // =========================================================
+    // DISPUTES, ESCROW, & ADMIN ACTIONS
+    // =========================================================
+
+    match /disputes/{disputeId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /escrow/{escrowId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /admin_actions/{actionId} {
+      allow read, write: if isAdmin();
     }
   }
 }

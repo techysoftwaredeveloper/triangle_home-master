@@ -54,8 +54,8 @@ class _PropertyBasicsStepState extends State<PropertyBasicsStep> {
                 'Hostel',
                 'PG Accommodation',
                 'Apartment',
-                'Guest House',
               ],
+              onChanged: (value) => setState(() {}),
               activeColor: AppTheme.successColor,
             ),
             InputField(

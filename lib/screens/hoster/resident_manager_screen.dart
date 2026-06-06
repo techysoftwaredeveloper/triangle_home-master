@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/models/resident_stay.dart';
-import 'package:triangle_home/services/stay_lifecycle_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 class ResidentManagerScreen extends StatefulWidget {
@@ -99,8 +98,9 @@ class _ResidentManagerScreenState extends State<ResidentManagerScreen>
               .where('status', isEqualTo: status.name)
               .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
 
         final residents =
             snapshot.data!.docs

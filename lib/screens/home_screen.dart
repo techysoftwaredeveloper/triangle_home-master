@@ -15,7 +15,6 @@ import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/home/accommodation_types.dart';
 import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
 import 'package:triangle_home/widgets/home/state_tags.dart';
-import 'package:triangle_home/widgets/home/enrollment_card.dart';
 import 'package:triangle_home/widgets/home/nearby_accommodations.dart';
 import 'package:triangle_home/widgets/home/highest_rated_section.dart';
 import 'package:triangle_home/services/location_api_service.dart';
@@ -90,32 +89,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     try {
-      // 2. BACKGROUND SYNC: Fetch fresh data
+      // 2. Try REST API first
       final cities = await _locationApi.getMajorCities();
       if (!mounted) return;
 
       if (cities.isNotEmpty) {
         setState(() => _states = cities);
-        // Update cache
         await _isarService.saveMajorCities(cities);
-      } else if (_states.isEmpty) {
-        // Ultimate fallback
-        setState(
-          () =>
-              _states = [
-                "Kozhikode",
-                "Malappuram",
-                "Kochi",
-                "Bangalore",
-                "Chennai",
-                "Mumbai",
-                "Hyderabad",
-                "Delhi",
-              ],
-        );
+        return;
       }
     } catch (e) {
-      debugPrint('❌ Error fetching cities: $e');
+      debugPrint('❌ REST API cities error: $e');
+    }
+
+    try {
+      // 3. FIRESTORE FALLBACK: read cities collection doc IDs
+      final snapshot = await FirebaseFirestore.instance
+          .collection('cities')
+          .where('active', isEqualTo: true)
+          .get();
+      if (!mounted) return;
+
+      if (snapshot.docs.isNotEmpty) {
+        final firestoreCities = snapshot.docs
+            .map((d) => d.id)
+            .where((id) => id.isNotEmpty)
+            .toList()
+          ..sort();
+        setState(() => _states = firestoreCities);
+        await _isarService.saveMajorCities(firestoreCities);
+        return;
+      }
+    } catch (e) {
+      debugPrint('❌ Firestore cities error: $e');
+    }
+
+    // 4. Ultimate hardcoded fallback (with Kottayam)
+    if (_states.isEmpty && mounted) {
+      setState(
+        () => _states = [
+          "Bangalore",
+          "Chennai",
+          "Delhi",
+          "Hyderabad",
+          "Kochi",
+          "Kottayam",
+          "Kozhikode",
+          "Malappuram",
+          "Mumbai",
+        ],
+      );
     }
   }
 
@@ -385,17 +408,68 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: propertiesState.when(
-                      data:
-                          (accommodations) => NearbyAccommodations(
-                            accommodations: accommodations,
-                            selectedCity: _currentCity,
-                          ),
-                      loading:
-                          () =>
-                              const Center(child: CircularProgressIndicator()),
-                      error:
-                          (error, stack) =>
-                              Center(child: Text('Error: ${error.toString()}')),
+                      data: (accommodations) {
+                        if (accommodations.isEmpty) {
+                          return Container(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 32, horizontal: 24),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(Icons.home_work_outlined,
+                                    size: 48,
+                                    color: Colors.grey.shade300),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _currentCity.isEmpty
+                                      ? 'No properties available yet'
+                                      : 'No properties in $_currentCity yet',
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      color: AppTheme.textLightColor),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return NearbyAccommodations(
+                          accommodations: accommodations,
+                          selectedCity: _currentCity,
+                        );
+                      },
+                      loading: () => const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: Center(
+                            child: CircularProgressIndicator(
+                                color: AppTheme.primaryColor)),
+                      ),
+                      error: (error, stack) => Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline,
+                                color: Colors.red, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Failed to load properties. Pull to refresh.',
+                                style: const TextStyle(
+                                    fontSize: 13, color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   HighestRatedSection(

@@ -186,8 +186,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             (prefs['budgetMax'] ?? 12000).toDouble(),
           );
           _lookingFor = List<String>.from(prefs['lookingFor'] ?? ['PG']);
-          if (prefs['moveInDate'] != null)
+          if (prefs['moveInDate'] != null) {
             _moveInDate = (prefs['moveInDate'] as Timestamp).toDate();
+          }
           _stayDuration = prefs['stayDuration'] ?? '6 Months';
           _familySize = prefs['familySize'] ?? 1;
 
@@ -342,8 +343,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading)
+    if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       backgroundColor: _bgGray,
@@ -1117,8 +1119,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             }
           }
           if (label.contains('Email') && value != null && value.isNotEmpty) {
-            if (!RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value))
+            if (!RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
               return 'Enter a valid email';
+            }
           }
           return null;
         },

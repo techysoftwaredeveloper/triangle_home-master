@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/models/lifecycle_models.dart';
-import 'package:triangle_home/services/inventory_service.dart';
 
 class StayLifecycleService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -53,11 +52,12 @@ class StayLifecycleService {
   Future<CheckoutValidationResult> validateCheckout(String stayId) async {
     final stayDoc =
         await _firestore.collection('resident_stays').doc(stayId).get();
-    if (!stayDoc.exists)
+    if (!stayDoc.exists) {
       return CheckoutValidationResult(
         canCheckout: false,
         reason: 'Stay not found',
       );
+    }
 
     final data = stayDoc.data()!;
     // 1. Check Overdue Rent
@@ -67,11 +67,12 @@ class StayLifecycleService {
             .where('stayId', isEqualTo: stayId)
             .where('status', isEqualTo: RentStatus.overdue.name)
             .get();
-    if (overdueRent.docs.isNotEmpty)
+    if (overdueRent.docs.isNotEmpty) {
       return CheckoutValidationResult(
         canCheckout: false,
         reason: 'Outstanding rent payments found',
       );
+    }
 
     // 2. Check Open Maintenance Tickets
     final openTickets =
@@ -87,11 +88,12 @@ class StayLifecycleService {
               ],
             )
             .get();
-    if (openTickets.docs.isNotEmpty)
+    if (openTickets.docs.isNotEmpty) {
       return CheckoutValidationResult(
         canCheckout: false,
         reason: 'Unresolved maintenance tickets exist',
       );
+    }
 
     // 3. Check Inspection Status
     final inspection =
@@ -100,11 +102,12 @@ class StayLifecycleService {
             .where('stayId', isEqualTo: stayId)
             .limit(1)
             .get();
-    if (inspection.docs.isEmpty)
+    if (inspection.docs.isEmpty) {
       return CheckoutValidationResult(
         canCheckout: false,
         reason: 'Room inspection not completed',
       );
+    }
 
     return CheckoutValidationResult(canCheckout: true);
   }

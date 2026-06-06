@@ -34,6 +34,8 @@ class _HosterDetailScreenState extends State<HosterDetailScreen> {
         await FirebaseFirestore.instance.collection('users').doc(uid).update({
           'permissions.status': 'approved',
           'permissions.approvedAt': FieldValue.serverTimestamp(),
+          'accountStatus': 'approved',
+          'status': 'approved',
           'adminReviewNote': _noteController.text.trim(),
         });
 
@@ -52,6 +54,8 @@ class _HosterDetailScreenState extends State<HosterDetailScreen> {
         // Reject / Request Info
         await FirebaseFirestore.instance.collection('users').doc(uid).update({
           'permissions.status': 'rejected',
+          'accountStatus': 'rejected',
+          'status': 'rejected',
           'adminReviewNote': _noteController.text.trim(),
         });
 
@@ -71,10 +75,11 @@ class _HosterDetailScreenState extends State<HosterDetailScreen> {
         ).showSnackBar(SnackBar(content: Text('Account $status successfully')));
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -118,40 +123,44 @@ class _HosterDetailScreenState extends State<HosterDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildProfileHeader(info),
-                    const SizedBox(height: 32),
+                    _buildProfileHeader(info, userData, verif),
+                    const SizedBox(height: 16),
+                    _buildCompletionBar(info, userData, verif),
+                    const SizedBox(height: 16),
+                    _buildContactVerification(userData, verif),
+                    const SizedBox(height: 24),
                     _buildSectionTitle('Identity Documents'),
                     _buildDocCard(
                       'Aadhaar Card',
-                      verif['govIdFrontUrl'],
-                      verif['govIdBackUrl'],
+                      verif['govIdFrontUrl'] ?? verif['aadhaarFrontUrl'],
+                      verif['govIdBackUrl'] ?? verif['aadhaarBackUrl'],
                       'govId',
-                      verif['govIdVerified'] == true,
+                      verif['govIdVerified'] == true || verif['aadhaarVerified'] == true,
                     ),
                     _buildDocCard(
                       'PAN Card',
-                      verif['panFrontUrl'],
+                      verif['panFrontUrl'] ?? verif['panUrl'],
                       null,
                       'pan',
                       verif['panVerified'] == true,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
                     _buildSectionTitle('Business Documents'),
                     _buildDocCard(
-                      'Business Proof',
-                      verif['businessProofFrontUrl'],
+                      'Business Proof (${verif['businessProofType'] ?? 'Not selected'})',
+                      verif['businessProofFrontUrl'] ?? verif['businessProofUrl'],
                       null,
                       'business',
                       verif['businessProofVerified'] == true,
                     ),
                     _buildDocCard(
-                      'Property Proof',
-                      verif['propertyProofFrontUrl'],
+                      'Property Ownership (${verif['propertyProofType'] ?? 'Not selected'})',
+                      verif['propertyProofFrontUrl'] ?? verif['propertyProofUrl'],
                       null,
                       'property',
                       verif['propertyProofVerified'] == true,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
                     _buildSectionTitle('Admin Action'),
                     TextField(
                       controller: _noteController,
@@ -184,24 +193,38 @@ class _HosterDetailScreenState extends State<HosterDetailScreen> {
     );
   }
 
-  Widget _buildProfileHeader(Map info) {
+  Widget _buildProfileHeader(
+      Map info, Map<String, dynamic> userData, Map verif) {
+    final isApproved = userData['status'] == 'approved' ||
+        (userData['permissions'] as Map?)?['status'] == 'approved';
     return Row(
       children: [
-        CircleAvatar(
-          radius: 40,
-          backgroundColor: AppTheme.successColor.withValues(alpha: 0.1),
-          backgroundImage:
-              info['profileImage'] != null
+        Stack(
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: AppTheme.successColor.withValues(alpha: 0.1),
+              backgroundImage: info['profileImage'] != null
                   ? CachedNetworkImageProvider(info['profileImage'])
                   : null,
-          child:
-              info['profileImage'] == null
-                  ? const Icon(
-                    Icons.person,
-                    size: 40,
-                    color: AppTheme.successColor,
-                  )
+              child: info['profileImage'] == null
+                  ? const Icon(Icons.person, size: 40, color: AppTheme.successColor)
                   : null,
+            ),
+            if (isApproved)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.successColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 12),
+                ),
+              ),
+          ],
         ),
         const SizedBox(width: 20),
         Expanded(
@@ -211,23 +234,197 @@ class _HosterDetailScreenState extends State<HosterDetailScreen> {
               Text(
                 info['name'] ?? 'Unknown',
                 style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Outfit',
-                ),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Outfit'),
               ),
-              Text(
-                info['email'] ?? 'No email',
-                style: const TextStyle(color: AppTheme.textLightColor),
+              Row(
+                children: [
+                  const Icon(Icons.email_outlined, size: 14,
+                      color: AppTheme.textLightColor),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      info['email'] ?? 'No email',
+                      style: const TextStyle(
+                          color: AppTheme.textLightColor, fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (userData['emailVerified'] == true ||
+                      verif['emailVerified'] == true)
+                    _adminBadge('Email ✓', Colors.green),
+                ],
               ),
-              Text(
-                info['phone'] ?? 'No phone',
-                style: const TextStyle(color: AppTheme.textLightColor),
+              Row(
+                children: [
+                  const Icon(Icons.phone_outlined, size: 14,
+                      color: AppTheme.textLightColor),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      info['phone'] ?? 'No phone',
+                      style: const TextStyle(
+                          color: AppTheme.textLightColor, fontSize: 13),
+                    ),
+                  ),
+                  if (verif['phoneVerified'] == true)
+                    _adminBadge('Phone ✓', Colors.blue),
+                ],
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _adminBadge(String label, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(left: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+            fontSize: 10, fontWeight: FontWeight.bold, color: color),
+      ),
+    );
+  }
+
+  Widget _buildCompletionBar(
+      Map info, Map<String, dynamic> userData, Map verif) {
+    int total = 10, filled = 0;
+    if ((info['name'] ?? '').toString().isNotEmpty) filled++;
+    if ((info['email'] ?? userData['email'] ?? '').toString().isNotEmpty) filled++;
+    if ((info['phone'] ?? userData['phone'] ?? '').toString().isNotEmpty) filled++;
+    if (info['profileImage'] != null) filled++;
+    if (userData['emailVerified'] == true || verif['emailVerified'] == true) filled++;
+    if (verif['phoneVerified'] == true) filled++;
+    if (verif['govIdVerified'] == true || verif['aadhaarVerified'] == true ||
+        (verif['govIdFrontUrl'] ?? verif['aadhaarFrontUrl']) != null) {
+      filled++;
+    }
+    if (verif['panVerified'] == true ||
+        (verif['panFrontUrl'] ?? verif['panUrl']) != null) {
+      filled++;
+    }
+    if (userData['host_preferences'] != null) filled++;
+    if (userData['bank_info'] != null ||
+        (userData['onboardingData'] as Map?)?['bankAccNo'] != null) {
+      filled++;
+    }
+
+    final pct = filled / total;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Profile Completion',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            Text('${(pct * 100).toInt()}%  ($filled/$total)',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: pct >= 0.8 ? Colors.green : Colors.orange,
+                    fontWeight: FontWeight.bold)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            value: pct,
+            minHeight: 8,
+            backgroundColor: const Color(0xFFF1F5F9),
+            valueColor: AlwaysStoppedAnimation<Color>(
+                pct >= 0.8 ? Colors.green : Colors.orange),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContactVerification(Map<String, dynamic> userData, Map verif) {
+    final emailVerified =
+        userData['emailVerified'] == true || verif['emailVerified'] == true;
+    final phoneVerified = verif['phoneVerified'] == true;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Contact Verification',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _contactChip(
+                  Icons.email_outlined,
+                  'Email',
+                  emailVerified ? 'Verified' : 'Unverified',
+                  emailVerified,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _contactChip(
+                  Icons.phone_outlined,
+                  'Phone',
+                  phoneVerified ? 'Verified' : 'Unverified',
+                  phoneVerified,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _contactChip(
+      IconData icon, String label, String status, bool verified) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      decoration: BoxDecoration(
+        color: verified
+            ? const Color(0xFFDCFCE7)
+            : const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon,
+              color: verified ? Colors.green : Colors.red, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 11, color: AppTheme.textLightColor)),
+                Text(status,
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: verified ? Colors.green : Colors.red)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -382,10 +579,14 @@ class _HosterDetailScreenState extends State<HosterDetailScreen> {
       update['verification.govIdVerified'] = verified;
       update['verification.govIdStatus'] = verified ? 'verified' : 'rejected';
       update['verification.govIdRejectReason'] = reason;
+      update['verification.aadhaarVerified'] = verified;
+      update['verification.aadhaarStatus'] = verified ? 'verified' : 'rejected';
+      update['verification.aadhaarRejectReason'] = reason;
     } else if (field == 'pan') {
       update['verification.panVerified'] = verified;
       update['verification.panStatus'] = verified ? 'verified' : 'rejected';
       update['verification.panRejectReason'] = reason;
+      update['verification.panUrlStatus'] = verified ? 'verified' : 'rejected';
     } else if (field == 'business') {
       update['verification.businessProofVerified'] = verified;
       update['verification.businessProofStatus'] =

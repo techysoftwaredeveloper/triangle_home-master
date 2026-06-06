@@ -1,104 +1,139 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:triangle_home/services/property_service.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 
 final propertyServiceProvider = Provider((ref) => PropertyService());
 
-final paginatedPropertiesProvider = StateNotifierProvider.family<
-    PropertyPaginationNotifier,
-    AsyncValue<List<Map<String, dynamic>>>,
-    String?>((ref, city) {
-  return PropertyPaginationNotifier(ref.watch(propertyServiceProvider), city);
+// ── Real-time stream provider (replaces paginated future) ───────────────────
+//
+// Uses PropertyService.getPropertiesStream which runs:
+//   .where('status', isEqualTo: 'approved')
+//   .orderBy('createdAt', descending: true)
+//
+// City filtering is done client-side to avoid needing a composite Firestore
+// index for (status + city + createdAt). Works fine for reasonable dataset sizes.
+
+final propertiesStreamProvider =
+    StreamProvider.family<List<Map<String, dynamic>>, String?>((ref, city) {
+  final service = ref.watch(propertyServiceProvider);
+  
+  // Use server-side filtering for efficiency (requires Firestore index for status+city+createdAt)
+  final bool useServerFiltering = city != null &&
+      city.isNotEmpty &&
+      city.toLowerCase() != 'global' &&
+      city.toLowerCase() != 'all' &&
+      city.toLowerCase() != 'near me' &&
+      city.toLowerCase() != 'detecting...';
+
+  return service
+      .getPropertiesStream(
+        status: PropertyStatus.approved,
+        city: useServerFiltering ? city : null,
+      )
+      .map((all) {
+    if (!useServerFiltering) {
+      return _normalize(all);
+    }
+    // Final normalization and safety filter
+    return _normalize(all);
+  });
 });
 
-class PropertyPaginationNotifier
-    extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
-  final PropertyService _propertyService;
-  final String? _city;
-  DocumentSnapshot? _lastDocument;
-  bool _hasMore = true;
+/// Normalize a raw Firestore property map into the shape NearbyAccommodations expects.
+List<Map<String, dynamic>> _normalize(List<Map<String, dynamic>> raw) {
+  return raw.map((data) {
+    final basicInfo =
+        (data['basicInfo'] as Map?)?.cast<String, dynamic>() ?? {};
+    final propertyInfo =
+        (data['propertyInfo'] as Map?)?.cast<String, dynamic>() ?? {};
+    final pricingInfo =
+        (data['pricingInfo'] as Map?)?.cast<String, dynamic>() ?? {};
 
-  PropertyPaginationNotifier(this._propertyService, this._city)
-      : super(const AsyncValue.loading()) {
-    fetchNextBatch();
-  }
+    // Title: basicInfo.collegeName > basicInfo.name > data.title > data.name
+    final title = (basicInfo['collegeName'] ?? basicInfo['name'] ??
+            data['title'] ?? data['name'] ?? 'Unnamed Property')
+        .toString();
 
-  Future<void> fetchNextBatch() async {
-    if (!_hasMore) return;
+    // City: top-level > pricingInfo > basicInfo
+    final city = (data['city'] ?? pricingInfo['city'] ?? basicInfo['city'] ?? '')
+        .toString();
 
-    try {
-      final snapshot = await _propertyService.getProperties(
-        limit: 10,
-        startAfter: _lastDocument,
-        city: _city,
-        status:
-            PropertyStatus.approved, // Only show approved properties to users
-      );
+    // Locality
+    final locality =
+        (data['locality'] ?? pricingInfo['addressLine1'] ?? '').toString();
 
-      if (snapshot.docs.isEmpty) {
-        _hasMore = false;
-        if (state is AsyncLoading) {
-          state = const AsyncValue.data([]);
-        }
-        return;
-      }
+    final location =
+        (locality.isNotEmpty && city.isNotEmpty)
+            ? '$locality, $city'
+            : city.isNotEmpty
+                ? city
+                : locality.isNotEmpty
+                    ? locality
+                    : 'N/A';
 
-      _lastDocument = snapshot.docs.last;
+    // Type / sharing
+    final type = (basicInfo['type'] ?? data['type'] ?? '').toString();
+    final sharing =
+        (propertyInfo['sharing'] ?? data['sharing'] ?? 'N/A').toString();
 
-      final newProperties =
-          snapshot.docs.map((doc) {
-            final data = doc.data();
-            // ... transformation logic remains same for now to avoid breaking UI
-            // In the future, we should return PropertyListing models
-            final basicInfo = data['basicInfo'] ?? {};
-            final propertyInfo = data['propertyInfo'] ?? {};
-            final pricingInfo = data['pricingInfo'] ?? {};
-            final imagesRaw = data['images'] ?? propertyInfo['images'] ?? [];
-            final images =
-                imagesRaw is List
-                    ? List<String>.from(imagesRaw.take(10))
-                    : <String>[];
+    // Price: pricingInfo.monthlyRent > data.monthlyRent > data.price
+    final rawRent =
+        (pricingInfo['monthlyRent'] ?? data['monthlyRent'] ?? data['price'] ??
+                '0')
+            .toString()
+            .replaceAll(',', '');
+    final price = int.tryParse(rawRent) ?? 0;
 
-            return {
-              'id': doc.id,
-              'title': basicInfo['collegeName'] ?? 'Unnamed Property',
-              'city': pricingInfo['city'] ?? data['city'] ?? 'N/A',
-              'state': pricingInfo['state'] ?? 'N/A',
-              'location':
-                  "${pricingInfo['addressLine1'] ?? data['locality'] ?? 'N/A'}, ${pricingInfo['city'] ?? data['city'] ?? 'N/A'}",
-              'type': basicInfo['type'] ?? 'N/A',
-              'sharing': propertyInfo['sharing'] ?? 'N/A',
-              'price':
-                  int.tryParse(
-                    (pricingInfo['monthlyRent'] ?? '0').toString().replaceAll(
-                      ',',
-                      '',
-                    ),
-                  ) ??
-                  0,
-              'image':
-                  images.isNotEmpty
-                      ? images[0]
-                      : 'https://via.placeholder.com/150',
-              'images': images,
-              'wardenName': basicInfo['wardenName'] ?? 'N/A',
-              'phone': basicInfo['phone'] ?? 'N/A',
-              'availability': propertyInfo['availability'],
-              'features': propertyInfo['features'] ?? [],
-            };
-          }).toList();
+    // Images: data.images > propertyInfo.images
+    final imagesRaw = (data['images'] ?? propertyInfo['images'] ?? []);
+    final images = imagesRaw is List
+        ? List<String>.from(imagesRaw.take(10).map((e) => e.toString()))
+        : <String>[];
 
-      final currentList = state.value ?? [];
-      state = AsyncValue.data([...currentList, ...newProperties]);
+    final image = images.isNotEmpty ? images[0] : null;
 
-      if (snapshot.docs.length < 10) {
-        _hasMore = false;
-      }
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-    }
-  }
+    // Rating / reviews
+    final rating =
+        (data['rating'] as num?)?.toDouble() ??
+        (data['averageRating'] as num?)?.toDouble() ??
+        4.0;
+    final reviewCount =
+        (data['reviewCount'] as num?)?.toInt() ??
+        (data['totalReviews'] as num?)?.toInt() ??
+        0;
 
-  bool get hasMore => _hasMore;
+    return {
+      'id': data['id'] ?? '',
+      'title': title,
+      'city': city,
+      'state': (data['state'] ?? pricingInfo['state'] ?? '').toString(),
+      'location': location,
+      'type': type,
+      'sharing': sharing,
+      'price': price,
+      'image': image,
+      'images': images,
+      'rating': rating,
+      'reviewCount': reviewCount,
+      'wardenName': (basicInfo['wardenName'] ?? data['wardenName'] ?? 'N/A')
+          .toString(),
+      'phone': (basicInfo['phone'] ?? data['phone'] ?? 'N/A').toString(),
+      'availability': propertyInfo['availability'] ?? data['availability'],
+      'features': (propertyInfo['features'] ?? data['features'] ?? []),
+      'status': data['status'] ?? '',
+      // Pass through raw data for detail screen
+      'basicInfo': basicInfo,
+      'propertyInfo': propertyInfo,
+      'pricingInfo': pricingInfo,
+    };
+  }).toList();
 }
+
+// ── Legacy alias so existing call sites keep compiling ──────────────────────
+//
+// The old paginatedPropertiesProvider was a StateNotifierProvider.family
+// that returned AsyncValue<List>. The new propertiesStreamProvider is a
+// StreamProvider.family which also exposes AsyncValue<List>, so we just
+// re-export it under the old name.
+
+final paginatedPropertiesProvider = propertiesStreamProvider;

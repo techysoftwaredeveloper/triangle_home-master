@@ -45,7 +45,7 @@ enum BookingStatus {
   confirmed,
 }
 
-enum PropertyStatus { pending, approved, rejected, suspended, active }
+enum PropertyStatus { pending, approved, rejected, suspended, active, paused }
 
 enum PaymentStatus { pending, completed, failed, refunded, partiallyPaid }
 
@@ -177,6 +177,7 @@ enum InventoryEventType {
   bedReleased,
   roomCreated,
   roomDeleted,
+  statusChanged,
 }
 
 enum TimelineSeverity { info, warning, critical }

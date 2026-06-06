@@ -71,12 +71,12 @@ void main() {
       // 2 Properties with total 10 capacity
       await fakeFirestore.collection('properties').add({
         'hoster_id': 'hoster_1',
-        'status': 'active',
+        'status': 'approved',
         'propertyDetails': {'totalCapacity': 6, 'totalRooms': 3},
       });
       await fakeFirestore.collection('properties').add({
         'hoster_id': 'hoster_1',
-        'status': 'active',
+        'status': 'approved',
         'propertyDetails': {'totalCapacity': 4, 'totalRooms': 2},
       });
 

@@ -367,8 +367,9 @@ class StayInfoScreen extends StatelessWidget {
 
   String _formatDate(dynamic date) {
     if (date == null) return 'N/A';
-    if (date is Timestamp)
+    if (date is Timestamp) {
       return DateFormat('dd MMM yyyy').format(date.toDate());
+    }
     return date.toString();
   }
 }

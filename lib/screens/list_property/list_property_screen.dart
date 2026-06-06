@@ -138,7 +138,6 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser!;
 
-      // Real-time URLs are already uploaded in previous steps
       final List<String> imageUrls =
           (_propertyData['image_urls'] as List?)?.cast<String>() ?? [];
       final Map<String, dynamic>? verification = _propertyData['verification'];
@@ -148,47 +147,59 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
         'hoster_id': user.uid,
         'status': 'pending',
         'images': imageUrls,
-        'image_urls': imageUrls, // Compatibility
+        'image_urls': imageUrls,
         'verification': verification,
         'documents': documents,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      // Map details for compatibility
+      // 1. Map Property Basics
       if (_propertyData['propertyBasics'] != null) {
         final basics = _propertyData['propertyBasics'] as Map<String, dynamic>;
         finalData['basicInfo'] = basics;
         finalData['name'] = basics['name'];
+        finalData['type'] = basics['type'];
         finalData['propertyType'] = basics['type'];
       }
 
+      // 2. Map Location
       if (_propertyData['location'] != null) {
         final loc = _propertyData['location'] as Map<String, dynamic>;
         finalData['location'] = '${loc['locality']}, ${loc['city']}';
+        finalData['address'] = loc['address'];
         finalData['city'] = loc['city'];
         finalData['locality'] = loc['locality'];
         finalData['pincode'] = loc['pincode'];
       }
 
+      // 3. Map Pricing
       if (_propertyData['pricing'] != null) {
         final pricing = _propertyData['pricing'] as Map<String, dynamic>;
+        finalData['pricing'] = pricing;
         finalData['monthlyRent'] = pricing['singleRent'];
         finalData['securityDeposit'] = pricing['deposit'];
-        finalData['pricing'] = pricing;
       }
 
+      // 4. Map Amenities
       if (_propertyData['amenities'] != null) {
         finalData['amenities'] = _propertyData['amenities'];
+        finalData['features'] = _propertyData['amenities'];
       }
 
-      if (_propertyData['details'] != null) {
-        finalData['rooms'] = _propertyData['details']['totalRooms'];
-        finalData['occupancy'] = 0; // Default
-        finalData['details'] = _propertyData['details'];
+      // 5. Map Property Details (CRITICAL FIX)
+      if (_propertyData['propertyDetails'] != null) {
+        final details = _propertyData['propertyDetails'] as Map<String, dynamic>;
+        finalData['propertyDetails'] = details;
+        finalData['gender'] = details['gender'];
+        finalData['description'] = details['description'];
+        finalData['totalCapacity'] = details['totalCapacity'];
+        finalData['rooms'] = (details['singleRooms'] ?? 0) +
+            (details['doubleRooms'] ?? 0) +
+            (details['tripleRooms'] ?? 0);
       }
 
-      // Add Hoster Info for Admin convenience
+      // Add Hoster Info
       final userData =
           await FirebaseFirestore.instance
               .collection('users')
@@ -200,60 +211,34 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
         finalData['hosterPhone'] = info['phone'] ?? user.phoneNumber ?? 'N/A';
       }
 
-      // 3. Save to Firestore
-      await FirebaseFirestore.instance.collection('properties').add(finalData);
+      // Save to Firestore (ONLY ONCE)
+      final docRef = await FirebaseFirestore.instance.collection('properties').add(finalData);
 
-      // Flatten and map based on how individual steps save data
-
-      // Basic Info
-      if (_propertyData['propertyBasics'] != null) {
-        final basics = _propertyData['propertyBasics'] as Map<String, dynamic>;
-        finalData['basicInfo'] = basics;
-        finalData['name'] = basics['name'];
-        finalData['type'] = basics['type'];
-        // For search compatibility
-        finalData['propertyType'] = basics['type'];
+      // 4. Create Notification for Admins
+      try {
+        await FirebaseFirestore.instance.collection('notifications').add({
+          'user_id': 'admin', // Broadcast type
+          'title': 'New Property Request',
+          'body': 'A new listing "${finalData['name']}" is pending approval.',
+          'type': 'new_property_request',
+          'data': {'propertyId': docRef.id},
+          'is_read': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        debugPrint('Error notifying admins: $e');
       }
 
-      // Location
-      if (_propertyData['location'] != null) {
-        final loc = _propertyData['location'] as Map<String, dynamic>;
-        finalData['address'] = loc['address'];
-        finalData['city'] = loc['city'];
-        finalData['locality'] = loc['locality'];
-        finalData['pincode'] = loc['pincode'];
-      }
-
-      // Pricing
-      if (_propertyData['pricing'] != null) {
-        final pricing = _propertyData['pricing'] as Map<String, dynamic>;
-        finalData['pricing'] = pricing;
-        // Use single room rent as primary rent for search/filtering
-        finalData['monthlyRent'] = pricing['singleRent'];
-      }
-
-      // Amenities
-      if (_propertyData['amenities'] != null) {
-        finalData['features'] = _propertyData['amenities'];
-      }
-
-      // Details
-      if (_propertyData['details'] != null) {
-        finalData['details'] = _propertyData['details'];
-      }
-
-      // 3. Save to Firestore
-      await FirebaseFirestore.instance.collection('properties').add(finalData);
-
-      // 4. Clear local draft
+      // 5. Clear local draft
       await _isarService.clearPropertyDraft(user.uid);
 
       if (mounted) setState(() => _isSubmitted = true);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -261,8 +246,9 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isInitialLoading)
+    if (_isInitialLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     if (_isSubmitted) {
       return ListPropertySuccessScreen(
@@ -282,7 +268,6 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
               _isSubmitted = false;
               _currentPage = 0;
               _propertyData = {};
-              // Clear draft from Isar when starting fresh
               final user = FirebaseAuth.instance.currentUser;
               if (user != null) _isarService.clearPropertyDraft(user.uid);
               _pageController.jumpToPage(0);

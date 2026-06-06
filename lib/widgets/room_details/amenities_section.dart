@@ -317,24 +317,33 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
 
   IconData _iconForAmenity(String amenity) {
     final a = amenity.toLowerCase();
-    if (a.contains('carpet') || a.contains('area') || a.contains('sqft'))
+    if (a.contains('carpet') || a.contains('area') || a.contains('sqft')) {
       return Icons.grid_view_outlined;
-    if (a.contains('furnished') || a.contains('furnish'))
+    }
+    if (a.contains('furnished') || a.contains('furnish')) {
       return Icons.bed_outlined;
-    if (a.contains('parking') || a.contains('car'))
+    }
+    if (a.contains('parking') || a.contains('car')) {
       return Icons.directions_car_outlined;
-    if (a.contains('gym') || a.contains('fitness'))
+    }
+    if (a.contains('gym') || a.contains('fitness')) {
       return Icons.fitness_center_outlined;
-    if (a.contains('pool') || a.contains('swimming'))
+    }
+    if (a.contains('pool') || a.contains('swimming')) {
       return Icons.pool_outlined;
-    if (a.contains('lift') || a.contains('elevator'))
+    }
+    if (a.contains('lift') || a.contains('elevator')) {
       return Icons.elevator_outlined;
-    if (a.contains('security') || a.contains('guard'))
+    }
+    if (a.contains('security') || a.contains('guard')) {
       return Icons.security_outlined;
-    if (a.contains('wifi') || a.contains('internet'))
+    }
+    if (a.contains('wifi') || a.contains('internet')) {
       return Icons.wifi_outlined;
-    if (a.contains('power') || a.contains('backup'))
+    }
+    if (a.contains('power') || a.contains('backup')) {
       return Icons.power_outlined;
+    }
     return Icons.check_circle_outline;
   }
 
@@ -360,8 +369,9 @@ class _AmenitiesSectionState extends State<AmenitiesSection> {
             ? widget.amenityCategories
             : _inferCategories(widget.amenities);
 
-    if (cats.isEmpty && widget.amenities.isEmpty)
+    if (cats.isEmpty && widget.amenities.isEmpty) {
       return const SizedBox.shrink();
+    }
 
     // Flatten to a combined list for "show all" logic
     final allCategories =

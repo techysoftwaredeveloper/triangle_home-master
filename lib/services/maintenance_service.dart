@@ -20,10 +20,12 @@ class MaintenanceService {
     List<TicketAttachment> attachments = const [],
   }) async {
     // 1. Validate Anti-Abuse Rules
-    if (title.length < minTitleLength)
+    if (title.length < minTitleLength) {
       throw 'Title must be at least $minTitleLength characters';
-    if (description.length < minDescriptionLength)
+    }
+    if (description.length < minDescriptionLength) {
       throw 'Description must be at least $minDescriptionLength characters';
+    }
 
     // 2. Validate Active Stay and Open Ticket Limit
     final stayDoc =

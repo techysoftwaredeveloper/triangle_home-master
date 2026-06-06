@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/core/constants/enums.dart';
+import 'package:triangle_home/screens/admin/property_detail_screen.dart';
 import 'package:triangle_home/splash_screen.dart';
 import 'package:triangle_home/services/admin_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
@@ -17,6 +19,103 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final AdminService _adminService = AdminService();
   int _selectedIndex = 0;
+  StreamSubscription? _notifSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _initNotificationListener();
+  }
+
+  @override
+  void dispose() {
+    _notifSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _showTopNotification(String title, String body, String? propertyId) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.notification_important, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text(body, style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                if (propertyId != null) {
+                  // Fetch full property details in real-time
+                  final doc = await FirebaseFirestore.instance
+                      .collection('properties')
+                      .doc(propertyId)
+                      .get();
+                  
+                  if (doc.exists && mounted) {
+                    final data = doc.data()!;
+                    data['id'] = doc.id;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PropertyDetailScreen(
+                          property: data,
+                          adminService: _adminService,
+                        ),
+                      ),
+                    );
+                  }
+                } else {
+                  setState(() => _selectedIndex = 2);
+                }
+              },
+              child: const Text('VIEW', style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        duration: const Duration(seconds: 10),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppTheme.primaryColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      ),
+    );
+  }
+
+  void _initNotificationListener() {
+    _notifSubscription = FirebaseFirestore.instance
+        .collection('notifications')
+        .where('user_id', isEqualTo: 'admin')
+        .where('is_read', isEqualTo: false)
+        .orderBy('createdAt', descending: true)
+        .limit(1)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.docs.isNotEmpty) {
+        final notifDoc = snapshot.docs.first;
+        final notif = notifDoc.data();
+        final createdAt = notif['createdAt'] as Timestamp?;
+        
+        if (createdAt != null && 
+            DateTime.now().difference(createdAt.toDate()).inSeconds < 30) {
+          final String? propId = notif['data']?['propertyId'];
+          _showTopNotification(notif['title'], notif['body'], propId);
+          
+          // Mark as read so it doesn't pop up again
+          notifDoc.reference.update({'is_read': true});
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -480,10 +579,12 @@ class _UsersViewState extends State<_UsersView>
           child: StreamBuilder<List<Map<String, dynamic>>>(
             stream: widget.adminService.getUsersStream(),
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting)
+              if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
-              if (snapshot.hasError)
+              }
+              if (snapshot.hasError) {
                 return Center(child: Text('Error: ${snapshot.error}'));
+              }
 
               final allUsers = snapshot.data ?? [];
               final students =
@@ -687,7 +788,6 @@ class _PropertiesView extends StatefulWidget {
 class _PropertiesViewState extends State<_PropertiesView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final String _searchQuery = '';
 
   @override
   void initState() {
@@ -718,8 +818,9 @@ class _PropertiesViewState extends State<_PropertiesView>
           child: StreamBuilder<List<Map<String, dynamic>>>(
             stream: widget.adminService.getPropertiesStream(),
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting)
+              if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
+              }
               final all = snapshot.data ?? [];
               return TabBarView(
                 controller: _tabController,
@@ -757,41 +858,113 @@ class _PropertiesViewState extends State<_PropertiesView>
           child: Material(
             color: Colors.transparent,
             child: ListTile(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PropertyDetailScreen(
+                    property: p,
+                    adminService: widget.adminService,
+                  ),
+                ),
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
               title: Text(p['title'] ?? 'Untitled'),
               subtitle: Text(p['address'] ?? 'No address'),
-              trailing:
-                  p['status'] == 'pending'
-                      ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.check, color: Colors.green),
-                            onPressed:
-                                () => widget.adminService.updatePropertyStatus(
-                                  p['id'],
-                                  PropertyStatus.approved,
-                                ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close, color: Colors.red),
-                            onPressed:
-                                () => widget.adminService.updatePropertyStatus(
-                                  p['id'],
-                                  PropertyStatus.rejected,
-                                ),
-                          ),
-                        ],
-                      )
-                      : Text(
-                        p['status'].toString().toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+              trailing: PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert_rounded, color: AppTheme.textMutedColor),
+                onSelected: (value) async {
+                  if (value == 'details') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PropertyDetailScreen(
+                          property: p,
+                          adminService: widget.adminService,
                         ),
                       ),
+                    );
+                  } else if (value == 'approve') {
+                    await widget.adminService.updatePropertyStatus(
+                      p['id'],
+                      PropertyStatus.approved,
+                    );
+                  } else if (value == 'reject') {
+                    await widget.adminService.updatePropertyStatus(
+                      p['id'],
+                      PropertyStatus.rejected,
+                    );
+                  } else if (value == 'delete') {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Delete Listing?'),
+                        content: const Text('This action cannot be undone.'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      await widget.adminService.deleteListing(p['id']);
+                    }
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'details',
+                    child: Row(
+                      children: [
+                        Icon(Icons.visibility_outlined, size: 18),
+                        SizedBox(width: 12),
+                        Text('View Details'),
+                      ],
+                    ),
+                  ),
+                  if (p['status'] != 'approved' && p['status'] != 'active')
+                    const PopupMenuItem(
+                      value: 'approve',
+                      child: Row(
+                        children: [
+                          Icon(Icons.check_circle_outline, size: 18, color: Colors.green),
+                          SizedBox(width: 12),
+                          Text('Approve', style: TextStyle(color: Colors.green)),
+                        ],
+                      ),
+                    ),
+                  if (p['status'] != 'rejected')
+                    const PopupMenuItem(
+                      value: 'reject',
+                      child: Row(
+                        children: [
+                          Icon(Icons.cancel_outlined, size: 18, color: Colors.orange),
+                          SizedBox(width: 12),
+                          Text('Reject', style: TextStyle(color: Colors.orange)),
+                        ],
+                      ),
+                    ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                        SizedBox(width: 12),
+                        Text('Delete Listing', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -810,8 +983,9 @@ class _BookingsView extends StatelessWidget {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: adminService.getBookingsStream(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting)
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
+        }
         final bookings = snapshot.data ?? [];
         return ListView.builder(
           padding: const EdgeInsets.all(20),

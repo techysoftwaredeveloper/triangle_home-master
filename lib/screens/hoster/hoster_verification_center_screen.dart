@@ -28,6 +28,31 @@ class _HosterVerificationCenterScreenState
   final Color _accentBlue = const Color(0xFF2563EB);
 
   @override
+  void initState() {
+    super.initState();
+    _reloadAndSyncEmail();
+  }
+
+  /// Reload Firebase Auth token (picks up email verification done in browser)
+  /// then syncs the verified flag into Firestore if needed.
+  Future<void> _reloadAndSyncEmail() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+      await user.reload();
+      final refreshed = _auth.currentUser;
+      if (refreshed != null && refreshed.emailVerified) {
+        await _firestore.collection('users').doc(refreshed.uid).set({
+          'emailVerified': true, // top-level field (read by hoster_service)
+          'verification': {'emailVerified': true},
+        }, SetOptions(merge: true));
+      }
+    } catch (_) {
+      // non-blocking
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
     if (user == null) {
@@ -48,8 +73,14 @@ class _HosterVerificationCenterScreenState
         final verif = userData?['verification'] as Map? ?? {};
         final info = userData?['info'] as Map? ?? {};
 
+        // Safety-net sync in case user just verified email in background
         if (user.emailVerified && verif['emailVerified'] != true) {
           _updateVerification('emailVerified', true);
+          // Also write top-level field
+          _firestore.collection('users').doc(user.uid).set(
+            {'emailVerified': true},
+            SetOptions(merge: true),
+          );
         }
 
         return Scaffold(
@@ -98,16 +129,7 @@ class _HosterVerificationCenterScreenState
                           true, // Phone is verified during login usually
                       onTap: null,
                     ),
-                    _buildVerificationTile(
-                      icon: Icons.email_rounded,
-                      title: 'Email Address',
-                      subtitle: user.email ?? 'Not provided',
-                      isVerified: user.emailVerified,
-                      onTap:
-                          user.emailVerified
-                              ? null
-                              : () => _verifyEmail(user.email),
-                    ),
+                    _buildEmailVerificationTile(user, verif),
 
                     const SizedBox(height: 32),
                     _buildSectionTitle('Identity Documents'),
@@ -677,14 +699,146 @@ class _HosterVerificationCenterScreenState
     );
   }
 
-  Future<void> _verifyEmail(String? email) async {
-    if (email == null || email.isEmpty) return;
-    try {
-      await _auth.currentUser?.sendEmailVerification();
-      Fluttertoast.showToast(msg: 'Verification email sent to $email');
-    } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e');
-    }
+  // ── Email Verification Tile ───────────────────────────────────────────────
+  Widget _buildEmailVerificationTile(User user, Map verif) {
+    final isVerified = user.emailVerified || verif['emailVerified'] == true;
+    final email = user.email ?? 'Not provided';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isVerified
+              ? _successGreen.withValues(alpha: 0.3)
+              : const Color(0xFFFED7AA),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: (isVerified ? _successGreen : const Color(0xFFF97316))
+                      .withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.email_rounded,
+                  color: isVerified ? _successGreen : const Color(0xFFF97316),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Email Address',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppTheme.textDarkColor,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
+                    Text(
+                      email,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textLightColor,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
+                    if (!isVerified) ...
+                      [
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () => _showEmailVerificationSheet(email),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 7),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFFF97316),
+                                  Color(0xFFEA580C),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.verified_outlined,
+                                    color: Colors.white, size: 14),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Verify Now',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    fontFamily: 'Outfit',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                  ],
+                ),
+              ),
+              Icon(
+                isVerified
+                    ? Icons.check_circle_rounded
+                    : Icons.cancel_rounded,
+                color: isVerified ? _successGreen : const Color(0xFFF97316),
+                size: 26,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Full Email Verification Sheet ─────────────────────────────────────────
+  void _showEmailVerificationSheet(String email) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _EmailVerificationSheet(
+        email: email,
+        auth: _auth,
+        firestore: _firestore,
+        onVerified: () {
+          // Trigger UI rebuild via stream (already listening)
+          Navigator.pop(context);
+          Fluttertoast.showToast(
+            msg: '✅ Email verified successfully!',
+            backgroundColor: AppTheme.successColor,
+            textColor: Colors.white,
+          );
+        },
+      ),
+    );
   }
 
   Future<void> _showBusinessProofOptions() async {
@@ -1073,5 +1227,568 @@ class _HosterVerificationCenterScreenState
         '${field}Timestamp': FieldValue.serverTimestamp(),
       },
     }, SetOptions(merge: true));
+  }
+}
+
+// ── Email Verification Bottom Sheet ──────────────────────────────────────────
+class _EmailVerificationSheet extends StatefulWidget {
+  final String email;
+  final FirebaseAuth auth;
+  final FirebaseFirestore firestore;
+  final VoidCallback onVerified;
+
+  const _EmailVerificationSheet({
+    required this.email,
+    required this.auth,
+    required this.firestore,
+    required this.onVerified,
+  });
+
+  @override
+  State<_EmailVerificationSheet> createState() =>
+      _EmailVerificationSheetState();
+}
+
+class _EmailVerificationSheetState extends State<_EmailVerificationSheet>
+    with TickerProviderStateMixin {
+  // 0 = initial, 1 = email sent (waiting), 2 = success
+  int _step = 0;
+  bool _isLoading = false;
+  bool _isChecking = false;
+  String? _errorMsg;
+  int _resendCountdown = 0;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnim;
+
+  static const _green = Color(0xFF1B4332);
+  static const _orange = Color(0xFFF97316);
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _pulseAnim = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  // ── Step 1: Send verification email ────────────────────────────────────────
+  Future<void> _sendVerificationEmail() async {
+    setState(() {
+      _isLoading = true;
+      _errorMsg = null;
+    });
+    try {
+      final user = widget.auth.currentUser;
+      if (user == null) throw Exception('Not logged in');
+
+      await user.sendEmailVerification(
+        ActionCodeSettings(
+          url: 'https://trianglehome.page.link/verify-email',
+          handleCodeInApp: false,
+        ),
+      );
+
+      setState(() {
+        _step = 1;
+        _isLoading = false;
+        _resendCountdown = 60;
+      });
+      _startResendTimer();
+    } catch (e) {
+      // Fallback without ActionCodeSettings if dynamic links not configured
+      try {
+        await widget.auth.currentUser?.sendEmailVerification();
+        setState(() {
+          _step = 1;
+          _isLoading = false;
+          _resendCountdown = 60;
+        });
+        _startResendTimer();
+      } catch (e2) {
+        setState(() {
+          _isLoading = false;
+          _errorMsg = e2.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    }
+  }
+
+  void _startResendTimer() {
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return false;
+      setState(() {
+        if (_resendCountdown > 0) _resendCountdown--;
+      });
+      return _resendCountdown > 0;
+    });
+  }
+
+  // ── Step 2: Check if user has clicked link ──────────────────────────────────
+  Future<void> _checkVerification() async {
+    setState(() {
+      _isChecking = true;
+      _errorMsg = null;
+    });
+    try {
+      // Force-reload the Firebase Auth token to detect email verification
+      await widget.auth.currentUser?.reload();
+      final refreshed = widget.auth.currentUser;
+
+      if (refreshed != null && refreshed.emailVerified) {
+        // ✅ Write to Firestore — both paths that hoster_service reads
+        await widget.firestore
+            .collection('users')
+            .doc(refreshed.uid)
+            .set({
+          'emailVerified': true, // top-level (read by hoster_service)
+          'verification': {
+            'emailVerified': true,
+            'emailVerifiedAt': FieldValue.serverTimestamp(),
+          },
+        }, SetOptions(merge: true));
+
+        setState(() {
+          _step = 2;
+          _isChecking = false;
+        });
+
+        // Auto-close after showing success
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) widget.onVerified();
+      } else {
+        setState(() {
+          _isChecking = false;
+          _errorMsg =
+              'Email not verified yet. Please click the link in your inbox.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isChecking = false;
+        _errorMsg = 'Check failed: $e';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 12,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        child: _buildStep(),
+      ),
+    );
+  }
+
+  Widget _buildStep() {
+    switch (_step) {
+      case 0:
+        return _buildSendStep();
+      case 1:
+        return _buildWaitingStep();
+      case 2:
+        return _buildSuccessStep();
+      default:
+        return _buildSendStep();
+    }
+  }
+
+  // ── Step 0: Initial send screen ─────────────────────────────────────────────
+  Widget _buildSendStep() {
+    return Column(
+      key: const ValueKey('send'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _sheetHandle(),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: _orange.withValues(alpha: 0.08),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.mark_email_unread_rounded,
+              color: _orange, size: 40),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Verify Your Email',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1E293B),
+            fontFamily: 'Outfit',
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'We\'ll send a verification link to',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade600,
+            fontFamily: 'Outfit',
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            widget.email,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+              color: Color(0xFF1E293B),
+              fontFamily: 'Outfit',
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Click the link in the email to verify your address.',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade500,
+            fontFamily: 'Outfit',
+            height: 1.5,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        if (_errorMsg != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline_rounded,
+                    color: Colors.red, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _errorMsg!,
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _sendVerificationEmail,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _orange,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                : const Text(
+                    'Send Verification Email',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: Colors.grey, fontFamily: 'Outfit'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Step 1: Waiting for user to click link ───────────────────────────────────
+  Widget _buildWaitingStep() {
+    return Column(
+      key: const ValueKey('waiting'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _sheetHandle(),
+        const SizedBox(height: 20),
+        ScaleTransition(
+          scale: _pulseAnim,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: _green.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  spreadRadius: 4,
+                ),
+              ],
+            ),
+            child: const Icon(Icons.email_outlined, color: _green, size: 44),
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Check Your Inbox!',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1E293B),
+            fontFamily: 'Outfit',
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'We sent a verification link to',
+          style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+              fontFamily: 'Outfit'),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          widget.email,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+            color: _green,
+            fontFamily: 'Outfit',
+          ),
+        ),
+        const SizedBox(height: 20),
+        // Steps
+        _stepRow('1', 'Open your email app'),
+        _stepRow('2', 'Find the email from Triangle Home'),
+        _stepRow('3', 'Click the verification link'),
+        _stepRow('4', 'Come back here and tap the button below'),
+        if (_errorMsg != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF7ED),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFED7AA)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded,
+                    color: _orange, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _errorMsg!,
+                    style: const TextStyle(color: _orange, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: _isChecking ? null : _checkVerification,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _green,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: _isChecking
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.verified_rounded, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'I\'ve Verified My Email',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          fontFamily: 'Outfit',
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Resend
+        TextButton(
+          onPressed: _resendCountdown == 0 ? _sendVerificationEmail : null,
+          child: Text(
+            _resendCountdown > 0
+                ? 'Resend email in ${_resendCountdown}s'
+                : 'Resend Verification Email',
+            style: TextStyle(
+              color: _resendCountdown == 0 ? _orange : Colors.grey,
+              fontFamily: 'Outfit',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _stepRow(String number, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Container(
+            width: 26,
+            height: 26,
+            decoration: BoxDecoration(
+              color: _green.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                number,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: _green,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF475569),
+              fontFamily: 'Outfit',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Step 2: Success ─────────────────────────────────────────────────────────
+  Widget _buildSuccessStep() {
+    return Padding(
+      key: const ValueKey('success'),
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: const Color(0xFFDCFCE7),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_circle_rounded,
+              color: _green,
+              size: 56,
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Email Verified! 🎉',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: _green,
+              fontFamily: 'Outfit',
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            widget.email,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+              fontFamily: 'Outfit',
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Your email address has been verified.\nProfile completion updated.',
+            style: TextStyle(
+              fontSize: 13,
+              color: Color(0xFF64748B),
+              fontFamily: 'Outfit',
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sheetHandle() {
+    return Center(
+      child: Container(
+        width: 40,
+        height: 4,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
   }
 }

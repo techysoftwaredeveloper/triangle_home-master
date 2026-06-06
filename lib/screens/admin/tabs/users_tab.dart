@@ -84,10 +84,14 @@ class _UsersTabState extends State<UsersTab>
         // Dynamic Filtering
         final filteredUsers =
             allUsers.where((u) {
-              final info = u['info'] as Map<String, dynamic>? ?? {};
+              final info = Map<String, dynamic>.from(
+                  (u['info'] as Map? ?? {}));
               final name = info['name']?.toString().toLowerCase() ?? '';
               final email = info['email']?.toString().toLowerCase() ?? '';
-              final phone = info['phoneNumber']?.toString().toLowerCase() ?? '';
+              final phone = (info['phone'] ?? info['phoneNumber'])
+                      ?.toString()
+                      .toLowerCase() ??
+                  '';
 
               final matchesSearch =
                   name.contains(_searchQuery) ||
@@ -95,8 +99,8 @@ class _UsersTabState extends State<UsersTab>
                   phone.contains(_searchQuery);
 
               // Support both top-level and nested role
-              final permissions =
-                  u['permissions'] as Map<String, dynamic>? ?? {};
+              final permissions = Map<String, dynamic>.from(
+                  (u['permissions'] as Map? ?? {}));
               final role =
                   (u['role'] ?? permissions['role'])
                       ?.toString()
@@ -111,8 +115,9 @@ class _UsersTabState extends State<UsersTab>
                 case 2: // Professionals
                   return matchesSearch && role == 'professional';
                 case 3: // Hosters
-                  return matchesSearch && role == 'hoster';
-                case 4: // Inactive
+                  return matchesSearch &&
+                      (role == 'hoster' || role == 'owner' || role == 'manager' || role == 'agency');
+                case 4: // Blocked
                   return matchesSearch && !isActive;
                 default: // All
                   return matchesSearch;
@@ -176,7 +181,8 @@ class _UsersTabState extends State<UsersTab>
   Widget _buildSummaryCards(List<Map<String, dynamic>> users) {
     final students =
         users.where((u) {
-          final permissions = u['permissions'] as Map<String, dynamic>? ?? {};
+          final permissions = Map<String, dynamic>.from(
+              (u['permissions'] as Map? ?? {}));
           final r =
               (u['role'] ?? permissions['role'])?.toString().toLowerCase() ??
               '';
@@ -185,7 +191,8 @@ class _UsersTabState extends State<UsersTab>
 
     final professionals =
         users.where((u) {
-          final permissions = u['permissions'] as Map<String, dynamic>? ?? {};
+          final permissions = Map<String, dynamic>.from(
+              (u['permissions'] as Map? ?? {}));
           final r =
               (u['role'] ?? permissions['role'])?.toString().toLowerCase() ??
               '';
@@ -194,11 +201,12 @@ class _UsersTabState extends State<UsersTab>
 
     final hosters =
         users.where((u) {
-          final permissions = u['permissions'] as Map<String, dynamic>? ?? {};
+          final permissions = Map<String, dynamic>.from(
+              (u['permissions'] as Map? ?? {}));
           final r =
               (u['role'] ?? permissions['role'])?.toString().toLowerCase() ??
               '';
-          return r == 'hoster';
+          return r == 'hoster' || r == 'owner' || r == 'manager' || r == 'agency';
         }).length;
 
     final inactive = users.where((u) => (u['is_active'] == false)).length;
@@ -318,23 +326,27 @@ class _UsersTabState extends State<UsersTab>
           Tab(
             text:
                 'Students (${users.where((u) {
-                  final p = u['permissions'] as Map<String, dynamic>? ?? {};
-                  final r = (u['role'] ?? p['role'])?.toString().toLowerCase() ?? '';
-                  return r == 'student' || r == 'user' || r.isEmpty;
+                   final p = Map<String, dynamic>.from(
+                      (u['permissions'] as Map? ?? {}));
+                   final r = (u['role'] ?? p['role'])?.toString().toLowerCase() ?? '';
+                   return r == 'student' || r == 'user' || r.isEmpty;
                 }).length})',
           ),
           Tab(
             text:
                 'Pros (${users.where((u) {
-                  final p = u['permissions'] as Map<String, dynamic>? ?? {};
-                  return (u['role'] ?? p['role'])?.toString().toLowerCase() == 'professional';
+                   final p = Map<String, dynamic>.from(
+                      (u['permissions'] as Map? ?? {}));
+                   return (u['role'] ?? p['role'])?.toString().toLowerCase() == 'professional';
                 }).length})',
           ),
           Tab(
             text:
                 'Hosters (${users.where((u) {
-                  final p = u['permissions'] as Map<String, dynamic>? ?? {};
-                  return (u['role'] ?? p['role'])?.toString().toLowerCase() == 'hoster';
+                   final p = Map<String, dynamic>.from(
+                      (u['permissions'] as Map? ?? {}));
+                   final r = (u['role'] ?? p['role'])?.toString().toLowerCase() ?? '';
+                   return r == 'hoster' || r == 'owner' || r == 'manager' || r == 'agency';
                 }).length})',
           ),
           Tab(
@@ -514,25 +526,42 @@ class _UsersTabState extends State<UsersTab>
     return Column(
       children:
           users.map((u) {
-            final info = u['info'] as Map<String, dynamic>? ?? {};
-            final permissions = u['permissions'] as Map<String, dynamic>? ?? {};
-            final rawRole =
-                (u['role'] ?? permissions['role'])?.toString() ?? 'student';
-            final isActive = u['is_active'] as bool? ?? true;
-
-            return _UserCard(
-              id: u['id'],
-              name: info['name']?.toString() ?? 'Unknown User',
-              displayId:
-                  u['id']?.toString().substring(0, 8).toUpperCase() ??
-                  'USR-NEW',
-              role: _formatRole(rawRole),
-              rawRole: rawRole,
-              phone: info['phoneNumber']?.toString() ?? 'No Phone',
-              email: info['email']?.toString() ?? 'No Email',
-              joined: _formatDate(u['createdAt']),
-              status: isActive ? 'Active' : 'Inactive',
-              isActive: isActive,
+             final info = Map<String, dynamic>.from(
+                 (u['info'] as Map? ?? {}));
+             final permissions = Map<String, dynamic>.from(
+                 (u['permissions'] as Map? ?? {}));
+             final rawRole =
+                 (u['role'] ?? permissions['role'])?.toString() ?? 'student';
+             final isActive = u['is_active'] as bool? ?? true;
+ 
+             String userStatus = isActive ? 'Active' : 'Blocked';
+             if (isActive) {
+               final r = rawRole.toLowerCase();
+               if (r == 'hoster' || r == 'owner' || r == 'manager' || r == 'agency') {
+                 final onboardingStatus = (u['status'] ?? u['accountStatus'] ?? permissions['status'] ?? '').toString().toLowerCase();
+                 if (onboardingStatus == 'pending') {
+                   userStatus = 'Pending';
+                 } else if (onboardingStatus == 'approved') {
+                   userStatus = 'Approved';
+                 } else if (onboardingStatus == 'rejected') {
+                   userStatus = 'Rejected';
+                 }
+               }
+             }
+ 
+             return _UserCard(
+               id: u['id'],
+               name: info['name']?.toString() ?? 'Unknown User',
+               displayId:
+                   u['id']?.toString().substring(0, 8).toUpperCase() ??
+                   'USR-NEW',
+               role: _formatRole(rawRole),
+               rawRole: rawRole,
+               phone: (info['phone'] ?? info['phoneNumber'])?.toString() ?? 'No Phone',
+               email: info['email']?.toString() ?? 'No Email',
+               joined: _formatDate(u['createdAt'] ?? u['updatedAt']),
+               status: userStatus,
+               isActive: isActive,
               isNarrow: widget.isNarrow,
               onAction: (action) {
                 if (action == 'view') {
@@ -577,6 +606,9 @@ class _UsersTabState extends State<UsersTab>
         case 'role_hoster':
           await widget.adminService.updateUserRole(userId, 'hoster');
           break;
+        case 'role_owner':
+          await widget.adminService.updateUserRole(userId, 'owner');
+          break;
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -612,14 +644,16 @@ class _UsersTabState extends State<UsersTab>
     if (r == 'user' || r == 'student') return 'Student';
     if (r == 'professional') return 'Professional';
     if (r == 'hoster') return 'Hoster';
+    if (r == 'owner') return 'Owner';
     if (r.isEmpty) return 'Student';
     return r[0].toUpperCase() + r.substring(1);
   }
 
   String _formatDate(dynamic date) {
     if (date == null) return 'N/A';
-    if (date is Timestamp)
+    if (date is Timestamp) {
       return DateFormat('dd MMM yyyy').format(date.toDate());
+    }
     return date.toString();
   }
 
@@ -955,6 +989,14 @@ class _UserCard extends StatelessWidget {
                       Icons.person_pin_outlined,
                     ),
                   ),
+                  PopupMenuItem(
+                    value: 'role_owner',
+                    child: _roleItem(
+                      'Owner',
+                      rawRole == 'owner',
+                      Icons.home_work_outlined,
+                    ),
+                  ),
                 ],
           ),
         ],
@@ -1013,6 +1055,8 @@ class _UserCard extends StatelessWidget {
         return const Color(0xFF2563EB);
       case 'Hoster':
         return const Color(0xFFD97706);
+      case 'Owner':
+        return const Color(0xFF10B981);
       case 'Professional':
         return const Color(0xFF7C3AED);
       default:
@@ -1023,10 +1067,12 @@ class _UserCard extends StatelessWidget {
   Color _getStatusColor(String s) {
     switch (s) {
       case 'Active':
+      case 'Approved':
         return const Color(0xFF16A34A);
       case 'Inactive':
         return const Color(0xFF64748B);
       case 'Blocked':
+      case 'Rejected':
         return const Color(0xFFDC2626);
       case 'Pending':
         return const Color(0xFFD97706);
@@ -1035,3 +1081,4 @@ class _UserCard extends StatelessWidget {
     }
   }
 }
+

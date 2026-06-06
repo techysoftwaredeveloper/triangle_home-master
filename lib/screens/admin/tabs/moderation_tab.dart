@@ -511,8 +511,9 @@ class _ModerationTabState extends State<ModerationTab>
 
   String _getPriority(dynamic action) {
     final a = action?.toString().toLowerCase() ?? '';
-    if (a.contains('delete') || a.contains('block') || a.contains('ban'))
+    if (a.contains('delete') || a.contains('block') || a.contains('ban')) {
       return 'High';
+    }
     if (a.contains('update') || a.contains('edit')) return 'Medium';
     return 'Low';
   }

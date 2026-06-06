@@ -11,8 +11,9 @@ class AdminApiService {
   /// For physical Android devices via USB, run: adb reverse tcp:5000 tcp:5000
   static String get _host {
     if (kIsWeb) return 'localhost';
-    if (Platform.isAndroid)
+    if (Platform.isAndroid) {
       return '192.168.31.25'; // Updated Bridge IP for Physical Device
+    }
     return 'localhost';
   }
 

@@ -16,7 +16,7 @@ import 'package:triangle_home/screens/profile/verification_center_screen.dart';
 import 'package:triangle_home/screens/profile/saved_payments_screen.dart';
 import 'package:triangle_home/screens/list_property/intro_screen.dart';
 import 'package:triangle_home/screens/auth/login_screen.dart';
-import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
+import 'package:triangle_home/screens/hoster/partner_onboarding_screen.dart';
 import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
 import 'package:triangle_home/widgets/logout_confirmation_dialog.dart';
 import 'package:triangle_home/splash_screen.dart';
@@ -136,30 +136,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     // Professional/Student Info (20%)
     if (role == 'student') {
-      if (sInfo['college'] != null && sInfo['college'].toString().isNotEmpty)
+      if (sInfo['college'] != null && sInfo['college'].toString().isNotEmpty) {
         score += 10;
-      if (sInfo['course'] != null && sInfo['course'].toString().isNotEmpty)
+      }
+      if (sInfo['course'] != null && sInfo['course'].toString().isNotEmpty) {
         score += 10;
+      }
     } else {
       if (pInfo['companyName'] != null &&
-          pInfo['companyName'].toString().isNotEmpty)
+          pInfo['companyName'].toString().isNotEmpty) {
         score += 10;
-      if (pInfo['jobTitle'] != null && pInfo['jobTitle'].toString().isNotEmpty)
+      }
+      if (pInfo['jobTitle'] != null && pInfo['jobTitle'].toString().isNotEmpty) {
         score += 10;
+      }
     }
 
     // Housing Preferences (20%)
     if (prefs['preferredCity'] != null) score += 5;
     if (prefs['budgetMax'] != null) score += 5;
-    if (prefs['lookingFor'] != null && (prefs['lookingFor'] as List).isNotEmpty)
+    if (prefs['lookingFor'] != null && (prefs['lookingFor'] as List).isNotEmpty) {
       score += 5;
+    }
     if (prefs['stayDuration'] != null) score += 5;
 
     // Emergency Contact (20%)
-    if (emergency['name'] != null && emergency['name'].toString().isNotEmpty)
+    if (emergency['name'] != null && emergency['name'].toString().isNotEmpty) {
       score += 10;
-    if (emergency['phone'] != null && emergency['phone'].toString().isNotEmpty)
+    }
+    if (emergency['phone'] != null && emergency['phone'].toString().isNotEmpty) {
       score += 10;
+    }
 
     // Profile Photo (20%)
     if (info['profileImage'] != null) score += 20;
@@ -329,7 +336,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           context,
                                           MaterialPageRoute(
                                             builder:
-                                                (_) => const BecomeHosterScreen(),
+                                                (_) => const PartnerOnboardingScreen(),
                                           ),
                                         ),
                                   ),
@@ -1519,7 +1526,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => BecomeHosterScreen(),
+                                builder: (_) => const PartnerOnboardingScreen(),
                               ),
                             );
                           }

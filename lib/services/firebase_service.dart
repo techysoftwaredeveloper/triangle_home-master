@@ -13,9 +13,22 @@ class FirebaseService {
   // ==================== DOCUMENT/IMAGE UPLOAD ====================
 
   Future<String> uploadFile(File file) async {
+    final String userId = _auth.currentUser?.uid ?? 'anonymous';
     final String extension = file.path.split('.').last.toLowerCase();
     final String fileName = '${const Uuid().v4()}.$extension';
-    final Reference ref = _storage.ref().child('property_images/$fileName');
+    // Match storage rules: property_images/{hosterId}/{allPaths=**}
+    final Reference ref = _storage.ref().child('property_images/$userId/$fileName');
+    final UploadTask uploadTask = ref.putFile(file);
+    final TaskSnapshot snapshot = await uploadTask;
+    return await snapshot.ref.getDownloadURL();
+  }
+
+  Future<String> uploadVerificationFile(File file) async {
+    final String userId = _auth.currentUser?.uid ?? 'anonymous';
+    final String extension = file.path.split('.').last.toLowerCase();
+    final String fileName = '${const Uuid().v4()}.$extension';
+    // Match storage rules: verifications/{userId}/{allPaths=**}
+    final Reference ref = _storage.ref().child('verifications/$userId/$fileName');
     final UploadTask uploadTask = ref.putFile(file);
     final TaskSnapshot snapshot = await uploadTask;
     return await snapshot.ref.getDownloadURL();
@@ -427,7 +440,7 @@ class FirebaseService {
     Query<Map<String, dynamic>> query = _firestore.collection('properties');
 
     if (city != null && city.isNotEmpty) {
-      query = query.where('city', isEqualTo: city);
+      query = query.where('city_normalized', isEqualTo: city.toLowerCase().trim());
     }
 
     return query.snapshots();
@@ -445,7 +458,7 @@ class FirebaseService {
     Query<Map<String, dynamic>> query = _firestore.collection('properties');
 
     if (city != null && city.isNotEmpty) {
-      query = query.where('city', isEqualTo: city);
+      query = query.where('city_normalized', isEqualTo: city.toLowerCase().trim());
     }
 
     final snapshot = await query.get();
@@ -542,6 +555,7 @@ class FirebaseService {
   Stream<List<Map<String, dynamic>>> getTopHostels({int limit = 5}) {
     return _firestore
         .collection('properties')
+        .where('status', isEqualTo: 'approved')
         .orderBy('rating', descending: true)
         .limit(limit)
         .snapshots()

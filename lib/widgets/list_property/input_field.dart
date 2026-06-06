@@ -13,6 +13,7 @@ class InputField extends StatelessWidget {
   final int maxLines;
   final String? hintText;
   final Color? activeColor;
+  final Widget? suffix;
 
   const InputField({
     super.key,
@@ -27,6 +28,7 @@ class InputField extends StatelessWidget {
     this.maxLines = 1,
     this.hintText,
     this.activeColor,
+    this.suffix,
   });
 
   @override
@@ -81,6 +83,7 @@ class InputField extends StatelessWidget {
                 color: activeColor ?? AppTheme.primaryColor,
                 fontWeight: FontWeight.bold,
               ),
+              suffixIcon: suffix,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: Colors.grey.shade200),

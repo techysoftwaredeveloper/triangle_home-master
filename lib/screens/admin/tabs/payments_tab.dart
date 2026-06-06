@@ -753,8 +753,8 @@ class _PaymentsTabState extends State<PaymentsTab>
                 Flexible(
                   child: Text(
                     isCompact
-                        ? '1-10 of 412'
-                        : 'Showing 1 to 10 of 412 transactions',
+                        ? '1-${count < 10 ? count : 10} of $count'
+                        : 'Showing 1 to ${count < 10 ? count : 10} of $count transactions',
                     style: const TextStyle(
                       fontSize: 13,
                       color: Color(0xFF64748B),

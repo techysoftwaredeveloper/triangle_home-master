@@ -37,15 +37,17 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     if (value == null) return defaultValue;
     if (value is int) return value;
     if (value is double) return value.toInt();
-    if (value is String)
+    if (value is String) {
       return int.tryParse(value.replaceAll(',', '')) ?? defaultValue;
+    }
     return defaultValue;
   }
 
   List<String> _asStringList(dynamic value) {
     if (value == null) return [];
-    if (value is List)
+    if (value is List) {
       return value.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    }
     if (value is String && value.isNotEmpty) return [value];
     return [];
   }

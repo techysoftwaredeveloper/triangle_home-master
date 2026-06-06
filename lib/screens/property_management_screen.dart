@@ -133,7 +133,7 @@ class _PropertyManagementScreenState extends State<PropertyManagementScreen>
       stream:
           FirebaseFirestore.instance
               .collection('properties')
-              .where('hosterId', isEqualTo: uid)
+              .where('hoster_id', isEqualTo: uid)
               .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -155,16 +155,17 @@ class _PropertyManagementScreenState extends State<PropertyManagementScreen>
           itemCount: docs.length,
           itemBuilder: (context, index) {
             final data = docs[index].data() as Map<String, dynamic>;
+            final images = data['images'] as List? ?? [];
 
             final property = {
-              'title': data['collegeName'] ?? 'Unnamed Property',
-              'address':
-                  "${data['addressLine1'] ?? ''}, ${data['locality'] ?? ''}",
-              'status': 'Active', // or dynamic field if available
-              'type': data['type'] ?? 'Unknown',
+              'title': data['name'] ?? 'Unnamed Property',
+              'address': data['location'] ?? 'N/A',
+              'status': (data['status'] ?? 'pending').toString().toUpperCase(),
+              'type': data['propertyType'] ?? 'Unknown',
               'rooms': data['rooms'] ?? 0,
-              'listed': 'Today', // Format if needed
-              'image': data['imageUrl'] ?? 'https://via.placeholder.com/150',
+              'listed': 'Today',
+              'image': images.isNotEmpty ? images.first : 'https://via.placeholder.com/150',
+              'rejectionReason': data['rejectionReason'],
             };
 
             return PropertyCard(

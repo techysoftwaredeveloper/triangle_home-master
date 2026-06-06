@@ -239,8 +239,9 @@ class _DisputeDetailScreenState extends State<DisputeDetailScreen> {
 
   Widget _buildBottomActions() {
     final s = widget.dispute.status;
-    if (s == DisputeStatus.resolved || s == DisputeStatus.rejected)
+    if (s == DisputeStatus.resolved || s == DisputeStatus.rejected) {
       return const SizedBox.shrink();
+    }
 
     return Positioned(
       bottom: 0,

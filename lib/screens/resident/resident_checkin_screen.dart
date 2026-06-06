@@ -67,17 +67,19 @@ class _ResidentCheckInScreenState extends State<ResidentCheckInScreen> {
                 .doc(widget.bookingId)
                 .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
 
           final data = snapshot.data!.data();
-          if (data == null)
+          if (data == null) {
             return const Center(
               child: Text(
                 'Check-in session not active',
                 style: TextStyle(color: Colors.white),
               ),
             );
+          }
 
           if (data['status'] == CheckInStatus.verified.name) {
             return _buildSuccessState();

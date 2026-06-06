@@ -236,8 +236,9 @@ class _AdminUserManagementState extends State<AdminUserManagement> {
                             ConnectionState.waiting) {
                           return const Center(child: LinearProgressIndicator());
                         }
-                        if (snapshot.hasError)
+                        if (snapshot.hasError) {
                           return const Text('Error loading stats');
+                        }
 
                         final stats = snapshot.data ?? {};
                         return Container(

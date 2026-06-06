@@ -5,7 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:triangle_home/services/auth_production_service.dart';
 import 'package:triangle_home/screens/admin/admin_dashboard_redesign.dart';
-import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
+import 'package:triangle_home/screens/hoster/partner_onboarding_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/screens/home_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
@@ -96,11 +96,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       final user = userCredential.user;
       if (user == null) throw Exception("User not found");
 
-      // Use the Production Auth Service for role detection
       final authService = AuthProductionService();
       final authDetails = await authService.getUserAuthDetails(user);
       final role = authDetails['role'] as UserRole;
       final status = authDetails['status'] as String;
+      final onboardingStatus = authDetails['onboardingStatus'] as String? ?? '';
 
       if (!mounted) return;
 
@@ -115,7 +115,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           );
           break;
         case UserRole.hoster:
-          if (status == 'approved') {
+          if (status == 'approved' || onboardingStatus == 'submitted') {
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (_) => HosterDashboardScreen()),
@@ -124,7 +124,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           } else {
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (_) => const BecomeHosterScreen()),
+              MaterialPageRoute(builder: (_) => const PartnerOnboardingScreen()),
               (route) => false,
             );
           }
@@ -146,17 +146,25 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           break;
         case UserRole.none:
           // New User Onboarding
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (_) =>
-                      widget.isStudent
-                          ? const HomeScreen()
-                          : const BecomeHosterScreen(),
-            ),
-            (route) => false,
-          );
+          if (widget.onLoginNavigateTo != null) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => widget.onLoginNavigateTo!),
+              (route) => false,
+            );
+          } else {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) =>
+                        widget.isStudent
+                            ? const HomeScreen()
+                            : const PartnerOnboardingScreen(),
+              ),
+              (route) => false,
+            );
+          }
           break;
       }
     } on FirebaseAuthException catch (e) {

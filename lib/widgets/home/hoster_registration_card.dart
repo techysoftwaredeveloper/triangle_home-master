@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:triangle_home/hoster_info_screen.dart';
+import 'package:triangle_home/screens/hoster/partner_onboarding_screen.dart';
 import 'package:triangle_home/screens/auth/login_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/screens/list_property/intro_screen.dart';
@@ -45,7 +45,11 @@ class HosterRegistrationCard extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => LoginScreen(isStudent: false),
+                      builder:
+                          (_) => const LoginScreen(
+                            isStudent: false,
+                            onLoginNavigateTo: PartnerOnboardingScreen(),
+                          ),
                     ),
                   );
                 } else {
@@ -53,10 +57,7 @@ class HosterRegistrationCard extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder:
-                          (_) => HosterInfoScreen(
-                            phoneNumber: user.phoneNumber ?? '',
-                          ),
+                      builder: (_) => const PartnerOnboardingScreen(),
                     ),
                   );
                 }

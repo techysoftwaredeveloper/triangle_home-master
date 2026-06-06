@@ -39,7 +39,7 @@ void main() {
       // 1. Simulate property creation directly into Firestore (simulating the UI submit)
       await fakeFirestore.collection('properties').add({
         'hoster_id': 'hoster_1',
-        'status': 'active',
+        'status': 'approved',
         'propertyDetails': {'totalCapacity': 15, 'totalRooms': 5},
       });
 

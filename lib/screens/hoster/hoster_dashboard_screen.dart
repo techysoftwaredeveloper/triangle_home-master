@@ -3,13 +3,27 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_profile_screen.dart';
+import 'package:triangle_home/screens/hoster/booking_detail_screen.dart';
+import 'package:triangle_home/screens/hoster/lead_detail_screen.dart';
+import 'package:triangle_home/screens/hoster/property_operational_center.dart';
 import 'package:triangle_home/services/property_service.dart';
 import 'package:triangle_home/services/booking_service.dart';
 import 'package:triangle_home/services/hoster_service.dart';
+import 'package:triangle_home/services/lead_service.dart';
+import 'package:triangle_home/models/lead.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/hoster/hoster_bottom_nav.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
+import 'package:triangle_home/core/extensions/string_extensions.dart';
+
+num _parseNum(dynamic v) {
+  if (v == null) return 0;
+  if (v is num) return v;
+  if (v is String) return num.tryParse(v) ?? 0;
+  return 0;
+}
 
 class HosterDashboardScreen extends StatefulWidget {
   const HosterDashboardScreen({super.key});
@@ -45,28 +59,39 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
         selectedIndex: _selectedIndex,
         onTap: _onNavTap,
       ),
-      floatingActionButton:
-          _selectedIndex == 0
-              ? FloatingActionButton.extended(
-                onPressed:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ListPropertyScreen(),
-                      ),
-                    ),
-                backgroundColor: AppTheme.successColor,
-                icon: const Icon(Icons.add_rounded, color: Colors.white),
-                label: const Text(
-                  'Add Property',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Outfit',
-                  ),
+      floatingActionButton: _selectedIndex == 0
+          ? FloatingActionButton.extended(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+              ),
+              backgroundColor: AppTheme.successColor,
+              icon: const Icon(Icons.add_rounded, color: Colors.white),
+              label: const Text(
+                'Add Property',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Outfit',
                 ),
-                elevation: 10,
-              )
+              ),
+              elevation: 10,
+            )
+          : _selectedIndex == 2
+              ? FloatingActionButton.extended(
+                  onPressed: () {},
+                  backgroundColor: AppTheme.successColor,
+                  icon: const Icon(Icons.add_rounded, color: Colors.white),
+                  label: const Text(
+                    'New Booking',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                  elevation: 10,
+                )
               : null,
     );
   }
@@ -105,9 +130,7 @@ class _DashboardTab extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 24),
-                  _buildPropertyStatusCard(
-                    properties.isNotEmpty ? properties.first : null,
-                  ),
+                  _buildTopPropertyCarousel(properties),
                   const SizedBox(height: 32),
                   _buildSectionHeader('Today\'s Actions'),
                   _buildActionCards(data),
@@ -116,14 +139,14 @@ class _DashboardTab extends StatelessWidget {
                   _buildOverviewGrid(data),
                   const SizedBox(height: 32),
                   _buildSectionHeader('My Properties', onViewAll: () {}),
-                  _buildPropertiesCarousel(properties),
+                  _buildPropertiesCarousel(properties, data),
                   const SizedBox(height: 32),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(child: _buildRevenueInsight(data)),
                       const SizedBox(width: 16),
-                      Expanded(child: _buildHostManagement()),
+                      Expanded(child: _buildHostManagement(data)),
                     ],
                   ),
                   const SizedBox(height: 32),
@@ -140,8 +163,8 @@ class _DashboardTab extends StatelessWidget {
   }
 
   PreferredSizeWidget _buildHeader(BuildContext context, Map data) {
-    final name = data['hosterName'] ?? 'Jibin';
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'J';
+    final name = data['hosterName'] ?? 'Host';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'H';
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -161,27 +184,32 @@ class _DashboardTab extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Good Morning, $name 👋',
-                style: const TextStyle(
-                  color: Color(0xFF1E293B),
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Outfit',
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Good Morning, $name 👋',
+                  style: const TextStyle(
+                    color: Color(0xFF1E293B),
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Outfit',
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              Text(
-                data['hosterRole'] ?? 'Host & Property Manager',
-                style: const TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+                Text(
+                  data['hosterRole'] ?? 'Host & Property Manager',
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -222,11 +250,40 @@ class _DashboardTab extends StatelessWidget {
     );
   }
 
+  Widget _buildTopPropertyCarousel(List properties) {
+    if (properties.isEmpty) return const SizedBox.shrink();
+
+    // Filter for active/approved properties only for the top picker
+    final activeProperties = properties.where((p) {
+      final status = (p['status'] ?? 'pending').toString().toLowerCase();
+      return status == 'active' || status == 'approved';
+    }).toList();
+
+    if (activeProperties.isEmpty) {
+      // Fallback to show the first property if none are "active" yet
+      return _buildPropertyStatusCard(properties.first);
+    }
+
+    return SizedBox(
+      height: 140,
+      child: PageView.builder(
+        itemCount: activeProperties.length,
+        controller: PageController(viewportFraction: 0.95),
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: _buildPropertyStatusCard(activeProperties[index]),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildPropertyStatusCard(Map? property) {
     if (property == null) return const SizedBox.shrink();
     final images = property['images'] as List? ?? [];
-    final name = property['basicInfo']?['name'] ?? 'Sunrise PG';
-    final occupancy = 92;
+    final name = property['basicInfo']?['name'] ?? 'Property';
+    final occupancy = 0; // Or calculate from data if available
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -267,21 +324,31 @@ class _DashboardTab extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                        fontFamily: 'Outfit',
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E293B),
+                                fontFamily: 'Outfit',
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                          const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: Color(0xFF64748B),
+                            size: 18,
+                          ),
+                        ],
                       ),
                     ),
-                    const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(0xFF64748B),
-                      size: 18,
-                    ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -311,9 +378,9 @@ class _DashboardTab extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Since Jan 2024',
-                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+                Text(
+                  'Joined ${_joinedDate(property)}',
+                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
                 ),
               ],
             ),
@@ -324,6 +391,17 @@ class _DashboardTab extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _joinedDate(Map? property) {
+    if (property == null) return '—';
+    final ts = property['createdAt'];
+    if (ts is Timestamp) {
+      final d = ts.toDate();
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return '${months[d.month - 1]} ${d.year}';
+    }
+    return '—';
   }
 
   Widget _buildCircularOccupancy(int value) {
@@ -467,25 +545,25 @@ class _DashboardTab extends StatelessWidget {
         _overviewCard(
           'Active Residents',
           data['activeResidents']?.toString() ?? '0',
-          '6 vs last month',
+          '',
           true,
         ),
         _overviewCard(
           'Vacant Beds',
           data['vacantBeds']?.toString() ?? '0',
-          '2 vs last month',
+          '',
           false,
         ),
         _overviewCard(
           'Occupancy',
           '${data['occupancy']}%',
-          '8% vs last month',
+          '',
           true,
         ),
         _overviewCard(
           'Monthly Revenue',
           '₹${(data['monthlyRevenue'] ?? 0).toString()}',
-          '12% vs last month',
+          '',
           true,
         ),
       ],
@@ -541,56 +619,74 @@ class _DashboardTab extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(
-                isPositive
-                    ? Icons.arrow_upward_rounded
-                    : Icons.arrow_downward_rounded,
-                size: 10,
-                color:
-                    isPositive
-                        ? const Color(0xFF16A34A)
-                        : const Color(0xFFEF4444),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                change,
-                style: TextStyle(
-                  fontSize: 10,
+          if (change.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(
+                  isPositive
+                      ? Icons.arrow_upward_rounded
+                      : Icons.arrow_downward_rounded,
+                  size: 10,
                   color:
                       isPositive
                           ? const Color(0xFF16A34A)
                           : const Color(0xFFEF4444),
-                  fontWeight: FontWeight.bold,
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 4),
+                Text(
+                  change,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color:
+                        isPositive
+                            ? const Color(0xFF16A34A)
+                            : const Color(0xFFEF4444),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildPropertiesCarousel(List properties) {
-    if (properties.isEmpty)
+  Widget _buildPropertiesCarousel(List properties, Map data) {
+    if (properties.isEmpty) {
       return const SizedBox(
         height: 100,
         child: Center(child: Text('No properties listed')),
       );
+    }
+
+    final occupancy = _parseNum(data['occupancy']).toInt();
+    final vacantBeds = _parseNum(data['vacantBeds']).toInt();
+    final activeResidents = _parseNum(data['activeResidents']).toInt();
+    final newInquiries = _parseNum(data['newInquiries']).toInt();
 
     return Column(
       children: [
         SizedBox(
-          height: 220,
+          height: 320,
           child: PageView.builder(
             itemCount: properties.length,
             controller: PageController(viewportFraction: 0.9),
             itemBuilder: (context, index) {
               final p = properties[index];
               final images = p['images'] as List? ?? [];
-              final name = p['basicInfo']?['name'] ?? 'Property';
+              final basicInfo = p['basicInfo'] as Map? ?? {};
+              final name = basicInfo['collegeName']?.toString().isNotEmpty == true
+                  ? basicInfo['collegeName'].toString()
+                  : (p['name'] ?? p['title'] ?? 'Property').toString();
+              final propStatus = (p['status'] ?? 'pending').toString().toLowerCase();
+              final isLive = propStatus == 'approved' || propStatus == 'active';
+              final isPaused = propStatus == 'paused';
+              
+              final statusLabel = isLive ? 'Live' : isPaused ? 'Paused' : propStatus.capitalize();
+              final statusBg = isLive ? const Color(0xFFDCFCE7) : isPaused ? const Color(0xFFDBEAFE) : const Color(0xFFFEF3C7);
+              final statusFg = isLive ? const Color(0xFF16A34A) : isPaused ? const Color(0xFF2563EB) : const Color(0xFFD97706);
 
               return Container(
                 margin: const EdgeInsets.only(right: 12),
@@ -610,15 +706,19 @@ class _DashboardTab extends StatelessWidget {
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(24),
                       ),
-                      child:
-                          images.isNotEmpty
-                              ? CachedNetworkImage(
-                                imageUrl: images.first,
-                                height: 120,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              )
-                              : Container(height: 120, color: Colors.grey[200]),
+                      child: images.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: images.first,
+                              height: 120,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => Container(
+                                height: 120, color: Colors.grey[200],
+                                child: const Icon(Icons.home_work_outlined, size: 40, color: Colors.grey),
+                              ),
+                            )
+                          : Container(height: 120, color: Colors.grey[200],
+                              child: const Icon(Icons.home_work_outlined, size: 40, color: Colors.grey)),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(16),
@@ -626,48 +726,45 @@ class _DashboardTab extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.location_on_rounded,
-                                        size: 12,
-                                        color: Color(0xFF94A3B8),
-                                      ),
-                                      Text(
-                                        ' ${p['city']}',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: Color(0xFF94A3B8),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.location_on_rounded, size: 12, color: Color(0xFF94A3B8)),
+                                        Flexible(
+                                          child: Text(
+                                            ' ${p['locality'] ?? p['city'] ?? 'Location'}',
+                                            style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
+                                      ],
+                                    ),
+                                  ],
                                 ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFDCFCE7),
+                                  color: statusBg,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Text(
-                                  'Active',
+                                child: Text(
+                                  statusLabel,
                                   style: TextStyle(
-                                    color: Color(0xFF16A34A),
+                                    color: statusFg,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -679,12 +776,33 @@ class _DashboardTab extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
-                              _propStat('95%', 'Occupancy'),
-                              _propStat('2', 'Vacant Beds'),
-                              _propStat('4', 'Inquiries'),
-                              _propStat('21', 'Residents'),
+                              _propStat('${p['occupancy'] ?? 0}%', 'Occupancy'),
+                              _propStat('${(p['totalCapacity'] ?? 0) - (p['activeResidents'] ?? 0)}', 'Vacant'),
+                              _propStat('${p['inquiries'] ?? 0}', 'Inquiries'),
+                              _propStat('${p['activeResidents'] ?? 0}', 'Residents'),
                             ],
                           ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _propStat(propStatus, 'Status'),
+                              _propStat(p['city']?.toString() ?? '—', 'City'),
+                              _propStat(
+                                '₹${(p['monthlyRent'] ?? p['price'] ?? 0).toString()}',
+                                'Rent/mo',
+                              ),
+                            ],
+                          ),
+                          if (propStatus == 'rejected' && p['rejectionReason'] != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Reason: ${p['rejectionReason']}',
+                              style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.w500),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -697,23 +815,18 @@ class _DashboardTab extends StatelessWidget {
         const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children:
-              [0, 1, 2]
-                  .map(
-                    (i) => Container(
-                      width: 6,
-                      height: 6,
-                      margin: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color:
-                            i == 0
-                                ? const Color(0xFF16A34A)
-                                : const Color(0xFFCBD5E1),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  )
-                  .toList(),
+          children: List.generate(
+            properties.length > 5 ? 5 : properties.length,
+            (i) => Container(
+              width: 6,
+              height: 6,
+              margin: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: i == 0 ? const Color(0xFF16A34A) : const Color(0xFFCBD5E1),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -782,70 +895,22 @@ class _DashboardTab extends StatelessWidget {
               color: Color(0xFF1E293B),
             ),
           ),
-          Row(
-            children: [
-              const Icon(
-                Icons.arrow_upward_rounded,
-                size: 10,
-                color: Color(0xFF16A34A),
-              ),
-              const Text(
-                ' 12%',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Color(0xFF16A34A),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Text(
-                ' from last month',
-                style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
-              ),
-            ],
-          ),
           const SizedBox(height: 16),
           SizedBox(
             height: 60,
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(show: false),
-                titlesData: FlTitlesData(show: false),
-                borderData: FlBorderData(show: false),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: [
-                      FlSpot(0, 4),
-                      FlSpot(1, 6),
-                      FlSpot(2, 4.5),
-                      FlSpot(3, 8),
-                      FlSpot(4, 5),
-                      FlSpot(5, 7),
-                      FlSpot(6, 9.5),
-                    ],
-                    isCurved: true,
-                    color: const Color(0xFF16A34A),
-                    barWidth: 3,
-                    dotData: FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: const Color(0xFF16A34A).withValues(alpha: 0.1),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            child: _buildRevenueChart(data['chartData']),
           ),
           const SizedBox(height: 8),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '1 May',
-                style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8)),
+                _monthStart(),
+                style: const TextStyle(fontSize: 8, color: Color(0xFF94A3B8)),
               ),
               Text(
-                '29 May',
-                style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8)),
+                _monthEnd(),
+                style: const TextStyle(fontSize: 8, color: Color(0xFF94A3B8)),
               ),
             ],
           ),
@@ -854,7 +919,61 @@ class _DashboardTab extends StatelessWidget {
     );
   }
 
-  Widget _buildHostManagement() {
+  String _monthStart() {
+    final now = DateTime.now();
+    return '1 ${_monthName(now.month)}';
+  }
+
+  String _monthEnd() {
+    final now = DateTime.now();
+    final last = DateTime(now.year, now.month + 1, 0).day;
+    return '$last ${_monthName(now.month)}';
+  }
+
+  String _monthName(int m) {
+    const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return names[(m - 1).clamp(0, 11)];
+  }
+
+  Widget _buildRevenueChart(dynamic rawChart) {
+    List<double> values;
+    if (rawChart is List && rawChart.isNotEmpty) {
+      values = rawChart.map((v) => (v as num).toDouble()).toList();
+    } else {
+      values = [1, 1, 1, 1, 1, 1, 1];
+    }
+    final maxVal = values.reduce((a, b) => a > b ? a : b);
+    final spots = List.generate(
+      values.length,
+      (i) => FlSpot(i.toDouble(), maxVal > 0 ? values[i] : 1),
+    );
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(show: false),
+        titlesData: FlTitlesData(show: false),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            color: const Color(0xFF16A34A),
+            barWidth: 3,
+            dotData: FlDotData(show: false),
+            belowBarData: BarAreaData(
+              show: true,
+              color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHostManagement(Map data) {
+    final totalProps = data['totalProperties'] as int? ?? 0;
+    final activeListings = data['activeListings'] as int? ?? 0;
+    final pendingInquiries = data['newInquiries'] as int? ?? 0;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -864,73 +983,46 @@ class _DashboardTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Host Management',
+              Text(
+                'Property Stats',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1E293B),
                 ),
               ),
-              const Text(
-                'Manage',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Color(0xFF16A34A),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
           _mgmtRow(
-            Icons.people_outline_rounded,
-            'Total Hosts',
-            '4',
+            Icons.home_work_outlined,
+            'Total Properties',
+            '$totalProps',
             const Color(0xFF3B82F6),
           ),
           const SizedBox(height: 12),
           _mgmtRow(
-            Icons.person_pin_rounded,
-            'Active Hosts',
-            '3',
+            Icons.check_circle_outline_rounded,
+            'Active Listings',
+            '$activeListings',
             const Color(0xFF16A34A),
           ),
           const SizedBox(height: 12),
           _mgmtRow(
-            Icons.mail_outline_rounded,
-            'Pending Invitations',
-            '1',
+            Icons.chat_bubble_outline_rounded,
+            'Open Inquiries',
+            '$pendingInquiries',
             const Color(0xFFF59E0B),
           ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0FDF4),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.add_circle_rounded,
-                  size: 14,
-                  color: Color(0xFF16A34A),
-                ),
-                Text(
-                  ' Invite New Host',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF16A34A),
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: 12),
+          _mgmtRow(
+            Icons.people_outline_rounded,
+            'Active Residents',
+            '${data['activeResidents'] ?? 0}',
+            const Color(0xFF8B5CF6),
           ),
         ],
       ),
@@ -1071,166 +1163,498 @@ class _DashboardTab extends StatelessWidget {
 }
 
 // ── Properties Tab ────────────────────────────────────────────────────────────
-class _PropertiesTab extends StatelessWidget {
+class _PropertiesTab extends StatefulWidget {
   final String uid;
   final PropertyService propertyService;
   const _PropertiesTab({required this.uid, required this.propertyService});
 
   @override
+  State<_PropertiesTab> createState() => _PropertiesTabState();
+}
+
+class _PropertiesTabState extends State<_PropertiesTab> {
+  String _selectedStatus = 'All Properties';
+  final TextEditingController _searchController = TextEditingController();
+
+  final List<String> _statuses = [
+    'All Properties',
+    'Active',
+    'Under Review',
+    'Draft',
+    'Inactive',
+  ];
+
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: propertyService.getHosterProperties(uid),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'My Properties',
+          style: TextStyle(
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Outfit',
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+            ),
+            icon: const Icon(Icons.add, color: Color(0xFF16A34A), size: 20),
+            label: const Text(
+              'Add Property',
+              style: TextStyle(
+                color: Color(0xFF16A34A),
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Outfit',
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: widget.propertyService.getHosterProperties(widget.uid),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        final docs = snapshot.data?.docs ?? [];
+          final allDocs = snapshot.data?.docs ?? [];
+          
+          // Calculate counts for summary cards
+          int activeCount = 0;
+          int underReviewCount = 0;
+          int draftCount = 0;
+          
+          for (var doc in allDocs) {
+            final status = (doc.data()['status'] ?? 'pending').toString().toLowerCase();
+            if (status == 'active' || status == 'approved') {
+              activeCount++;
+            } else if (status == 'pending' || status == 'under review') underReviewCount++;
+            else if (status == 'draft') draftCount++;
+          }
 
-        if (docs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.home_work_outlined,
-                  size: 64,
-                  color: AppTheme.primaryColor.withValues(alpha: 0.2),
+          return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSummaryCards(activeCount, underReviewCount, draftCount),
+                      const SizedBox(height: 24),
+                      _buildSearchAndFilter(),
+                      const SizedBox(height: 20),
+                      _buildStatusTabs(),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'No properties listed yet',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Start earning by listing your first property',
-                  style: TextStyle(color: AppTheme.textLightColor),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed:
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ListPropertyScreen(),
-                        ),
-                      ),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Add Your First Property'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+              ),
+              if (allDocs.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _buildEmptyState(),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        if (index == allDocs.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 10, bottom: 40),
+                            child: _buildAddMoreBanner(),
+                          );
+                        }
+                        
+                        final data = allDocs[index].data();
+                        return _EnhancedPropertyCard(data: data);
+                      },
+                      childCount: allDocs.length + 1,
                     ),
                   ),
                 ),
-              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSummaryCards(int active, int review, int draft) {
+    return Row(
+      children: [
+        Expanded(child: _summaryCard('Active', active, const Color(0xFF16A34A), Icons.home_rounded, const Color(0xFFDCFCE7))),
+        const SizedBox(width: 12),
+        Expanded(child: _summaryCard('Under Review', review, const Color(0xFFD97706), Icons.access_time_filled_rounded, const Color(0xFFFEF3C7))),
+        const SizedBox(width: 12),
+        Expanded(child: _summaryCard('Draft', draft, const Color(0xFF2563EB), Icons.description_rounded, const Color(0xFFDBEAFE))),
+      ],
+    );
+  }
+
+  Widget _summaryCard(String label, int count, Color color, IconData icon, Color bgColor) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '$count',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              ),
+            ],
+          ),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
+          ),
+          const Text(
+            'Properties',
+            style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchAndFilter() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                hintText: 'Search properties...',
+                hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                prefixIcon: Icon(Icons.search, color: Color(0xFF94A3B8), size: 20),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Container(
+          height: 48,
+          width: 48,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.tune_rounded, color: Color(0xFF64748B), size: 20),
+            onPressed: () {},
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusTabs() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: _statuses.map((status) {
+          final isSelected = _selectedStatus == status;
+          return Padding(
+            padding: const EdgeInsets.only(right: 24.0),
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedStatus = status),
+              child: Column(
+                children: [
+                  Text(
+                    status,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (isSelected)
+                    Container(
+                      height: 2,
+                      width: 24,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF16A34A),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                ],
+              ),
             ),
           );
-        }
+        }).toList(),
+      ),
+    );
+  }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: docs.length,
-          itemBuilder: (context, index) {
-            final data = docs[index].data();
-            final basic = data['basicInfo'] as Map<String, dynamic>? ?? {};
-            final images = data['images'] as List? ?? [];
+  Widget _buildAddMoreBanner() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDCFCE7)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+            child: const Icon(Icons.apartment_rounded, color: Color(0xFF16A34A), size: 24),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Add More Properties',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                ),
+                Text(
+                  'List more PGs, hostels or apartments to reach more tenants.',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF16A34A),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              minimumSize: Size.zero,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.add, size: 16),
+                SizedBox(width: 4),
+                Text('Add Property', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-            return Card(
-              margin: const EdgeInsets.only(bottom: 16),
-              clipBehavior: Clip.antiAlias,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: InkWell(
-                onTap: () {},
-                child: Column(
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.home_work_outlined, size: 64, color: const Color(0xFFE2E8F0)),
+          const SizedBox(height: 16),
+          const Text('No properties listed yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 8),
+          const Text('Start earning by listing your first property', style: TextStyle(color: Color(0xFF64748B))),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+            ),
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Add Your First Property'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EnhancedPropertyCard extends StatelessWidget {
+  final Map<String, dynamic> data;
+  const _EnhancedPropertyCard({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final basic = data['basicInfo'] as Map<String, dynamic>? ?? {};
+    final details = data['propertyDetails'] as Map? ?? {};
+    final images = data['images'] as List? ?? [];
+    final propertyId = data['id'] ?? '';
+    
+    final name = basic['collegeName']?.toString().isNotEmpty == true
+        ? basic['collegeName'].toString()
+        : (data['name'] ?? data['title'] ?? 'Property').toString();
+    
+    final status = (data['status'] ?? 'pending').toString().toLowerCase();
+    final isActive = status == 'active' || status == 'approved';
+    final isUnderReview = status == 'pending' || status == 'under review';
+    
+    final statusLabel = isActive ? 'Active' : isUnderReview ? 'Under Review' : status.capitalize();
+    final statusColor = isActive ? const Color(0xFF16A34A) : isUnderReview ? const Color(0xFFD97706) : const Color(0xFF64748B);
+    final statusBg = isActive ? const Color(0xFFDCFCE7) : isUnderReview ? const Color(0xFFFEF3C7) : const Color(0xFFF1F5F9);
+
+    final int totalCapacity = _parseNum(details['totalCapacity'] ?? data['capacity']).toInt();
+    final double monthlyRent = _parseNum(data['monthlyRent'] ?? data['price']).toDouble();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 20, offset: const Offset(0, 10)),
+        ],
+      ),
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('bookings')
+            .where('property_id', isEqualTo: propertyId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          final bookings = snapshot.data?.docs ?? [];
+          
+          final activeResidents = bookings.where((doc) {
+            final s = (doc.data() as Map<String, dynamic>)['status']?.toString().toLowerCase();
+            return s == 'confirmed' || s == 'active' || s == 'checkedin';
+          }).length;
+
+          final inquiries = bookings.where((doc) {
+            final s = (doc.data() as Map<String, dynamic>)['status']?.toString().toLowerCase();
+            return s == 'pending' || s == 'inquirycreated';
+          }).length;
+
+          final int occupancyPercent = totalCapacity > 0 ? (activeResidents / totalCapacity * 100).round() : 0;
+          final int vacantBeds = totalCapacity - activeResidents;
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Stack(
                       children: [
-                        Container(
-                          height: 160,
-                          width: double.infinity,
-                          color: Colors.grey[200],
-                          child:
-                              images.isNotEmpty
-                                  ? Image.network(
-                                    images.first,
-                                    fit: BoxFit.cover,
-                                  )
-                                  : const Icon(
-                                    Icons.image_not_supported,
-                                    size: 40,
-                                  ),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: images.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: images.first,
+                                  height: 110,
+                                  width: 110,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(color: Colors.grey[200]),
+                                  errorWidget: (context, url, error) => Container(color: Colors.grey[200], child: const Icon(Icons.error)),
+                                )
+                              : Container(
+                                  height: 110,
+                                  width: 110,
+                                  color: Colors.grey[200],
+                                  child: const Icon(Icons.home_work_outlined, color: Colors.grey),
+                                ),
                         ),
                         Positioned(
-                          top: 12,
-                          right: 12,
+                          top: 8,
+                          left: 8,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black54,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(8)),
                             child: Text(
-                              basic['type'] ?? 'PG',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              statusLabel,
+                              style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  basic['collegeName'] ?? 'Unnamed Property',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  name,
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.location_on_rounded,
-                                      size: 14,
-                                      color: AppTheme.textMutedColor,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      data['city'] ?? 'Location',
-                                      style: const TextStyle(
-                                        color: AppTheme.textMutedColor,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                              ),
+                              const Icon(Icons.more_vert, color: Color(0xFF64748B), size: 20),
+                            ],
                           ),
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            color: Color(0xFFCBD5E1),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF94A3B8)),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  '${data['locality'] ?? data['city'] ?? 'Location'}, Kerala',
+                                  style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            basic['type'] ?? 'Double & Triple Sharing',
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _miniStat('$occupancyPercent%', 'Occupancy', const Color(0xFF16A34A)),
+                              _miniStat('$vacantBeds', 'Vacant Beds', const Color(0xFF1E293B)),
+                              _miniStat('$activeResidents', 'Residents', const Color(0xFF1E293B)),
+                              _miniStat('₹${(monthlyRent / 1000).toStringAsFixed(1)}k', 'Monthly Rent', const Color(0xFF16A34A)),
+                            ],
                           ),
                         ],
                       ),
@@ -1238,170 +1662,1125 @@ class _PropertiesTab extends StatelessWidget {
                   ],
                 ),
               ),
-            );
-          },
-        );
-      },
+              if (isUnderReview) 
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: const Color(0xFFFFF7ED), borderRadius: BorderRadius.circular(12)),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline_rounded, color: Color(0xFFF59E0B), size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Review in progress', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
+                            Text('Submitted on ${_formatDate(data['createdAt'])}', style: const TextStyle(fontSize: 10, color: Color(0xFF9A3412))),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: Color(0xFF9A3412)),
+                    ],
+                  ),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PropertyOperationalCenter(
+                                  propertyId: propertyId,
+                                  propertyData: data,
+                                ),
+                              ),
+                            );
+                          },
+                          child: _actionBtn(Icons.visibility_outlined, 'View Details'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(child: _actionBtn(Icons.calendar_today_outlined, 'Bookings ($inquiries)')),
+                      const SizedBox(width: 8),
+                      Expanded(child: _actionBtn(Icons.people_outline, 'Tenants')),
+                      const SizedBox(width: 8),
+                      Expanded(child: _actionBtn(Icons.more_horiz, 'More')),
+                    ],
+                  ),
+                ),
+            ],
+          );
+        }
+      ),
+    );
+  }
+
+  String _formatDate(dynamic timestamp) {
+    if (timestamp is Timestamp) {
+      final date = timestamp.toDate();
+      return DateFormat('dd MMM yyyy').format(date);
+    }
+    return 'N/A';
+  }
+
+  Widget _miniStat(String val, String label, Color valColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(val, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: valColor)),
+        Text(label, style: const TextStyle(fontSize: 8, color: Color(0xFF94A3B8))),
+      ],
+    );
+  }
+
+  Widget _actionBtn(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF16A34A)),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+        ],
+      ),
     );
   }
 }
 
 // ── Bookings Tab ──────────────────────────────────────────────────────────────
-class _BookingsTab extends StatelessWidget {
+class _BookingsTab extends StatefulWidget {
   final String uid;
   final BookingService bookingService;
   const _BookingsTab({required this.uid, required this.bookingService});
 
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: bookingService.getHosterBookings(uid),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final docs = snapshot.data?.docs ?? [];
-
-        if (docs.isEmpty) {
-          return const Center(child: Text('No bookings received yet'));
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: docs.length,
-          itemBuilder: (context, index) {
-            final data = docs[index].data();
-            final status = data['status'] as String? ?? 'pending';
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.bookmark_rounded,
-                          color: AppTheme.primaryColor,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              data['propertyName'] ?? 'Property',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Text(
-                              'For: ${data['studentName'] ?? 'Student'}',
-                              style: const TextStyle(
-                                color: AppTheme.textMutedColor,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _StatusChip(status: status),
-                    ],
-                  ),
-                  const Divider(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Amount: ₹${data['price'] ?? '0'}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.successColor,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text('View Details'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+  State<_BookingsTab> createState() => _BookingsTabState();
 }
 
-class _LeadsTab extends StatelessWidget {
-  final String uid;
-  const _LeadsTab({required this.uid});
+class _BookingsTabState extends State<_BookingsTab> {
+  String _selectedStatus = 'All Bookings';
+  final TextEditingController _searchController = TextEditingController();
+
+  final List<String> _statuses = [
+    'All Bookings',
+    'Upcoming',
+    'Confirmed',
+    'Completed',
+    'Cancelled',
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text(
-          'Leads & Inquiries',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Outfit',
-            color: Color(0xFF1E293B),
-          ),
-        ),
         backgroundColor: Colors.white,
         elevation: 0,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.people_alt_rounded,
-              size: 64,
-              color: AppTheme.primaryColor.withValues(alpha: 0.1),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'No new leads found',
+            Text(
+              'Bookings',
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
                 color: Color(0xFF1E293B),
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Outfit',
+                fontSize: 20,
               ),
             ),
-            const Text(
-              'New inquiries from students will appear here',
-              style: TextStyle(color: Color(0xFF64748B)),
+            Text(
+              'Manage all property bookings',
+              style: TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 12,
+                fontFamily: 'Outfit',
+              ),
             ),
           ],
         ),
+        actions: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEF4444),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Text(
+                    '4',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: widget.bookingService.getHosterBookings(widget.uid),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final allDocs = snapshot.data?.docs ?? [];
+          
+          // Calculate metrics
+          int total = allDocs.length;
+          int upcoming = allDocs.where((d) => (d.data()['status'] ?? '').toString().toLowerCase() == 'pending').length;
+          int confirmed = allDocs.where((d) => (d.data()['status'] ?? '').toString().toLowerCase() == 'confirmed').length;
+          int cancelled = allDocs.where((d) => (d.data()['status'] ?? '').toString().toLowerCase() == 'cancelled').length;
+
+          return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    children: [
+                      _buildSummaryMetrics(total, upcoming, confirmed, cancelled),
+                      const SizedBox(height: 24),
+                      _buildSearchAndFilter(),
+                      const SizedBox(height: 20),
+                      _buildStatusTabs(),
+                    ],
+                  ),
+                ),
+              ),
+              if (allDocs.isEmpty)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: Text('No bookings received yet')),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        if (index == allDocs.length) {
+                          return _buildNewBookingBanner();
+                        }
+                        final data = allDocs[index].data();
+                        return _EnhancedBookingCard(data: data, bookingId: allDocs[index].id);
+                      },
+                      childCount: allDocs.length + 1,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
+  }
+
+  Widget _buildSummaryMetrics(int total, int upcoming, int confirmed, int cancelled) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _metricCard('Total Bookings', total, Icons.calendar_today_outlined, const Color(0xFF16A34A), const Color(0xFFDCFCE7)),
+          const SizedBox(width: 12),
+          _metricCard('Upcoming', upcoming, Icons.access_time_rounded, const Color(0xFFD97706), const Color(0xFFFEF3C7)),
+          const SizedBox(width: 12),
+          _metricCard('Confirmed', confirmed, Icons.check_circle_outline_rounded, const Color(0xFF2563EB), const Color(0xFFDBEAFE)),
+          const SizedBox(width: 12),
+          _metricCard('Cancelled', cancelled, Icons.cancel_outlined, const Color(0xFFEF4444), const Color(0xFFFEE2E2)),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricCard(String label, int count, IconData icon, Color color, Color bgColor) {
+    return Container(
+      width: 140,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('$count', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+              Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchAndFilter() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                hintText: 'Search by tenant, property or phone...',
+                hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                prefixIcon: Icon(Icons.search, color: Color(0xFF94A3B8), size: 20),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.tune_rounded, color: Color(0xFF64748B), size: 20),
+              const SizedBox(width: 8),
+              const Text('Filter', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 14)),
+              const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B), size: 18),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusTabs() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: _statuses.map((status) {
+          final isSelected = _selectedStatus == status;
+          return Padding(
+            padding: const EdgeInsets.only(right: 24.0),
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedStatus = status),
+              child: Column(
+                children: [
+                  Text(
+                    status,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (isSelected)
+                    Container(
+                      height: 2,
+                      width: 24,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF16A34A),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildNewBookingBanner() {
+    return Container(
+      margin: const EdgeInsets.only(top: 10, bottom: 40),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDCFCE7)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+            child: const Icon(Icons.event_available_rounded, color: Color(0xFF16A34A), size: 24),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'New Booking',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                ),
+                Text(
+                  'Add a new booking manually for a tenant.',
+                  style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF16A34A),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size.zero,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.add, size: 16),
+                SizedBox(width: 4),
+                Text('New Booking', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EnhancedBookingCard extends StatelessWidget {
+  final Map<String, dynamic> data;
+  final String bookingId;
+  const _EnhancedBookingCard({required this.data, required this.bookingId});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = (data['status'] ?? 'pending').toString().toLowerCase();
+    final isConfirmed = status == 'confirmed';
+    final isUpcoming = status == 'pending';
+    final isCompleted = status == 'completed';
+    final isCancelled = status == 'cancelled';
+
+    final statusLabel = status.toUpperCase();
+    final statusColor = isConfirmed ? const Color(0xFF2563EB) : isUpcoming ? const Color(0xFFD97706) : isCompleted ? const Color(0xFF16A34A) : const Color(0xFFEF4444);
+    final statusBg = isConfirmed ? const Color(0xFFDBEAFE) : isUpcoming ? const Color(0xFFFEF3C7) : isCompleted ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2);
+
+    final String propertyName = data['propertyName'] ?? 'Property';
+    final String residentName = data['studentName'] ?? 'Resident';
+    final double rent = _parseNum(data['price']).toDouble();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 20, offset: const Offset(0, 10)),
+        ],
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BookingDetailScreen(bookingId: bookingId, bookingData: data),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.apartment_rounded, color: Colors.grey),
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        left: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(6)),
+                          child: Text(
+                            statusLabel,
+                            style: TextStyle(color: statusColor, fontSize: 8, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              propertyName,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                            ),
+                            const Icon(Icons.more_vert, color: Color(0xFF64748B), size: 20),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.person_outline_rounded, size: 14, color: Color(0xFF94A3B8)),
+                            const SizedBox(width: 4),
+                            Text(residentName, style: const TextStyle(fontSize: 13, color: Color(0xFF475569), fontWeight: FontWeight.w500)),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.phone_outlined, size: 14, color: Color(0xFF94A3B8)),
+                            const SizedBox(width: 4),
+                            Text(data['studentPhone'] ?? '+91 98765 43210', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: Color(0xFFCBD5E1)),
+                ],
+              ),
+              const Divider(height: 24, color: Color(0xFFF1F5F9)),
+              Row(
+                children: [
+                  _infoItem(Icons.calendar_today_outlined, 'Check-in', _formatDate(data['createdAt'])),
+                  const Spacer(),
+                  _infoItem(Icons.bed_outlined, data['roomName'] ?? 'Room D-203', data['roomType'] ?? 'Double Room'),
+                  const Spacer(),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('₹${(rent / 1000).toStringAsFixed(1)}k', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+                      const Text('Monthly Rent', style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: _actionBtn(Icons.call_outlined, 'Call')),
+                  const SizedBox(width: 8),
+                  Expanded(child: _actionBtn(Icons.chat_outlined, 'WhatsApp')),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'View Details',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _infoItem(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: const Color(0xFF94A3B8)),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+            Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _actionBtn(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF16A34A)),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(dynamic timestamp) {
+    if (timestamp is Timestamp) {
+      final date = timestamp.toDate();
+      return DateFormat('dd MMM yyyy').format(date);
+    }
+    return 'N/A';
+  }
+}
+
+class _LeadsTab extends StatefulWidget {
+  final String uid;
+  const _LeadsTab({required this.uid});
+
+  @override
+  State<_LeadsTab> createState() => _LeadsTabState();
+}
+
+class _LeadsTabState extends State<_LeadsTab> {
+  final LeadService _leadService = LeadService();
+  String _selectedStatus = 'All';
+  final TextEditingController _searchController = TextEditingController();
+
+  final List<String> _statuses = [
+    'All',
+    'New',
+    'Contacted',
+    'Follow-Up',
+    'Visit Scheduled',
+    'Interested',
+    'Converted',
+    'Lost',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Leads',
+              style: TextStyle(
+                color: Color(0xFF1E293B),
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Outfit',
+                fontSize: 20,
+              ),
+            ),
+            Text(
+              'Manage inquiries and booking prospects',
+              style: TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 12,
+                fontFamily: 'Outfit',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1E293B)),
+          ),
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.tune_rounded, color: Color(0xFF1E293B)),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: StreamBuilder<List<Lead>>(
+        stream: _leadService.getHosterLeads(widget.uid),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final allLeads = snapshot.data ?? [];
+
+          return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    children: [
+                      _buildLeadMetrics(allLeads),
+                      const SizedBox(height: 24),
+                      _buildSearchAndFilter(),
+                      const SizedBox(height: 20),
+                      _buildQuickFilters(),
+                      const SizedBox(height: 20),
+                      _buildStatusTabs(),
+                    ],
+                  ),
+                ),
+              ),
+              if (allLeads.isEmpty)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: Text('No leads found yet')),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        if (index == allLeads.length) {
+                          return const SizedBox(height: 100);
+                        }
+                        return _LeadCard(lead: allLeads[index]);
+                      },
+                      childCount: allLeads.length + 1,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        backgroundColor: AppTheme.successColor,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildLeadMetrics(List<Lead> leads) {
+    final total = leads.length;
+    final newLeads = leads.where((l) => l.status == LeadStatus.newLead).length;
+    final followUp = leads.where((l) => l.nextFollowupDate != null && DateFormat('yyyy-MM-dd').format(l.nextFollowupDate!) == DateFormat('yyyy-MM-dd').format(DateTime.now())).length;
+    final converted = leads.where((l) => l.status == LeadStatus.converted).length;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _metricCard('Total Leads', total, Icons.group_outlined, const Color(0xFF16A34A), const Color(0xFFDCFCE7)),
+          const SizedBox(width: 12),
+          _metricCard('New Leads', newLeads, Icons.auto_awesome_outlined, const Color(0xFF3B82F6), const Color(0xFFDBEAFE)),
+          const SizedBox(width: 12),
+          _metricCard('Follow-ups', followUp, Icons.calendar_today_outlined, const Color(0xFFD97706), const Color(0xFFFEF3C7)),
+          const SizedBox(width: 12),
+          _metricCard('Converted', converted, Icons.check_circle_outline_rounded, const Color(0xFF8B5CF6), const Color(0xFFF3E8FF)),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricCard(String label, int count, IconData icon, Color color, Color bgColor) {
+    return Container(
+      width: 140,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const Spacer(),
+              Text('$count', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+          const Text('View all', style: TextStyle(fontSize: 9, color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchAndFilter() {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: const InputDecoration(
+          hintText: 'Search by name, phone or college...',
+          hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+          prefixIcon: Icon(Icons.search, color: Color(0xFF94A3B8), size: 20),
+          suffixIcon: Icon(Icons.tune_rounded, color: Color(0xFF64748B), size: 20),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: 12),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickFilters() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _filterChip('Property', Icons.keyboard_arrow_down_rounded),
+          _filterChip('Lead Status', Icons.keyboard_arrow_down_rounded),
+          _filterChip('Type', Icons.keyboard_arrow_down_rounded),
+          _filterChip('Source', Icons.keyboard_arrow_down_rounded),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip(String label, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
+          const SizedBox(width: 4),
+          Icon(icon, size: 16, color: const Color(0xFF64748B)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusTabs() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: _statuses.map((status) {
+          final isSelected = _selectedStatus == status;
+          return Padding(
+            padding: const EdgeInsets.only(right: 24.0),
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedStatus = status),
+              child: Column(
+                children: [
+                  Text(
+                    status,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (isSelected)
+                    Container(
+                      height: 2,
+                      width: 24,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF16A34A),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _LeadCard extends StatelessWidget {
+  final Lead lead;
+  const _LeadCard({required this.lead});
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = _getStatusColor(lead.status);
+    final statusBg = statusColor.withValues(alpha: 0.1);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 20, offset: const Offset(0, 10)),
+        ],
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => LeadDetailScreen(lead: lead),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.apartment_rounded, color: Colors.grey),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundColor: Colors.grey[200],
+                              child: const Icon(Icons.person, size: 14, color: Colors.grey),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                lead.name,
+                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(6)),
+                              child: Text(
+                                _getStatusLabel(lead.status),
+                                style: TextStyle(color: statusColor, fontSize: 8, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(4)),
+                              child: Text(
+                                lead.type.name.capitalize(),
+                                style: const TextStyle(fontSize: 9, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.verified_user_outlined, size: 12, color: Color(0xFF16A34A)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          lead.studentInfo?['college'] ?? lead.professionalInfo?['company'] ?? 'Interested in PG',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          lead.phone,
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.more_vert_rounded, color: Color(0xFF64748B), size: 20),
+                ],
+              ),
+              const Divider(height: 24, color: Color(0xFFF1F5F9)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _leadInfoItem('Interested Property', lead.interestedPropertyName ?? 'Sunrise PG', isPrimary: true),
+                  _leadInfoItem('Move-in Date', _formatDate(lead.preferredMoveInDate)),
+                  _leadInfoItem('Lead Source', lead.source ?? 'Triangle Homes'),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _leadInfoItem('Sharing Preference', lead.preferredSharing ?? 'Double Sharing'),
+                  _leadInfoItem('Budget Range', lead.budgetRange ?? '₹7,000 - ₹9,000'),
+                  const SizedBox(width: 80), // Placeholder
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: _actionBtn(Icons.call_outlined, 'Call')),
+                  const SizedBox(width: 8),
+                  Expanded(child: _actionBtn(Icons.chat_outlined, 'WhatsApp')),
+                  const SizedBox(width: 8),
+                  Expanded(child: _actionBtn(Icons.calendar_today_outlined, 'Schedule Visit', color: const Color(0xFF3B82F6))),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _leadInfoItem(String label, String value, {bool isPrimary = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: isPrimary ? const Color(0xFF16A34A) : const Color(0xFF475569),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _actionBtn(IconData icon, String label, {Color color = const Color(0xFF16A34A)}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'N/A';
+    return DateFormat('dd MMM yyyy').format(date);
+  }
+
+  Color _getStatusColor(LeadStatus status) {
+    switch (status) {
+      case LeadStatus.newLead:
+        return const Color(0xFFF59E0B);
+      case LeadStatus.contacted:
+        return const Color(0xFF3B82F6);
+      case LeadStatus.visitScheduled:
+        return const Color(0xFF10B981);
+      case LeadStatus.converted:
+        return const Color(0xFF8B5CF6);
+      default:
+        return const Color(0xFF64748B);
+    }
+  }
+
+  String _getStatusLabel(LeadStatus status) {
+    switch (status) {
+      case LeadStatus.newLead:
+        return 'NEW LEAD';
+      case LeadStatus.visitScheduled:
+        return 'VISIT SCHEDULED';
+      default:
+        return status.name.toUpperCase();
+    }
   }
 }
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:triangle_home/screens/room_details_screen.dart';
+import 'package:triangle_home/screens/property_detail_screen_v2.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 class NearbyAccommodations extends StatelessWidget {
@@ -19,24 +19,18 @@ class NearbyAccommodations extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filteredAccommodations =
-        (selectedCity.toLowerCase() == 'near me' ||
-                selectedCity.toLowerCase() == 'all' ||
-                selectedCity.isEmpty)
-            ? accommodations
-            : accommodations
-                .where(
-                  (acc) =>
-                      (acc['city']?.toString().toLowerCase() ?? '') ==
-                      selectedCity.toLowerCase(),
-                )
-                .toList();
+    // Filtering is done in propertiesStreamProvider; show all passed items.
+    final filteredAccommodations = accommodations;
 
     final title =
         customTitle ??
-        (selectedCity.toLowerCase() == 'near me'
-            ? 'PG Accommodations Near You'
-            : 'PG Accommodations in $selectedCity');
+        (selectedCity.isEmpty ||
+                selectedCity.toLowerCase() == 'all' ||
+                selectedCity.toLowerCase() == 'global'
+            ? 'PG Accommodations'
+            : selectedCity.toLowerCase() == 'near me'
+                ? 'PG Accommodations Near You'
+                : 'PG Accommodations in $selectedCity');
 
     return Container(
       color: Colors.white,
@@ -79,8 +73,8 @@ class NearbyAccommodations extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                 builder:
-                                    (_) => RoomDetailsScreen(
-                                      accommodation: accommodation,
+                                    (_) => PropertyDetailScreenV2(
+                                      property: accommodation,
                                     ),
                               ),
                             );

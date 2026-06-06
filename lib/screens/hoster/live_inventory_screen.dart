@@ -151,11 +151,12 @@ class _RoomInventoryCard extends StatelessWidget {
                     .collection('beds')
                     .snapshots(),
             builder: (context, snapshot) {
-              if (!snapshot.hasData)
+              if (!snapshot.hasData) {
                 return const SizedBox(
                   height: 100,
                   child: Center(child: CircularProgressIndicator()),
                 );
+              }
 
               final beds =
                   snapshot.data!.docs

@@ -51,9 +51,8 @@ class _RealtimeDocumentUploadState extends State<RealtimeDocumentUpload> {
         final file = File(result.files.single.path!);
         final firebaseService = FirebaseService();
 
-        // Simulating progress for better UX if needed, or just direct upload
-        // Here we use the existing uploadImage (we might need a generic uploadDocument)
-        final url = await firebaseService.uploadFile(file);
+        // Use specialized upload for verification documents
+        final url = await firebaseService.uploadVerificationFile(file);
 
         setState(() {
           _currentUrl = url;

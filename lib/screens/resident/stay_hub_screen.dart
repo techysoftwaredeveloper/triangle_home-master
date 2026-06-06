@@ -4,8 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/models/resident_stay.dart';
 import 'package:triangle_home/models/lifecycle_models.dart';
-import 'package:triangle_home/services/stay_lifecycle_service.dart';
-import 'package:triangle_home/services/maintenance_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 
@@ -20,8 +18,9 @@ class _StayHubScreenState extends State<StayHubScreen> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null)
+    if (user == null) {
       return const Scaffold(body: Center(child: Text('Please login')));
+    }
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream:
@@ -199,11 +198,12 @@ class _StayHubScreenState extends State<StayHubScreen> {
                       .map((d) => RentCycle.fromFirestore(d))
                       .toList();
 
-              if (cycles.isEmpty)
+              if (cycles.isEmpty) {
                 return const Text(
                   'No rent cycles generated yet',
                   style: TextStyle(color: Colors.grey),
                 );
+              }
 
               return Column(
                 children: cycles.map((c) => _RentItem(cycle: c)).toList(),

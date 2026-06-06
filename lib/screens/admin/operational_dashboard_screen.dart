@@ -33,8 +33,9 @@ class OperationalDashboardScreen extends StatelessWidget {
             StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: auditService.getLogs(limit: 10),
               builder: (context, snapshot) {
-                if (!snapshot.hasData)
+                if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
+                }
                 final logs = snapshot.data!.docs;
                 return ListView.builder(
                   shrinkWrap: true,

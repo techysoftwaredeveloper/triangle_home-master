@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:triangle_home/screens/room_details_screen.dart';
+import 'package:triangle_home/screens/property_detail_screen_v2.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 class TopHostels extends StatelessWidget {
@@ -42,7 +42,7 @@ class TopHostels extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => RoomDetailsScreen(accommodation: hostel),
+                      builder: (_) => PropertyDetailScreenV2(property: hostel),
                     ),
                   );
                 },

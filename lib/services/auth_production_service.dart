@@ -44,19 +44,32 @@ class AuthProductionService {
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final userData = userDoc.data();
       final firestoreRole = userData?['role'];
-      final status = userData?['status'] ?? 'pending';
+      final status = userData?['status'] ?? userData?['accountStatus'] ?? 'pending';
+      final onboardingStatus = userData?['onboardingStatus'] ?? '';
 
       UserRole finalRole = UserRole.none;
       if (roleClaim == 'superadmin') {
         finalRole = UserRole.superadmin;
-      } else if (roleClaim == 'admin')
+      } else if (roleClaim == 'admin') {
         finalRole = UserRole.admin;
-      else if (roleClaim == 'hoster' || firestoreRole == 'hoster')
+      } else if (roleClaim == 'hoster' ||
+          roleClaim == 'owner' ||
+          roleClaim == 'manager' ||
+          roleClaim == 'agency' ||
+          firestoreRole == 'hoster' ||
+          firestoreRole == 'owner' ||
+          firestoreRole == 'manager' ||
+          firestoreRole == 'agency') {
         finalRole = UserRole.hoster;
-      else if (firestoreRole == 'student' || firestoreRole == 'user')
+      } else if (firestoreRole == 'student' || firestoreRole == 'user') {
         finalRole = UserRole.student;
+      }
 
-      return {'role': finalRole, 'status': status};
+      return {
+        'role': finalRole,
+        'status': status,
+        'onboardingStatus': onboardingStatus,
+      };
     } catch (e) {
       debugPrint('Error detecting role/status: $e');
       return {'role': UserRole.none, 'status': 'unknown'};

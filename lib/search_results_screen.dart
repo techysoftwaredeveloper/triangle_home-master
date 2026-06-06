@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:triangle_home/screens/room_details_screen.dart';
+import 'package:triangle_home/screens/property_detail_screen_v2.dart';
 import 'package:triangle_home/services/property_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
@@ -684,7 +684,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                     context,
                     MaterialPageRoute(
                       builder:
-                          (_) => RoomDetailsScreen(accommodation: property),
+                          (_) => PropertyDetailScreenV2(property: property),
                     ),
                   );
                 },

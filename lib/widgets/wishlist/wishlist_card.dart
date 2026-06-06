@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:triangle_home/screens/auth/login_screen.dart';
-import 'package:triangle_home/screens/room_details_screen.dart';
+import 'package:triangle_home/screens/property_detail_screen_v2.dart';
 
 class WishlistCard extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -165,8 +165,8 @@ class WishlistCard extends StatelessWidget {
                             builder:
                                 (_) => LoginScreen(
                                   isStudent: true,
-                                  onLoginNavigateTo: RoomDetailsScreen(
-                                    accommodation: Map<String, dynamic>.from(
+                                  onLoginNavigateTo: PropertyDetailScreenV2(
+                                    property: Map<String, dynamic>.from(
                                       item,
                                     ),
                                   ),
@@ -180,8 +180,8 @@ class WishlistCard extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder:
-                              (_) => RoomDetailsScreen(
-                                accommodation: Map<String, dynamic>.from(item),
+                              (_) => PropertyDetailScreenV2(
+                                property: Map<String, dynamic>.from(item),
                               ),
                         ),
                       );

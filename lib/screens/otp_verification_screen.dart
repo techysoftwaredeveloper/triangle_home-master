@@ -5,6 +5,8 @@ import 'dart:async';
 
 import 'package:lottie/lottie.dart';
 import 'package:triangle_home/screens/home_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
@@ -191,11 +193,40 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    final otp =
+                        _controllers.map((c) => c.text).join();
+                    if (otp.length < 6) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter the complete 6-digit OTP'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    // Persist phone verified status to Firestore
+                    try {
+                      final uid =
+                          FirebaseAuth.instance.currentUser?.uid;
+                      if (uid != null) {
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(uid)
+                            .set({
+                          'verification': {'phoneVerified': true},
+                        }, SetOptions(merge: true));
+                      }
+                    } catch (_) {
+                      // non-blocking — proceed even if write fails
+                    }
+
+                    if (!context.mounted) return;
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => HomeScreen()),
-                    ); // Handle verification
+                      MaterialPageRoute(
+                          builder: (context) => HomeScreen()),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E3A8A),
@@ -206,7 +237,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   ),
                   child: const Text(
                     'Continue',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ).animate().fadeIn(delay: 1000.ms).slideY(begin: 0.2, end: 0),

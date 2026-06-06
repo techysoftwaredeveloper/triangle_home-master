@@ -321,6 +321,16 @@ class BookingService {
         .snapshots();
   }
 
+  Stream<QuerySnapshot<Map<String, dynamic>>> getPropertyBookings(
+    String propertyId,
+  ) {
+    return _firestore
+        .collection('bookings')
+        .where('property_id', isEqualTo: propertyId)
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
   Future<Map<String, dynamic>?> getBookingById(String id) async {
     final doc = await _bookingRepo.getBooking(id);
     return doc.data();

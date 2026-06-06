@@ -31,17 +31,18 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
 
   String _formatStatus(dynamic s) {
     final status = s?.toString().toLowerCase() ?? 'pending';
-    if (status == 'active') return 'Active';
+    if (status == 'active' || status == 'approved') return 'Approved/Live';
     if (status == 'pending') return 'Under Review';
-    if (status == 'inactive') return 'Inactive';
+    if (status == 'paused') return 'Paused';
     if (status == 'rejected') return 'Rejected';
     return status[0].toUpperCase() + status.substring(1);
   }
 
   Color _getStatusColor(dynamic s) {
     final status = s?.toString().toLowerCase() ?? 'pending';
-    if (status == 'active') return Colors.green;
+    if (status == 'active' || status == 'approved') return Colors.green;
     if (status == 'pending') return Colors.orange;
+    if (status == 'paused') return Colors.blue;
     if (status == 'rejected') return Colors.red;
     return Colors.grey;
   }
@@ -56,22 +57,24 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
 
   Future<void> _handleUpdateStatus(String status) async {
     if (_isUpdating) return;
+
+    String? rejectionReason;
+    if (status == 'rejected') {
+      rejectionReason = await _showRejectionDialog();
+      if (rejectionReason == null) return; // User cancelled
+    }
+
     setState(() => _isUpdating = true);
     try {
-      // In AdminService, the method is updatePropertyStatus(id, PropertyStatus)
-      // We need to map string to enum if necessary, or check if service accepts string.
-      // Based on admin_service.dart: updatePropertyStatus(String id, PropertyStatus status)
-      // Wait, let me check the service again.
-
-      // For now, I'll use direct Firestore update if enum mapping is complex or route through backend if possible.
-      // Actually, admin_service already has approveItem and rejectItem which handle the role changes too.
-
       if (status == 'approved' || status == 'active') {
         await widget.adminService.approveItem(_property['id'], 'property');
       } else if (status == 'rejected') {
-        await widget.adminService.rejectItem(_property['id'], 'property');
+        await widget.adminService.rejectItem(
+          _property['id'],
+          'property',
+          reason: rejectionReason,
+        );
       } else {
-        // Fallback for other statuses
         await FirebaseFirestore.instance
             .collection('properties')
             .doc(_property['id'])
@@ -101,376 +104,449 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     }
   }
 
+  Future<String?> _showRejectionDialog() async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Reject Listing'),
+            content: TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: 'Enter reason for rejection...',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, controller.text),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Reject', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final status = _formatStatus(_property['status']);
-    final statusColor = _getStatusColor(_property['status']);
-    final images = _property['images'] as List? ?? [];
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('properties')
+          .doc(_property['id'])
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data!.exists) {
+          _property = snapshot.data!.data()!;
+          _property['id'] = snapshot.data!.id;
+        }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'Property Details',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1E293B),
-            fontFamily: 'Outfit',
+        final status = _formatStatus(_property['status']);
+        final statusColor = _getStatusColor(_property['status']);
+        final images = _property['images'] as List? ?? [];
+
+        return Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            title: const Text(
+              'Property Details',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+                fontFamily: 'Outfit',
+              ),
+            ),
+            backgroundColor: Colors.white,
+            elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.arrow_left_rounded,
+                color: Color(0xFF1E293B),
+                size: 32,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_left_rounded,
-            color: Color(0xFF1E293B),
-            size: 32,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Image Gallery / Banner
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Stack(
-                    children: [
-                      Container(
-                        height: 250,
-                        width: double.infinity,
-                        color: const Color(0xFFF1F5F9),
-                        child:
-                            images.isNotEmpty
-                                ? CachedNetworkImage(
-                                  imageUrl: images.first,
-                                  fit: BoxFit.cover,
-                                  placeholder:
-                                      (context, url) => const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                  errorWidget:
-                                      (context, url, error) => const Icon(
-                                        Icons.home_work_outlined,
-                                        size: 60,
-                                        color: Colors.grey,
-                                      ),
-                                )
-                                : const Icon(
-                                  Icons.home_work_outlined,
-                                  color: Colors.grey,
-                                  size: 60,
-                                ),
-                      ),
-                      Positioned(
-                        top: 16,
-                        right: 16,
-                        child: StatusBadge(text: status, color: statusColor),
-                      ),
-                      if (images.length > 1)
-                        Positioned(
-                          bottom: 16,
-                          right: 16,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.6),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              '+${images.length - 1} Photos',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                Text(
-                  _property['name'] ?? 'Untitled Property',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
-                    fontFamily: 'Outfit',
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _property['category'] ?? 'Accommodation',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF94A3B8),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-                const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                const SizedBox(height: 16),
-
-                _buildSectionTitle('LOCATION'),
-                const SizedBox(height: 12),
-                Row(
+          body: Stack(
+            children: [
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.location_on_outlined,
-                      color: Color(0xFF2563EB),
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _property['location'] ?? 'No Address Provided',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF475569),
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-                const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    // Image Gallery / Banner
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Stack(
                         children: [
-                          _buildSectionTitle('MONTHLY RENT'),
-                          const SizedBox(height: 8),
-                          Text(
-                            '₹${_property['monthlyRent'] ?? 'N/A'}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF16A34A),
-                            ),
+                          Container(
+                            height: 250,
+                            width: double.infinity,
+                            color: const Color(0xFFF1F5F9),
+                            child:
+                                images.isNotEmpty
+                                    ? CachedNetworkImage(
+                                      imageUrl: images.first,
+                                      fit: BoxFit.cover,
+                                      placeholder:
+                                          (context, url) => const Center(
+                                            child: CircularProgressIndicator(),
+                                          ),
+                                      errorWidget:
+                                          (context, url, error) => const Icon(
+                                            Icons.home_work_outlined,
+                                            size: 60,
+                                            color: Colors.grey,
+                                          ),
+                                    )
+                                    : const Icon(
+                                      Icons.home_work_outlined,
+                                      color: Colors.grey,
+                                      size: 60,
+                                    ),
                           ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionTitle('DEPOSIT'),
-                          const SizedBox(height: 8),
-                          Text(
-                            '₹${_property['securityDeposit'] ?? 'N/A'}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E293B),
-                            ),
+                          Positioned(
+                            top: 16,
+                            right: 16,
+                            child: StatusBadge(text: status, color: statusColor),
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-                const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                const SizedBox(height: 16),
-
-                _buildSectionTitle('HOSTER DETAILS'),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: const Color(0xFFF1F5F9),
-                      child: Text(
-                        _property['hosterName']?.toString().isNotEmpty == true
-                            ? _property['hosterName'][0]
-                            : 'H',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF7C3AED),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _property['hosterName'] ?? 'Unknown Hoster',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: Color(0xFF1E293B),
-                            ),
-                          ),
-                          const Text(
-                            'Verified Property Owner',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF16A34A),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _iconDetail(
-                  Icons.phone_outlined,
-                  _property['hosterPhone'] ?? 'No Phone',
-                ),
-
-                const SizedBox(height: 16),
-                const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                const SizedBox(height: 16),
-
-                _buildSectionTitle('SPECIFICATIONS'),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _specChip(
-                      Icons.king_bed_outlined,
-                      '${_property['rooms'] ?? 0} Rooms',
-                    ),
-                    _specChip(
-                      Icons.people_outline,
-                      '${_property['occupancy'] ?? 0}% Occupancy',
-                    ),
-                    _specChip(
-                      Icons.calendar_today_outlined,
-                      'Listed on ${_formatDate(_property['createdAt'])}',
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-                const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                const SizedBox(height: 16),
-
-                _buildSectionTitle('AMENITIES'),
-                const SizedBox(height: 12),
-                if (_property['amenities'] != null &&
-                    (_property['amenities'] as List).isNotEmpty)
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children:
-                        (_property['amenities'] as List)
-                            .map(
-                              (a) => Container(
+                          if (images.length > 1)
+                            Positioned(
+                              bottom: 16,
+                              right: 16,
+                              child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
-                                  vertical: 8,
+                                  vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF8FAFC),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: const Color(0xFFF1F5F9),
-                                  ),
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  a.toString(),
+                                  '+${images.length - 1} Photos',
                                   style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF475569),
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-                            )
-                            .toList(),
-                  )
-                else
-                  const Text(
-                    'No amenities specified',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-                  ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
 
-                const SizedBox(height: 16),
-                const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                const SizedBox(height: 16),
+                    Text(
+                      _property['name'] ?? 'Untitled Property',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _property['category'] ?? 'Accommodation',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF94A3B8),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
 
-                _buildSectionTitle('VERIFICATION DOCUMENTS'),
-                const SizedBox(height: 16),
-                _buildDocumentSection(),
+                    const SizedBox(height: 16),
+                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
+                    const SizedBox(height: 16),
 
-                const SizedBox(height: 40),
+                    _buildSectionTitle('LOCATION'),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          color: Color(0xFF2563EB),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _property['location'] ?? _property['address'] ?? 'No Address Provided',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF475569),
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
 
-                // Actions
-                if (_property['status'] == 'pending') ...[
-                  _actionBtn(
-                    'Approve Listing',
-                    const Color(0xFFF0FDF4),
-                    const Color(0xFF16A34A),
-                    Icons.check_circle_outline_rounded,
-                    () => _handleUpdateStatus('active'),
-                  ),
-                  const SizedBox(height: 12),
-                  _actionBtn(
-                    'Reject Listing',
-                    const Color(0xFFFEF2F2),
-                    const Color(0xFFDC2626),
-                    Icons.cancel_outlined,
-                    () => _handleUpdateStatus('rejected'),
-                  ),
-                ] else if (_property['status'] == 'active') ...[
-                  _actionBtn(
-                    'Deactivate Listing',
-                    const Color(0xFFF1F5F9),
-                    const Color(0xFF475569),
-                    Icons.pause_circle_outline_rounded,
-                    () => _handleUpdateStatus('inactive'),
-                  ),
-                ] else ...[
-                  _actionBtn(
-                    'Re-activate Listing',
-                    const Color(0xFFF0FDF4),
-                    const Color(0xFF16A34A),
-                    Icons.play_circle_outline_rounded,
-                    () => _handleUpdateStatus('active'),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
+                    const SizedBox(height: 16),
 
-                const SizedBox(height: 60),
-              ],
-            ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionTitle('MONTHLY RENT'),
+                              const SizedBox(height: 8),
+                              Text(
+                                '₹${_property['monthlyRent'] ?? _property['price'] ?? 'N/A'}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF16A34A),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionTitle('DEPOSIT'),
+                              const SizedBox(height: 8),
+                              Text(
+                                '₹${_property['securityDeposit'] ?? 'N/A'}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E293B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
+                    const SizedBox(height: 16),
+
+                    _buildSectionTitle('HOSTER DETAILS'),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: const Color(0xFFF1F5F9),
+                          child: Text(
+                            _property['hosterName']?.toString().isNotEmpty == true
+                                ? _property['hosterName'][0]
+                                : 'H',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF7C3AED),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _property['hosterName'] ?? 'Unknown Hoster',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Color(0xFF1E293B),
+                                ),
+                              ),
+                              const Text(
+                                'Verified Property Owner',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF16A34A),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _iconDetail(
+                      Icons.phone_outlined,
+                      _property['hosterPhone'] ?? 'No Phone',
+                    ),
+
+                    const SizedBox(height: 16),
+                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
+                    const SizedBox(height: 16),
+
+                    _buildSectionTitle('SPECIFICATIONS'),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        _specChip(
+                          Icons.king_bed_outlined,
+                          '${_property['rooms'] ?? 0} Rooms',
+                        ),
+                        _specChip(
+                          Icons.people_outline,
+                          'Cap: ${_property['totalCapacity'] ?? 0}',
+                        ),
+                        _specChip(
+                          Icons.wc_outlined,
+                          'For: ${_property['gender'] ?? 'Anyone'}',
+                        ),
+                        _specChip(
+                          Icons.calendar_today_outlined,
+                          'Listed on ${_formatDate(_property['createdAt'])}',
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
+                    const SizedBox(height: 16),
+
+                    _buildSectionTitle('ROOM INVENTORY'),
+                    const SizedBox(height: 12),
+                    _inventoryRow('Single Rooms', _property['propertyDetails']?['singleRooms'] ?? 0),
+                    _inventoryRow('Double Rooms', _property['propertyDetails']?['doubleRooms'] ?? 0),
+                    _inventoryRow('Triple Rooms', _property['propertyDetails']?['tripleRooms'] ?? 0),
+                    _inventoryRow('Dormitory Beds', _property['propertyDetails']?['dormitoryBeds'] ?? 0),
+
+                    const SizedBox(height: 16),
+                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
+                    const SizedBox(height: 16),
+
+                    _buildSectionTitle('DESCRIPTION'),
+                    const SizedBox(height: 12),
+                    Text(
+                      _property['description'] ?? 'No description provided',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF475569),
+                        height: 1.5,
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
+                    const SizedBox(height: 16),
+
+                    _buildSectionTitle('AMENITIES'),
+                    const SizedBox(height: 12),
+                    if (_property['amenities'] != null &&
+                        (_property['amenities'] as List).isNotEmpty)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children:
+                            (_property['amenities'] as List)
+                                .map(
+                                  (a) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF8FAFC),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: const Color(0xFFF1F5F9),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      a.toString(),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF475569),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                      )
+                    else
+                      const Text(
+                        'No amenities specified',
+                        style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                      ),
+
+                    const SizedBox(height: 16),
+                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
+                    const SizedBox(height: 16),
+
+                    _buildSectionTitle('VERIFICATION DOCUMENTS'),
+                    const SizedBox(height: 16),
+                    _buildDocumentSection(),
+
+                    const SizedBox(height: 40),
+
+                    // Actions
+                    if (_property['status'] == 'pending') ...[
+                      _actionBtn(
+                        'Approve Listing',
+                        const Color(0xFFF0FDF4),
+                        const Color(0xFF16A34A),
+                        Icons.check_circle_outline_rounded,
+                        () => _handleUpdateStatus('active'),
+                      ),
+                      const SizedBox(height: 12),
+                      _actionBtn(
+                        'Reject Listing',
+                        const Color(0xFFFEF2F2),
+                        const Color(0xFFDC2626),
+                        Icons.cancel_outlined,
+                        () => _handleUpdateStatus('rejected'),
+                      ),
+                    ] else if (_property['status'] == 'active' || _property['status'] == 'approved') ...[
+                      _actionBtn(
+                        'Deactivate Listing',
+                        const Color(0xFFF1F5F9),
+                        const Color(0xFF475569),
+                        Icons.pause_circle_outline_rounded,
+                        () => _handleUpdateStatus('inactive'),
+                      ),
+                    ] else ...[
+                      _actionBtn(
+                        'Re-activate Listing',
+                        const Color(0xFFF0FDF4),
+                        const Color(0xFF16A34A),
+                        Icons.play_circle_outline_rounded,
+                        () => _handleUpdateStatus('active'),
+                      ),
+                    ],
+
+                    const SizedBox(height: 60),
+                  ],
+                ),
+              ),
+              if (_isUpdating)
+                Container(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+            ],
           ),
-          if (_isUpdating)
-            Container(
-              color: Colors.white.withValues(alpha: 0.5),
-              child: const Center(child: CircularProgressIndicator()),
-            ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -615,6 +691,17 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       ),
     );
   }
+
+  Widget _inventoryRow(String label, dynamic count) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+        Text(count.toString(), style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+      ],
+    ),
+  );
 
   Widget _iconDetail(IconData i, String t) => Row(
     children: [

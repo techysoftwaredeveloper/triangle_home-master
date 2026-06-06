@@ -16,6 +16,41 @@ import 'package:triangle_home/screens/admin/tabs/moderation_tab.dart';
 import 'package:triangle_home/screens/admin/tabs/settings_tab.dart';
 import 'package:triangle_home/screens/admin/tabs/ops_dashboard_tab.dart';
 
+class _ModuleLiveBadge extends StatefulWidget {
+  const _ModuleLiveBadge();
+  @override
+  State<_ModuleLiveBadge> createState() => _ModuleLiveBadgeState();
+}
+
+class _ModuleLiveBadgeState extends State<_ModuleLiveBadge> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 1))..repeat(reverse: true);
+  }
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        FadeTransition(
+          opacity: _controller,
+          child: Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF10B981), shape: BoxShape.circle)),
+        ),
+        const SizedBox(width: 6),
+        const Text(
+          'Live',
+          style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+}
 class AdminDashboardRedesign extends StatefulWidget {
   const AdminDashboardRedesign({super.key});
 
@@ -34,12 +69,11 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
       builder: (context, snapshot) {
         final data = snapshot.data ?? {};
         return Scaffold(
-          backgroundColor: const Color(0xFF0F172A),
+          backgroundColor: const Color(0xFF020617), // Enterprise Dark Background
           body: LayoutBuilder(
             builder: (context, constraints) {
               final bool isNarrow = constraints.maxWidth < 900;
-              final double sidebarWidth =
-                  isNarrow ? 80 : 240; // Wider sidebar for desktop
+              final double sidebarWidth = isNarrow ? 72 : 280; // Prompt requested 280px
 
               return Row(
                 children: [
@@ -51,9 +85,8 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
                         _buildTopBar(data),
                         Expanded(
                           child: Container(
-                            margin: const EdgeInsets.only(right: 0, bottom: 0),
                             decoration: const BoxDecoration(
-                              color: Color(0xFFF8FAFC),
+                              color: Color(0xFF020617),
                               borderRadius: BorderRadius.only(
                                 topLeft: Radius.circular(32),
                               ),
@@ -89,7 +122,7 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
         return Container(
           height: 80,
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          decoration: const BoxDecoration(color: Color(0xFF0F172A)),
+          decoration: const BoxDecoration(color: Color(0xFF020617)), // Enterprise Dark
           child: Row(
             children: [
               const Icon(
@@ -99,44 +132,52 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
               ),
               if (!isVerySmall) ...[
                 const SizedBox(width: 12),
-                const Text(
-                  'Triangle Homes',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Outfit',
-                  ),
+                const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Triangle Homes',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
+                    _ModuleLiveBadge(),
+                  ],
                 ),
               ],
 
               const Spacer(),
 
-              // Search Box - Flexible
+              // Global Smart Search
               if (!isVerySmall)
                 Flexible(
                   flex: 3,
                   child: Container(
-                    constraints: const BoxConstraints(maxWidth: 300),
+                    constraints: const BoxConstraints(maxWidth: 400),
                     height: 40,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: Colors.white.withOpacity(0.05), // Glassmorphism
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white10),
+                      border: Border.all(color: Colors.white.withOpacity(0.05)),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.search, color: Colors.white60, size: 18),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Search...',
-                            style: TextStyle(
-                              color: Colors.white38,
-                              fontSize: 13,
+                        Icon(Icons.search, color: Colors.white.withOpacity(0.4), size: 18),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: TextField(
+                            style: TextStyle(color: Colors.white, fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText: 'Search properties, hosters, residents...',
+                              hintStyle: TextStyle(color: Colors.white24, fontSize: 13),
+                              border: InputBorder.none,
+                              isDense: true,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -144,7 +185,7 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
                   ),
                 )
               else
-                const Icon(Icons.search, color: Colors.white60, size: 24),
+                Icon(Icons.search, color: Colors.white.withOpacity(0.5), size: 24),
 
               const SizedBox(width: 24),
 

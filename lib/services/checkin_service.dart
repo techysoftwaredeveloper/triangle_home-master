@@ -1,8 +1,6 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/core/constants/enums.dart';
-import 'package:triangle_home/services/inventory_service.dart';
-import 'package:triangle_home/services/booking_service.dart';
 
 class CheckInService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -43,10 +41,12 @@ class CheckInService {
     if (!checkInDoc.exists) throw 'Check-in session not found';
 
     final data = checkInDoc.data()!;
-    if (data['residentId'] != scannedByUid)
+    if (data['residentId'] != scannedByUid) {
       throw 'Invalid resident for this check-in';
-    if (data['status'] != CheckInStatus.pending.name)
+    }
+    if (data['status'] != CheckInStatus.pending.name) {
       throw 'Check-in already processed';
+    }
     if ((data['expiresAt'] as Timestamp).toDate().isBefore(DateTime.now())) {
       throw 'Check-in session expired';
     }
@@ -62,8 +62,9 @@ class CheckInService {
 
     final data = checkInDoc.data()!;
     if (data['otpCode'] != enteredOtp) throw 'Invalid OTP code';
-    if (data['status'] != CheckInStatus.pending.name)
+    if (data['status'] != CheckInStatus.pending.name) {
       throw 'Check-in already processed';
+    }
 
     await _performCheckInHandshake(bookingId, CheckInMethod.otp);
   }

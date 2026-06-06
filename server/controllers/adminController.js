@@ -14,7 +14,8 @@ exports.getStats = asyncHandler(async (req, res) => {
       paymentsSnapshot,
       suggestionsSnapshot,
       reportsSnapshot,
-      auditLogsSnapshot
+      auditLogsSnapshot,
+      leadsSnapshot
     ] = await Promise.all([
       db.collection('users').get(),
       db.collection('properties').get(),
@@ -22,7 +23,8 @@ exports.getStats = asyncHandler(async (req, res) => {
       db.collection('payments').get(),
       db.collection('property_suggestions').get(), // Corrected collection name
       db.collection('reports').get(),
-      db.collection('audit_logs').get()
+      db.collection('audit_logs').get(),
+      db.collection('leads').get()
     ]);
 
     let totalRevenue = 0;
@@ -67,18 +69,47 @@ exports.getStats = asyncHandler(async (req, res) => {
              verif.selfieStatus === 'pending';
     }).length;
 
+    // Enhanced counts with real-time logic
+    const totalProperties = propertiesSnapshot.size;
+    const totalBookings = bookingsSnapshot.size;
+
+    // Calculate global occupancy across all properties
+    let globalTotalCapacity = 0;
+    propertiesSnapshot.forEach(doc => {
+        const data = doc.data();
+        const details = data.propertyDetails || {};
+        globalTotalCapacity += (details.totalCapacity || data.capacity || 0);
+    });
+
+    const activeResidents = bookingsSnapshot.docs.filter(doc => {
+        const s = (doc.data().status || '').toLowerCase();
+        return s === 'confirmed' || s === 'active' || s === 'checkedin';
+    }).length;
+
+    const globalOccupancy = globalTotalCapacity > 0
+        ? Math.round((activeResidents / globalTotalCapacity) * 100)
+        : 0;
+
+    const totalLeads = leadsSnapshot.size;
+    const convertedLeads = leadsSnapshot.docs.filter(doc => doc.data().status === 'converted').length;
+    const leadConversionRate = totalLeads > 0 ? (convertedLeads / totalLeads * 100).toFixed(1) : 0;
+
     res.json({
       success: true,
       totalUsers: usersSnapshot.size,
       totalHosters: hosters,
       totalStudents: students,
       totalProfessionals: professionals,
-      totalProperties: propertiesSnapshot.size,
-      totalBookings: bookingsSnapshot.size,
+      totalProperties: totalProperties,
+      totalBookings: totalBookings,
+      totalLeads: totalLeads,
+      leadConversionRate: leadConversionRate,
       totalRevenue: totalRevenue,
+      globalOccupancy: globalOccupancy,
+      activeResidents: activeResidents,
       pendingProperties: pendingProperties,
       pendingHosters: pendingHosters,
-      pendingVerifications: pendingVerifications, // Added
+      pendingVerifications: pendingVerifications,
       pendingApprovals: pendingProperties + pendingHosters + pendingVerifications,
       pendingReports: pendingReports,
       pendingSuggestions: pendingSuggestions,

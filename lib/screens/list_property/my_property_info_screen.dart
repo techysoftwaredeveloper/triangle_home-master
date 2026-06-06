@@ -239,7 +239,7 @@ class _MyAddedPropertyScreenState extends State<MyAddedPropertyScreen>
               'title': data['basicInfo']?['collegeName'] ?? 'Unnamed Property',
               'address':
                   "${data['pricingInfo']?['addressLine1'] ?? ''}, ${data['pricingInfo']?['locality'] ?? ''}",
-              'status': 'Active',
+              'status': (data['status'] ?? 'pending').toString().toUpperCase(),
               'type': data['basicInfo']?['type'] ?? 'PG/Hostel',
               'rooms': data['rooms'] ?? 0,
               'listed': 'Recently',

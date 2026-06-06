@@ -4,7 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:triangle_home/screens/home_screen.dart';
 import 'package:triangle_home/screens/admin/admin_dashboard_redesign.dart';
-import 'package:triangle_home/hoster_info_screen.dart';
+import 'package:triangle_home/screens/hoster/partner_onboarding_screen.dart';
 import 'package:triangle_home/services/auth_production_service.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
@@ -49,6 +49,7 @@ class _SplashScreenState extends State<SplashScreen> {
       final authDetails = await authService.getUserAuthDetails(user);
       final role = authDetails['role'] as UserRole;
       final status = authDetails['status'] as String;
+      final onboardingStatus = authDetails['onboardingStatus'] as String? ?? '';
       final uid = user.uid;
 
       if (!mounted) return;
@@ -65,11 +66,11 @@ class _SplashScreenState extends State<SplashScreen> {
       // 2. Check for active hoster workflow drafts & requests
       final propertyDraft = await _isarService.getPropertyDraft(uid);
       final hosterAppDraft = await _isarService.getAdminCache(
-        'hoster_application_draft_$uid',
+        'partner_onboarding_draft_$uid',
       );
       final onboardingIntent = await _isarService.getUserIntent();
 
-      // Check Firestore for a pending/rejected request if not already a hoster
+      // Check Firestore for a pending/in-progress request (not already approved)
       bool hasHosterRequest = false;
       if (role != UserRole.hoster) {
         final requestDoc =
@@ -78,67 +79,55 @@ class _SplashScreenState extends State<SplashScreen> {
                 .doc(uid)
                 .get();
         if (requestDoc.exists) {
-          hasHosterRequest = true;
+          final reqStatus = (requestDoc.data()?['status'] ?? '').toString().toLowerCase();
+          // Only flag as needing onboarding if not already approved
+          hasHosterRequest = reqStatus != 'approved' && reqStatus != 'active';
         }
       }
 
-      // If they have any hoster-related draft, intent, or existing request, stay in hoster flow
-      if (onboardingIntent == 'hoster' ||
-          hosterAppDraft != null ||
-          propertyDraft != null ||
-          role == UserRole.hoster ||
-          hasHosterRequest) {
-        // If they are already an approved hoster, clear the "intent" as it's now a reality
-        if (role == UserRole.hoster && status == 'approved') {
-          await _isarService.clearUserIntent();
-        }
-
-        // RESUME WORKFLOW logic
-        if (propertyDraft != null && status == 'approved') {
-          if (!mounted) return;
+      // ── APPROVED HOSTER: highest priority, bypass everything ──
+      // An approved hoster always goes to their dashboard.
+      // Clear stale drafts so they never get sent back to onboarding.
+      if (role == UserRole.hoster && status == 'approved') {
+        await _isarService.clearUserIntent();
+        await _isarService.clearAdminCache('partner_onboarding_draft_$uid');
+        if (!mounted) return;
+        if (propertyDraft != null) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
           );
-        } else if (hosterAppDraft != null ||
-            hasHosterRequest ||
-            (role == UserRole.hoster && status != 'approved')) {
-          if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (_) => HosterInfoScreen(phoneNumber: user.phoneNumber ?? ''),
-            ),
-          );
-        } else if (role == UserRole.hoster && status == 'approved') {
-          if (!mounted) return;
+        } else {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
           );
-        } else if (onboardingIntent == 'hoster' &&
-            (role == UserRole.none || role == UserRole.student)) {
-          // New hoster registration resume
-          if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (_) => HosterInfoScreen(phoneNumber: user.phoneNumber ?? ''),
-            ),
-          );
-        } else {
-          // Fallback hoster destination
-          if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (_) => HosterInfoScreen(phoneNumber: user.phoneNumber ?? ''),
-            ),
-          );
         }
+        return;
+      }
+
+      // ── SUBMITTED but not yet approved (waiting for admin review) ──
+      if (role == UserRole.hoster && onboardingStatus == 'submitted') {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
+        );
+        return;
+      }
+
+      // If they have any hoster-related draft, intent, or pending request → onboarding flow
+      if (onboardingIntent == 'hoster' ||
+          hosterAppDraft != null ||
+          role == UserRole.hoster ||
+          hasHosterRequest) {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const PartnerOnboardingScreen(),
+          ),
+        );
         return;
       }
 

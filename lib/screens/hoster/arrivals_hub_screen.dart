@@ -19,8 +19,9 @@ class _ArrivalsHubScreenState extends State<ArrivalsHubScreen> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null)
+    if (user == null) {
       return const Scaffold(body: Center(child: Text('Please login')));
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -392,8 +393,9 @@ class _CheckInVerificationSheetState extends State<_CheckInVerificationSheet> {
               ),
             ),
             onChanged: (val) {
-              if (val.isNotEmpty && index < 5)
+              if (val.isNotEmpty && index < 5) {
                 FocusScope.of(context).nextFocus();
+              }
             },
           ),
         ),

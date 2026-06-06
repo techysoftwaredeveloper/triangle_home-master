@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/models/bed_model.dart';
 import 'package:triangle_home/models/room_model.dart';
-import 'package:triangle_home/services/inventory_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 class BedSelectionSheet extends StatefulWidget {
@@ -95,8 +94,9 @@ class _BedSelectionSheetState extends State<BedSelectionSheet> {
               .collection('rooms')
               .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
 
         final rooms =
             snapshot.data!.docs

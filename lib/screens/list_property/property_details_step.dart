@@ -19,6 +19,7 @@ class PropertyDetailsStep extends StatefulWidget {
 
 class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
   String _selectedGender = 'Men';
+  String _numberingSystem = 'Numeric (101)';
   int _singleRooms = 0;
   int _doubleRooms = 0;
   int _tripleRooms = 0;
@@ -30,6 +31,7 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
     super.initState();
     final data = widget.initialData?['propertyDetails'] ?? {};
     _selectedGender = data['gender'] ?? 'Men';
+    _numberingSystem = data['numberingSystem'] ?? 'Numeric (101)';
     _singleRooms = data['singleRooms'] ?? 0;
     _doubleRooms = data['doubleRooms'] ?? 0;
     _tripleRooms = data['tripleRooms'] ?? 0;
@@ -131,6 +133,27 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
             ),
           ),
           const SizedBox(height: 32),
+          const Text(
+            'Numbering System Preference',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textDarkColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'How would you like to label your rooms and beds? (e.g. 101, 102 or A1, A2)',
+            style: TextStyle(fontSize: 12, color: AppTheme.textLightColor),
+          ),
+          const SizedBox(height: 12),
+          CustomToggleButtons(
+            options: const ['Numeric (101)', 'Alpha-Numeric (A1)', 'Custom'],
+            selectedOption: _numberingSystem,
+            onOptionSelected: (val) => setState(() => _numberingSystem = val),
+            activeColor: AppTheme.successColor,
+          ),
+          const SizedBox(height: 32),
           InputField(
             label: 'Property Description (Optional)',
             controller: _descriptionController,
@@ -147,6 +170,7 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                 widget.onContinue({
                   'propertyDetails': {
                     'gender': _selectedGender,
+                    'numberingSystem': _numberingSystem,
                     'singleRooms': _singleRooms,
                     'doubleRooms': _doubleRooms,
                     'tripleRooms': _tripleRooms,

@@ -44,13 +44,7 @@ class _ApprovalsTabState extends State<ApprovalsTab>
       stream: widget.adminService.getPendingApprovalsStream(),
       builder: (context, snapshot) {
         final allItems = snapshot.data ?? [];
-
-        // Mock additional items to match the image counts
-        final List<Map<String, dynamic>> displayItems = List.from(allItems);
-        if (displayItems.isEmpty &&
-            snapshot.connectionState != ConnectionState.waiting) {
-          _addMockData(displayItems);
-        }
+        final List<Map<String, dynamic>> displayItems = allItems;
 
         final hosterRequests =
             displayItems.where((i) => i['type'] == 'hoster').toList();
@@ -127,73 +121,7 @@ class _ApprovalsTabState extends State<ApprovalsTab>
     );
   }
 
-  void _addMockData(List<Map<String, dynamic>> items) {
-    items.addAll([
-      {
-        'id': 'mock1',
-        'type': 'hoster',
-        'name': 'Sunrise Hostels',
-        'info': {
-          'name': 'John Doe',
-          'email': 'john@gmail.com',
-          'phoneNumber': '+91 70254 77997',
-        },
-        'location': 'Kozhikode, Kerala',
-        'category': 'PG Hostel',
-        'propertyCount': 15,
-        'createdAt': Timestamp.now(),
-        'docsCount': '3/3',
-        'isVerified': true,
-      },
-      {
-        'id': 'mock2',
-        'type': 'property',
-        'name': 'Green Valley PG',
-        'hosterName': 'John Doe',
-        'location': 'Kozhikode, Kerala',
-        'category': 'PG Accommodation',
-        'rooms': 6,
-        'createdAt': Timestamp.now(),
-        'docsCount': '4/4',
-        'isVerified': true,
-      },
-      {
-        'id': 'mock3',
-        'type': 'user_verification',
-        'name': 'Sarah Ahmed',
-        'info': {
-          'name': 'Sarah Ahmed',
-          'email': 'sarah.ahmed@example.com',
-          'phoneNumber': '+91 79022 33445',
-        },
-        'verificationType': 'Identity Verification',
-        'createdAt': Timestamp.now(),
-        'isVerified': true,
-      },
-      {
-        'id': 'mock4',
-        'type': 'property',
-        'name': 'Comfort Living PG',
-        'hosterName': 'Mike Johnson',
-        'location': 'Thrissur, Kerala',
-        'category': 'PG Accommodation',
-        'rooms': 8,
-        'createdAt': Timestamp.now(),
-        'docsCount': '3/4',
-        'isVerified': true,
-      },
-      {
-        'id': 'mock5',
-        'type': 'other',
-        'name': 'Document Update',
-        'requesterName': 'Lily Thomas',
-        'email': 'lily@sunrisehostels.com',
-        'requestType': 'Document Update',
-        'createdAt': Timestamp.now(),
-        'isVerified': true,
-      },
-    ]);
-  }
+
 
   Widget _buildHeader() {
     return Row(

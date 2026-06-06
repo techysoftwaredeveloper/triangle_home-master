@@ -157,10 +157,11 @@ class _EscrowCardState extends State<_EscrowCard> {
         _checkEligibility();
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isReleasing = false);
     }

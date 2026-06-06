@@ -104,7 +104,7 @@ class OpsDashboardTab extends StatelessWidget {
         ),
         _MetricCard(
           label: 'Active Agents',
-          count: '12', // Mocked
+          count: data['activeAgents']?.toString() ?? '0',
           icon: Icons.support_agent_rounded,
           color: Colors.purple,
         ),
@@ -140,10 +140,11 @@ class OpsDashboardTab extends StatelessWidget {
                     .limit(10)
                     .snapshots(),
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting)
+              if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
+              }
               final docs = snapshot.data?.docs ?? [];
-              if (docs.isEmpty)
+              if (docs.isEmpty) {
                 return const Center(
                   child: Padding(
                     padding: EdgeInsets.all(32),
@@ -153,6 +154,7 @@ class OpsDashboardTab extends StatelessWidget {
                     ),
                   ),
                 );
+              }
 
               return Column(
                 children:

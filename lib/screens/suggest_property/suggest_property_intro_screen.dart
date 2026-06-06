@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:triangle_home/screens/hoster/become_hoster_screen.dart';
+import 'package:triangle_home/screens/hoster/partner_onboarding_screen.dart';
 import 'package:triangle_home/screens/suggest_property/suggest_property_form_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
@@ -181,7 +181,7 @@ class SuggestPropertyIntroScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const BecomeHosterScreen(),
+                      builder: (_) => const PartnerOnboardingScreen(),
                     ),
                   );
                 },

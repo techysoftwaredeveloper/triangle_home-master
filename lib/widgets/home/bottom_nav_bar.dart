@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:triangle_home/screens/hoster/partner_onboarding_screen.dart';
 import 'package:triangle_home/screens/auth/login_screen.dart';
 import 'package:triangle_home/screens/bookings_screen.dart';
 import 'package:triangle_home/screens/home_screen.dart';
@@ -132,9 +133,9 @@ class HomeBottomNavBar extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder:
-                            (_) => LoginScreen(
+                            (_) => const LoginScreen(
                               isStudent: false,
-                              onLoginNavigateTo: const ListPropertyScreen(),
+                              onLoginNavigateTo: PartnerOnboardingScreen(),
                             ),
                       ),
                     );

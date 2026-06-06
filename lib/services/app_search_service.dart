@@ -32,7 +32,7 @@ class FirestoreSearchService implements AppSearchService {
     Query<Map<String, dynamic>> query = _firestore.collection('properties');
 
     if (city != null && city.isNotEmpty) {
-      query = query.where('city', isEqualTo: city);
+      query = query.where('city_normalized', isEqualTo: city.toLowerCase().trim());
     }
 
     query = query.where('status', isEqualTo: PropertyStatus.approved.name);
@@ -91,14 +91,16 @@ class FirestoreSearchService implements AppSearchService {
 
     if (college != null &&
         college.isNotEmpty &&
-        !collegeName.toLowerCase().contains(college.toLowerCase()))
+        !collegeName.toLowerCase().contains(college.toLowerCase())) {
       return false;
+    }
     if (localities != null &&
         localities.isNotEmpty &&
         !localities.any(
           (loc) => locality.toLowerCase().contains(loc.toLowerCase()),
-        ))
+        )) {
       return false;
+    }
 
     return true;
   }

@@ -61,6 +61,41 @@ class PropertyCard extends StatelessWidget {
                   'Listed on: ${property['listed']}',
                   style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
+                if (property['rejectionReason'] != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.error_outline, color: Colors.red, size: 16),
+                            SizedBox(width: 8),
+                            Text(
+                              'Rejection Reason',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          property['rejectionReason'],
+                          style: TextStyle(color: Colors.red[700], fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -70,20 +105,23 @@ class PropertyCard extends StatelessWidget {
   }
 
   Widget _buildStatusChip(String status) {
-    final isActive = status == 'Active';
+    final bool isLive = status == 'Active' || status == 'Approved';
+    final bool isPaused = status == 'Paused';
+    
+    Color color = Colors.orange;
+    if (isLive) color = Colors.green;
+    if (isPaused) color = Colors.blue;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color:
-            isActive
-                ? Colors.green.withValues(alpha: 0.1)
-                : Colors.orange.withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         status,
         style: TextStyle(
-          color: isActive ? Colors.green : Colors.orange,
+          color: color,
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
