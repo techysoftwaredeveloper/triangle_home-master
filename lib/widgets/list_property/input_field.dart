@@ -14,6 +14,7 @@ class InputField extends StatelessWidget {
   final String? hintText;
   final Color? activeColor;
   final Widget? suffix;
+  final bool readOnly;
 
   const InputField({
     super.key,
@@ -29,6 +30,7 @@ class InputField extends StatelessWidget {
     this.hintText,
     this.activeColor,
     this.suffix,
+    this.readOnly = false,
   });
 
   @override
@@ -65,9 +67,10 @@ class InputField extends StatelessWidget {
             obscureText: obscureText,
             textCapitalization: textCapitalization,
             maxLines: maxLines,
-            style: const TextStyle(
+            readOnly: readOnly,
+            style: TextStyle(
               fontSize: 15,
-              color: AppTheme.textColor,
+              color: readOnly ? AppTheme.textLightColor : AppTheme.textColor,
               fontFamily: AppTheme.fontFamily,
             ),
             decoration: InputDecoration(

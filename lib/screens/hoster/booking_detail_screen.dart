@@ -118,7 +118,7 @@ class BookingDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      bookingData['studentName'] ?? 'Rahul Nair',
+                      bookingData['studentName'] ?? 'Resident',
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                     ),
                     const SizedBox(height: 4),
@@ -139,7 +139,7 @@ class BookingDetailScreen extends StatelessWidget {
           _profileRow('Student', '21 • Male'),
           _profileRow('College', 'Rajagiri College'),
           _profileRow('Course', 'BCA'),
-          _profileRow('Phone', bookingData['studentPhone'] ?? '+91 98765 43210'),
+          _profileRow('Phone', bookingData['studentPhone'] ?? 'N/A'),
           _profileRow('Email', 'rahulnair@gmail.com'),
           const SizedBox(height: 20),
           Row(

@@ -23,7 +23,7 @@ final propertyReviewsProvider = StreamProvider.family<List<Map<String, dynamic>>
 });
 
 final hostProfileProvider = StreamProvider.family<Map<String, dynamic>, String>((ref, hostId) {
-  return HosterService().getUserProfileStream(hostId);
+  return HosterService().getUserProfileStreamNew(hostId);
 });
 
 /// Computed provider for occupancy types based on rooms
@@ -36,10 +36,19 @@ final occupancyTypesProvider = Provider.family<List<Map<String, dynamic>>, Strin
       
       for (final room in rooms) {
         final type = room['occupancyType'] ?? 'Unknown';
+        final rawRent = room['baseRent'];
+        double baseRent = 0.0;
+        
+        if (rawRent is num) {
+          baseRent = rawRent.toDouble();
+        } else if (rawRent is String) {
+          baseRent = double.tryParse(rawRent.replaceAll(',', '')) ?? 0.0;
+        }
+
         if (!summary.containsKey(type)) {
           summary[type] = {
             'name': type,
-            'startingRent': room['baseRent'] ?? 0.0,
+            'startingRent': baseRent,
             'availableBeds': 0,
             'availableRooms': 0,
             'keyFeatures': room['amenities'] ?? [],
@@ -51,9 +60,10 @@ final occupancyTypesProvider = Provider.family<List<Map<String, dynamic>>, Strin
           summary[type]!['availableRooms'] += 1;
         }
         
-        // Ensure we take the lowest starting rent
-        if (((room['baseRent'] as num?)?.toDouble() ?? 0) < summary[type]!['startingRent']) {
-          summary[type]!['startingRent'] = room['baseRent'];
+        // Ensure we take the lowest starting rent (above 0 if possible)
+        final currentStarting = summary[type]!['startingRent'] as double;
+        if (baseRent > 0 && (currentStarting == 0 || baseRent < currentStarting)) {
+          summary[type]!['startingRent'] = baseRent;
         }
       }
       

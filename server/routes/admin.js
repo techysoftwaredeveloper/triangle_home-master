@@ -6,6 +6,10 @@ const { verifyToken, isAdmin } = require('../middleware/auth');
 const { cacheMiddleware } = require('../utils/cache');
 
 router.use(verifyToken);
+
+// Hoster Re-submission (Self-action, no isAdmin check)
+router.post('/resubmit-hoster', adminController.resubmitHoster);
+
 router.use(isAdmin);
 
 router.get('/stats', cacheMiddleware(300), adminController.getStats);

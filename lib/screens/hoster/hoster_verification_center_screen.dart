@@ -6,7 +6,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:triangle_home/widgets/document_capture_camera.dart';
 import 'dart:io';
+import 'package:triangle_home/screens/profile/verification_otp_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 class HosterVerificationCenterScreen extends StatefulWidget {
@@ -18,7 +20,7 @@ class HosterVerificationCenterScreen extends StatefulWidget {
 }
 
 class _HosterVerificationCenterScreenState
-    extends State<HosterVerificationCenterScreen> {
+    extends State<HosterVerificationCenterScreen> with WidgetsBindingObserver {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -30,7 +32,21 @@ class _HosterVerificationCenterScreenState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _reloadAndSyncEmail();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _reloadAndSyncEmail();
+    }
   }
 
   /// Reload Firebase Auth token (picks up email verification done in browser)
@@ -45,6 +61,13 @@ class _HosterVerificationCenterScreenState
         await _firestore.collection('users').doc(refreshed.uid).set({
           'emailVerified': true, // top-level field (read by hoster_service)
           'verification': {'emailVerified': true},
+        }, SetOptions(merge: true));
+      }
+      
+      // Also sync phone if present
+      if (refreshed != null && refreshed.phoneNumber != null) {
+        await _firestore.collection('users').doc(refreshed.uid).set({
+          'verification': {'phoneVerified': true},
         }, SetOptions(merge: true));
       }
     } catch (_) {
@@ -81,6 +104,10 @@ class _HosterVerificationCenterScreenState
             {'emailVerified': true},
             SetOptions(merge: true),
           );
+        }
+
+        if (user.phoneNumber != null && verif['phoneVerified'] != true) {
+          _updateVerification('phoneVerified', true);
         }
 
         return Scaffold(
@@ -124,10 +151,9 @@ class _HosterVerificationCenterScreenState
                       icon: Icons.phone_android_rounded,
                       title: 'Mobile Number',
                       subtitle:
-                          info['phone'] ?? user.phoneNumber ?? 'Not provided',
-                      isVerified:
-                          true, // Phone is verified during login usually
-                      onTap: null,
+                          info['phoneNumber'] ?? info['phone'] ?? user.phoneNumber ?? 'Not provided',
+                      isVerified: verif['phoneVerified'] == true,
+                      onTap: verif['phoneVerified'] == true ? null : () => _verifyPhone(info['phoneNumber'] ?? user.phoneNumber),
                     ),
                     _buildEmailVerificationTile(user, verif),
 
@@ -544,9 +570,10 @@ class _HosterVerificationCenterScreenState
 
   Widget _buildStatusHeader(Map verif) {
     int totalSteps = 6; // Phone, Email, Aadhaar, PAN, Business, Property
-    int verifiedCount = 1; // Assuming phone is verified
+    int verifiedCount = 0;
 
-    if (_auth.currentUser?.emailVerified == true) verifiedCount++;
+    if (verif['phoneVerified'] == true) verifiedCount++;
+    if (_auth.currentUser?.emailVerified == true || verif['emailVerified'] == true) verifiedCount++;
     if (verif['govIdVerified'] == true) verifiedCount++;
     if (verif['panVerified'] == true) verifiedCount++;
     if (verif['businessProofVerified'] == true) verifiedCount++;
@@ -1076,6 +1103,35 @@ class _HosterVerificationCenterScreenState
     );
     if (source == null) return;
 
+    // Check permissions
+    if (source == ImageSource.camera) {
+      final status = await Permission.camera.request();
+      if (status.isDenied || status.isPermanentlyDenied) {
+        Fluttertoast.showToast(msg: 'Camera permission is required');
+        if (status.isPermanentlyDenied) openAppSettings();
+        return;
+      }
+    } else {
+      final status = Platform.isIOS 
+          ? await Permission.photos.request() 
+          : await Permission.storage.request();
+          
+      if (status.isDenied || status.isPermanentlyDenied) {
+        if (Platform.isAndroid) {
+          final photoStatus = await Permission.photos.request();
+          if (photoStatus.isDenied || photoStatus.isPermanentlyDenied) {
+            Fluttertoast.showToast(msg: 'Gallery access is required');
+            if (photoStatus.isPermanentlyDenied) openAppSettings();
+            return;
+          }
+        } else {
+          Fluttertoast.showToast(msg: 'Gallery access is required');
+          if (status.isPermanentlyDenied) openAppSettings();
+          return;
+        }
+      }
+    }
+
     XFile? image;
     if (source == ImageSource.camera) {
       if (!mounted) return;
@@ -1142,24 +1198,27 @@ class _HosterVerificationCenterScreenState
                 fontFamily: 'Outfit',
               ),
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Is the document clearly readable?',
-                  style: TextStyle(fontSize: 14, fontFamily: 'Outfit'),
-                ),
-                const SizedBox(height: 20),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.file(
-                    File(croppedFile!.path),
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+            content: SizedBox(
+              width: 300,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Is the document clearly readable?',
+                    style: TextStyle(fontSize: 14, fontFamily: 'Outfit'),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 20),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.file(
+                      File(croppedFile!.path),
+                      height: 180,
+                      width: 280,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ],
+              ),
             ),
             actions: [
               TextButton(
@@ -1193,6 +1252,8 @@ class _HosterVerificationCenterScreenState
 
     if (!mounted) return;
     setState(() => _isLoading = true);
+    Fluttertoast.showToast(msg: 'Uploading document...');
+    
     try {
       final File file = File(croppedFile.path);
       final userId = _auth.currentUser!.uid;
@@ -1200,8 +1261,9 @@ class _HosterVerificationCenterScreenState
       final ref = FirebaseStorage.instance.ref().child(
         'verifications/$userId/${fieldPrefix}_${side}_${DateTime.now().millisecondsSinceEpoch}.jpg',
       );
-      await ref.putFile(file);
-      final url = await ref.getDownloadURL();
+      
+      final uploadTask = await ref.putFile(file);
+      final url = await uploadTask.ref.getDownloadURL();
 
       await _firestore.collection('users').doc(userId).set({
         'verification': {
@@ -1210,11 +1272,13 @@ class _HosterVerificationCenterScreenState
           '${fieldPrefix}Timestamp': FieldValue.serverTimestamp(),
         },
       }, SetOptions(merge: true));
-      Fluttertoast.showToast(msg: 'Document uploaded!');
+      
+      Fluttertoast.showToast(msg: 'Document uploaded successfully!');
     } catch (e) {
+      debugPrint('Upload error: $e');
       Fluttertoast.showToast(msg: 'Upload failed: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -1227,6 +1291,43 @@ class _HosterVerificationCenterScreenState
         '${field}Timestamp': FieldValue.serverTimestamp(),
       },
     }, SetOptions(merge: true));
+  }
+
+  Future<void> _verifyPhone(String? phone) async {
+    if (phone == null || phone.isEmpty) {
+      Fluttertoast.showToast(msg: 'Please add phone number in profile first');
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: phone.startsWith('+') ? phone : '+91$phone',
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          await _auth.currentUser?.linkWithCredential(credential);
+          await _updateVerification('phoneVerified', true);
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          Fluttertoast.showToast(msg: e.message ?? 'Verification failed');
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) => VerificationOtpScreen(
+                    verificationId: verificationId,
+                    phoneNumber: phone,
+                  ),
+            ),
+          );
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {},
+      );
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Error: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 }
 

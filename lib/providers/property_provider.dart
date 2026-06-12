@@ -16,26 +16,49 @@ final propertyServiceProvider = Provider((ref) => PropertyService());
 final propertiesStreamProvider =
     StreamProvider.family<List<Map<String, dynamic>>, String?>((ref, city) {
   final service = ref.watch(propertyServiceProvider);
-  
-  // Use server-side filtering for efficiency (requires Firestore index for status+city+createdAt)
-  final bool useServerFiltering = city != null &&
-      city.isNotEmpty &&
-      city.toLowerCase() != 'global' &&
-      city.toLowerCase() != 'all' &&
-      city.toLowerCase() != 'near me' &&
-      city.toLowerCase() != 'detecting...';
 
+  // For major cities, we can use server filtering
+  // For detected localities (like "Chingavanam"), we fetch all and broad match
   return service
       .getPropertiesStream(
         status: PropertyStatus.approved,
-        city: useServerFiltering ? city : null,
+        city: null, // Fetch all and filter client-side for "broad match" support
       )
       .map((all) {
-    if (!useServerFiltering) {
-      return _normalize(all);
+    final normalized = _normalize(all);
+    
+    if (city == null ||
+        city.isEmpty ||
+        city.toLowerCase() == 'global' ||
+        city.toLowerCase() == 'all' ||
+        city.toLowerCase() == 'near me' ||
+        city.toLowerCase() == 'detecting...') {
+      return normalized;
     }
-    // Final normalization and safety filter
-    return _normalize(all);
+
+    final query = city.toLowerCase().trim();
+    
+    // Broad Matching Logic:
+    // 1. Matches City
+    // 2. Matches Locality
+    // 3. Any search term starts with/contains the query
+    final results = normalized.where((p) {
+      final pCity = p['city']?.toString().toLowerCase() ?? '';
+      final pLocality = (p['locality'] ?? p['basicInfo']?['locality'] ?? '').toString().toLowerCase();
+      final pTitle = p['title']?.toString().toLowerCase() ?? '';
+      
+      return pCity.contains(query) || 
+             pLocality.contains(query) || 
+             pTitle.contains(query);
+    }).toList();
+
+    // Fallback: If no results for a specific locality, show all properties
+    // (Better to show something than an empty screen for "Near Me")
+    if (results.isEmpty && (city.toLowerCase() == 'unknown' || query.length > 3)) {
+       return normalized;
+    }
+
+    return results;
   });
 });
 

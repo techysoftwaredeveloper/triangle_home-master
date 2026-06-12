@@ -16,6 +16,7 @@ import 'onboarding_steps/kyc_pan_step.dart';
 import 'onboarding_steps/preferences_step.dart';
 import 'onboarding_steps/banking_step.dart';
 import 'onboarding_steps/review_submit_step.dart';
+import 'hoster_dashboard_screen.dart';
 
 class PartnerOnboardingScreen extends StatefulWidget {
   const PartnerOnboardingScreen({super.key});
@@ -56,8 +57,17 @@ class _PartnerOnboardingScreenState extends State<PartnerOnboardingScreen> {
       if (doc.exists) {
         final data = doc.data()!;
         final firestoreData = data['onboardingData']?.cast<String, dynamic>() ?? {};
-        
-        if (_onboardingData.isEmpty) {
+        final firestoreUpdatedAt = (data['updatedAt'] as Timestamp?)?.toDate();
+        final localUpdatedAt = _onboardingData['updatedAt'] != null 
+            ? DateTime.tryParse(_onboardingData['updatedAt'].toString()) 
+            : null;
+
+        // Sync logic: Prefer newer data based on updatedAt
+        if (firestoreUpdatedAt != null && (localUpdatedAt == null || firestoreUpdatedAt.isAfter(localUpdatedAt))) {
+          _onboardingData = firestoreData;
+          _currentPage = data['onboardingStep'] ?? 0;
+        } else if (_onboardingData.isEmpty) {
+          // Fallback if local is empty and firestore has data (e.g. first time on new device)
           if (firestoreData.isNotEmpty) {
             _onboardingData = firestoreData;
             _currentPage = data['onboardingStep'] ?? 0;
@@ -110,8 +120,10 @@ class _PartnerOnboardingScreenState extends State<PartnerOnboardingScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    final now = DateTime.now();
     _onboardingData.addAll(stepData);
     _onboardingData['last_step'] = _currentPage;
+    _onboardingData['updatedAt'] = now.toIso8601String();
 
     try {
       // Save locally
@@ -229,6 +241,37 @@ class _PartnerOnboardingScreenState extends State<PartnerOnboardingScreen> {
         curve: Curves.easeInOut,
       );
     } else {
+      _confirmExit();
+    }
+  }
+
+  void _jumpToPage(int page) {
+    if (page < _currentPage) {
+      _pageController.animateToPage(
+        page,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  Future<void> _confirmExit() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit Onboarding?'),
+        content: const Text('Any unsaved changes in the current step will be lost. You can continue later from your last saved step.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Stay')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Exit', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
       Navigator.pop(context);
     }
   }
@@ -239,56 +282,138 @@ class _PartnerOnboardingScreenState extends State<PartnerOnboardingScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textDarkColor, size: 20),
-          onPressed: _previousPage,
-        ),
-        title: Text(
-          _getStepTitle(),
-          style: const TextStyle(
-            color: AppTheme.textDarkColor,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Outfit',
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppTheme.textLightColor, size: 20),
-            onPressed: _resetOnboarding,
-            tooltip: 'Reset Progress',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Column(
-        children: [
-          ProgressBar(
-            currentStep: _currentPage,
-            totalSteps: 9,
-            completionPercentage: _calculateCompletion(),
-          ),
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (page) => setState(() => _currentPage = page),
-              children: [
-                ProfileStep(key: ValueKey('step0_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
-                RoleStep(key: ValueKey('step1_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
-                ContactStep(key: ValueKey('step2_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
-                AddressStep(key: ValueKey('step3_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
-                KycAadhaarStep(key: ValueKey('step4_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
-                KycPanStep(key: ValueKey('step5_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
-                PreferencesStep(key: ValueKey('step6_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
-                BankingStep(key: ValueKey('step7_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
-                ReviewSubmitStep(onboardingData: _onboardingData, onBack: _previousPage),
+    final user = FirebaseAuth.instance.currentUser;
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance.collection('users').doc(user?.uid).snapshots(),
+      builder: (context, snapshot) {
+        final userData = snapshot.data?.data() ?? {};
+        
+        // Unified check for Hoster Approval
+        final bool isApproved = 
+            (userData['role'] == 'hoster') ||
+            (userData['onboardingStatus'] == 'approved') ||
+            (userData['accountStatus'] == 'active') ||
+            (userData['status'] == 'approved');
+
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            _confirmExit();
+          },
+          child: Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textDarkColor, size: 20),
+                onPressed: _previousPage,
+              ),
+              title: Text(
+                _getStepTitle(),
+                style: const TextStyle(
+                  color: AppTheme.textDarkColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Outfit',
+                ),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded, color: AppTheme.textLightColor, size: 20),
+                  onPressed: _resetOnboarding,
+                  tooltip: 'Reset Progress',
+                ),
+                const SizedBox(width: 8),
               ],
+            ),
+            body: Stack(
+              children: [
+                Column(
+                  children: [
+                    ProgressBar(
+                      currentStep: _currentPage,
+                      totalSteps: 9,
+                      completionPercentage: _calculateCompletion(),
+                      onStepTap: _jumpToPage,
+                    ),
+                    Expanded(
+                      child: PageView(
+                        controller: _pageController,
+                        physics: const NeverScrollableScrollPhysics(),
+                        onPageChanged: (page) => setState(() => _currentPage = page),
+                        children: [
+                          ProfileStep(key: ValueKey('step0_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
+                          RoleStep(key: ValueKey('step1_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
+                          ContactStep(key: ValueKey('step2_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
+                          AddressStep(key: ValueKey('step3_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
+                          KycAadhaarStep(key: ValueKey('step4_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
+                          KycPanStep(key: ValueKey('step5_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
+                          PreferencesStep(key: ValueKey('step6_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
+                          BankingStep(key: ValueKey('step7_$_onboardingVersion'), onContinue: _nextPage, initialData: _onboardingData),
+                          ReviewSubmitStep(onboardingData: _onboardingData, onBack: _previousPage),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Real-time Approval Overlay
+                if (isApproved)
+                  _buildApprovalOverlay(),
+              ],
+            ),
+          ),
+        );
+      }
+    );
+  }
+
+  Widget _buildApprovalOverlay() {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.8),
+      width: double.infinity,
+      height: double.infinity,
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(color: AppTheme.successColor, shape: BoxShape.circle),
+            child: const Icon(Icons.check_rounded, color: Colors.white, size: 48),
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            'Application Approved!',
+            style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Congratulations! Your hoster application has been approved. You can now access your dashboard and start listing properties.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white70, fontSize: 16, height: 1.5),
+          ),
+          const SizedBox(height: 48),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => HosterDashboardScreen()),
+                  (route) => false,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppTheme.successColor,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: const Text('Go to Dashboard', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ),
           ),
         ],
@@ -298,7 +423,7 @@ class _PartnerOnboardingScreenState extends State<PartnerOnboardingScreen> {
 
   String _getStepTitle() {
     switch (_currentPage) {
-      case 0: return 'Personal Profile';
+      case 0: return 'Owner Profile';
       case 1: return 'Partner Role';
       case 2: return 'Contact Details';
       case 3: return 'Residential Address';

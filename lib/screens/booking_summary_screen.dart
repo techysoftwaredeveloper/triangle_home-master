@@ -25,11 +25,18 @@ class BookingSummaryScreen extends StatefulWidget {
 class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
   bool _isCreatingBooking = false;
 
-  int get basePrice => (widget.accommodation['price'] as num?)?.toInt() ?? 0;
-  int get numberOfTenants => widget.tenantDetails.length;
+  int get basePrice => _parseToInt(widget.accommodation['price'] ?? widget.accommodation['monthlyRent']);
+  int get numberOfTenants => widget.tenantDetails.isNotEmpty ? widget.tenantDetails.length : 1;
   int get totalRent => basePrice * numberOfTenants;
-  int get deposit => totalRent;
+  int get deposit => _parseToInt(widget.accommodation['deposit'] ?? widget.accommodation['securityDeposit'] ?? basePrice);
   int get total => totalRent + deposit;
+
+  int _parseToInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value.replaceAll(',', '')) ?? 0;
+    return 0;
+  }
 
   Future<void> _proceedToPayment(BuildContext context) async {
     setState(() => _isCreatingBooking = true);
@@ -49,27 +56,43 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
 
       final String? roomId = widget.accommodation['selectedRoomId'];
       final String? bedId = widget.accommodation['selectedBedId'];
+      final String propertyId = widget.accommodation['id'] ?? widget.accommodation['propertyId'] ?? '';
+
+      if (propertyId.isEmpty) {
+        throw 'Critical Error: Property identifier is missing.';
+      }
 
       // 1. Lock the bed first if selected
       if (roomId != null && bedId != null) {
-        await inventoryService.lockBedForUser(
-          propertyId: widget.accommodation['id'] ?? '',
-          roomId: roomId,
-          bedId: bedId,
-          userId: user.uid,
-        );
+        try {
+          await inventoryService.lockBedForUser(
+            propertyId: propertyId,
+            roomId: roomId,
+            bedId: bedId,
+            userId: user.uid,
+          );
+        } catch (e) {
+          debugPrint('Reservation Transaction Error: $e');
+          throw 'Reservation Failed: The selected bed could not be locked. Please try again.';
+        }
       }
 
       // 2. Create a pending booking in Firestore
-      final bookingId = await firebaseService.createBooking(
-        propertyId: widget.accommodation['id'] ?? '',
-        propertyData: widget.accommodation,
-        price: total.toDouble(),
-        type: widget.accommodation['type'] ?? '',
-        tenantDetails: widget.tenantDetails,
-        roomId: roomId,
-        bedId: bedId,
-      );
+      final String bookingId;
+      try {
+        bookingId = await firebaseService.createBooking(
+          propertyId: propertyId,
+          propertyData: widget.accommodation,
+          price: total.toDouble(),
+          type: widget.accommodation['type'] ?? '',
+          tenantDetails: widget.tenantDetails,
+          roomId: roomId,
+          bedId: bedId,
+        );
+      } catch (e) {
+        debugPrint('Booking Creation Error: $e');
+        throw 'Checkout Failed: Could not create booking record. $e';
+      }
 
       if (!mounted) return;
 

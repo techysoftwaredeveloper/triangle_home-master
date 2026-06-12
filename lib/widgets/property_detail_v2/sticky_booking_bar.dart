@@ -5,17 +5,23 @@ class StickyBookingBar extends StatelessWidget {
   final Map<String, dynamic>? selectedRoom;
   final Map<String, dynamic>? selectedBed;
   final VoidCallback onBookPressed;
+  final dynamic defaultRent;
+  final dynamic defaultDeposit;
 
   const StickyBookingBar({
     super.key,
     this.selectedRoom,
     this.selectedBed,
     required this.onBookPressed,
+    this.defaultRent,
+    this.defaultDeposit,
   });
 
   @override
   Widget build(BuildContext context) {
     final bool isBedSelected = selectedBed != null;
+    final double rent = _parsePrice(selectedBed?['monthlyRent'] ?? defaultRent);
+    final double deposit = _parsePrice(selectedBed?['securityDeposit'] ?? defaultDeposit);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -51,13 +57,13 @@ class StickyBookingBar extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            '₹${selectedBed?['monthlyRent']}',
+                            '₹$rent',
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                           ),
                           const Text('/Month', style: TextStyle(color: Colors.grey, fontSize: 12)),
                           const SizedBox(width: 12),
                           Text(
-                            'Deposit ₹${selectedBed?['securityDeposit']}',
+                            'Deposit ₹$deposit',
                             style: const TextStyle(color: Colors.grey, fontSize: 12),
                           ),
                         ],
@@ -86,5 +92,12 @@ class StickyBookingBar extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  double _parsePrice(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value.replaceAll(',', '')) ?? 0.0;
+    return 0.0;
   }
 }

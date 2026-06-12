@@ -666,7 +666,11 @@ class _UsersViewState extends State<_UsersView>
       itemBuilder: (context, index) {
         final user = users[index];
         final bool isBanned = user['accountStatus'] == 'banned';
-        final bool isApproved = user['status'] == 'approved';
+        final bool isApproved = user['status'] == 'approved' ||
+            user['accountStatus'] == 'active' ||
+            user['accountStatus'] == 'approved' ||
+            user['onboardingStatus'] == 'approved' ||
+            (user['permissions'] is Map && user['permissions']['status'] == 'approved');
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),

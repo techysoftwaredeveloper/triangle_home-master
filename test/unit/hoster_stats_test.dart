@@ -135,7 +135,7 @@ void main() {
       final stream = hosterService.getDetailedHosterStatsStream('hoster_1');
       final stats = await stream.first;
 
-      expect(stats['profileCompletion'], equals(5 / 8));
+      expect(stats['profileCompletion'], equals(5 / 12));
     });
   });
 }

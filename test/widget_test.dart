@@ -1,28 +1,54 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:triangle_home/widgets/logout_confirmation_dialog.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    //  await tester.pumpWidget(const MyApp());
+  testWidgets('LogoutConfirmationDialog renders correctly', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: LogoutConfirmationDialog(
+            onConfirm: () {},
+          ),
+        ),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Let layout animations complete to clear pending timers
+    await tester.pump(const Duration(seconds: 1));
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    expect(find.text('Sign Out'), findsOneWidget);
+    expect(
+      find.text(
+        'Are you sure you want to log out of Triangle Homes? You will need to verify your phone again to sign back in.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Log Out'), findsOneWidget);
+  });
+
+  testWidgets('LogoutConfirmationDialog calls onConfirm when Log Out is tapped', (WidgetTester tester) async {
+    bool didConfirm = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: LogoutConfirmationDialog(
+            onConfirm: () {
+              didConfirm = true;
+            },
+          ),
+        ),
+      ),
+    );
+
+    // Let layout animations complete to clear pending timers
+    await tester.pump(const Duration(seconds: 1));
+
+    await tester.tap(find.text('Log Out'));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(didConfirm, isTrue);
   });
 }

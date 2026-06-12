@@ -30,9 +30,9 @@ class OccupancyOverviewDonut extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.02),
+            color: Colors.white.withValues(alpha: 0.02),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: Row(
             children: [
@@ -45,7 +45,7 @@ class OccupancyOverviewDonut extends StatelessWidget {
                     child: CircularProgressIndicator(
                       value: percentage / 100,
                       strokeWidth: 8,
-                      backgroundColor: Colors.white.withOpacity(0.05),
+                      backgroundColor: Colors.white.withValues(alpha: 0.05),
                       valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
                     ),
                   ),
@@ -70,7 +70,7 @@ class OccupancyOverviewDonut extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   _LegendItem(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     label: 'Vacant',
                     value: vacant.toString(),
                   ),
@@ -110,9 +110,9 @@ class RevenueTrendChart extends StatelessWidget {
           height: 100,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.02),
+            color: Colors.white.withValues(alpha: 0.02),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: const Center(
             child: Text(
@@ -152,12 +152,12 @@ class TopPerformingPropertiesList extends StatelessWidget {
             ),
             Text(
               'This Month',
-              style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        ...properties.take(3).map((p) => _PropertyRankItem(property: p)).toList(),
+        ...properties.take(3).map((p) => _PropertyRankItem(property: p)),
       ],
     );
   }
@@ -185,7 +185,7 @@ class HighRiskPropertiesList extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        ...properties.take(3).map((p) => _RiskItem(property: p)).toList(),
+        ...properties.take(3).map((p) => _RiskItem(property: p)),
       ],
     );
   }
@@ -259,7 +259,7 @@ class _LegendItem extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11),
         ),
         const SizedBox(width: 8),
         Text(
@@ -283,9 +283,9 @@ class _PropertyRankItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.02),
+          color: Colors.white.withValues(alpha: 0.02),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Row(
           children: [
@@ -299,7 +299,7 @@ class _PropertyRankItem extends StatelessWidget {
                 errorBuilder: (context, error, stackTrace) => Container(
                   width: 32, 
                   height: 32, 
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                   child: const Icon(Icons.home_work_rounded, color: Colors.white24, size: 16),
                 ),
               ),
@@ -317,7 +317,7 @@ class _PropertyRankItem extends StatelessWidget {
                   ),
                   Text(
                     '${property['occupancy'] ?? 0}% Occupancy',
-                    style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 10),
                   ),
                 ],
               ),
@@ -345,9 +345,9 @@ class _RiskItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFEF4444).withOpacity(0.02),
+          color: const Color(0xFFEF4444).withValues(alpha: 0.02),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.1)),
+          border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.1)),
         ),
         child: Row(
           children: [
@@ -355,7 +355,7 @@ class _RiskItem extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withOpacity(0.1),
+                color: const Color(0xFFEF4444).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFEF4444), size: 16),
@@ -373,7 +373,7 @@ class _RiskItem extends StatelessWidget {
                   ),
                   Text(
                     property['riskReason'] ?? 'Compliance Failure',
-                    style: TextStyle(color: const Color(0xFFEF4444).withOpacity(0.5), fontSize: 10),
+                    style: TextStyle(color: const Color(0xFFEF4444).withValues(alpha: 0.5), fontSize: 10),
                   ),
                 ],
               ),
@@ -398,7 +398,7 @@ class _ComplianceBadge extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 10),
         ),
         const SizedBox(height: 6),
         Text(
@@ -422,12 +422,12 @@ class _EmptyState extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Text(
           'No Data Available',
-          style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 12),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 12),
         ),
       ],
     );

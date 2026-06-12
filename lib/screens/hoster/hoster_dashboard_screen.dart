@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:triangle_home/screens/list_property/list_property_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_profile_screen.dart';
+import 'package:triangle_home/screens/hoster/partner_onboarding_screen.dart';
 import 'package:triangle_home/screens/hoster/booking_detail_screen.dart';
 import 'package:triangle_home/screens/hoster/lead_detail_screen.dart';
 import 'package:triangle_home/screens/hoster/property_operational_center.dart';
@@ -13,6 +13,7 @@ import 'package:triangle_home/services/lead_service.dart';
 import 'package:triangle_home/models/lead.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/hoster/hoster_bottom_nav.dart';
+import 'package:triangle_home/screens/list_property/list_property_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
@@ -44,43 +45,43 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final tabs = [
-      _DashboardTab(uid: _uid, hosterService: _hosterService),
-      _PropertiesTab(uid: _uid, propertyService: _propertyService),
-      _BookingsTab(uid: _uid, bookingService: _bookingService),
-      _LeadsTab(uid: _uid),
-      const HosterProfileScreen(),
-    ];
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: _hosterService.getDetailedHosterStatsStream(_uid),
+      builder: (context, snapshot) {
+        final data = snapshot.data ?? {};
+        final accountStatus = data['accountStatus']?.toString() ?? 'pending';
+        
+        // Unified check for Hoster Approval from the data stream
+        final isApproved = data['hosterVerified'] == true;
+        final isPending = !isApproved;
+        final isRejected = accountStatus == 'rejected';
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: tabs[_selectedIndex],
-      bottomNavigationBar: HosterBottomNav(
-        selectedIndex: _selectedIndex,
-        onTap: _onNavTap,
-      ),
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton.extended(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
-              ),
-              backgroundColor: AppTheme.successColor,
-              icon: const Icon(Icons.add_rounded, color: Colors.white),
-              label: const Text(
-                'Add Property',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Outfit',
-                ),
-              ),
-              elevation: 10,
-            )
-          : _selectedIndex == 2
+        final tabs = [
+          _DashboardTab(uid: _uid, hosterService: _hosterService),
+          _PropertiesTab(uid: _uid, propertyService: _propertyService),
+          _BookingsTab(uid: _uid, bookingService: _bookingService),
+          _LeadsTab(uid: _uid),
+          const HosterProfileScreen(),
+        ];
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8FAFC),
+          body: Stack(
+            children: [
+              tabs[_selectedIndex],
+              if (isPending && (_selectedIndex > 0 && _selectedIndex < 4))
+                _buildRestrictedOverlay(isRejected),
+            ],
+          ),
+          bottomNavigationBar: HosterBottomNav(
+            selectedIndex: _selectedIndex,
+            onTap: _onNavTap,
+            leadsCount: _parseNum(data['newLeadsCount']).toInt(),
+          ),
+          floatingActionButton: _selectedIndex == 2 && !isPending
               ? FloatingActionButton.extended(
                   onPressed: () {},
-                  backgroundColor: AppTheme.successColor,
+                  backgroundColor: AppTheme.forestGreen,
                   icon: const Icon(Icons.add_rounded, color: Colors.white),
                   label: const Text(
                     'New Booking',
@@ -93,6 +94,57 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
                   elevation: 10,
                 )
               : null,
+        );
+      },
+    );
+  }
+
+  Widget _buildRestrictedOverlay(bool isRejected) {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.7),
+      width: double.infinity,
+      height: double.infinity,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+            child: Icon(
+              isRejected ? Icons.gpp_bad_rounded : Icons.lock_person_rounded, 
+              color: isRejected ? const Color(0xFFEF4444) : const Color(0xFFF59E0B), 
+              size: 40
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            isRejected ? 'Application Rejected' : 'Features Restricted',
+            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              isRejected 
+                  ? 'Your application was not approved. Please check the reason on your dashboard and resubmit.' 
+                  : 'Your account is under verification. Please wait for admin approval to manage properties, bookings, or leads.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            onPressed: () => setState(() => _selectedIndex = 0),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Back to Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -130,6 +182,10 @@ class _DashboardTab extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 24),
+                  if (data['accountStatus'] == 'pending')
+                    _buildPendingBanner()
+                  else if (data['accountStatus'] == 'rejected')
+                    _buildRejectedBanner(context, data['adminReviewNote'] ?? 'No reason provided'),
                   _buildTopPropertyCarousel(properties),
                   const SizedBox(height: 32),
                   _buildSectionHeader('Today\'s Actions'),
@@ -173,11 +229,11 @@ class _DashboardTab extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: const Color(0xFFDCFCE7),
+            backgroundColor: const Color(0xFFF0FDF4),
             child: Text(
               initial,
               style: const TextStyle(
-                color: Color(0xFF16A34A),
+                color: AppTheme.forestGreen,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),
@@ -224,25 +280,26 @@ class _DashboardTab extends StatelessWidget {
                 color: Color(0xFF1E293B),
               ),
             ),
-            Positioned(
-              top: 12,
-              right: 12,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEF4444),
-                  shape: BoxShape.circle,
-                ),
-                child: const Text(
-                  '5',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 8,
-                    fontWeight: FontWeight.bold,
+            if (_parseNum(data['unreadNotificationsCount']).toInt() > 0)
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEF4444),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '${data['unreadNotificationsCount']}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
         const SizedBox(width: 8),
@@ -284,6 +341,35 @@ class _DashboardTab extends StatelessWidget {
     final images = property['images'] as List? ?? [];
     final name = property['basicInfo']?['name'] ?? 'Property';
     final occupancy = 0; // Or calculate from data if available
+
+    final propStatus = (property['status'] ?? 'pending').toString().toLowerCase();
+    final isActive = propStatus == 'active' || propStatus == 'approved';
+    final isUnderReview = propStatus == 'pending' || propStatus == 'under review';
+    final isPaused = propStatus == 'paused';
+
+    final statusLabel = isActive 
+        ? 'Active' 
+        : propStatus == 'under review'
+            ? 'Under Review'
+            : propStatus == 'pending'
+                ? 'Pending'
+                : propStatus.capitalize();
+                
+    final statusBg = isActive 
+        ? const Color(0xFFDCFCE7) 
+        : isUnderReview 
+            ? const Color(0xFFFEF3C7) 
+            : isPaused 
+                ? const Color(0xFFDBEAFE) 
+                : const Color(0xFFF1F5F9);
+                
+    final statusFg = isActive 
+        ? const Color(0xFF16A34A) 
+        : isUnderReview 
+            ? const Color(0xFFD97706) 
+            : isPaused 
+                ? const Color(0xFF2563EB) 
+                : const Color(0xFF64748B);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -355,13 +441,13 @@ class _DashboardTab extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFDCFCE7),
+                        color: statusBg,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
-                        'Active',
+                      child: Text(
+                        statusLabel,
                         style: TextStyle(
-                          color: Color(0xFF16A34A),
+                          color: statusFg,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -556,7 +642,7 @@ class _DashboardTab extends StatelessWidget {
         ),
         _overviewCard(
           'Occupancy',
-          '${data['occupancy']}%',
+          '${data['occupancy'] ?? 0}%',
           '',
           true,
         ),
@@ -660,11 +746,6 @@ class _DashboardTab extends StatelessWidget {
         child: Center(child: Text('No properties listed')),
       );
     }
-
-    final occupancy = _parseNum(data['occupancy']).toInt();
-    final vacantBeds = _parseNum(data['vacantBeds']).toInt();
-    final activeResidents = _parseNum(data['activeResidents']).toInt();
-    final newInquiries = _parseNum(data['newInquiries']).toInt();
 
     return Column(
       children: [
@@ -1062,6 +1143,116 @@ class _DashboardTab extends StatelessWidget {
     );
   }
 
+  Widget _buildPendingBanner() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFED7AA)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF59E0B),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.access_time_filled_rounded, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Application Under Review',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Color(0xFF92400E),
+                  ),
+                ),
+                Text(
+                  'Admin is verifying your documents. Features will be unlocked once approved.',
+                  style: TextStyle(fontSize: 12, color: Color(0xFFB45309)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRejectedBanner(BuildContext context, String reason) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFECACA)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEF4444),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.error_rounded, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Application Rejected',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Color(0xFF991B1B),
+                      ),
+                    ),
+                    Text(
+                      'Reason: $reason',
+                      style: const TextStyle(fontSize: 12, color: Color(0xFFB91C1C)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => PartnerOnboardingScreen()),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              icon: const Icon(Icons.edit_note_rounded, size: 18),
+              label: const Text('Edit & Resubmit', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRecentActivity(List activities) {
     return Column(
       children:
@@ -1176,6 +1367,44 @@ class _PropertiesTabState extends State<_PropertiesTab> {
   String _selectedStatus = 'All Properties';
   final TextEditingController _searchController = TextEditingController();
 
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  /// Returns true if a property doc should be shown under the current filter.
+  bool _matchesStatus(Map<String, dynamic> d) {
+    final status = (d['status'] ?? 'pending').toString().toLowerCase();
+    switch (_selectedStatus) {
+      case 'Active':
+        return status == 'active' || status == 'approved';
+      case 'Under Review':
+        return status == 'pending' || status == 'under review';
+      case 'Draft':
+        return status == 'draft';
+      case 'Inactive':
+        return status == 'inactive' || status == 'suspended' || status == 'rejected';
+      default:
+        return true; // 'All Properties'
+    }
+  }
+
+  bool _matchesSearch(Map<String, dynamic> d) {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return true;
+    final basic = d['basicInfo'] as Map? ?? {};
+    final name = (d['name'] ?? basic['collegeName'] ?? d['title'] ?? '').toString().toLowerCase();
+    final location = (d['locality'] ?? d['city'] ?? d['address'] ?? '').toString().toLowerCase();
+    return name.contains(query) || location.contains(query);
+  }
+
   final List<String> _statuses = [
     'All Properties',
     'Active',
@@ -1200,45 +1429,49 @@ class _PropertiesTabState extends State<_PropertiesTab> {
           ),
         ),
         actions: [
-          TextButton.icon(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
-            ),
-            icon: const Icon(Icons.add, color: Color(0xFF16A34A), size: 20),
-            label: const Text(
-              'Add Property',
-              style: TextStyle(
-                color: Color(0xFF16A34A),
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Outfit',
-              ),
-            ),
+          IconButton(
+            icon: const Icon(Icons.add_rounded, color: Color(0xFF16A34A)),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+              );
+            },
+            tooltip: 'Add Property',
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      body: StreamBuilder<List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
         stream: widget.propertyService.getHosterProperties(widget.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final allDocs = snapshot.data?.docs ?? [];
-          
-          // Calculate counts for summary cards
+          final allDocs = snapshot.data ?? [];
+
+          // Calculate counts for summary cards (always from full list)
           int activeCount = 0;
           int underReviewCount = 0;
           int draftCount = 0;
-          
+
           for (var doc in allDocs) {
             final status = (doc.data()['status'] ?? 'pending').toString().toLowerCase();
             if (status == 'active' || status == 'approved') {
               activeCount++;
-            } else if (status == 'pending' || status == 'under review') underReviewCount++;
-            else if (status == 'draft') draftCount++;
+            } else if (status == 'pending' || status == 'under review') {
+              underReviewCount++;
+            } else if (status == 'draft') {
+              draftCount++;
+            }
           }
+
+          // Apply status + search filters
+          final filteredDocs = allDocs.where((doc) {
+            final d = {'id': doc.id, ...doc.data()};
+            return _matchesStatus(d) && _matchesSearch(d);
+          }).toList();
 
           return CustomScrollView(
             physics: const BouncingScrollPhysics(),
@@ -1258,7 +1491,7 @@ class _PropertiesTabState extends State<_PropertiesTab> {
                   ),
                 ),
               ),
-              if (allDocs.isEmpty)
+              if (filteredDocs.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: _buildEmptyState(),
@@ -1269,17 +1502,12 @@ class _PropertiesTabState extends State<_PropertiesTab> {
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        if (index == allDocs.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 10, bottom: 40),
-                            child: _buildAddMoreBanner(),
-                          );
-                        }
-                        
-                        final data = allDocs[index].data();
+                        // Inject the Firestore doc ID so propertyId is never empty
+                        final doc = filteredDocs[index];
+                        final data = {'id': doc.id, ...doc.data()};
                         return _EnhancedPropertyCard(data: data);
                       },
-                      childCount: allDocs.length + 1,
+                      childCount: filteredDocs.length,
                     ),
                   ),
                 ),
@@ -1293,22 +1521,34 @@ class _PropertiesTabState extends State<_PropertiesTab> {
   Widget _buildSummaryCards(int active, int review, int draft) {
     return Row(
       children: [
-        Expanded(child: _summaryCard('Active', active, const Color(0xFF16A34A), Icons.home_rounded, const Color(0xFFDCFCE7))),
+        Expanded(child: GestureDetector(
+          onTap: () => setState(() => _selectedStatus = 'Active'),
+          child: _summaryCard('Active', active, const Color(0xFF16A34A), Icons.home_rounded, const Color(0xFFDCFCE7), _selectedStatus == 'Active'),
+        )),
         const SizedBox(width: 12),
-        Expanded(child: _summaryCard('Under Review', review, const Color(0xFFD97706), Icons.access_time_filled_rounded, const Color(0xFFFEF3C7))),
+        Expanded(child: GestureDetector(
+          onTap: () => setState(() => _selectedStatus = 'Under Review'),
+          child: _summaryCard('Under Review', review, const Color(0xFFD97706), Icons.access_time_filled_rounded, const Color(0xFFFEF3C7), _selectedStatus == 'Under Review'),
+        )),
         const SizedBox(width: 12),
-        Expanded(child: _summaryCard('Draft', draft, const Color(0xFF2563EB), Icons.description_rounded, const Color(0xFFDBEAFE))),
+        Expanded(child: GestureDetector(
+          onTap: () => setState(() => _selectedStatus = 'Draft'),
+          child: _summaryCard('Draft', draft, const Color(0xFF2563EB), Icons.description_rounded, const Color(0xFFDBEAFE), _selectedStatus == 'Draft'),
+        )),
       ],
     );
   }
 
-  Widget _summaryCard(String label, int count, Color color, IconData icon, Color bgColor) {
+  Widget _summaryCard(String label, int count, Color color, IconData icon, Color bgColor, bool isSelected) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        border: Border.all(
+          color: isSelected ? color : const Color(0xFFF1F5F9),
+          width: isSelected ? 2 : 1,
+        ),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
         ],
@@ -1428,82 +1668,69 @@ class _PropertiesTabState extends State<_PropertiesTab> {
     );
   }
 
-  Widget _buildAddMoreBanner() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDCFCE7)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-            child: const Icon(Icons.apartment_rounded, color: Color(0xFF16A34A), size: 24),
-          ),
-          const SizedBox(width: 16),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Add More Properties',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                ),
-                Text(
-                  'List more PGs, hostels or apartments to reach more tenants.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          ElevatedButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF16A34A),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              minimumSize: Size.zero,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.add, size: 16),
-                SizedBox(width: 4),
-                Text('Add Property', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildEmptyState() {
+    final isFiltered = _selectedStatus != 'All Properties' || _searchController.text.isNotEmpty;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.home_work_outlined, size: 64, color: const Color(0xFFE2E8F0)),
-          const SizedBox(height: 16),
-          const Text('No properties listed yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 8),
-          const Text('Start earning by listing your first property', style: TextStyle(color: Color(0xFF64748B))),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
-            ),
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Add Your First Property'),
+          Icon(
+            isFiltered ? Icons.search_off_rounded : Icons.home_work_outlined,
+            size: 64,
+            color: const Color(0xFFE2E8F0),
           ),
+          const SizedBox(height: 16),
+          Text(
+            isFiltered
+                ? 'No properties match "$_selectedStatus"'
+                : 'No properties listed yet',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isFiltered
+                ? 'Try selecting a different filter or clear your search.'
+                : 'Start earning by listing your first property',
+            style: const TextStyle(color: Color(0xFF64748B)),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          if (isFiltered)
+            OutlinedButton.icon(
+              onPressed: () => setState(() {
+                _selectedStatus = 'All Properties';
+                _searchController.clear();
+              }),
+              icon: const Icon(Icons.clear_rounded, size: 18),
+              label: const Text('Clear Filter'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF16A34A),
+                side: const BorderSide(color: Color(0xFF16A34A)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            )
+          else
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+                );
+              },
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add Property'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF16A34A),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+            ),
         ],
       ),
     );
@@ -1545,7 +1772,9 @@ class _EnhancedPropertyCard extends StatelessWidget {
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 20, offset: const Offset(0, 10)),
         ],
       ),
-      child: StreamBuilder<QuerySnapshot>(
+      child: propertyId.isEmpty
+          ? const SizedBox.shrink()
+          : StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('bookings')
             .where('property_id', isEqualTo: propertyId)
@@ -1845,14 +2074,14 @@ class _BookingsTabState extends State<_BookingsTab> {
           const SizedBox(width: 8),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      body: StreamBuilder<List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
         stream: widget.bookingService.getHosterBookings(widget.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final allDocs = snapshot.data?.docs ?? [];
+          final allDocs = snapshot.data ?? [];
           
           // Calculate metrics
           int total = allDocs.length;

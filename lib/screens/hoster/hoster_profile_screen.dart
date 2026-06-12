@@ -7,6 +7,12 @@ import 'package:triangle_home/screens/hoster/hoster_profile_detail_screen.dart';
 import 'package:triangle_home/services/hoster_service.dart';
 import 'package:triangle_home/widgets/logout_confirmation_dialog.dart';
 import 'package:triangle_home/splash_screen.dart';
+import 'package:triangle_home/theme/app_theme.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:io';
+
 
 class HosterProfileScreen extends StatefulWidget {
   const HosterProfileScreen({super.key});
@@ -20,12 +26,14 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
   final HosterService _hosterService = HosterService();
 
   Stream<Map<String, dynamic>>? _profileDataStream;
+  bool _isUploading = false;
 
   static const _green = Color(0xFF1B4332);
   static const _greenMid = Color(0xFF2D6A4F);
   static const _accent = Color(0xFF40916C);
   static const _verified = Color(0xFF16A34A);
   static const _verifiedBg = Color(0xFFDCFCE7);
+  static const _amber = Color(0xFFF59E0B);
 
   @override
   void initState() {
@@ -34,6 +42,43 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
     if (user != null) {
       _profileDataStream =
           _hosterService.getHosterProfileStatsStream(user.uid);
+    }
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (picked == null) return;
+
+    setState(() => _isUploading = true);
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        final ref = FirebaseStorage.instance.ref().child('profile_images/${user.uid}.jpg');
+        await ref.putFile(File(picked.path));
+        final url = await ref.getDownloadURL();
+        
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+          'info.profileImage': url,
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile photo updated successfully!')),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error uploading image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload photo: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
     }
   }
 
@@ -156,48 +201,53 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 12,
-                            ),
-                          ],
-                        ),
-                        child: CircleAvatar(
-                          radius: 44,
-                          backgroundColor: Colors.white24,
-                          backgroundImage: imageUrl != null
-                              ? CachedNetworkImageProvider(imageUrl)
-                              : null,
-                          child: imageUrl == null
-                              ? const Icon(Icons.person_rounded,
-                                  size: 42, color: Colors.white)
-                              : null,
-                        ),
-                      ),
-                      // Edit button
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
+                  GestureDetector(
+                    onTap: _isUploading ? null : _pickAndUploadImage,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
                           decoration: BoxDecoration(
-                            color: _accent,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
+                            border: Border.all(color: Colors.white, width: 3),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 12,
+                              ),
+                            ],
                           ),
-                          child: const Icon(Icons.edit_rounded,
-                              color: Colors.white, size: 12),
+                          child: CircleAvatar(
+                            radius: 44,
+                            backgroundColor: Colors.white24,
+                            backgroundImage: imageUrl != null && !_isUploading
+                                ? CachedNetworkImageProvider(imageUrl)
+                                : null,
+                            child: _isUploading
+                                ? const CircularProgressIndicator(color: Colors.white)
+                                : (imageUrl == null
+                                    ? const Icon(Icons.person_rounded,
+                                        size: 42, color: Colors.white)
+                                    : null),
+                          ),
                         ),
-                      ),
-                    ],
+                        // Edit button
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: _accent,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: const Icon(Icons.edit_rounded,
+                                color: Colors.white, size: 12),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -343,6 +393,8 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
           _verifRow('Email Verified', stats['emailVerified'] == true),
           _verifRow('Phone Verified', stats['phoneVerified'] == true),
           _verifRow('Identity Verified', stats['identityVerified'] == true),
+          if (stats['accountStatus'] == 'pending')
+            _verifRow('Final Approval', false, isPending: true),
           _verifRow('Hoster Verified', stats['hosterVerified'] == true,
               isLast: true),
         ],
@@ -350,7 +402,7 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
     );
   }
 
-  Widget _verifRow(String label, bool done, {bool isLast = false}) {
+  Widget _verifRow(String label, bool done, {bool isLast = false, bool isPending = false}) {
     return Column(
       children: [
         Padding(
@@ -360,8 +412,8 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
               Icon(
                 done
                     ? Icons.check_circle_rounded
-                    : Icons.radio_button_unchecked_rounded,
-                color: done ? _verified : const Color(0xFFCBD5E1),
+                    : isPending ? Icons.access_time_filled_rounded : Icons.radio_button_unchecked_rounded,
+                color: done ? AppTheme.forestGreen : isPending ? _amber : const Color(0xFFCBD5E1),
                 size: 20,
               ),
               const SizedBox(width: 12),
@@ -375,13 +427,12 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
                   ),
                 ),
               ),
-              Icon(
-                done
-                    ? Icons.check_circle_rounded
-                    : Icons.radio_button_unchecked_rounded,
-                color: done ? _verified : const Color(0xFFCBD5E1),
-                size: 18,
-              ),
+              if (done)
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: AppTheme.forestGreen,
+                  size: 18,
+                ),
             ],
           ),
         ),
@@ -470,7 +521,7 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
                     builder: (_) => const PartnerOnboardingScreen()),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1B4332),
+                backgroundColor: AppTheme.forestGreen,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 shape: RoundedRectangleBorder(
@@ -598,7 +649,7 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
         icon: Icons.verified_user_outlined,
         color: const Color(0xFF06B6D4),
         title: 'Trust Score',
-        sub: s['hosterVerified'] == true ? 'Verified host' : 'Pending verification',
+        sub: 'Score: ${s['trustScore'] ?? (s['hosterVerified'] == true ? 91 : 45)}/100 · ${s['hosterVerified'] == true ? 'Verified' : 'Pending'}',
         section: HosterProfileSection.trustScore,
       ),
       (

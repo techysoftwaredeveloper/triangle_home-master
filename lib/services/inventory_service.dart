@@ -64,23 +64,32 @@ class InventoryService {
     required String bedId,
     required String userId,
   }) async {
+    if (propertyId.isEmpty || roomId.isEmpty || bedId.isEmpty) {
+      throw 'Invalid identifiers provided for bed locking';
+    }
+
     final roomRef = _firestore.collection('rooms').doc(roomId);
     final bedRef = _firestore.collection('beds').doc(bedId);
     final statsRef = _firestore.collection('propertyStats').doc(propertyId);
     final reservationRef = _firestore.collection('bed_reservations').doc();
 
     await _firestore.runTransaction((transaction) async {
+      // 1. Verify Bed Existence & Status
       final bedDoc = await transaction.get(bedRef);
-      if (!bedDoc.exists) throw 'Bed not found';
+      if (!bedDoc.exists) throw 'Bed document not found';
 
       final bedData = bedDoc.data()!;
       if (bedData['status'] != BedStatus.available.name) {
         throw 'Bed is no longer available';
       }
 
+      // 2. Verify Room Existence
+      final roomDoc = await transaction.get(roomRef);
+      if (!roomDoc.exists) throw 'Room document not found';
+
       final expiry = DateTime.now().add(const Duration(minutes: 15));
 
-      // 1. Update Bed Status
+      // 3. Update Bed Status
       transaction.update(bedRef, {
         'status': BedStatus.reserved.name,
         'reservedBy': userId,
@@ -88,7 +97,7 @@ class InventoryService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // 2. Create Reservation Audit
+      // 4. Create Reservation Audit
       transaction.set(reservationRef, {
         'propertyId': propertyId,
         'roomId': roomId,
@@ -99,14 +108,16 @@ class InventoryService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // 3. Update Counters
+      // 5. Update Counters (Room)
       transaction.update(roomRef, {'availableBeds': FieldValue.increment(-1)});
-      transaction.update(statsRef, {
+      
+      // 6. Update Counters (Property Stats) - Use set with merge to be resilient to missing docs
+      transaction.set(statsRef, {
         'availableBeds': FieldValue.increment(-1),
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
 
-      // 4. Log Event
+      // 7. Log Event
       transaction.set(_firestore.collection('inventory_events').doc(), {
         'type': InventoryEventType.bedReserved.name,
         'propertyId': propertyId,

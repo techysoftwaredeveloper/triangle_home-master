@@ -3,6 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
 import 'package:triangle_home/services/hoster_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:intl/intl.dart';
+
 
 // ── Section identifiers ───────────────────────────────────────────────────────
 enum HosterProfileSection {
@@ -49,7 +54,22 @@ class _HosterProfileDetailScreenState
   static const _border = Color(0xFFF1F5F9);
   static const _bg = Color(0xFFF8FAFC);
 
-  Map<String, dynamic> get s => widget.stats;
+  late Stream<Map<String, dynamic>> _statsStream;
+  late Map<String, dynamic> _localStats;
+
+  @override
+  void initState() {
+    super.initState();
+    _localStats = Map<String, dynamic>.from(widget.stats);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      _statsStream = HosterService().getDetailedHosterStatsStream(uid);
+    } else {
+      _statsStream = Stream.value(widget.stats);
+    }
+  }
+
+  Map<String, dynamic> get s => _localStats;
 
   String get _title {
     switch (widget.section) {
@@ -82,39 +102,48 @@ class _HosterProfileDetailScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(
-        backgroundColor: _green,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          _title,
-          style: const TextStyle(
-            fontFamily: 'Outfit',
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          if (_hasEditAction)
-            TextButton(
-              onPressed: _onEdit,
-              child: const Text(
-                'Edit',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.bold,
-                ),
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: _statsStream,
+      initialData: _localStats,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          _localStats = snapshot.data!;
+        }
+        return Scaffold(
+          backgroundColor: _bg,
+          appBar: AppBar(
+            backgroundColor: _green,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            title: Text(
+              _title,
+              style: const TextStyle(
+                fontFamily: 'Outfit',
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
               ),
             ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        child: _buildBody(),
-      ),
+            actions: [
+              if (_hasEditAction)
+                TextButton(
+                  onPressed: _onEdit,
+                  child: const Text(
+                    'Edit',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          body: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: _buildBody(),
+          ),
+        );
+      },
     );
   }
 
@@ -123,12 +152,664 @@ class _HosterProfileDetailScreenState
         HosterProfileSection.banking,
         HosterProfileSection.preferences,
         HosterProfileSection.emergency,
+        HosterProfileSection.business,
       ].contains(widget.section);
 
   void _onEdit() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edit feature coming soon')),
+    switch (widget.section) {
+      case HosterProfileSection.basicInfo:
+        _showEditBasicInfoSheet();
+        break;
+      case HosterProfileSection.banking:
+        _showEditBankingSheet();
+        break;
+      case HosterProfileSection.preferences:
+        _showEditPreferencesSheet();
+        break;
+      case HosterProfileSection.emergency:
+        _showEditEmergencySheet();
+        break;
+      case HosterProfileSection.business:
+        _showEditBusinessSheet();
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _showEditBusinessSheet() {
+    String selectedRole = s['hosterRole']?.toString() ?? 'Individual Owner';
+    if (selectedRole.isEmpty) selectedRole = 'Individual Owner';
+    String selectedExp = s['experience']?.toString() ?? '3-5 Years';
+    if (selectedExp.isEmpty) selectedExp = '3-5 Years';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 20,
+                right: 20,
+                top: 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Edit Business Info',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: _text)),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: selectedRole,
+                      decoration: const InputDecoration(
+                        labelText: 'Host Type / Role',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: ['Individual Owner', 'Company', 'Property Manager', 'Partner Hoster']
+                          .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setSheetState(() => selectedRole = v);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: selectedExp,
+                      decoration: const InputDecoration(
+                        labelText: 'Experience',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: ['1-2 Years', '3-5 Years', '5+ Years']
+                          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setSheetState(() => selectedExp = v);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _green,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: () async {
+                          final uid = FirebaseAuth.instance.currentUser?.uid;
+                          if (uid != null) {
+                            await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(uid)
+                                .update({
+                              'hosterRole': selectedRole,
+                              'experience': selectedExp,
+                            });
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Business info updated!')),
+                              );
+                            }
+                          }
+                        },
+                        child: const Text('Save Changes',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
+  }
+
+  void _showEditBasicInfoSheet() {
+    final nameController = TextEditingController(text: s['hosterName'] ?? '');
+    String selectedGender = s['gender']?.toString() ?? 'Male';
+    if (!['Male', 'Female', 'Other'].contains(selectedGender)) {
+      selectedGender = 'Male';
+    }
+    DateTime? dobDate;
+    if (s['dob'] != null && s['dob'].toString().isNotEmpty) {
+      dobDate = DateTime.tryParse(s['dob'].toString());
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 20,
+                right: 20,
+                top: 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Edit Basic Info',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: _text)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Full Name',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: selectedGender,
+                      decoration: const InputDecoration(
+                        labelText: 'Gender',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: ['Male', 'Female', 'Other']
+                          .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setSheetState(() => selectedGender = v);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: dobDate ?? DateTime(1995),
+                          firstDate: DateTime(1900),
+                          lastDate: DateTime.now(),
+                        );
+                        if (picked != null) {
+                          setSheetState(() => dobDate = picked);
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Date of Birth',
+                          border: OutlineInputBorder(),
+                        ),
+                        child: Text(
+                          dobDate != null
+                              ? DateFormat('dd MMM yyyy').format(dobDate!)
+                              : 'Select Date',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _green,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: () async {
+                          final uid = FirebaseAuth.instance.currentUser?.uid;
+                          if (uid != null) {
+                            await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(uid)
+                                .update({
+                              'info.name': nameController.text.trim(),
+                              'info.gender': selectedGender,
+                              'info.dob': dobDate?.toIso8601String(),
+                            });
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Basic info updated!')),
+                              );
+                            }
+                          }
+                        },
+                        child: const Text('Save Changes',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditBankingSheet() {
+    final bankNameController = TextEditingController(text: s['bankName'] ?? '');
+    final accNoController = TextEditingController(text: s['bankAccountNo'] ?? '');
+    final ifscController = TextEditingController(text: s['bankIfsc'] ?? '');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Edit Banking & Payouts',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: _text)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: bankNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Bank Name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: accNoController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Account Number',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: ifscController,
+                  decoration: const InputDecoration(
+                    labelText: 'IFSC Code',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _green,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () async {
+                      final uid = FirebaseAuth.instance.currentUser?.uid;
+                      if (uid != null) {
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(uid)
+                            .update({
+                          'bank_info.bankName': bankNameController.text.trim(),
+                          'bank_info.accountNumber': accNoController.text.trim(),
+                          'bank_info.ifsc': ifscController.text.trim(),
+                          'bank_info.verified': true,
+                          'bank_info.upiVerified': true,
+                        });
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Banking details updated!')),
+                          );
+                        }
+                      }
+                    },
+                    child: const Text('Save Changes',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showEditPreferencesSheet() {
+    String bookingType = s['prefBookingType']?.toString() ?? 'Approval Required';
+    if (bookingType.isEmpty) bookingType = 'Approval Required';
+    String gender = s['prefGender']?.toString() ?? 'Any';
+    if (gender.isEmpty) gender = 'Any';
+    String duration = s['prefDuration']?.toString() ?? 'Any';
+    if (duration.isEmpty) duration = 'Any';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 20,
+                right: 20,
+                top: 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Edit Preferences',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: _text)),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: bookingType,
+                      decoration: const InputDecoration(
+                        labelText: 'Booking Type',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: ['Instant Book', 'Approval Required']
+                          .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setSheetState(() => bookingType = v);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: gender,
+                      decoration: const InputDecoration(
+                        labelText: 'Preferred Gender',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: ['Male', 'Female', 'Any']
+                          .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setSheetState(() => gender = v);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: duration,
+                      decoration: const InputDecoration(
+                        labelText: 'Preferred Duration',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: ['Long Term', 'Short Term', 'Any']
+                          .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setSheetState(() => duration = v);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _green,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: () async {
+                          final uid = FirebaseAuth.instance.currentUser?.uid;
+                          if (uid != null) {
+                            await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(uid)
+                                .update({
+                              'host_preferences.bookingType': bookingType,
+                              'host_preferences.preferredGender': gender,
+                              'host_preferences.preferredDuration': duration,
+                            });
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Preferences updated!')),
+                              );
+                            }
+                          }
+                        },
+                        child: const Text('Save Changes',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditEmergencySheet() {
+    final nameController = TextEditingController(text: s['emergencyContactName'] ?? '');
+    final phoneController = TextEditingController(text: s['emergencyContactPhone'] ?? '');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Edit Emergency Contact',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: _text)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Contact Name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _green,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () async {
+                      final uid = FirebaseAuth.instance.currentUser?.uid;
+                      if (uid != null) {
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(uid)
+                            .update({
+                          'emergency_contact.name': nameController.text.trim(),
+                          'emergency_contact.phone': phoneController.text.trim(),
+                        });
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Emergency contact updated!')),
+                          );
+                        }
+                      }
+                    },
+                    child: const Text('Save Changes',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickEmergencyContact() async {
+    try {
+      final status = await Permission.contacts.request();
+      if (status.isGranted) {
+        final contact = await FlutterContacts.native.showPicker(
+          properties: {ContactProperty.phone},
+        );
+        if (contact != null) {
+          // Get the first phone number and sanitize it
+          final phone = contact.phones.isNotEmpty 
+              ? contact.phones.first.number.replaceAll(RegExp(r'[^0-9+]'), '') 
+              : '';
+          final name = contact.displayName;
+
+          if (phone.isEmpty) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Selected contact has no phone number')),
+              );
+            }
+            return;
+          }
+
+          final uid = FirebaseAuth.instance.currentUser?.uid;
+          if (uid != null) {
+            await FirebaseFirestore.instance.collection('users').doc(uid).update({
+              'emergency_contact': {
+                'name': name,
+                'phone': phone,
+                'updatedAt': FieldValue.serverTimestamp(),
+              },
+            });
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Emergency contact updated!')),
+              );
+            }
+          }
+        }
+      } else if (status.isPermanentlyDenied) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Permission Required'),
+              content: const Text('Contact permission is needed to pick an emergency contact. Please enable it in settings.'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                TextButton(onPressed: () => openAppSettings(), child: const Text('Open Settings')),
+              ],
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking contact: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildBody() {
@@ -278,6 +959,7 @@ class _HosterProfileDetailScreenState
                 'Aadhaar Card',
                 aadhaarStatus,
                 aadhaarVerified,
+                subtitle: s['aadhaarNumber'] != null ? _maskId(s['aadhaarNumber'].toString()) : null,
               ),
               const Divider(height: 1, color: _border),
               _kycRow(
@@ -286,6 +968,7 @@ class _HosterProfileDetailScreenState
                 'PAN Card',
                 panStatus,
                 panVerified,
+                subtitle: s['panNumber'] != null ? _maskId(s['panNumber'].toString()) : null,
               ),
               const Divider(height: 1, color: _border),
               _kycRow(
@@ -329,6 +1012,7 @@ class _HosterProfileDetailScreenState
     String status,
     bool isVerified, {
     bool isReview = false,
+    String? subtitle,
   }) {
     Color statusColor;
     Color statusBg;
@@ -358,11 +1042,19 @@ class _HosterProfileDetailScreenState
           ),
           const SizedBox(width: 14),
           Expanded(
-            child: Text(title,
-                style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: _text)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: _text)),
+                if (subtitle != null)
+                  Text(subtitle,
+                      style: const TextStyle(fontSize: 11, color: _sub)),
+              ],
+            ),
           ),
           Container(
             padding:
@@ -383,6 +1075,11 @@ class _HosterProfileDetailScreenState
         ],
       ),
     );
+  }
+
+  String _maskId(String id) {
+    if (id.length <= 4) return id;
+    return '${'X' * (id.length - 4)}${id.substring(id.length - 4)}';
   }
 
   Widget _uploadInfoCard() {
@@ -413,6 +1110,7 @@ class _HosterProfileDetailScreenState
   // ────────────────────────────────────────────────────────────
   Widget _businessBody() {
     final role = s['hosterRole']?.toString() ?? 'Individual Owner';
+    final experience = s['experience']?.toString() ?? '3-5 Years';
     return Column(
       children: [
         _sectionCard(
@@ -421,7 +1119,7 @@ class _HosterProfileDetailScreenState
             children: [
               _labelValue('Host Type', role),
               const Divider(height: 1, color: _border),
-              _labelValue('Experience', '3–5 Years'),
+              _labelValue('Experience', experience),
               const Divider(height: 1, color: _border),
               _labelValue('Account Status',
                   s['hosterVerified'] == true ? 'Active' : 'Pending'),
@@ -435,14 +1133,6 @@ class _HosterProfileDetailScreenState
           title: 'Quick Actions',
           child: Column(
             children: [
-              _actionRow(Icons.add_home_work_rounded, const Color(0xFF6366F1),
-                  'Add New Property', () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const ListPropertyScreen()),
-                );
-              }),
               const Divider(height: 1, color: _border),
               _actionRow(Icons.list_alt_rounded, _blue, 'Manage Listings',
                   () {}),
@@ -649,17 +1339,6 @@ class _HosterProfileDetailScreenState
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        _navCard(
-          Icons.add_home_work_rounded,
-          const Color(0xFF6366F1),
-          'Add New Property',
-          'List a new property to earn more',
-          () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
-          ),
-        ),
       ],
     );
   }
@@ -736,10 +1415,38 @@ class _HosterProfileDetailScreenState
   // 7. REVIEWS & RATINGS
   // ────────────────────────────────────────────────────────────
   Widget _reviewsBody() {
-    final rating =
-        (s['rating'] as num?)?.toDouble() ?? 0.0;
+    final rating = (s['rating'] as num?)?.toDouble() ?? 0.0;
     final reviewCount = s['reviewCount'] as int? ?? 0;
-    final activities = s['recentActivity'] as List? ?? [];
+    final reviewsList = s['reviews'] as List? ?? [];
+
+    double pct5 = 0.0, pct4 = 0.0, pct3 = 0.0, pct2 = 0.0, pct1 = 0.0;
+    if (reviewsList.isNotEmpty) {
+      int c5 = 0, c4 = 0, c3 = 0, c2 = 0, c1 = 0;
+      for (var r in reviewsList) {
+        final val = (r['rating'] as num?)?.toDouble() ?? 5.0;
+        if (val >= 4.5) {
+          c5++;
+        } else if (val >= 3.5) {
+          c4++;
+        } else if (val >= 2.5) {
+          c3++;
+        } else if (val >= 1.5) {
+          c2++;
+        } else {
+          c1++;
+        }
+      }
+      final len = reviewsList.length;
+      pct5 = c5 / len;
+      pct4 = c4 / len;
+      pct3 = c3 / len;
+      pct2 = c2 / len;
+      pct1 = c1 / len;
+    } else {
+      pct5 = 0.8;
+      pct4 = 0.15;
+      pct3 = 0.05;
+    }
 
     return Column(
       children: [
@@ -780,11 +1487,11 @@ class _HosterProfileDetailScreenState
               Expanded(
                 child: Column(
                   children: [
-                    _ratingBar('5★', 0.7, Colors.green),
-                    _ratingBar('4★', 0.2, Colors.lightGreen),
-                    _ratingBar('3★', 0.06, _amber),
-                    _ratingBar('2★', 0.02, Colors.orange),
-                    _ratingBar('1★', 0.02, _red),
+                    _ratingBar('5★', pct5, Colors.green),
+                    _ratingBar('4★', pct4, Colors.lightGreen),
+                    _ratingBar('3★', pct3, _amber),
+                    _ratingBar('2★', pct2, Colors.orange),
+                    _ratingBar('1★', pct1, _red),
                   ],
                 ),
               ),
@@ -792,17 +1499,14 @@ class _HosterProfileDetailScreenState
           ),
         ),
         const SizedBox(height: 16),
-        if (activities.isEmpty)
+        if (reviewsList.isEmpty)
           _emptyState(Icons.star_outline_rounded, 'No reviews yet',
               'Reviews from your guests will appear here')
         else
-          ...activities
-              .where((a) => a['type'] == 'booking')
-              .take(5)
-              .map((a) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _reviewCard(a),
-                  )),
+          ...reviewsList.take(5).map((a) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _reviewCard(a as Map),
+              )),
       ],
     );
   }
@@ -832,6 +1536,7 @@ class _HosterProfileDetailScreenState
   }
 
   Widget _reviewCard(Map a) {
+    final int ratingValue = ((a['rating'] as num?)?.toInt() ?? 5);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -879,11 +1584,18 @@ class _HosterProfileDetailScreenState
                   (i) => Icon(Icons.star_rounded,
                       size: 12,
                       color:
-                          i < 4 ? Colors.amber : const Color(0xFFE2E8F0)),
+                          i < ratingValue ? Colors.amber : const Color(0xFFE2E8F0)),
                 ),
               ),
             ],
           ),
+          if (a['comment']?.toString().isNotEmpty == true) ...[
+            const SizedBox(height: 10),
+            Text(
+              a['comment'],
+              style: const TextStyle(fontSize: 13, color: _text, height: 1.4),
+            ),
+          ],
         ],
       ),
     );
@@ -894,6 +1606,17 @@ class _HosterProfileDetailScreenState
   // ────────────────────────────────────────────────────────────
   Widget _trustScoreBody() {
     final isVerified = s['hosterVerified'] == true;
+    final trustScore = (s['trustScore'] as num?)?.toInt() ?? (isVerified ? 91 : 45);
+    final String statusText;
+    if (trustScore >= 85) {
+      statusText = 'Excellent Host';
+    } else if (trustScore >= 50) {
+      statusText = 'Good Host';
+    } else {
+      statusText = 'Building Trust';
+    }
+    final starValue = (trustScore / 20).round();
+
     return Column(
       children: [
         Container(
@@ -912,7 +1635,7 @@ class _HosterProfileDetailScreenState
                     width: 120,
                     height: 120,
                     child: CircularProgressIndicator(
-                      value: isVerified ? 0.91 : 0.45,
+                      value: trustScore / 100.0,
                       strokeWidth: 10,
                       backgroundColor: _border,
                       valueColor: const AlwaysStoppedAnimation<Color>(_green),
@@ -921,7 +1644,7 @@ class _HosterProfileDetailScreenState
                   Column(
                     children: [
                       Text(
-                        isVerified ? '91' : '45',
+                        trustScore.toString(),
                         style: const TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
@@ -935,7 +1658,7 @@ class _HosterProfileDetailScreenState
               ),
               const SizedBox(height: 16),
               Text(
-                isVerified ? 'Excellent Host' : 'Building Trust',
+                statusText,
                 style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -948,7 +1671,7 @@ class _HosterProfileDetailScreenState
                   5,
                   (i) => Icon(Icons.star_rounded,
                       color:
-                          i < (isVerified ? 5 : 2) ? Colors.amber : _border,
+                          i < starValue ? Colors.amber : _border,
                       size: 24),
                 ),
               ),
@@ -1162,6 +1885,15 @@ class _HosterProfileDetailScreenState
               ],
             ),
           ),
+        const SizedBox(height: 24),
+        _sectionCard(
+          title: 'Quick Actions',
+          child: Column(
+            children: [
+              _actionRow(Icons.contact_phone_outlined, _blue, 'Select from Contacts', _pickEmergencyContact),
+            ],
+          ),
+        ),
         const SizedBox(height: 16),
         _sectionCard(
           title: 'Why add an emergency contact?',
@@ -1595,9 +2327,6 @@ class HosterQuickActionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final HosterService hosterService = HosterService();
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(

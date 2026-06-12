@@ -1,7 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:triangle_home/providers/property_detail_provider.dart';
+import 'package:triangle_home/screens/auth/login_screen.dart';
 import 'package:triangle_home/screens/booking_summary_screen.dart';
+import 'package:triangle_home/services/firebase_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/property_detail_v2/property_gallery.dart';
 import 'package:triangle_home/widgets/property_detail_v2/property_overview_card.dart';
@@ -35,8 +38,39 @@ class _PropertyDetailScreenV2State extends ConsumerState<PropertyDetailScreenV2>
     });
   }
 
-  void _handleBooking() {
+  Future<void> _handleBooking() async {
     if (_selectedBed == null) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    
+    // Fetch real user info if available
+    Map<String, String> primaryTenant = {
+      'name': 'Primary Tenant',
+      'phone': 'Your registered phone',
+      'email': 'Your registered email',
+      'college': 'Your college',
+    };
+
+    if (user != null) {
+      try {
+        final profile = await FirebaseService().getUserProfile();
+        if (profile != null) {
+          final info = profile['info'] as Map? ?? {};
+          primaryTenant = {
+            'name': info['name'] ?? user.displayName ?? 'Primary Tenant',
+            'phone': info['phoneNumber'] ?? user.phoneNumber ?? 'Not provided',
+            'email': info['email'] ?? user.email ?? 'Not provided',
+            'college': profile['student_info']?['college'] ?? 'Your college',
+          };
+        }
+      } catch (e) {
+        debugPrint('Error fetching user profile for booking: $e');
+      }
+    }
+
+    // Determine prices with fallback to property-level defaults
+    final double rent = _parsePrice(_selectedBed?['monthlyRent'] ?? widget.property['monthlyRent'] ?? widget.property['price']);
+    final double deposit = _parsePrice(_selectedBed?['securityDeposit'] ?? widget.property['securityDeposit'] ?? widget.property['deposit']);
 
     final bookingData = {
       ...widget.property,
@@ -44,21 +78,45 @@ class _PropertyDetailScreenV2State extends ConsumerState<PropertyDetailScreenV2>
       'selectedBedId': _selectedBed?['id'],
       'roomNumber': _selectedRoom?['roomNumber'],
       'bedNumber': _selectedBed?['bedNumber'],
-      'price': _selectedBed?['monthlyRent'],
-      'deposit': _selectedBed?['securityDeposit'],
+      'price': rent,
+      'monthlyRent': rent,
+      'deposit': deposit,
+      'securityDeposit': deposit,
     };
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BookingSummaryScreen(
-          accommodation: bookingData,
-          tenantDetails: const [], // Will be filled in summary
-          tenants: const [],
-          tenantCount: 1,
-        ),
-      ),
+    final bookingSummary = BookingSummaryScreen(
+      accommodation: bookingData,
+      tenantDetails: [primaryTenant],
+      tenants: const [],
+      tenantCount: 1,
     );
+
+    if (user == null) {
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => LoginScreen(
+                isStudent: true,
+                onLoginNavigateTo: bookingSummary,
+              ),
+        ),
+      );
+    } else {
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => bookingSummary),
+      );
+    }
+  }
+
+  double _parsePrice(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value.replaceAll(',', '')) ?? 0.0;
+    return 0.0;
   }
 
   @override
@@ -116,7 +174,7 @@ class _PropertyDetailScreenV2State extends ConsumerState<PropertyDetailScreenV2>
               _buildRulesList(),
               SliverToBoxAdapter(
                 child: hostAsync.when(
-                  data: (host) => HostProfileSection(host: host),
+                  data: (host) => host != null ? HostProfileSection(host: host) : const SizedBox.shrink(),
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
@@ -132,6 +190,8 @@ class _PropertyDetailScreenV2State extends ConsumerState<PropertyDetailScreenV2>
               selectedRoom: _selectedRoom,
               selectedBed: _selectedBed,
               onBookPressed: _handleBooking,
+              defaultRent: widget.property['monthlyRent'] ?? widget.property['price'],
+              defaultDeposit: widget.property['securityDeposit'] ?? widget.property['deposit'],
             ),
           ),
         ],

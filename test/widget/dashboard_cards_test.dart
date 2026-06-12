@@ -17,8 +17,8 @@ void main() {
       // Should show 'Step 3 of 9' (since currentStep is 0-indexed)
       expect(find.text('Step 3 of 9'), findsOneWidget);
 
-      // Step 2 corresponds to 'Property Basics'
-      expect(find.text('Property Basics'), findsOneWidget);
+      // Step 2 corresponds to 'Property Details' (0-indexed: index 2 is step 3)
+      expect(find.text('Property Details'), findsOneWidget);
     });
 
     testWidgets('PropertyCard renders property details correctly', (

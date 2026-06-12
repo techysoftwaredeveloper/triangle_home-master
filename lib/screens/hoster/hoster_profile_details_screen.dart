@@ -108,14 +108,15 @@ class HosterProfileDetailsScreen extends StatelessWidget {
     return _buildCard(
       child: Column(
         children: [
-          _buildSectionHeader('Basic Information'),
-          _buildDetailRow(Icons.person_outline_rounded, 'Rahul Sharma'),
-          _buildDetailRow(Icons.cake_outlined, 'Male • 15 Mar 1988'),
-          _buildDetailRow(Icons.phone_android_outlined, '+91 98765 43210'),
-          _buildDetailRow(Icons.email_outlined, 'rahul.sharma@gmail.com'),
+          _buildSectionHeader('Basic Information', onEdit: () {}),
+          _buildDetailRow(Icons.person_outline_rounded, 'Full Name', value: 'Rahul Sharma'),
+          _buildDetailRow(Icons.cake_outlined, 'Gender & DOB', value: 'Male • 15 Mar 1988'),
+          _buildDetailRow(Icons.phone_android_outlined, 'Phone Number', value: '+91 98765 43210'),
+          _buildDetailRow(Icons.email_outlined, 'Email Address', value: 'rahul.sharma@gmail.com'),
           _buildDetailRow(
             Icons.location_on_outlined,
-            '123, Green Park Road, Koramangala, Bangalore, Karnataka - 560001',
+            'Permanent Address',
+            value: '123, Green Park Road, Koramangala, Bangalore, Karnataka - 560001',
           ),
         ],
       ),
@@ -171,30 +172,88 @@ class HosterProfileDetailsScreen extends StatelessWidget {
     return _buildCard(
       child: Column(
         children: [
-          _buildSectionHeader('Performance Overview', actionText: 'View All'),
+          _buildSectionHeader('Performance Overview', actionText: 'View Analytics'),
+          const SizedBox(height: 16),
           _buildPerformanceRow(
             Icons.chat_bubble_outline_rounded,
             'Response Rate',
             '98%',
             Colors.green,
+            description: 'Top 5% of hosts',
           ),
           _buildPerformanceRow(
             Icons.timer_outlined,
             'Avg. Response Time',
             '12 mins',
             Colors.blue,
+            description: 'Very fast responder',
           ),
           _buildPerformanceRow(
             Icons.check_circle_outline_rounded,
             'Acceptance Rate',
             '95%',
             Colors.green,
+            description: 'Consistently high',
           ),
           _buildPerformanceRow(
             Icons.cancel_outlined,
             'Cancellation Rate',
             '3%',
             Colors.red,
+            description: 'Below average (Good)',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPerformanceRow(
+    IconData icon,
+    String label,
+    String value,
+    Color color, {
+    String? description,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textDarkColor,
+                  ),
+                ),
+                if (description != null)
+                  Text(
+                    description,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  ),
+              ],
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
         ],
       ),
@@ -583,38 +642,54 @@ class HosterProfileDetailsScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Quick Actions',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
+        _buildSectionHeader('Quick Actions'),
         const SizedBox(height: 16),
-        _buildActionTile(
-          Icons.add_home_work_rounded,
-          'Add New Property',
-          Colors.blue,
-        ),
-        _buildActionTile(
-          Icons.list_alt_rounded,
-          'Manage Listings',
-          Colors.green,
-        ),
-        _buildActionTile(
-          Icons.calendar_month_rounded,
-          'View Bookings',
-          Colors.purple,
-        ),
-        _buildActionTile(
-          Icons.payments_rounded,
-          'Payout History',
-          Colors.orange,
-        ),
-        _buildActionTile(
-          Icons.dashboard_customize_rounded,
-          'Host Dashboard',
-          Colors.indigo,
-          isLast: true,
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 2.8,
+          children: [
+            _qAction('Update Profile', Icons.edit_note_rounded, Colors.blue),
+            _qAction('Manage Bank', Icons.account_balance_wallet_outlined, Colors.green),
+            _qAction('Security Settings', Icons.security_rounded, Colors.orange),
+            _qAction('Help & Support', Icons.help_outline_rounded, Colors.purple),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _qAction(String label, IconData icon, Color color) {
+    return InkWell(
+      onTap: () {},
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF475569),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -715,40 +790,6 @@ class HosterProfileDetailsScreen extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildPerformanceRow(
-    IconData icon,
-    String label,
-    String value,
-    Color color,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: Colors.grey[400]),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppTheme.textLightColor,
-              ),
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ],
       ),
     );
   }

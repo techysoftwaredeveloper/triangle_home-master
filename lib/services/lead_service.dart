@@ -1,17 +1,36 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:triangle_home/models/lead.dart';
 
 class LeadService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Stream<List<Lead>> getHosterLeads(String hosterId) {
-    return _firestore
+    final snake = _firestore
+        .collection('leads')
+        .where('hoster_id', isEqualTo: hosterId)
+        .snapshots();
+    final camel = _firestore
         .collection('leads')
         .where('hosterId', isEqualTo: hosterId)
-        .orderBy('updatedAt', descending: true)
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Lead.fromFirestore(doc)).toList());
+        .snapshots();
+
+    return Rx.combineLatest2(snake, camel, (a, b) {
+      final seen = <String>{};
+      final merged = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+      for (final doc in [...a.docs, ...b.docs]) {
+        if (seen.add(doc.id)) {
+          merged.add(doc);
+        }
+      }
+      merged.sort((x, y) {
+        final xTime = x.data()['updatedAt'] as Timestamp?;
+        final yTime = y.data()['updatedAt'] as Timestamp?;
+        if (xTime == null || yTime == null) return 0;
+        return yTime.compareTo(xTime);
+      });
+      return merged.map((doc) => Lead.fromFirestore(doc)).toList();
+    });
   }
 
   Stream<List<Lead>> getPropertyLeads(String propertyId) {

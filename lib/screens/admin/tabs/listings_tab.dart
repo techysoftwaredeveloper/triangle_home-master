@@ -29,13 +29,10 @@ class _ListingsTabState extends State<ListingsTab> {
       children: [
         Row(
           children: [
-            // Center Panel: Workspace
             Expanded(
               flex: 3,
               child: _buildWorkspace(),
             ),
-
-            // Right Panel: Intelligence (Only on desktop)
             if (!widget.isNarrow)
               Container(
                 width: 320,
@@ -44,8 +41,6 @@ class _ListingsTabState extends State<ListingsTab> {
               ),
           ],
         ),
-
-        // Property Detail Drawer
         if (_isDrawerOpen) _buildPropertyDrawer(),
       ],
     );
@@ -58,7 +53,7 @@ class _ListingsTabState extends State<ListingsTab> {
         final allProperties = snapshot.data ?? [];
 
         return Container(
-          color: const Color(0xFF020617), // Enterprise Dark Background
+          color: const Color(0xFF020617),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(32),
             child: Column(
@@ -85,36 +80,40 @@ class _ListingsTabState extends State<ListingsTab> {
   Widget _buildHeader() {
     return Row(
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Text(
-                  'Listings',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    fontFamily: 'Outfit',
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'Listings',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontFamily: 'Outfit',
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                const _LiveBadge(),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Real-time overview of all properties and inventory',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 14,
-                fontFamily: 'Outfit',
+                  const SizedBox(width: 12),
+                  const _LiveBadge(),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                'Real-time overview of all properties and inventory',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 14,
+                  fontFamily: 'Outfit',
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
-        const Spacer(),
+        const SizedBox(width: 16),
         _buildAddButton(),
       ],
     );
@@ -128,7 +127,6 @@ class _ListingsTabState extends State<ListingsTab> {
         
         return LayoutBuilder(
           builder: (context, constraints) {
-            // Dynamically calculate cross axis count based on available width
             int crossAxisCount = 6;
             if (constraints.maxWidth < 600) {
               crossAxisCount = 2;
@@ -144,7 +142,7 @@ class _ListingsTabState extends State<ListingsTab> {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
-              childAspectRatio: 1.3, // Slightly taller cards
+              childAspectRatio: 1.3,
               children: [
                 _KPICard(
                   title: 'Total Properties',
@@ -219,98 +217,84 @@ class _ListingsTabState extends State<ListingsTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B).withValues(alpha: 0.8),
+        color: const Color(0xCC1E293B),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.3)),
-        boxShadow: [BoxShadow(color: const Color(0xFF6366F1).withValues(alpha: 0.1), blurRadius: 20)],
+        border: Border.all(color: const Color(0x4D6366F1)),
+        boxShadow: [BoxShadow(color: const Color(0x196366F1), blurRadius: 20)],
       ),
-      child: Row(
-        children: [
-          Text(
-            '${_selectedIds.length} properties selected',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-          ),
-          const SizedBox(width: 32),
-          _ToolbarAction(
-            label: 'Approve', 
-            icon: Icons.check_circle_rounded, 
-            color: const Color(0xFF10B981),
-            onTap: () => _handleBulkAction('approve'),
-          ),
-          _ToolbarAction(
-            label: 'Reject', 
-            icon: Icons.cancel_rounded, 
-            color: const Color(0xFFEF4444),
-            onTap: () => _handleBulkAction('reject'),
-          ),
-          _ToolbarAction(
-            label: 'Suspend', 
-            icon: Icons.pause_circle_filled_rounded, 
-            color: const Color(0xFFF59E0B),
-            onTap: () => _handleBulkAction('suspend'),
-          ),
-          _ToolbarAction(
-            label: 'Verify', 
-            icon: Icons.verified_user_rounded, 
-            color: const Color(0xFF3B82F6),
-            onTap: () => _handleBulkAction('verify'),
-          ),
-          _ToolbarAction(
-            label: 'Archive', 
-            icon: Icons.archive_rounded, 
-            color: Colors.white54,
-            onTap: () => _handleBulkAction('archive'),
-          ),
-          const Spacer(),
-          TextButton(
-            onPressed: () => setState(() => _selectedIds.clear()),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white38, fontSize: 12)),
-          ),
-        ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            Text(
+              '${_selectedIds.length} properties selected',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            const SizedBox(width: 32),
+            _ToolbarAction(
+              label: 'Approve', 
+              icon: Icons.check_circle_rounded, 
+              color: const Color(0xFF10B981),
+              onTap: () => _handleBulkAction('approve'),
+            ),
+            _ToolbarAction(
+              label: 'Reject', 
+              icon: Icons.cancel_rounded, 
+              color: const Color(0xFFEF4444),
+              onTap: () => _handleBulkAction('reject'),
+            ),
+            _ToolbarAction(
+              label: 'Suspend', 
+              icon: Icons.pause_circle_filled_rounded, 
+              color: const Color(0xFFF59E0B),
+              onTap: () => _handleBulkAction('suspend'),
+            ),
+            _ToolbarAction(
+              label: 'Verify', 
+              icon: Icons.verified_user_rounded, 
+              color: const Color(0xFF3B82F6),
+              onTap: () => _handleBulkAction('verify'),
+            ),
+            _ToolbarAction(
+              label: 'Archive', 
+              icon: Icons.archive_rounded, 
+              color: Colors.white54,
+              onTap: () => _handleBulkAction('archive'),
+            ),
+            const SizedBox(width: 32),
+            TextButton(
+              onPressed: () => setState(() => _selectedIds.clear()),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white38, fontSize: 12)),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Future<void> _handleBulkAction(String action) async {
-    // Implement atomic batch write
     final batch = FirebaseFirestore.instance.batch();
     final timestamp = FieldValue.serverTimestamp();
-    final adminId = 'admin'; // Replace with actual admin ID
+    const adminId = 'admin';
 
     for (final id in _selectedIds) {
       final docRef = FirebaseFirestore.instance.collection('properties').doc(id);
       final auditRef = FirebaseFirestore.instance.collection('auditLogs').doc();
-
       String newStatus = action == 'approve' ? 'active' : action == 'suspend' ? 'suspended' : action == 'reject' ? 'rejected' : 'archived';
 
-      batch.update(docRef, {
-        'status': newStatus,
-        'updatedAt': timestamp,
-      });
-
-      batch.set(auditRef, {
-        'adminId': adminId,
-        'action': 'bulk_$action',
-        'propertyId': id,
-        'timestamp': timestamp,
-        'newValue': newStatus,
-        'type': 'property',
-      });
+      batch.update(docRef, {'status': newStatus, 'updatedAt': timestamp});
+      batch.set(auditRef, {'adminId': adminId, 'action': 'bulk_$action', 'propertyId': id, 'timestamp': timestamp, 'newValue': newStatus, 'type': 'property'});
     }
 
     try {
       await batch.commit();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Successfully processed $action for ${_selectedIds.length} properties')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Successfully processed $action for ${_selectedIds.length} properties')));
         setState(() => _selectedIds.clear());
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error processing bulk action: $e'), backgroundColor: Colors.red),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error processing bulk action: $e'), backgroundColor: Colors.red));
       }
     }
   }
@@ -320,19 +304,20 @@ class _ListingsTabState extends State<ListingsTab> {
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: const Color(0x0DFFFFFF)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: SizedBox(
-          width: 1300, // Wider for new columns
+          width: 1300,
           child: Column(
             children: [
               _buildGridHeader(),
               if (properties.isEmpty)
                 _EmptyState(label: 'No Data Available')
               else
-                ...properties.map((p) => _PropertyRow(
+                for (var p in properties) _PropertyRow(
+                  key: ValueKey(p['id']),
                   property: p,
                   isSelected: _selectedIds.contains(p['id']),
                   onSelect: (val) {
@@ -350,7 +335,7 @@ class _ListingsTabState extends State<ListingsTab> {
                       _isDrawerOpen = true;
                     });
                   },
-                )),
+                ),
             ],
           ),
         ),
@@ -362,9 +347,9 @@ class _ListingsTabState extends State<ListingsTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
+        color: const Color(0x05FFFFFF),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+        border: Border(bottom: BorderSide(color: const Color(0x0DFFFFFF))),
       ),
       child: Row(
         children: [
@@ -374,7 +359,7 @@ class _ListingsTabState extends State<ListingsTab> {
               value: false,
               onChanged: (v) {},
               activeColor: const Color(0xFF6366F1),
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+              side: const BorderSide(color: Color(0x33FFFFFF)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
             ),
           ),
@@ -398,12 +383,10 @@ class _ListingsTabState extends State<ListingsTab> {
       stream: widget.adminService.getActivityLogsStream(),
       builder: (context, snapshot) {
         final activities = snapshot.data ?? [];
-        
         return StreamBuilder<Map<String, dynamic>>(
           stream: widget.adminService.getGlobalStatsStream(),
           builder: (context, statsSnap) {
             final stats = statsSnap.data ?? {};
-
             return SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -457,7 +440,7 @@ class _ListingsTabState extends State<ListingsTab> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
-        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+        border: Border(bottom: BorderSide(color: const Color(0x0DFFFFFF))),
       ),
       child: Row(
         children: [
@@ -470,7 +453,7 @@ class _ListingsTabState extends State<ListingsTab> {
               ),
               Text(
                 'ID: ${_selectedProperty?['id'] ?? "N/A"}',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 12),
+                style: const TextStyle(color: Color(0x4DFFFFFF), fontSize: 12),
               ),
             ],
           ),
@@ -490,16 +473,16 @@ class _ListingsTabState extends State<ListingsTab> {
     return Container(
       color: const Color(0xFF0F172A),
       child: DefaultTabController(
-        length: 8, // Prompt requested 8 tabs
+        length: 8,
         child: Column(
           children: [
-            TabBar(
+            const TabBar(
               isScrollable: true,
-              labelColor: const Color(0xFF8B5CF6),
+              labelColor: Color(0xFF8B5CF6),
               unselectedLabelColor: Colors.white38,
-              indicatorColor: const Color(0xFF8B5CF6),
-              labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-              tabs: const [
+              indicatorColor: Color(0xFF8B5CF6),
+              labelStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              tabs: [
                 Tab(text: 'Overview'),
                 Tab(text: 'Rooms'),
                 Tab(text: 'Beds'),
@@ -531,23 +514,70 @@ class _ListingsTabState extends State<ListingsTab> {
   }
 
   Widget _buildOverviewTab() {
+    final p = _selectedProperty ?? {};
+    
+    // Fallbacks
+    final name = p['name'] ?? 'Untitled Property';
+    final location = p['location'] ?? p['address'] ?? 'No Address';
+    final type = p['category'] ?? p['type'] ?? p['propertyType'] ?? p['basicInfo']?['type'] ?? 'Accommodation';
+    final gender = p['gender'] ?? 'Anyone';
+    
+    final hostProfile = p['hostProfile'] as Map? ?? {};
+    final hosterName = p['hosterName'] ?? hostProfile['name'] ?? 'Unknown Hoster';
+    final hosterPhone = p['hosterPhone'] ?? hostProfile['phone'] ?? 'No Phone';
+    final hosterEmail = p['hosterEmail'] ?? hostProfile['email'] ?? 'No Email';
+    final hostType = hostProfile['hostType'] ?? 'Property Owner';
+    
+    final basicInfo = p['basicInfo'] as Map? ?? {};
+    final wardenName = basicInfo['wardenName'];
+    final wardenPhone = basicInfo['phone'];
+    final wardenEmail = basicInfo['email'];
+
+    final pricing = p['pricing'] as Map? ?? {};
+    final singleRent = pricing['singleRent'] ?? p['monthlyRent'] ?? p['price'] ?? 'N/A';
+    final doubleRent = pricing['doubleRent'] ?? 'N/A';
+    final tripleRent = pricing['tripleRent'] ?? 'N/A';
+    final securityDeposit = p['securityDeposit'] ?? pricing['deposit'] ?? 'N/A';
+    final noticePeriod = pricing['noticePeriod'] ?? 'N/A';
+    final foodIncluded = pricing['foodIncluded'] == true ? 'Yes' : 'No';
+
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
         const _DetailSection(title: 'Property Information'),
-        _DetailItem(label: 'Name', value: _selectedProperty?['name']),
-        _DetailItem(label: 'Location', value: _selectedProperty?['location']),
-        _DetailItem(label: 'Type', value: _selectedProperty?['category']),
-        _DetailItem(label: 'Gender', value: _selectedProperty?['gender']),
+        _DetailItem(label: 'Name', value: name),
+        _DetailItem(label: 'Location', value: location),
+        _DetailItem(label: 'Type', value: type),
+        _DetailItem(label: 'Gender', value: gender),
+        
         const SizedBox(height: 24),
         const _DetailSection(title: 'Hoster Information'),
-        _DetailItem(label: 'Hoster', value: _selectedProperty?['hosterName']),
-        _DetailItem(label: 'Phone', value: _selectedProperty?['hosterPhone']),
-        _DetailItem(label: 'Email', value: _selectedProperty?['hosterEmail']),
+        _DetailItem(label: 'Hoster', value: hosterName),
+        _DetailItem(label: 'Host Type', value: hostType),
+        _DetailItem(label: 'Phone', value: hosterPhone),
+        _DetailItem(label: 'Email', value: hosterEmail),
+        
+        if (wardenName != null && wardenName.toString().isNotEmpty) ...[
+          const SizedBox(height: 24),
+          const _DetailSection(title: 'Warden / Manager Information'),
+          _DetailItem(label: 'Manager Name', value: wardenName.toString()),
+          if (wardenPhone != null) _DetailItem(label: 'Manager Phone', value: wardenPhone.toString()),
+          if (wardenEmail != null) _DetailItem(label: 'Manager Email', value: wardenEmail.toString()),
+        ],
+
+        const SizedBox(height: 24),
+        const _DetailSection(title: 'Pricing & Terms'),
+        _DetailItem(label: 'Single Sharing Rent', value: '₹$singleRent'),
+        _DetailItem(label: 'Double Sharing Rent', value: '₹$doubleRent'),
+        _DetailItem(label: 'Triple Sharing Rent', value: '₹$tripleRent'),
+        _DetailItem(label: 'Security Deposit', value: '₹$securityDeposit'),
+        _DetailItem(label: 'Notice Period', value: noticePeriod),
+        _DetailItem(label: 'Food Included', value: foodIncluded),
+
         const SizedBox(height: 24),
         const _DetailSection(title: 'Operational Status'),
-        _DetailItem(label: 'Status', value: _selectedProperty?['status'], isStatus: true),
-        _DetailItem(label: 'Health Score', value: _selectedProperty?['healthScore']?.toString() ?? 'N/A'),
+        _DetailItem(label: 'Status', value: p['status'], isStatus: true),
+        _DetailItem(label: 'Health Score', value: p['healthScore']?.toString() ?? 'N/A'),
       ],
     );
   }
@@ -559,29 +589,17 @@ class _ListingsTabState extends State<ListingsTab> {
     if (propertyId == null) return _EmptyState(label: 'Select a property');
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('properties')
-          .doc(propertyId)
-          .collection('rooms')
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('properties').doc(propertyId).collection('rooms').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
         final rooms = snapshot.data?.docs ?? [];
-        
         if (rooms.isEmpty) return const _NotConfigured(label: 'Rooms');
-
         return ListView.builder(
           padding: const EdgeInsets.all(24),
           itemCount: rooms.length,
           itemBuilder: (context, index) {
             final room = rooms[index].data();
-            return _DrawerListTile(
-              title: 'Room ${room['roomNumber']}',
-              subtitle: '${room['type'] ?? "Standard"} • ${room['sharing'] ?? 1} Sharing',
-              trailing: '${room['occupancy'] ?? 0}% Full',
-              icon: Icons.meeting_room_rounded,
-              color: const Color(0xFF6366F1),
-            );
+            return _DrawerListTile(title: 'Room ${room['roomNumber']}', subtitle: '${room['type'] ?? "Standard"} • ${room['sharing'] ?? 1} Sharing', trailing: '${room['occupancy'] ?? 0}% Full', icon: Icons.meeting_room_rounded, color: const Color(0xFF6366F1));
           },
         );
       },
@@ -593,48 +611,20 @@ class _ListingsTabState extends State<ListingsTab> {
     if (propertyId == null) return _EmptyState(label: 'Select a property');
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('beds')
-          .where('propertyId', isEqualTo: propertyId)
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('beds').where('propertyId', isEqualTo: propertyId).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
         final beds = snapshot.data?.docs ?? [];
-
         if (beds.isEmpty) return const _NotConfigured(label: 'Beds');
-
         return GridView.builder(
           padding: const EdgeInsets.all(24),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.5,
-          ),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.5),
           itemCount: beds.length,
           itemBuilder: (context, index) {
             final bed = beds[index].data();
             final status = bed['status'] ?? 'available';
             final color = _getBedColor(status);
-
-            return Container(
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color.withValues(alpha: 0.3)),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.bed_rounded, color: color, size: 20),
-                  const SizedBox(height: 4),
-                  Text(
-                    'B${bed['bedNumber'] ?? index + 1}', 
-                    style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                ],
-              ),
-            );
+            return Container(decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withValues(alpha: 0.3))), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.bed_rounded, color: color, size: 20), const SizedBox(height: 4), Text(bed['bedNumber']?.toString() ?? 'B${index + 1}', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12))]));
           },
         );
       },
@@ -656,28 +646,17 @@ class _ListingsTabState extends State<ListingsTab> {
     if (propertyId == null) return _EmptyState(label: 'Select a property');
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .where('activePropertyId', isEqualTo: propertyId)
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('users').where('activePropertyId', isEqualTo: propertyId).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
         final residents = snapshot.data?.docs ?? [];
-
         if (residents.isEmpty) return const _NotConfigured(label: 'Residents');
-
         return ListView.builder(
           padding: const EdgeInsets.all(24),
           itemCount: residents.length,
           itemBuilder: (context, index) {
             final resident = residents[index].data();
-            return _DrawerListTile(
-              title: resident['name'] ?? 'Unknown Resident',
-              subtitle: resident['email'] ?? 'No Email',
-              trailing: 'Room ${resident['roomNumber'] ?? "N/A"}',
-              icon: Icons.person_rounded,
-              color: const Color(0xFF8B5CF6),
-            );
+            return _DrawerListTile(title: resident['name'] ?? 'Unknown Resident', subtitle: resident['email'] ?? 'No Email', trailing: 'Room ${resident['roomNumber'] ?? "N/A"}', icon: Icons.person_rounded, color: const Color(0xFF8B5CF6));
           },
         );
       },
@@ -689,17 +668,11 @@ class _ListingsTabState extends State<ListingsTab> {
     if (propertyId == null) return _EmptyState(label: 'Select a property');
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('payments')
-          .where('propertyId', isEqualTo: propertyId)
-          .orderBy('createdAt', descending: true)
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('payments').where('propertyId', isEqualTo: propertyId).orderBy('createdAt', descending: true).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
         final payments = snapshot.data?.docs ?? [];
-
         if (payments.isEmpty) return const _NotConfigured(label: 'Payments');
-
         return ListView.builder(
           padding: const EdgeInsets.all(24),
           itemCount: payments.length,
@@ -707,14 +680,7 @@ class _ListingsTabState extends State<ListingsTab> {
             final payment = payments[index].data();
             final status = payment['status'] ?? 'pending';
             final amount = payment['amount'] ?? 0;
-
-            return _DrawerListTile(
-              title: '₹$amount',
-              subtitle: payment['type'] ?? 'Rent Payment',
-              trailing: status.toString().toUpperCase(),
-              icon: Icons.payments_rounded,
-              color: status == 'paid' ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-            );
+            return _DrawerListTile(title: '₹$amount', subtitle: payment['type'] ?? 'Rent Payment', trailing: status.toString().toUpperCase(), icon: Icons.payments_rounded, color: status == 'paid' ? const Color(0xFF10B981) : const Color(0xFFF59E0B));
           },
         );
       },
@@ -726,29 +692,17 @@ class _ListingsTabState extends State<ListingsTab> {
     if (propertyId == null) return _EmptyState(label: 'Select a property');
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('complaints')
-          .where('propertyId', isEqualTo: propertyId)
-          .orderBy('createdAt', descending: true)
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('complaints').where('propertyId', isEqualTo: propertyId).orderBy('createdAt', descending: true).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
         final complaints = snapshot.data?.docs ?? [];
-
         if (complaints.isEmpty) return const _NotConfigured(label: 'Complaints');
-
         return ListView.builder(
           padding: const EdgeInsets.all(24),
           itemCount: complaints.length,
           itemBuilder: (context, index) {
             final complaint = complaints[index].data();
-            return _DrawerListTile(
-              title: complaint['title'] ?? 'Complaint',
-              subtitle: complaint['category'] ?? 'General',
-              trailing: complaint['status']?.toString().toUpperCase(),
-              icon: Icons.report_problem_rounded,
-              color: const Color(0xFFEF4444),
-            );
+            return _DrawerListTile(title: complaint['title'] ?? 'Complaint', subtitle: complaint['category'] ?? 'General', trailing: complaint['status']?.toString().toUpperCase(), icon: Icons.report_problem_rounded, color: const Color(0xFFEF4444));
           },
         );
       },
@@ -760,14 +714,10 @@ class _ListingsTabState extends State<ListingsTab> {
     if (propertyId == null) return _EmptyState(label: 'Select a property');
 
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('complianceStats')
-          .doc(propertyId)
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('complianceStats').doc(propertyId).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
         final stats = snapshot.data?.data() ?? {};
-
         return ListView(
           padding: const EdgeInsets.all(24),
           children: [
@@ -783,39 +733,18 @@ class _ListingsTabState extends State<ListingsTab> {
 
   Widget _buildAddButton() {
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF6366F1),
-        borderRadius: BorderRadius.circular(10),
-      ),
+      decoration: BoxDecoration(color: const Color(0xFF6366F1), borderRadius: BorderRadius.circular(10)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
-              children: [
-                Icon(Icons.add, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Text(
-                  'Add New Listing',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+              children: [Icon(Icons.add, color: Colors.white, size: 18), SizedBox(width: 8), Text('Add New Listing', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold))],
             ),
           ),
           Container(height: 44, width: 1, color: Colors.white24),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Icon(
-              Icons.keyboard_arrow_down,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
+          const Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20)),
         ],
       ),
     );
@@ -828,20 +757,9 @@ class _LiveBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: const Color(0xFF10B981).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
-      ),
+      decoration: BoxDecoration(color: const Color(0x1910B981), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0x4D10B981))),
       child: const Row(
-        children: [
-          _PulseCircle(),
-          SizedBox(width: 6),
-          Text(
-            'Live',
-            style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold),
-          ),
-        ],
+        children: [_PulseCircle(), SizedBox(width: 6), Text('Live', style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold))],
       ),
     );
   }
@@ -869,15 +787,9 @@ class _PulseCircleState extends State<_PulseCircle> with SingleTickerProviderSta
   Widget build(BuildContext context) {
     return Row(
       children: [
-        FadeTransition(
-          opacity: _controller,
-          child: Container(width: 6, height: 6, decoration: BoxDecoration(color: const Color(0xFF10B981), shape: BoxShape.circle)),
-        ),
+        FadeTransition(opacity: _controller, child: Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF10B981), shape: BoxShape.circle))),
         const SizedBox(width: 6),
-        const Text(
-          'Live',
-          style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold),
-        ),
+        const Text('Live', style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold)),
       ],
     );
   }
@@ -893,30 +805,17 @@ class _KPICard extends StatelessWidget {
   final Color color;
   final bool isAlert;
 
-  const _KPICard({
-    required this.title,
-    required this.value,
-    this.trend,
-    this.subValue,
-    this.link,
-    required this.icon,
-    required this.color,
-    this.isAlert = false,
-  });
+  const _KPICard({required this.title, required this.value, this.trend, this.subValue, this.link, required this.icon, required this.color, this.isAlert = false});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B).withValues(alpha: 0.5), // Glassmorphism
+        color: const Color(0x801E293B),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isAlert ? const Color(0xFFEF4444).withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05),
-        ),
-        boxShadow: isAlert 
-            ? [BoxShadow(color: const Color(0xFFEF4444).withValues(alpha: 0.1), blurRadius: 10, spreadRadius: 2)] 
-            : [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10)],
+        border: Border.all(color: isAlert ? const Color(0x4DEF4444) : const Color(0x0DFFFFFF)),
+        boxShadow: isAlert ? [BoxShadow(color: const Color(0x19EF4444), blurRadius: 10, spreadRadius: 2)] : [const BoxShadow(color: Color(0x33000000), blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -925,57 +824,15 @@ class _KPICard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1), 
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              if (link != null)
-                Flexible(
-                  child: Text(
-                    link!, 
-                    style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
+              Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: color, size: 18)),
+              if (link != null) Flexible(child: Text(link!, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
             ],
           ),
           const Spacer(),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-          ),
+          FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white))),
           const SizedBox(height: 2),
-          Text(
-            title,
-            style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.5), fontWeight: FontWeight.w600),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (trend != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              trend!, 
-              style: const TextStyle(color: Color(0xFF10B981), fontSize: 9, fontWeight: FontWeight.bold),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ] else if (subValue != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              subValue!, 
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 9, fontWeight: FontWeight.bold),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+          Text(title, style: const TextStyle(fontSize: 10, color: Color(0x80FFFFFF), fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+          if (trend != null) ...[const SizedBox(height: 4), Text(trend!, style: const TextStyle(color: Color(0xFF10B981), fontSize: 9, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis)] else if (subValue != null) ...[const SizedBox(height: 4), Text(subValue!, style: const TextStyle(color: Color(0x66FFFFFF), fontSize: 9, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis)],
         ],
       ),
     );
@@ -990,20 +847,8 @@ class _FilterDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('$label: ', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12)),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-          const SizedBox(width: 8),
-          Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.white.withValues(alpha: 0.3)),
-        ],
-      ),
+      decoration: BoxDecoration(color: const Color(0x08FFFFFF), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0x0DFFFFFF))),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [Text('$label: ', style: const TextStyle(color: Color(0x66FFFFFF), fontSize: 12)), Text(value, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)), const SizedBox(width: 8), const Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0x4DFFFFFF))]),
     );
   }
 }
@@ -1014,19 +859,8 @@ class _MoreFiltersBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03), 
-        borderRadius: BorderRadius.circular(8), 
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.tune_rounded, size: 16, color: Colors.white.withOpacity(0.5)),
-          const SizedBox(width: 8),
-          const Text('More Filters', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-        ],
-      ),
+      decoration: BoxDecoration(color: const Color(0x08FFFFFF), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0x0DFFFFFF))),
+      child: const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.tune_rounded, size: 16, color: Color(0x80FFFFFF)), SizedBox(width: 8), Text('More Filters', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))]),
     );
   }
 }
@@ -1035,11 +869,7 @@ class _ResetBtn extends StatelessWidget {
   const _ResetBtn();
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: () {},
-      icon: Icon(Icons.refresh_rounded, size: 16, color: Colors.white.withValues(alpha: 0.4)),
-      label: Text('Reset', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12, fontWeight: FontWeight.bold)),
-    );
+    return TextButton.icon(onPressed: () {}, icon: const Icon(Icons.refresh_rounded, size: 16, color: Color(0x66FFFFFF)), label: const Text('Reset', style: TextStyle(color: Color(0x66FFFFFF), fontSize: 12, fontWeight: FontWeight.bold)));
   }
 }
 
@@ -1049,19 +879,8 @@ class _ExportBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03), 
-        borderRadius: BorderRadius.circular(8), 
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.file_download_outlined, size: 16, color: Colors.white.withOpacity(0.5)),
-          const SizedBox(width: 8),
-          const Text('Export', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-        ],
-      ),
+      decoration: BoxDecoration(color: const Color(0x08FFFFFF), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0x0DFFFFFF))),
+      child: const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.file_download_outlined, size: 16, color: Color(0x80FFFFFF)), SizedBox(width: 8), Text('Export', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))]),
     );
   }
 }
@@ -1071,36 +890,10 @@ class _ToolbarAction extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
-
-  const _ToolbarAction({
-    required this.label, 
-    required this.icon, 
-    required this.color,
-    required this.onTap,
-  });
-
+  const _ToolbarAction({required this.label, required this.icon, required this.color, required this.onTap});
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 24),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Row(
-            children: [
-              Icon(icon, color: color, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                label, 
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return Padding(padding: const EdgeInsets.only(right: 24), child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(8), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), child: Row(children: [Icon(icon, color: color, size: 18), const SizedBox(width: 8), Text(label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600))]))));
   }
 }
 
@@ -1109,15 +902,7 @@ class _HeaderLabel extends StatelessWidget {
   const _HeaderLabel(this.label);
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: TextStyle(
-        fontSize: 10, 
-        fontWeight: FontWeight.bold, 
-        color: Colors.white.withValues(alpha: 0.3), 
-        letterSpacing: 1.0,
-      ),
-    );
+    return Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0x4DFFFFFF), letterSpacing: 1.0));
   }
 }
 
@@ -1126,35 +911,17 @@ class _PropertyRow extends StatelessWidget {
   final bool isSelected;
   final ValueChanged<bool?> onSelect;
   final VoidCallback onTap;
-
-  const _PropertyRow({
-    required this.property,
-    required this.isSelected,
-    required this.onSelect,
-    required this.onTap,
-  });
-
+  const _PropertyRow({super.key, required this.property, required this.isSelected, required this.onSelect, required this.onTap});
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-        ),
+        decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0x0DFFFFFF)))),
         child: Row(
           children: [
-            SizedBox(
-              width: 24,
-              child: Checkbox(
-                value: isSelected,
-                onChanged: onSelect,
-                activeColor: const Color(0xFF6366F1),
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-              ),
-            ),
+            SizedBox(width: 24, child: Checkbox(value: isSelected, onChanged: onSelect, activeColor: const Color(0xFF6366F1), side: const BorderSide(color: Color(0x33FFFFFF)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)))),
             const SizedBox(width: 16),
             Expanded(flex: 3, child: _PropertyInfo(property: property)),
             Expanded(flex: 2, child: _HosterInfo(property: property)),
@@ -1164,13 +931,7 @@ class _PropertyRow extends StatelessWidget {
             Expanded(flex: 2, child: _ComplianceBadges(property: property)),
             Expanded(flex: 1, child: _HealthScore(score: property['healthScore'] ?? 0)),
             Expanded(flex: 1, child: _StatusBadge(status: property['status'])),
-            SizedBox(
-              width: 48,
-              child: IconButton(
-                icon: const Icon(Icons.more_vert, color: Color(0xFF475569)),
-                onPressed: () {},
-              ),
-            ),
+            SizedBox(width: 48, child: IconButton(icon: const Icon(Icons.more_vert, color: Color(0xFF475569)), onPressed: () {})),
           ],
         ),
       ),
@@ -1183,79 +944,118 @@ class _PropertyInfo extends StatelessWidget {
   const _PropertyInfo({required this.property});
   @override
   Widget build(BuildContext context) {
+    final location = property['location'] ?? property['address'] ?? 'Unknown';
+    final imageUrl = property['propertyImage'] ?? (property['image_urls'] as List?)?.firstOrNull;
     return Row(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.network(
-            property['propertyImage'] ?? 'https://via.placeholder.com/48',
-            width: 48,
-            height: 48,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              width: 48,
-              height: 48,
-              color: Colors.white.withValues(alpha: 0.05),
-              child: const Icon(Icons.home_work_rounded, color: Colors.white38, size: 20),
-            ),
-          ),
-        ),
+        ClipRRect(borderRadius: BorderRadius.circular(8), child: imageUrl != null ? Image.network(imageUrl, width: 48, height: 48, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(width: 48, height: 48, color: const Color(0x0DFFFFFF), child: const Icon(Icons.home_work_rounded, color: Colors.white38, size: 20))) : Container(width: 48, height: 48, color: const Color(0x0DFFFFFF), child: const Icon(Icons.home_work_rounded, color: Colors.white38, size: 20))),
         const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                property['name'] ?? 'Untitled',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                'ID: ${property['id']?.substring(0, 8) ?? "N/A"}',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11),
-              ),
-              Text(
-                property['location'] ?? 'Unknown',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(property['name'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis), Text('ID: ${property['id']?.substring(0, 8) ?? "N/A"}', style: const TextStyle(color: Color(0x4DFFFFFF), fontSize: 11)), Text(location, style: const TextStyle(color: Color(0x80FFFFFF), fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis)])),
       ],
     );
   }
 }
 
-class _HosterInfo extends StatelessWidget {
+class _HosterInfo extends StatefulWidget {
   final Map<String, dynamic> property;
   const _HosterInfo({required this.property});
   @override
+  State<_HosterInfo> createState() => _HosterInfoState();
+}
+
+class _HosterInfoState extends State<_HosterInfo> {
+  bool? _isVerified;
+
+  @override
+  void initState() {
+    super.initState();
+    // First check if the property doc already has a reliable value
+    final cached = widget.property['isHostVerified'];
+    if (cached is bool) {
+      _isVerified = cached;
+    }
+    _fetchHosterVerification();
+  }
+
+  Future<void> _fetchHosterVerification() async {
+    // Support both field naming conventions
+    final hosterId =
+        widget.property['hoster_id'] as String? ??
+        widget.property['hosterId'] as String?;
+    if (hosterId == null || hosterId.isEmpty) return;
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(hosterId)
+          .get();
+      if (!mounted) return;
+      if (doc.exists) {
+        final data = doc.data()!;
+        final isVerified =
+            (data['onboardingStatus'] == 'approved') ||
+            (data['accountStatus'] == 'active') ||
+            (data['status'] == 'approved') ||
+            (data['permissions'] is Map &&
+                data['permissions']['status'] == 'approved') ||
+            (data['isVerified'] == true);
+        setState(() => _isVerified = isVerified);
+      }
+    } catch (_) {}
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final hostProfile = widget.property['hostProfile'] as Map? ?? {};
+    final hosterName =
+        widget.property['hosterName'] ?? hostProfile['name'] ?? 'Unknown';
+    final initial = hosterName.isNotEmpty ? hosterName[0].toUpperCase() : 'U';
+
+    // Use live-fetched value, fall back to property doc field, then false
+    final isHostVerified = _isVerified ?? widget.property['isHostVerified'] ?? false;
+
     return Row(
       children: [
         CircleAvatar(
           radius: 14,
-          backgroundColor: const Color(0xFF7C3AED).withValues(alpha: 0.1),
-          child: Text(
-            (property['hosterName'] ?? 'U')[0],
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF8B5CF6)),
-          ),
+          backgroundColor: const Color(0x1A7C3AED),
+          child: Text(initial,
+              style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF8B5CF6))),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                property['hosterName'] ?? 'Unknown',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const Text('Verified', style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold)),
+              Text(hosterName,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Colors.white),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
+              _isVerified == null
+                  ? const SizedBox(
+                      width: 40,
+                      height: 8,
+                      child: LinearProgressIndicator(
+                        backgroundColor: Color(0x22FFFFFF),
+                        color: Color(0xFF6366F1),
+                      ),
+                    )
+                  : Text(
+                      isHostVerified ? 'Verified' : 'Unverified',
+                      style: TextStyle(
+                        color: isHostVerified
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFEF4444),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ],
           ),
         ),
@@ -1269,14 +1069,10 @@ class _InventoryInfo extends StatelessWidget {
   const _InventoryInfo({required this.property});
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text('${property['beds'] ?? 0} Beds', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white)),
-        Text('${property['rooms'] ?? 0} Rooms', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11)),
-      ],
-    );
+    final totalBeds = property['beds'] ?? property['totalCapacity'] ?? property['propertyDetails']?['totalCapacity'] ?? 0;
+    final details = property['propertyDetails'] as Map? ?? {};
+    final roomsCount = property['rooms'] ?? ((details['singleRooms'] ?? 0) + (details['doubleRooms'] ?? 0) + (details['tripleRooms'] ?? 0));
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [Text('$totalBeds Beds', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white)), Text('$roomsCount Rooms', style: const TextStyle(color: Color(0x80FFFFFF), fontSize: 11))]);
   }
 }
 
@@ -1285,30 +1081,9 @@ class _OccupancyRing extends StatelessWidget {
   const _OccupancyRing({required this.value});
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          SizedBox(
-            width: 32,
-            height: 32,
-            child: CircularProgressIndicator(
-              value: value / 100,
-              strokeWidth: 3,
-              backgroundColor: Colors.white.withValues(alpha: 0.05),
-              valueColor: AlwaysStoppedAnimation<Color>(_getColor(value)),
-            ),
-          ),
-          Text('$value%', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white)),
-        ],
-      ),
-    );
+    return Center(child: Stack(alignment: Alignment.center, children: [SizedBox(width: 32, height: 32, child: CircularProgressIndicator(value: value / 100, strokeWidth: 3, backgroundColor: const Color(0x0DFFFFFF), valueColor: AlwaysStoppedAnimation<Color>(_getColor(value)))), Text('$value%', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white))]));
   }
-  Color _getColor(int v) {
-    if (v > 75) return const Color(0xFF10B981);
-    if (v > 40) return const Color(0xFFF59E0B);
-    return const Color(0xFFEF4444);
-  }
+  Color _getColor(int v) { if (v > 75) return const Color(0xFF10B981); if (v > 40) return const Color(0xFFF59E0B); return const Color(0xFFEF4444); }
 }
 
 class _RevenueInfo extends StatelessWidget {
@@ -1316,19 +1091,7 @@ class _RevenueInfo extends StatelessWidget {
   const _RevenueInfo({required this.property});
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text('₹${property['revenue'] ?? 0}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white)),
-        const Row(
-          children: [
-            Icon(Icons.arrow_upward, color: Color(0xFF10B981), size: 10),
-            Text('12.4%', style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ],
-    );
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [Text('₹${property['revenue'] ?? 0}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white)), const Row(children: [Icon(Icons.arrow_upward, color: Color(0xFF10B981), size: 10), Text('12.4%', style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold))])]);
   }
 }
 
@@ -1339,26 +1102,10 @@ class _ComplianceBadges extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _ComplianceIcon(
-          icon: Icons.assignment_ind_rounded, 
-          color: property['kycStatus'] == 'verified' ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-          label: 'KYC',
-        ),
-        _ComplianceIcon(
-          icon: Icons.local_fire_department_rounded, 
-          color: property['fireSafetyStatus'] == 'verified' ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-          label: 'Fire',
-        ),
-        _ComplianceIcon(
-          icon: Icons.security_rounded, 
-          color: property['policeStatus'] == 'verified' ? const Color(0xFF10B981) : Colors.white.withValues(alpha: 0.24),
-          label: 'Police',
-        ),
-        _ComplianceIcon(
-          icon: Icons.policy_rounded, 
-          color: property['licenseStatus'] == 'verified' ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-          label: 'License',
-        ),
+        _ComplianceIcon(icon: Icons.assignment_ind_rounded, color: property['kycStatus'] == 'verified' ? const Color(0xFF10B981) : const Color(0xFFF59E0B), label: 'KYC'),
+        _ComplianceIcon(icon: Icons.local_fire_department_rounded, color: property['fireSafetyStatus'] == 'verified' ? const Color(0xFF10B981) : const Color(0xFFEF4444), label: 'Fire'),
+        _ComplianceIcon(icon: Icons.security_rounded, color: property['policeStatus'] == 'verified' ? const Color(0xFF10B981) : const Color(0x3DFFFFFF), label: 'Police'),
+        _ComplianceIcon(icon: Icons.policy_rounded, color: property['licenseStatus'] == 'verified' ? const Color(0xFF10B981) : const Color(0xFFEF4444), label: 'License'),
       ],
     );
   }
@@ -1368,29 +1115,10 @@ class _ComplianceIcon extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String label;
-
-  const _ComplianceIcon({
-    required this.icon, 
-    required this.color,
-    required this.label,
-  });
-
+  const _ComplianceIcon({required this.icon, required this.color, required this.label});
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: label,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 6),
-        child: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Icon(icon, color: color, size: 12),
-        ),
-      ),
-    );
+    return Tooltip(message: label, child: Padding(padding: const EdgeInsets.only(right: 6), child: Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)), child: Icon(icon, color: color, size: 12))));
   }
 }
 
@@ -1399,25 +1127,9 @@ class _HealthScore extends StatelessWidget {
   const _HealthScore({required this.score});
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: _getColor(score).withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          score.toString(),
-          style: TextStyle(color: _getColor(score), fontWeight: FontWeight.bold, fontSize: 12),
-        ),
-      ),
-    );
+    return Center(child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: _getColor(score).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)), child: Text(score.toString(), style: TextStyle(color: _getColor(score), fontWeight: FontWeight.bold, fontSize: 12))));
   }
-  Color _getColor(int s) {
-    if (s > 80) return const Color(0xFF10B981);
-    if (s > 50) return const Color(0xFFF59E0B);
-    return const Color(0xFFEF4444);
-  }
+  Color _getColor(int s) { if (s > 80) return const Color(0xFF10B981); if (s > 50) return const Color(0xFFF59E0B); return const Color(0xFFEF4444); }
 }
 
 class _StatusBadge extends StatelessWidget {
@@ -1427,20 +1139,9 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = status?.toUpperCase() ?? 'DRAFT';
     final color = _getColor(status);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-      child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-    );
+    return Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)), child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center));
   }
-  Color _getColor(String? s) {
-    switch (s?.toLowerCase()) {
-      case 'active': case 'approved': return const Color(0xFF10B981);
-      case 'pending': case 'review': return const Color(0xFFF59E0B);
-      case 'rejected': case 'suspended': return const Color(0xFFEF4444);
-      default: return const Color(0xFF94A3B8);
-    }
-  }
+  Color _getColor(String? s) { switch (s?.toLowerCase()) { case 'active': case 'approved': return const Color(0xFF10B981); case 'pending': case 'review': return const Color(0xFFF59E0B); case 'rejected': case 'suspended': return const Color(0xFFEF4444); default: return const Color(0xFF94A3B8); } }
 }
 
 class _DetailSection extends StatelessWidget {
@@ -1448,13 +1149,7 @@ class _DetailSection extends StatelessWidget {
   const _DetailSection({required this.title});
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Text(
-        title, 
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
-      ),
-    );
+    return Padding(padding: const EdgeInsets.symmetric(vertical: 16), child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)));
   }
 }
 
@@ -1465,22 +1160,7 @@ class _DetailItem extends StatelessWidget {
   const _DetailItem({required this.label, this.value, this.isStatus = false});
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.4))),
-          if (isStatus) 
-            _StatusBadge(status: value?.toString()) 
-          else 
-            Text(
-              value?.toString() ?? 'N/A', 
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-        ],
-      ),
-    );
+    return Padding(padding: const EdgeInsets.only(bottom: 12), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(label, style: const TextStyle(color: Color(0x66FFFFFF))), if (isStatus) _StatusBadge(status: value?.toString()) else Text(value?.toString() ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white))]));
   }
 }
 
@@ -1489,23 +1169,7 @@ class _NotConfigured extends StatelessWidget {
   const _NotConfigured({required this.label});
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.sync_problem_rounded, size: 48, color: Colors.white.withValues(alpha: 0.1)),
-          const SizedBox(height: 16),
-          Text(
-            '$label Not Configured', 
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontWeight: FontWeight.bold),
-          ),
-          Text(
-            'Awaiting Sync', 
-            style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 12),
-          ),
-        ],
-      ),
-    );
+    return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.sync_problem_rounded, size: 48, color: Color(0x1AFFFFFF)), const SizedBox(height: 16), Text('$label Not Configured', style: const TextStyle(color: Color(0x80FFFFFF), fontWeight: FontWeight.bold)), const Text('Awaiting Sync', style: TextStyle(color: Color(0x4DFFFFFF), fontSize: 12))]));
   }
 }
 
@@ -1514,50 +1178,19 @@ class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.label});
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label, 
-      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-    );
+    return Text(label, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5));
   }
 }
 
 class _ComplianceDocItem extends StatelessWidget {
   final String label;
   final String? status;
-
   const _ComplianceDocItem({required this.label, this.status});
-
   @override
   Widget build(BuildContext context) {
     final isVerified = status == 'verified';
     final color = isVerified ? const Color(0xFF10B981) : const Color(0xFFEF4444);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.description_rounded, color: Colors.white.withValues(alpha: 0.2), size: 20),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-            child: Text(
-              (status ?? 'MISSING').toUpperCase(), 
-              style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
+    return Container(margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: const Color(0x05FFFFFF), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0x0DFFFFFF))), child: Row(children: [const Icon(Icons.description_rounded, color: Color(0x33FFFFFF), size: 20), const SizedBox(width: 16), Expanded(child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13))), Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: Text((status ?? 'MISSING').toUpperCase(), style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)))]));
   }
 }
 
@@ -1567,47 +1200,10 @@ class _DrawerListTile extends StatelessWidget {
   final String? trailing;
   final IconData icon;
   final Color color;
-
-  const _DrawerListTile({
-    required this.title, 
-    required this.subtitle, 
-    this.trailing, 
-    required this.icon, 
-    required this.color,
-  });
-
+  const _DrawerListTile({required this.title, required this.subtitle, this.trailing, required this.icon, required this.color});
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                Text(subtitle, style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12)),
-              ],
-            ),
-          ),
-          if (trailing != null)
-            Text(trailing!, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 12)),
-        ],
-      ),
-    );
+    return Container(margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: const Color(0x05FFFFFF), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0x0DFFFFFF))), child: Row(children: [Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 20)), const SizedBox(width: 16), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)), Text(subtitle, style: const TextStyle(color: Color(0x66FFFFFF), fontSize: 12))])), if (trailing != null) Text(trailing!, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 12))]));
   }
 }
 
@@ -1616,20 +1212,6 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.label});
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(48),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(Icons.inbox_rounded, size: 64, color: Colors.white.withValues(alpha: 0.05)),
-            const SizedBox(height: 16),
-            Text(
-              label, 
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ),
-    );
+    return Padding(padding: const EdgeInsets.all(48), child: Center(child: Column(children: [const Icon(Icons.inbox_rounded, size: 64, color: Color(0x0DFFFFFF)), const SizedBox(height: 16), Text(label, style: const TextStyle(color: Color(0x4DFFFFFF), fontSize: 16, fontWeight: FontWeight.bold))])));
   }
 }

@@ -38,17 +38,20 @@ class _DocumentCaptureCameraState extends State<DocumentCaptureCamera> {
   }
 
   Future<void> _initializeCamera() async {
-    _cameras = await availableCameras();
-    if (_cameras == null || _cameras!.isEmpty) return;
-
-    _controller = CameraController(
-      _cameras![0],
-      ResolutionPreset.high,
-      enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.jpeg,
-    );
-
     try {
+      _cameras = await availableCameras();
+      if (_cameras == null || _cameras!.isEmpty) {
+        if (mounted) setState(() => _isInitialized = true); // To trigger error view
+        return;
+      }
+
+      _controller = CameraController(
+        _cameras![0],
+        ResolutionPreset.high,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
+
       await _controller!.initialize();
       await _controller!.setFocusMode(FocusMode.auto);
       await _controller!.setFlashMode(FlashMode.off);
@@ -60,6 +63,7 @@ class _DocumentCaptureCameraState extends State<DocumentCaptureCamera> {
       }
     } catch (e) {
       debugPrint('Camera initialization error: $e');
+      if (mounted) setState(() => _isInitialized = true);
     }
   }
 
@@ -182,10 +186,40 @@ class _DocumentCaptureCameraState extends State<DocumentCaptureCamera> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isInitialized || _controller == null) {
+    if (!_isInitialized) {
       return const Scaffold(
         backgroundColor: Colors.black,
         body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
+    }
+
+    if (_controller == null || !_controller!.value.isInitialized) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.no_photography_outlined, color: Colors.white54, size: 64),
+              const SizedBox(height: 24),
+              const Text(
+                'Camera Hardware Not Found',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Please use the Gallery option to upload.',
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                child: const Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
       );
     }
 

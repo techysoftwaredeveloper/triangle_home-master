@@ -4,11 +4,13 @@ import 'package:triangle_home/theme/app_theme.dart';
 class HosterBottomNav extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onTap;
+  final int leadsCount;
 
   const HosterBottomNav({
     super.key,
     required this.selectedIndex,
     required this.onTap,
+    this.leadsCount = 0,
   });
 
   @override
@@ -49,25 +51,26 @@ class HosterBottomNav extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               const Icon(Icons.people_outline_rounded),
-              Positioned(
-                top: -4,
-                right: -4,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFEF4444),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Text(
-                    '4',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 8,
-                      fontWeight: FontWeight.bold,
+              if (leadsCount > 0)
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEF4444),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '$leadsCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
           label: 'Leads',

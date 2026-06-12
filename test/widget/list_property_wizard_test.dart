@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:triangle_home/screens/list_property/host_profile_step.dart';
+import 'package:triangle_home/widgets/list_property/document_upload.dart';
 
 void main() {
   group('List Property Wizard Widget Tests', () {
@@ -58,6 +59,13 @@ void main() {
       await tester.ensureVisible(find.text('Hostel Operator'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Hostel Operator'));
+      await tester.pumpAndSettle();
+
+      // Mock the document upload required for Hostel Operator
+      final uploadFinder = find.byType(RealtimeDocumentUpload);
+      expect(uploadFinder, findsOneWidget);
+      final uploadWidget = tester.widget<RealtimeDocumentUpload>(uploadFinder);
+      uploadWidget.onUploadComplete('https://example.com/cert.pdf');
       await tester.pumpAndSettle();
 
       // Submit

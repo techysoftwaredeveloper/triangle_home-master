@@ -7,12 +7,16 @@ import 'package:flutter/foundation.dart';
 
 class AdminApiService {
   /// NETWORK CONFIGURATION
-  /// Automatically uses 10.0.2.2 for Emulators and localhost for Web/Desktop
-  /// For physical Android devices via USB, run: adb reverse tcp:5000 tcp:5000
+  /// Default: 10.0.2.2 for Android Emulators, localhost for Web/iOS/Desktop.
+  /// If using a physical Android device, replace '10.0.2.2' with your Machine's Local IP.
+  static const String _customPhysicalIp = '192.168.31.25'; // Set your IP here
+  
   static String get _host {
     if (kIsWeb) return 'localhost';
     if (Platform.isAndroid) {
-      return '192.168.31.25'; // Updated Bridge IP for Physical Device
+      // Use standard emulator bridge by default. 
+      // Change to _customPhysicalIp if debugging on a real phone.
+      return '10.0.2.2'; 
     }
     return 'localhost';
   }
@@ -34,38 +38,73 @@ class AdminApiService {
     };
   }
 
+  /// UNIFIED REQUEST WRAPPER WITH DIAGNOSTICS
+  Future<dynamic> _performRequest({
+    required String method,
+    required String endpoint,
+    Map<String, dynamic>? body,
+  }) async {
+    final url = Uri.parse('$baseUrl$endpoint');
+    final headers = await _getHeaders();
+    
+    debugPrint('📡 [API] REQUEST: $method $url');
+    if (body != null) debugPrint('📦 [API] BODY: ${json.encode(body)}');
+
+    try {
+      http.Response response;
+      switch (method.toUpperCase()) {
+        case 'POST':
+          response = await http.post(url, headers: headers, body: json.encode(body));
+          break;
+        case 'PATCH':
+          response = await http.patch(url, headers: headers, body: json.encode(body));
+          break;
+        case 'GET':
+        default:
+          response = await http.get(url, headers: headers);
+          break;
+      }
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        debugPrint('✅ [API] SUCCESS: ${response.statusCode} - $endpoint');
+        return json.decode(response.body);
+      } else {
+        final errorMsg = _extractErrorMessage(response);
+        debugPrint('❌ [API] ERROR: ${response.statusCode} - $endpoint ($errorMsg)');
+        throw Exception('Server Error ${response.statusCode}: $errorMsg');
+      }
+    } catch (e) {
+      if (e is SocketException || e is http.ClientException) {
+        debugPrint('⚠️ [API] CONNECTION FAILED: $method $url');
+        debugPrint('👉 HINT: Check if server is running on port 5000 and if bridge IP ($_host) is correct.');
+      } else {
+        debugPrint('🚨 [API] UNEXPECTED ERROR: $e');
+      }
+      rethrow;
+    }
+  }
+
+  String _extractErrorMessage(http.Response response) {
+    try {
+      final data = json.decode(response.body);
+      return data['error'] ?? data['message'] ?? 'No detail provided';
+    } catch (_) {
+      return 'Could not parse error response';
+    }
+  }
+
   // Statistics
   Future<Map<String, dynamic>> getStats() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/admin/stats'),
-      headers: await _getHeaders(),
-    );
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['success'] == true) {
-        return data;
-      }
-      throw Exception(data['error'] ?? 'Failed to load stats');
-    }
-    throw Exception(
-      'Error ${response.statusCode}: Failed to connect to server',
-    );
+    final data = await _performRequest(method: 'GET', endpoint: '/admin/stats');
+    if (data['success'] == true) return data;
+    throw Exception(data['error'] ?? 'Failed to load stats');
   }
 
   // Users
   Future<Map<String, dynamic>> getAllUsers() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/admin/users'),
-      headers: await _getHeaders(),
-    );
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['success'] == true) {
-        return data;
-      }
-      throw Exception(data['error'] ?? 'Failed to load users');
-    }
-    throw Exception('Error ${response.statusCode}: Failed to load users');
+    final data = await _performRequest(method: 'GET', endpoint: '/admin/users');
+    if (data['success'] == true) return data;
+    throw Exception(data['error'] ?? 'Failed to load users');
   }
 
   Future<void> toggleUserStatus(
@@ -73,104 +112,66 @@ class AdminApiService {
     String? status,
     bool? isActive,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/admin/users/toggle-status'),
-      headers: await _getHeaders(),
-      body: json.encode({
+    await _performRequest(
+      method: 'POST',
+      endpoint: '/admin/users/toggle-status',
+      body: {
         'userId': userId,
         if (status != null) 'status': status,
         if (isActive != null) 'isActive': isActive,
-      }),
+      },
     );
-    if (response.statusCode != 200) {
-      final error =
-          json.decode(response.body)['message'] ??
-          'Failed to update user status';
-      throw Exception(error);
-    }
   }
 
   Future<void> updateUserRole(String userId, String role) async {
-    final response = await http.patch(
-      Uri.parse('$baseUrl/admin/users/$userId/role'),
-      headers: await _getHeaders(),
-      body: json.encode({'role': role}),
+    await _performRequest(
+      method: 'PATCH',
+      endpoint: '/admin/users/$userId/role',
+      body: {'role': role},
     );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update user role');
-    }
   }
 
   // Properties
   Future<List<Map<String, dynamic>>> getAllProperties() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/admin/properties'),
-      headers: await _getHeaders(),
-    );
-    if (response.statusCode == 200) {
-      final List data = json.decode(response.body);
-      return data.cast<Map<String, dynamic>>();
-    }
-    throw Exception('Failed to load properties');
+    final List data = await _performRequest(method: 'GET', endpoint: '/admin/properties');
+    return data.cast<Map<String, dynamic>>();
   }
 
   Future<void> updatePropertyStatus(String propertyId, String status) async {
-    final response = await http.patch(
-      Uri.parse('$baseUrl/admin/properties/$propertyId/status'),
-      headers: await _getHeaders(),
-      body: json.encode({'status': status}),
+    await _performRequest(
+      method: 'PATCH',
+      endpoint: '/admin/properties/$propertyId/status',
+      body: {'status': status},
     );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update property status');
-    }
   }
 
   // Bookings
   Future<List<Map<String, dynamic>>> getAllBookings() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/admin/bookings'),
-      headers: await _getHeaders(),
-    );
-    if (response.statusCode == 200) {
-      final List data = json.decode(response.body);
-      return data.cast<Map<String, dynamic>>();
-    }
-    throw Exception('Failed to load bookings');
+    final List data = await _performRequest(method: 'GET', endpoint: '/admin/bookings');
+    return data.cast<Map<String, dynamic>>();
   }
 
   // Hoster Approval
   Future<void> approveHoster(String hosterId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/admin/hosters/$hosterId/approve'),
-      headers: await _getHeaders(),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to approve hoster');
-    }
+    await _performRequest(method: 'POST', endpoint: '/admin/hosters/$hosterId/approve');
+  }
+
+  // Hoster Re-submission
+  Future<void> resubmitHoster() async {
+    await _performRequest(method: 'POST', endpoint: '/admin/resubmit-hoster');
   }
 
   // Suggestions
   Future<void> updateSuggestionStatus(String id, String status) async {
-    final response = await http.patch(
-      Uri.parse('$baseUrl/admin/suggestions/$id/status'),
-      headers: await _getHeaders(),
-      body: json.encode({'status': status}),
+    await _performRequest(
+      method: 'PATCH',
+      endpoint: '/admin/suggestions/$id/status',
+      body: {'status': status},
     );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update suggestion status');
-    }
   }
 
   Future<void> convertSuggestion(String id) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/suggestions/$id/convert'),
-      headers: await _getHeaders(),
-    );
-    if (response.statusCode != 200) {
-      final error =
-          json.decode(response.body)['error'] ?? 'Failed to convert suggestion';
-      throw Exception(error);
-    }
+    await _performRequest(method: 'POST', endpoint: '/suggestions/$id/convert');
   }
 
   // Reports
@@ -179,16 +180,13 @@ class AdminApiService {
     String status, {
     String? resolution,
   }) async {
-    final response = await http.patch(
-      Uri.parse('$baseUrl/admin/reports/$id/status'),
-      headers: await _getHeaders(),
-      body: json.encode({
+    await _performRequest(
+      method: 'PATCH',
+      endpoint: '/admin/reports/$id/status',
+      body: {
         'status': status,
         if (resolution != null) 'resolution': resolution,
-      }),
+      },
     );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update report status');
-    }
   }
 }

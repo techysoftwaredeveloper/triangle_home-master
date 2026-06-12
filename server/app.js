@@ -44,6 +44,14 @@ app.get('/', (req, res) => {
   res.send('Triangle Home Admin API is running...');
 });
 
+// 404 Handler
+app.use((req, res, next) => {
+    res.status(404).json({
+        success: false,
+        error: `Route not found: ${req.method} ${req.originalUrl}`
+    });
+});
+
 app.use(errorHandler);
 
 module.exports = app;

@@ -5,12 +5,14 @@ class ProgressBar extends StatelessWidget {
   final int currentStep;
   final int totalSteps;
   final double? completionPercentage;
+  final Function(int)? onStepTap;
 
   const ProgressBar({
     super.key,
     required this.currentStep,
     this.totalSteps = 9,
     this.completionPercentage,
+    this.onStepTap,
   });
 
   @override
@@ -23,22 +25,25 @@ class ProgressBar extends StatelessWidget {
             children: List.generate(totalSteps, (index) {
               final bool isActive = index <= currentStep;
               return Expanded(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color:
-                              isActive
-                                  ? AppTheme.primaryColor
-                                  : AppTheme.dividerColor,
-                          borderRadius: BorderRadius.circular(2),
+                child: GestureDetector(
+                  onTap: (onStepTap != null && index < currentStep) ? () => onStepTap!(index) : null,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color:
+                                isActive
+                                    ? AppTheme.primaryColor
+                                    : AppTheme.dividerColor,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
                       ),
-                    ),
-                    if (index < totalSteps - 1) const SizedBox(width: 4),
-                  ],
+                      if (index < totalSteps - 1) const SizedBox(width: 4),
+                    ],
+                  ),
                 ),
               );
             }),
@@ -89,23 +94,21 @@ class ProgressBar extends StatelessWidget {
   String _getStepTitle(int step) {
     switch (step) {
       case 0:
-        return 'Host Profile';
-      case 1:
-        return 'Host Verification';
-      case 2:
         return 'Property Basics';
-      case 3:
+      case 1:
         return 'Location';
-      case 4:
+      case 2:
         return 'Property Details';
-      case 5:
+      case 3:
         return 'Amenities';
-      case 6:
+      case 4:
         return 'Photos';
-      case 7:
+      case 5:
         return 'Pricing';
-      case 8:
+      case 6:
         return 'Documents';
+      case 7:
+        return 'Host Profile';
       default:
         return '';
     }

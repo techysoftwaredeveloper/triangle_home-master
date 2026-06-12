@@ -79,49 +79,49 @@ class _SplashScreenState extends State<SplashScreen> {
                 .doc(uid)
                 .get();
         if (requestDoc.exists) {
-          final reqStatus = (requestDoc.data()?['status'] ?? '').toString().toLowerCase();
+          final reqData = requestDoc.data() ?? {};
+          final reqStatus = (reqData['status'] ?? '').toString().toLowerCase();
           // Only flag as needing onboarding if not already approved
           hasHosterRequest = reqStatus != 'approved' && reqStatus != 'active';
         }
       }
 
-      // ── APPROVED HOSTER: highest priority, bypass everything ──
-      // An approved hoster always goes to their dashboard.
-      // Clear stale drafts so they never get sent back to onboarding.
-      if (role == UserRole.hoster && status == 'approved') {
+      if (!mounted) return;
+
+      // ── HOSTER FLOW: (Approved, Submitted, Rejected, or Draft) ──
+      if (role == UserRole.hoster) {
         await _isarService.clearUserIntent();
-        await _isarService.clearAdminCache('partner_onboarding_draft_$uid');
         if (!mounted) return;
-        if (propertyDraft != null) {
+
+        // Standardized check for Hoster Approval
+        final bool isApproved = 
+            (status == 'approved') || 
+            (status == 'active') || 
+            (onboardingStatus == 'approved') || 
+            (onboardingStatus == 'active');
+
+        // If approved, submitted, or REJECTED, go to Dashboard
+        // Rejected users need the dashboard to see the feedback banner.
+        if (isApproved || onboardingStatus == 'submitted' || status == 'rejected') {
+          await _isarService.clearAdminCache('partner_onboarding_draft_$uid');
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+            MaterialPageRoute(builder: (_) => HosterDashboardScreen()),
           );
         } else {
+          // Otherwise, go to Onboarding
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
+            MaterialPageRoute(builder: (_) => PartnerOnboardingScreen()),
           );
         }
-        return;
-      }
-
-      // ── SUBMITTED but not yet approved (waiting for admin review) ──
-      if (role == UserRole.hoster && onboardingStatus == 'submitted') {
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
-        );
         return;
       }
 
       // If they have any hoster-related draft, intent, or pending request → onboarding flow
       if (onboardingIntent == 'hoster' ||
           hosterAppDraft != null ||
-          role == UserRole.hoster ||
           hasHosterRequest) {
-        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(

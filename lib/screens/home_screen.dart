@@ -9,6 +9,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:triangle_home/providers/property_provider.dart';
 import 'package:triangle_home/screens/auth/login_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
+import 'package:triangle_home/screens/hoster/partner_onboarding_screen.dart';
 import 'package:triangle_home/screens/profile/profile_screen.dart';
 import 'package:triangle_home/screens/search_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
@@ -55,16 +56,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (doc.exists && mounted) {
         final data = doc.data() as Map<String, dynamic>;
         if (data['role'] == 'hoster') {
-          // If approved hoster accidentally on Home, redirect to Dashboard
-          if (data['status'] == 'approved') {
+          // If any hoster accidentally on Home, redirect to Dashboard/Onboarding
+          if (data['status'] == 'approved' || data['onboardingStatus'] == 'submitted') {
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (_) => HosterDashboardScreen()),
+              MaterialPageRoute(builder: (_) => const HosterDashboardScreen()),
               (route) => false,
             );
           } else {
-            // If pending/rejected hoster, they might want to see BecomeHosterScreen status
-            // But we allow them to browse Home as a student/guest too.
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => PartnerOnboardingScreen()),
+              (route) => false,
+            );
           }
         }
       }

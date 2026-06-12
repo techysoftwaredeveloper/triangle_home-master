@@ -8,6 +8,7 @@ import 'package:triangle_home/widgets/document_capture_camera.dart';
 import 'dart:io';
 import 'package:triangle_home/screens/profile/verification_otp_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class VerificationCenterScreen extends StatefulWidget {
   const VerificationCenterScreen({super.key});
@@ -17,7 +18,7 @@ class VerificationCenterScreen extends StatefulWidget {
       _VerificationCenterScreenState();
 }
 
-class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
+class _VerificationCenterScreenState extends State<VerificationCenterScreen> with WidgetsBindingObserver {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -27,6 +28,56 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
   final Color _accentBlue = const Color(0xFF2563EB);
   final Color _bgGray = const Color(0xFFF8FAFC);
   final Color _successGreen = const Color(0xFF10B981);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _reloadAndSyncStatus();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _reloadAndSyncStatus();
+    }
+  }
+
+  Future<void> _reloadAndSyncStatus() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+      await user.reload();
+      final refreshed = _auth.currentUser;
+      if (refreshed == null) return;
+
+      Map<String, dynamic> updates = {};
+      
+      if (refreshed.emailVerified) {
+        updates['emailVerified'] = true;
+      }
+      
+      if (refreshed.phoneNumber != null) {
+        updates['phoneVerified'] = true;
+      }
+
+      if (updates.isNotEmpty) {
+        await _firestore.collection('users').doc(refreshed.uid).set({
+          'verification': updates,
+        }, SetOptions(merge: true));
+      }
+      
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('Sync error: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +103,10 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
 
         if (user.emailVerified && verif['emailVerified'] != true) {
           _updateVerification('emailVerified', true);
+        }
+
+        if (user.phoneNumber != null && verif['phoneVerified'] != true) {
+          _updateVerification('phoneVerified', true);
         }
 
         return Scaffold(
@@ -98,12 +153,12 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
                     _buildVerificationTile(
                       icon: Icons.phone_android_outlined,
                       title: 'Mobile Number',
-                      subtitle: info['phoneNumber'] ?? 'Not provided',
+                      subtitle: info['phoneNumber'] ?? user.phoneNumber ?? 'Not provided',
                       isVerified: verif['phoneVerified'] == true,
                       onTap:
                           verif['phoneVerified'] == true
                               ? null
-                              : () => _verifyPhone(info['phoneNumber']),
+                              : () => _verifyPhone(info['phoneNumber'] ?? user.phoneNumber),
                     ),
                     _buildVerificationTile(
                       icon: Icons.email_outlined,
@@ -459,14 +514,17 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
   }
 
   Widget _buildStatusHeader(Map verif) {
+    final user = _auth.currentUser;
+    int totalSteps = 6;
     int verifiedCount = 0;
-    if (verif['phoneVerified'] == true) verifiedCount++;
-    if (verif['emailVerified'] == true) verifiedCount++;
+    if (verif['phoneVerified'] == true || user?.phoneNumber != null) verifiedCount++;
+    if (verif['emailVerified'] == true || user?.emailVerified == true) verifiedCount++;
     if (verif['roleIdVerified'] == true) verifiedCount++;
     if (verif['govIdVerified'] == true) verifiedCount++;
     if (verif['addressVerified'] == true) verifiedCount++;
+    if (verif['selfieVerified'] == true) verifiedCount++;
 
-    double progress = verifiedCount / 5;
+    double progress = verifiedCount / totalSteps;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -766,6 +824,37 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
     );
     if (source == null) return;
 
+    // Check permissions
+    if (source == ImageSource.camera) {
+      final status = await Permission.camera.request();
+      if (status.isDenied || status.isPermanentlyDenied) {
+        Fluttertoast.showToast(msg: 'Camera permission is required');
+        if (status.isPermanentlyDenied) openAppSettings();
+        return;
+      }
+    } else {
+      // For gallery, check photos or storage depending on OS
+      final status = Platform.isIOS 
+          ? await Permission.photos.request() 
+          : await Permission.storage.request();
+          
+      if (status.isDenied || status.isPermanentlyDenied) {
+        // storage is sometimes always denied on Android 13+, photos is better
+        if (Platform.isAndroid) {
+          final photoStatus = await Permission.photos.request();
+          if (photoStatus.isDenied || photoStatus.isPermanentlyDenied) {
+            Fluttertoast.showToast(msg: 'Gallery access is required');
+            if (photoStatus.isPermanentlyDenied) openAppSettings();
+            return;
+          }
+        } else {
+          Fluttertoast.showToast(msg: 'Gallery access is required');
+          if (status.isPermanentlyDenied) openAppSettings();
+          return;
+        }
+      }
+    }
+
     XFile? image;
     if (source == ImageSource.camera) {
       if (!mounted) return;
@@ -831,24 +920,27 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
               'Confirm Upload',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Is the text clear and all corners visible?',
-                  style: TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 20),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(
-                    File(croppedFile!.path),
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+            content: SizedBox(
+              width: 300,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Is the text clear and all corners visible?',
+                    style: TextStyle(fontSize: 14),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 20),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      File(croppedFile!.path),
+                      height: 200,
+                      width: 280,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ],
+              ),
             ),
             actions: [
               TextButton(
@@ -869,7 +961,10 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
 
     if (confirmed != true) return;
 
+    if (!mounted) return;
     setState(() => _isLoading = true);
+    Fluttertoast.showToast(msg: 'Uploading document...');
+    
     try {
       final File file = File(croppedFile.path);
       final user = _auth.currentUser;
@@ -879,8 +974,9 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
       final ref = FirebaseStorage.instance.ref().child(
         'verifications/$userId/${fieldPrefix}_${side}_${DateTime.now().millisecondsSinceEpoch}.jpg',
       );
-      await ref.putFile(file);
-      final url = await ref.getDownloadURL();
+      
+      final uploadTask = await ref.putFile(file);
+      final url = await uploadTask.ref.getDownloadURL();
 
       await _firestore.collection('users').doc(userId).set({
         'verification': {
@@ -889,11 +985,13 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
           '${fieldPrefix}Timestamp': FieldValue.serverTimestamp(),
         },
       }, SetOptions(merge: true));
-      Fluttertoast.showToast(msg: '$side side uploaded!');
+      
+      Fluttertoast.showToast(msg: '$side side uploaded successfully!');
     } catch (e) {
+      debugPrint('Upload error: $e');
       Fluttertoast.showToast(msg: 'Upload failed: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -906,6 +1004,7 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
     );
     if (image == null) return;
 
+    if (!mounted) return;
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder:
@@ -947,14 +1046,20 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
 
     if (confirmed != true) return;
 
+    if (!mounted) return;
     setState(() => _isLoading = true);
+    Fluttertoast.showToast(msg: 'Uploading selfie...');
+
     try {
       final user = _auth.currentUser;
+      if (user == null) throw 'User not authenticated.';
+
       final ref = FirebaseStorage.instance.ref().child(
-        'verifications/${user!.uid}/selfie_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        'verifications/${user.uid}/selfie_${DateTime.now().millisecondsSinceEpoch}.jpg',
       );
-      await ref.putFile(File(image.path));
-      final url = await ref.getDownloadURL();
+      
+      final uploadTask = await ref.putFile(File(image.path));
+      final url = await uploadTask.ref.getDownloadURL();
 
       await _firestore.collection('users').doc(user.uid).set({
         'verification': {
@@ -963,11 +1068,13 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> {
           'selfieTimestamp': FieldValue.serverTimestamp(),
         },
       }, SetOptions(merge: true));
+      
       Fluttertoast.showToast(msg: 'Selfie uploaded for review!');
     } catch (e) {
+      debugPrint('Selfie upload error: $e');
       Fluttertoast.showToast(msg: 'Upload failed: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

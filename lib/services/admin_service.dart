@@ -104,448 +104,149 @@ class AdminService {
         .map((doc) => doc.exists ? doc.data()! : {'status': 'operational'});
   }
 
+  Stream<int> getApprovedTodayCountStream() {
+    final now = DateTime.now();
+    final startOfToday = DateTime(now.year, now.month, now.day);
+    
+    return _firestore
+        .collection('auditLogs')
+        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfToday))
+        .snapshots()
+        .map((snap) {
+          return snap.docs.where((doc) {
+            final action = (doc.data()['action'] ?? '').toString().toLowerCase();
+            return action.contains('approve') || action.contains('verified');
+          }).length;
+        });
+  }
+
   // ==================== REAL-TIME STREAMS WITH CACHE ====================
 
   Stream<Map<String, dynamic>> getStatsStream() {
-    // 1. Initial cached emission
-    final cachedStream = Stream.fromFuture(
-          _isarService.getAdminCache('dashboard_stats'),
-        )
-        .where((c) => c != null)
-        .map((c) => json.decode(c!) as Map<String, dynamic>);
+    final statsSubject = BehaviorSubject<Map<String, dynamic>>.seeded({});
 
-    // 2. Real-time Firestore aggregation
-    final firestoreStream = Rx.combineLatest9(
-      _firestore.collection('users').snapshots(),
-      _firestore.collection('properties').snapshots(),
-      _firestore.collection('bookings').snapshots(),
-      _firestore.collection('payments').snapshots(),
-      _firestore.collection('property_suggestions').snapshots(),
-      _firestore.collection('reports').snapshots(),
-      _firestore.collection('audit_logs').snapshots(),
-      _firestore.collection('disputes').snapshots(),
-      _firestore.collection('escrow').snapshots(),
-      (
-        users,
-        properties,
-        bookings,
-        payments,
-        suggestions,
-        reports,
-        auditLogs,
-        disputes,
-        escrow,
-      ) {
-        double totalRevenue = 0;
-        // ... (existing loops for payments)
-        double paidRevenue = 0;
-        double pendingRevenue = 0;
-        double refundedRevenue = 0;
+    // 1. Load from cache immediately
+    _isarService.getAdminCache('dashboard_stats').then((cached) {
+      if (cached != null && statsSubject.isClosed == false) {
+        statsSubject.add(json.decode(cached) as Map<String, dynamic>);
+      }
+    });
 
-        for (var doc in payments.docs) {
-          final amount = (doc.data()['amount'] as num?)?.toDouble() ?? 0;
-          final status = (doc.data()['status'] ?? '').toString().toLowerCase();
+    // 2. Multi-stream non-blocking listeners
+    void updateStats(String key, dynamic value) {
+      if (!statsSubject.isClosed) {
+        final current = Map<String, dynamic>.from(statsSubject.value);
+        current[key] = value;
+        statsSubject.add(current);
+        
+        // Background cache update (debounce in real production)
+        _isarService.saveAdminCache('dashboard_stats', json.encode(_sanitize(current)));
+      }
+    }
 
-          if (status == 'paid' || status == 'success' || status == 'captured') {
-            paidRevenue += amount;
-            totalRevenue += amount;
-          } else if (status == 'pending') {
-            pendingRevenue += amount;
-          } else if (status == 'refunded') {
-            refundedRevenue += amount;
-          }
-        }
+    // Listen to components independently to prevent blocking
+    _firestore.collection('users').snapshots().listen((snap) {
+      final docs = snap.docs;
+      updateStats('totalUsers', docs.length);
+      updateStats('totalStudents', docs.where((d) => ['student', 'user'].contains(d.data()['role'])).length);
+      updateStats('totalHosters', docs.where((d) => ['hoster', 'owner', 'manager', 'agency'].contains(d.data()['role'])).length);
+      updateStats('pendingHosters', docs.where((d) => d.data()['onboardingStatus'] == 'submitted').length);
+    });
 
-        final students =
-            users.docs.where((doc) {
-              final data = doc.data();
-              final r = data['role']?.toString().toLowerCase() ?? '';
-              return r == 'student' || r == 'user' || r.isEmpty;
-            }).length;
+    _firestore.collection('properties').snapshots().listen((snap) {
+      updateStats('totalProperties', snap.size);
+      updateStats('pendingProperties', snap.docs.where((d) => d.data()['status'] == 'pending').length);
+    });
 
-        final professionals =
-            users.docs.where((doc) {
-              final data = doc.data();
-              final r = data['role']?.toString().toLowerCase() ?? '';
-              return r == 'professional';
-            }).length;
+    _firestore.collection('bookings').snapshots().listen((snap) {
+      updateStats('totalBookings', snap.size);
+    });
 
-        final hosters =
-            users.docs.where((doc) {
-              final data = doc.data();
-              final r = data['role']?.toString().toLowerCase() ?? '';
-              return r == 'hoster' || r == 'owner' || r == 'manager' || r == 'agency';
-            }).length;
+    _firestore.collection('payments').where('status', isNotEqualTo: 'failed').snapshots().listen((snap) {
+      double total = 0;
+      for (var doc in snap.docs) {
+        total += (doc.data()['amount'] as num?)?.toDouble() ?? 0;
+      }
+      updateStats('totalRevenue', total);
+    });
 
-        final owners =
-            users.docs.where((doc) {
-              final data = doc.data();
-              final r = data['role']?.toString().toLowerCase() ?? '';
-              return r == 'owner';
-            }).length;
+    _firestore.collection('reports').where('status', isEqualTo: 'pending').snapshots().listen((snap) {
+      updateStats('pendingReports', snap.size);
+    });
 
-        final pendingProperties =
-            properties.docs
-                .where((doc) => doc.data()['status'] == 'pending')
-                .length;
-
-        final pendingHosters =
-            users.docs
-                .where(
-                  (doc) {
-                    final d = doc.data();
-                    final permissions = d['permissions'] as Map? ?? {};
-                    final r = (d['role'] ?? permissions['role'] ?? '').toString().toLowerCase();
-                    final isHosterType = r == 'hoster' || r == 'owner' || r == 'manager' || r == 'agency';
-                    final status = (d['status'] ?? d['accountStatus'] ?? permissions['status'] ?? '').toString().toLowerCase();
-                    return isHosterType && status == 'pending';
-                  },
-                )
-                .length;
-
-        final activeAgents =
-            users.docs.where((doc) {
-              final data = doc.data();
-              final r = data['role']?.toString().toLowerCase() ?? '';
-              return r == 'admin' || r == 'superadmin';
-            }).length;
-
-        final unresolvedReports =
-            reports.docs
-                .where(
-                  (doc) =>
-                      (doc.data()['status'] ?? '').toString().toLowerCase() ==
-                      'pending',
-                )
-                .length;
-
-        final pendingSuggestions =
-            suggestions.docs
-                .where(
-                  (doc) =>
-                      (doc.data()['status'] ?? '').toString().toLowerCase() ==
-                          'pending' ||
-                      (doc.data()['status'] ?? '').toString().toLowerCase() ==
-                          'under review',
-                )
-                .length;
-
-        final newSuggestions =
-            suggestions.docs
-                .where(
-                  (doc) =>
-                      (doc.data()['status'] ?? '').toString().toLowerCase() ==
-                      'pending',
-                )
-                .length;
-
-        final reviewSuggestions =
-            suggestions.docs
-                .where(
-                  (doc) =>
-                      (doc.data()['status'] ?? '').toString().toLowerCase() ==
-                          'under review' ||
-                      (doc.data()['status'] ?? '').toString().toLowerCase() ==
-                          'underreview',
-                )
-                .length;
-
-        final contactedSuggestions =
-            suggestions.docs
-                .where(
-                  (doc) =>
-                      (doc.data()['status'] ?? '').toString().toLowerCase() ==
-                      'contacted',
-                )
-                .length;
-
-        final approvedSuggestions =
-            suggestions.docs
-                .where(
-                  (doc) =>
-                      (doc.data()['status'] ?? '').toString().toLowerCase() ==
-                      'approved',
-                )
-                .length;
-
-        final rejectedSuggestions =
-            suggestions.docs
-                .where(
-                  (doc) =>
-                      (doc.data()['status'] ?? '').toString().toLowerCase() ==
-                      'rejected',
-                )
-                .length;
-
-        final failedPayments =
-            payments.docs
-                .where(
-                  (doc) =>
-                      (doc.data()['status'] ?? '').toString().toLowerCase() ==
-                      'failed',
-                )
-                .length;
-
-        final blockedUsers =
-            users.docs
-                .where(
-                  (doc) =>
-                      (doc.data()['accountStatus'] ?? '')
-                              .toString()
-                              .toLowerCase() ==
-                          'banned' ||
-                      (doc.data()['accountStatus'] ?? '')
-                              .toString()
-                              .toLowerCase() ==
-                          'blocked',
-                )
-                .length;
-
-        final reportedListings =
-            reports.docs
-                .where(
-                  (doc) =>
-                      (doc.data()['type'] ?? '').toString().toLowerCase() ==
-                          'property' ||
-                      (doc.data()['type'] ?? '').toString().toLowerCase() ==
-                          'listing',
-                )
-                .length;
-
-        final reportedUsers =
-            reports.docs
-                .where(
-                  (doc) =>
-                      (doc.data()['type'] ?? '').toString().toLowerCase() ==
-                      'user',
-                )
-                .length;
-
-        final pendingModeration =
-            auditLogs.docs
-                .where(
-                  (doc) =>
-                      (doc.data()['status'] ?? '').toString().toLowerCase() ==
-                      'pending',
-                )
-                .length;
-
-        final openDisputes =
-            disputes.docs
-                .where(
-                  (doc) =>
-                      doc.data()['status'] == DisputeStatus.open.name ||
-                      doc.data()['status'] == DisputeStatus.underReview.name,
-                )
-                .length;
-
-        final readyPayouts =
-            escrow.docs
-                .where(
-                  (doc) =>
-                      doc.data()['escrowStatus'] ==
-                      EscrowStatus.readyForPayout.name,
-                )
-                .length;
-
-        final expiringReservations =
-            bookings.docs.where((doc) {
-              final status = doc.data()['status'];
-              final expiryStr = doc.data()['expiryTime'];
-              if (status != BookingStatus.reserved.name || expiryStr == null) {
-                return false;
-              }
-              final expiry =
-                  (expiryStr is Timestamp)
-                      ? expiryStr.toDate()
-                      : DateTime.tryParse(expiryStr.toString());
-              if (expiry == null) return false;
-              final diff = expiry.difference(DateTime.now()).inHours;
-              return diff >= 0 && diff <= 12;
-            }).length;
-
-        // Top Cities calculation
-        Map<String, int> cityCounts = {};
-        for (var doc in properties.docs) {
-          final address = (doc.data()['address'] ?? '').toString();
-          // Extract city - this is a simplification, assumes "City, State" format or just "City"
-          final parts = address.split(',');
-          final city =
-              parts.length > 1
-                  ? parts[parts.length - 2].trim()
-                  : (parts.isNotEmpty ? parts[0].trim() : 'Unknown');
-          if (city.isNotEmpty) {
-            cityCounts[city] = (cityCounts[city] ?? 0) + 1;
-          }
-        }
-        final sortedCities =
-            cityCounts.entries.toList()
-              ..sort((a, b) => b.value.compareTo(a.value));
-        final topCities =
-            sortedCities
-                .take(5)
-                .map((e) => {'name': e.key, 'count': e.value})
-                .toList();
-
-        // Recent Activity from audit logs
-        final sortedAuditLogs =
-            auditLogs.docs.toList()..sort((a, b) {
-              final aTime =
-                  (a.data()['createdAt'] as Timestamp?)
-                      ?.millisecondsSinceEpoch ??
-                  0;
-              final bTime =
-                  (b.data()['createdAt'] as Timestamp?)
-                      ?.millisecondsSinceEpoch ??
-                  0;
-              return bTime.compareTo(aTime);
-            });
-
-        final recentActivities =
-            sortedAuditLogs.take(5).map((doc) {
-              final d = doc.data();
-              return {
-                'title': d['action'] ?? d['title'] ?? 'System Action',
-                'subtitle': d['description'] ?? d['subtitle'] ?? '',
-                'time': _formatTime(d['createdAt']),
-                'type': d['type'] ?? 'info',
-              };
-            }).toList();
-
-        final stats = {
-          'totalProperties': properties.docs.length,
-          'activeProperties':
-              properties.docs
-                  .where((doc) => doc.data()['status'] == 'approved' || doc.data()['status'] == 'active')
-                  .length,
-          'totalBookings': bookings.docs.length,
-          'totalUsers': users.docs.length,
-          'totalStudents': students,
-          'totalProfessionals': professionals,
-          'totalHosters': hosters,
-          'totalOwners': owners,
-          'totalRevenue': totalRevenue,
-          'paidRevenue': paidRevenue,
-          'pendingRevenue': pendingRevenue,
-          'refundedRevenue': refundedRevenue,
-          'pendingProperties': pendingProperties,
-          'pendingHosters': pendingHosters,
-          'pendingApprovals': pendingProperties + pendingHosters,
-          'pendingReports': unresolvedReports,
-          'pendingSuggestions': pendingSuggestions,
-          'pendingModeration': pendingModeration,
-          'openDisputes': openDisputes,
-          'readyPayouts': readyPayouts,
-          'expiringReservations': expiringReservations,
-          'totalNotifications':
-              pendingProperties +
-              pendingHosters +
-              unresolvedReports +
-              pendingModeration +
-              openDisputes,
-          'newSuggestions': newSuggestions,
-          'reviewSuggestions': reviewSuggestions,
-          'contactedSuggestions': contactedSuggestions,
-          'approvedSuggestions': approvedSuggestions,
-          'rejectedSuggestions': rejectedSuggestions,
-          'failedPayments': failedPayments,
-          'blockedUsers': blockedUsers,
-          'reportedListings': reportedListings,
-          'reportedUsers': reportedUsers,
-          'topCities': topCities,
-          'recentActivities': recentActivities,
-          'activeNow':
-              users.docs.where((doc) => doc.data()['isOnline'] == true).length +
-              2, // +2 for fallback/admin
-          'activeAgents': activeAgents,
-          'occupancyRate':
-              properties.docs.isEmpty
-                  ? 0
-                  : ((bookings.docs.length / properties.docs.length) * 100)
-                      .toStringAsFixed(1),
-        };
-
-        // Cache the sanitized result
-        _isarService.saveAdminCache(
-          'dashboard_stats',
-          json.encode(_sanitize(stats)),
-        );
-
-        return stats;
-      },
-    );
-
-    return Rx.concat([cachedStream, firestoreStream]).asBroadcastStream();
+    return statsSubject.stream;
   }
 
   Stream<List<Map<String, dynamic>>> getPendingApprovalsStream() {
-    // 1. Fetch from Firestore (Users & Properties) - Both in REAL-TIME
-    final usersStream = _firestore.collection('users').snapshots();
+    // Optimization: Use targeted streams for pending actions
+    final submittedHosters = _firestore
+        .collection('users')
+        .where('onboardingStatus', isEqualTo: 'submitted')
+        .snapshots();
 
-    final propertiesStream =
-        _firestore
-            .collection('properties')
-            .where('status', isEqualTo: 'pending')
-            .snapshots();
+    final pendingStatusUsers = _firestore
+        .collection('users')
+        .where('status', isEqualTo: 'pending')
+        .snapshots();
+        
+    final pendingAccountUsers = _firestore
+        .collection('users')
+        .where('accountStatus', isEqualTo: 'pending')
+        .snapshots();
 
-    return Rx.combineLatest2(
-      usersStream,
-      propertiesStream,
-      (userSnap, propertySnap) {
-        final List<Map<String, dynamic>> approvals = [];
+    final pendingVerifUsers = _firestore
+        .collection('users')
+        .where('verification.roleIdStatus', isEqualTo: 'pending')
+        .snapshots();
 
-        // Add User Verifications (Students/Professionals)
-        for (var doc in userSnap.docs) {
-          final data = doc.data();
-          final info = data['info'] as Map? ?? {};
-          final verif = data['verification'] as Map? ?? {};
-          final role = (data['role'] ?? '').toString().toLowerCase();
+    final pendingProperties = _firestore
+        .collection('properties')
+        .where('status', isEqualTo: 'pending')
+        .snapshots();
 
-          final isUserType = role == 'student' || role == 'professional' || role == 'user';
-          final isVerifPending = verif['roleIdStatus'] == 'pending';
+    return Rx.combineLatest5(
+      submittedHosters,
+      pendingStatusUsers,
+      pendingAccountUsers,
+      pendingVerifUsers,
+      pendingProperties,
+      (submitted, statusPending, accountPending, verifPending, propertySnap) {
+        final Map<String, Map<String, dynamic>> approvalMap = {};
 
-          if (isUserType && isVerifPending) {
-            approvals.add({
+        void addUsers(QuerySnapshot<Map<String, dynamic>> snap, String type) {
+          for (var doc in snap.docs) {
+            final data = doc.data();
+            final info = data['info'] as Map? ?? {};
+            final role = (data['role'] ?? '').toString().toLowerCase();
+
+            approvalMap[doc.id] = {
+              ...data,
               'id': doc.id,
               'uid': doc.id,
-              'type': 'user_verification',
+              'type': type,
               'name': info['name'] ?? 'User Applicant',
               'email': info['email'],
-              'verificationType':
-                  role == 'student' ? 'Student ID' : 'Professional ID',
-              'createdAt': data['updatedAt'] ?? data['createdAt'],
-              ...data,
-            });
+              'createdAt': data['updatedAt'] ?? 
+                          data['createdAt'] ?? 
+                          (type == 'user_verification' ? (data['verification']?['roleIdTimestamp'] ?? data['verification']?['selfieTimestamp']) : null),
+            };
+            
+            if (type == 'user_verification') {
+               approvalMap[doc.id]!['verificationType'] = role == 'student' ? 'Student ID' : 'Professional ID';
+            } else if (type == 'hoster') {
+               approvalMap[doc.id]!['hosterName'] = info['name'];
+               approvalMap[doc.id]!['location'] = '${info['city'] ?? ""}, ${info['state'] ?? ""}';
+            }
           }
         }
 
-        // Add Hosters from users collection
-        for (var doc in userSnap.docs) {
-          final data = doc.data();
-          final info = data['info'] as Map? ?? {};
-          final permissions = data['permissions'] as Map? ?? {};
-          
-          final r = (data['role'] ?? permissions['role'] ?? '').toString().toLowerCase();
-          final isHosterType = r == 'hoster' || r == 'owner' || r == 'manager' || r == 'agency';
-          final status = (data['status'] ?? data['accountStatus'] ?? permissions['status'] ?? '').toString().toLowerCase();
+        addUsers(verifPending, 'user_verification');
+        addUsers(submitted, 'hoster');
+        addUsers(statusPending, 'hoster');
+        addUsers(accountPending, 'hoster');
 
-          if (isHosterType && status == 'pending') {
-            approvals.add({
-              'id': doc.id,
-              'uid': doc.id,
-              'type': 'hoster',
-              'name': info['name'] ?? 'Hoster Applicant',
-              'hosterName': info['name'],
-              'email': info['email'],
-              'location': '${info['city'] ?? ""}, ${info['state'] ?? ""}',
-              'createdAt': data['createdAt'] ?? data['updatedAt'],
-              'permissions': permissions,
-              ...data,
-            });
-          }
-        }
+        final List<Map<String, dynamic>> approvals = approvalMap.values.toList();
 
-        // Add Properties
         for (var doc in propertySnap.docs) {
           final data = doc.data();
           final verification = data['verification'] as Map? ?? {};
@@ -559,14 +260,13 @@ class AdminService {
           if (documents['additionalUrl'] != null) uploaded++;
 
           approvals.add({
+            ...data,
             'id': doc.id,
             'type': 'property',
             'docsCount': '$uploaded/5',
-            ...data,
           });
         }
 
-        // Sort by createdAt if available
         approvals.sort((a, b) {
           final aDate = a['createdAt'] as Timestamp?;
           final bDate = b['createdAt'] as Timestamp?;
@@ -576,7 +276,6 @@ class AdminService {
           return bDate.compareTo(aDate);
         });
 
-        // Save to cache (Sanitized)
         _isarService.saveAdminCache(
           'admin_pending_approvals',
           json.encode(_sanitize(approvals)),
@@ -588,18 +287,14 @@ class AdminService {
   }
 
   Stream<List<Map<String, dynamic>>> getUsersStream() async* {
-    // 1. Emit cached users immediately
     final cachedUsers = await _isarService.getAdminCache('admin_users_list');
     if (cachedUsers != null) {
       try {
         final List<dynamic> list = json.decode(cachedUsers);
         yield list.cast<Map<String, dynamic>>();
-      } catch (e) {
-        debugPrint('Error decoding cached users: $e');
-      }
+      } catch (_) {}
     }
 
-    // 2. Sync with Firestore
     yield* _firestore
         .collection('users')
         .snapshots()
@@ -609,20 +304,18 @@ class AdminService {
                   .map((doc) => {'id': doc.id, ...doc.data()})
                   .toList();
 
-          // Sort in-memory descending safely
           users.sort((a, b) {
             final aTime = a['createdAt'] ?? a['updatedAt'];
             final bTime = b['createdAt'] ?? b['updatedAt'];
-            if (aTime == null && bTime == null) return b['id'].toString().compareTo(a['id'].toString());
+            if (aTime == null && bTime == null) return 0;
             if (aTime == null) return 1;
             if (bTime == null) return -1;
-            final aDateTime = (aTime is Timestamp) ? aTime.toDate() : DateTime.tryParse(aTime.toString());
-            final bDateTime = (bTime is Timestamp) ? bTime.toDate() : DateTime.tryParse(bTime.toString());
-            if (aDateTime == null || bDateTime == null) return 0;
-            return bDateTime.compareTo(aDateTime);
+            final aDT = (aTime is Timestamp) ? aTime.toDate() : DateTime.tryParse(aTime.toString());
+            final bDT = (bTime is Timestamp) ? bTime.toDate() : DateTime.tryParse(bTime.toString());
+            if (aDT == null || bDT == null) return 0;
+            return bDT.compareTo(aDT);
           });
 
-          // Save to Local Cache (Sanitized)
           await _isarService.saveAdminCache(
             'admin_users_list',
             json.encode(_sanitize(users)),
@@ -764,10 +457,7 @@ class AdminService {
         );
   }
 
-  /// Fetches all properties listed by a specific hoster/owner.
-  /// Queries both `hoster_id` (primary) and `hosterId` (legacy) field names.
   Stream<List<Map<String, dynamic>>> getUserPropertiesStream(String userId) {
-    // hoster_id is the canonical field used by property_service and hoster_service
     final snake = _firestore
         .collection('properties')
         .where('hoster_id', isEqualTo: userId)
@@ -775,7 +465,6 @@ class AdminService {
         .map((snap) =>
             snap.docs.map((d) => {'id': d.id, ...d.data()}).toList());
 
-    // hosterId is the legacy camelCase field used by pricing_info_screen
     final camel = _firestore
         .collection('properties')
         .where('hosterId', isEqualTo: userId)
@@ -794,7 +483,6 @@ class AdminService {
     });
   }
 
-  /// Fetches all bookings made by a specific user (as tenant).
   Stream<List<Map<String, dynamic>>> getUserBookingsStream(String userId) {
     return _firestore
         .collection('bookings')
@@ -804,7 +492,6 @@ class AdminService {
             snap.docs.map((d) => {'id': d.id, ...d.data()}).toList());
   }
 
-  /// Fetches the hoster onboarding request document for a user.
   Stream<Map<String, dynamic>?> getUserHosterRequestStream(String userId) {
     return _firestore
         .collection('hoster_requests')
@@ -816,7 +503,6 @@ class AdminService {
     });
   }
 
-  /// Fetches all bookings received on a hoster's properties (as host).
   Stream<List<Map<String, dynamic>>> getHosterReceivedBookingsStream(
       String userId) {
     return _firestore
@@ -827,7 +513,6 @@ class AdminService {
             snap.docs.map((d) => {'id': d.id, ...d.data()}).toList());
   }
 
-  /// Fetches recent audit log entries for a specific user (actions ON this user).
   Stream<List<Map<String, dynamic>>> getUserAuditLogStream(String userId) {
     return _firestore
         .collection('audit_logs')
@@ -854,19 +539,16 @@ class AdminService {
     try {
       final response = await _apiService.getStats();
       return response.isNotEmpty;
-    } catch (e) {
+    } catch (_) {
       return false;
     }
   }
-
-  // ==================== MODERATION ACTIONS (VIA BACKEND) ====================
 
   Future<void> updatePropertyStatus(
     String propertyId,
     PropertyStatus status, {
     String? reason,
   }) async {
-    // Route through Backend API for secure state change and custom claims
     await _apiService.updatePropertyStatus(propertyId, status.name);
 
     await _auditService.logAction(
@@ -879,8 +561,15 @@ class AdminService {
   }
 
   Future<void> approveHoster(String hosterId) async {
-    // Route through Backend API for role elevation and custom claims
     await _apiService.approveHoster(hosterId);
+
+    await _firestore.collection('users').doc(hosterId).set({
+      'status': 'approved',
+      'accountStatus': 'active',
+      'onboardingStatus': 'approved',
+      'permissions': {'status': 'approved'},
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
     await _auditService.logAction(
       action: 'hoster_approval',
@@ -891,7 +580,6 @@ class AdminService {
   }
 
   Future<void> toggleUserStatus(String userId, bool isActive) async {
-    // Route through Backend API for banning/unbanning and claim updates
     await _apiService.toggleUserStatus(
       userId,
       isActive: isActive,
@@ -909,7 +597,6 @@ class AdminService {
   }
 
   Future<void> updateUserRole(String userId, String role) async {
-    // Route through Backend API for role change and custom claims
     await _apiService.updateUserRole(userId, role);
 
     await _auditService.logAction(
@@ -928,10 +615,18 @@ class AdminService {
         status: 'rejected',
         isActive: false,
       );
+    } else if (type == 'user_verification') {
+      await _firestore.collection('users').doc(id).set({
+        'verification': {
+          'roleIdVerified': false,
+          'roleIdStatus': 'rejected',
+          'roleIdRejectReason': reason ?? 'Document unclear or incorrect.',
+          'roleIdRejectedAt': FieldValue.serverTimestamp(),
+        }
+      }, SetOptions(merge: true));
     } else {
       await _apiService.updatePropertyStatus(id, 'rejected');
 
-      // Create notification for hoster in real-time
       try {
         final propertyDoc =
             await _firestore.collection('properties').doc(id).get();
@@ -951,16 +646,13 @@ class AdminService {
               'createdAt': FieldValue.serverTimestamp(),
             });
 
-            // Also update property document with rejection reason for hoster to see
             await _firestore.collection('properties').doc(id).update({
               'rejectionReason': reason,
               'rejectedAt': FieldValue.serverTimestamp(),
             });
           }
         }
-      } catch (e) {
-        debugPrint('Error creating rejection notification: $e');
-      }
+      } catch (_) {}
     }
 
     await _auditService.logAction(
@@ -974,18 +666,23 @@ class AdminService {
   Future<void> approveItem(String id, String type) async {
     if (type == 'hoster') {
       await approveHoster(id);
+    } else if (type == 'user_verification') {
+      await _firestore.collection('users').doc(id).set({
+        'verification': {
+          'roleIdVerified': true,
+          'roleIdStatus': 'approved',
+          'roleIdApprovedAt': FieldValue.serverTimestamp(),
+        },
+        'status': 'approved',
+      }, SetOptions(merge: true));
     } else {
       await updatePropertyStatus(id, PropertyStatus.approved);
     }
   }
 
   Future<void> updateSuggestionStatus(String id, String status) async {
-    // Reverted fallback: All requests must go through backend
-    await _apiService
-        .updateSuggestionStatus(id, status)
-        .timeout(const Duration(seconds: 30));
+    await _apiService.updateSuggestionStatus(id, status);
 
-    // Log action locally for audit trail consistency
     await _auditService.logAction(
       action: 'suggestion_status_update',
       targetId: id,
@@ -996,11 +693,8 @@ class AdminService {
   }
 
   Future<void> convertSuggestionToApprovals(String id) async {
-    // Removed manual timeout to prevent premature 'Future not completed' errors
-    // The http client has its own internal timeout
     await _apiService.convertSuggestion(id);
 
-    // Log action
     await _auditService.logAction(
       action: 'suggestion_conversion',
       targetId: id,
@@ -1040,14 +734,10 @@ class AdminService {
     );
   }
 
-  // ==================== HOSTER DETAIL FETCH ====================
-
   Future<Map<String, dynamic>> getHosterDashboardSummary(
     String hosterId,
   ) async {
     final HosterService hosterService = HosterService();
-    // Re-use the hoster's own logic to get a summary for the admin
-    // This ensures consistency between what the hoster sees and what the admin sees
     final stats =
         await hosterService.getDetailedHosterStatsStream(hosterId).first;
     return stats;

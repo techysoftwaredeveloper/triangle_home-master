@@ -541,7 +541,7 @@ class _UsersTabState extends State<UsersTab>
                  final onboardingStatus = (u['status'] ?? u['accountStatus'] ?? permissions['status'] ?? '').toString().toLowerCase();
                  if (onboardingStatus == 'pending') {
                    userStatus = 'Pending';
-                 } else if (onboardingStatus == 'approved') {
+                 } else if (onboardingStatus == 'approved' || onboardingStatus == 'active') {
                    userStatus = 'Approved';
                  } else if (onboardingStatus == 'rejected') {
                    userStatus = 'Rejected';

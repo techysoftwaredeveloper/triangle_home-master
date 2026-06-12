@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/core/constants/transitions.dart';
 import 'package:triangle_home/core/errors/failures.dart';
@@ -311,14 +312,34 @@ class BookingService {
     return _bookingRepo.getStudentBookingsQuery(studentId).snapshots();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getHosterBookings(
+  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> getHosterBookings(
     String hosterId,
   ) {
-    return _firestore
+    final snake = _firestore
         .collection('bookings')
         .where('hoster_id', isEqualTo: hosterId)
-        .orderBy('createdAt', descending: true)
         .snapshots();
+    final camel = _firestore
+        .collection('bookings')
+        .where('hosterId', isEqualTo: hosterId)
+        .snapshots();
+
+    return Rx.combineLatest2(snake, camel, (a, b) {
+      final seen = <String>{};
+      final merged = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+      for (final doc in [...a.docs, ...b.docs]) {
+        if (seen.add(doc.id)) {
+          merged.add(doc);
+        }
+      }
+      merged.sort((x, y) {
+        final xTime = x.data()['createdAt'] as Timestamp?;
+        final yTime = y.data()['createdAt'] as Timestamp?;
+        if (xTime == null || yTime == null) return 0;
+        return yTime.compareTo(xTime);
+      });
+      return merged;
+    });
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getPropertyBookings(

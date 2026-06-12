@@ -3,6 +3,7 @@ import 'package:triangle_home/services/admin_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:triangle_home/screens/admin/property_detail_screen.dart';
 
 class UserProfileViewScreen extends StatefulWidget {
   final String userId;
@@ -29,6 +30,12 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen>
   bool _contactExpanded = true;
   bool _verificationExpanded = true;
   bool _hosterExpanded = true;
+  bool _studentExpanded = true;
+  bool _professionalExpanded = true;
+  bool _emergencyExpanded = true;
+  bool _bankExpanded = true;
+  bool _housingPrefsExpanded = true;
+  bool _hostPrefsExpanded = true;
 
   @override
   void initState() {
@@ -142,6 +149,533 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen>
     }
   }
 
+  Future<void> _handleBookingAction(String id, String action) async {
+    setState(() => _isUpdating = true);
+    try {
+      if (action == 'confirm') {
+        await widget.adminService.updateBookingStatus(id, 'confirmed');
+      } else if (action == 'cancel') {
+        await widget.adminService.updateBookingStatus(id, 'cancelled');
+      } else if (action == 'checkout') {
+        await widget.adminService.updateBookingStatus(id, 'checked_out');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Booking $action successfully'),
+            backgroundColor: action == 'cancel' ? Colors.orange : Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to perform $action: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
+    }
+  }
+
+  Future<void> _handleSuggestionAction(String id, String newStatus) async {
+    setState(() => _isUpdating = true);
+    try {
+      await FirebaseFirestore.instance
+          .collection('property_suggestions')
+          .doc(id)
+          .update({'status': newStatus});
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Suggestion status updated to $newStatus successfully'),
+            backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update suggestion: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
+    }
+  }
+
+  void _showBookingDetailsBottomSheet(Map<String, dynamic> b) {
+    final status = b['status']?.toString() ?? 'pending';
+    final statusColor = _statusColor(status);
+    final bookingId = b['id']?.toString() ?? 'N/A';
+    final amount = b['amount'] ?? b['price'];
+    final propName = b['propertyName'] ?? b['name'] ?? 'Property #${b['propertyId']?.toString().substring(0, 6) ?? 'N/A'}';
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Booking Details',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E293B),
+                          fontFamily: 'Outfit',
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            status == 'confirmed'
+                                ? Icons.check_circle_rounded
+                                : status == 'pending'
+                                    ? Icons.hourglass_top_rounded
+                                    : Icons.cancel_rounded,
+                            color: statusColor,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            status.toUpperCase(),
+                            style: TextStyle(
+                              color: statusColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              fontFamily: 'Outfit',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'PROPERTY DETAILS',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      children: [
+                        _detailRow(Icons.business_outlined, 'Property Name', propName),
+                        const Divider(height: 24, color: Color(0xFFE2E8F0)),
+                        _detailRow(Icons.tag, 'Booking ID', bookingId.toUpperCase()),
+                        const Divider(height: 24, color: Color(0xFFE2E8F0)),
+                        _detailRow(Icons.calendar_today_outlined, 'Check-In Date', _formatDate(b['checkIn'] ?? b['startDate'])),
+                        const Divider(height: 24, color: Color(0xFFE2E8F0)),
+                        _detailRow(Icons.calendar_month_outlined, 'Check-Out Date', _formatDate(b['checkOut'] ?? b['endDate'])),
+                        const Divider(height: 24, color: Color(0xFFE2E8F0)),
+                        _detailRow(Icons.currency_rupee, 'Total Amount Paid', _formatCurrency(amount)),
+                        if (b['sharingType'] != null || b['roomType'] != null) ...[
+                          const Divider(height: 24, color: Color(0xFFE2E8F0)),
+                          _detailRow(Icons.people_outline, 'Room Sharing Type', b['sharingType']?.toString() ?? b['roomType']?.toString() ?? 'N/A'),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'GUEST INFORMATION',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      children: [
+                        _detailRow(Icons.person_outline, 'Guest Name', b['guestName']?.toString() ?? 'N/A'),
+                        const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                        _detailRow(Icons.email_outlined, 'Guest Email', b['guestEmail']?.toString() ?? 'N/A'),
+                        const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                        _detailRow(Icons.phone_outlined, 'Guest Phone', b['guestPhone']?.toString() ?? 'N/A'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (b['hosterName'] != null) ...[
+                    const Text(
+                      'HOST INFORMATION',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF64748B),
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        children: [
+                          _detailRow(Icons.person_pin_outlined, 'Host Name', b['hosterName']?.toString() ?? 'N/A'),
+                          if (b['hosterPhone'] != null) ...[
+                            const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                            _detailRow(Icons.phone_outlined, 'Host Phone', b['hosterPhone']?.toString() ?? 'N/A'),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  if (status == 'pending') ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              Navigator.pop(context);
+                              await _handleBookingAction(bookingId, 'confirm');
+                            },
+                            icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+                            label: const Text('Confirm Booking', style: TextStyle(color: Colors.white)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF16A34A),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              Navigator.pop(context);
+                              await _handleBookingAction(bookingId, 'cancel');
+                            },
+                            icon: const Icon(Icons.cancel_outlined, color: Color(0xFFDC2626)),
+                            label: const Text('Cancel Booking', style: TextStyle(color: Color(0xFFDC2626))),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFFDC2626)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ] else if (status == 'confirmed') ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await _handleBookingAction(bookingId, 'checkout');
+                        },
+                        icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                        label: const Text('Check Out Guest', style: TextStyle(color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showSuggestionDetailsBottomSheet(Map<String, dynamic> s) {
+    final status = s['status']?.toString() ?? 'pending';
+    final statusColor = _statusColor(status);
+    final id = s['id']?.toString() ?? '';
+    final businessName = s['business_name'] ?? s['name'] ?? 'Untitled Suggestion';
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Suggestion Details',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E293B),
+                          fontFamily: 'Outfit',
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+                      ),
+                      child: Text(
+                        status.toUpperCase(),
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          fontFamily: 'Outfit',
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'PROPERTY DETAILS',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      children: [
+                        _detailRow(Icons.business_outlined, 'Property Name', businessName),
+                        const Divider(height: 24, color: Color(0xFFE2E8F0)),
+                        _detailRow(Icons.location_on_outlined, 'Address', s['business_address']?.toString() ?? s['location']?.toString() ?? 'N/A'),
+                        const Divider(height: 24, color: Color(0xFFE2E8F0)),
+                        _detailRow(Icons.category_outlined, 'Category', s['category']?.toString() ?? 'N/A'),
+                        if (s['monthly_rent'] != null && s['monthly_rent'].toString().isNotEmpty) ...[
+                          const Divider(height: 24, color: Color(0xFFE2E8F0)),
+                          _detailRow(Icons.payments_rounded, 'Monthly Rent', '₹${s['monthly_rent']}'),
+                        ],
+                        if (s['deposit'] != null && s['deposit'].toString().isNotEmpty) ...[
+                          const Divider(height: 24, color: Color(0xFFE2E8F0)),
+                          _detailRow(Icons.security_rounded, 'Security Deposit', '₹${s['deposit']}'),
+                        ],
+                        if (s['amenities'] != null && s['amenities'].toString().isNotEmpty) ...[
+                          const Divider(height: 24, color: Color(0xFFE2E8F0)),
+                          _detailRow(Icons.settings_input_component_rounded, 'Amenities', s['amenities']?.toString() ?? 'N/A'),
+                        ],
+                        if (s['ambiance'] != null && s['ambiance'].toString().isNotEmpty) ...[
+                          const Divider(height: 24, color: Color(0xFFE2E8F0)),
+                          _detailRow(Icons.mood_rounded, 'Ambiance', s['ambiance']?.toString() ?? 'N/A'),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'SUGGESTED BY',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      children: [
+                        _detailRow(Icons.person_outline, 'Name', s['suggester_name']?.toString() ?? 'N/A'),
+                        const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                        _detailRow(Icons.email_outlined, 'Email', s['suggester_email']?.toString() ?? 'N/A'),
+                        const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                        _detailRow(Icons.phone_outlined, 'Phone', s['suggester_phone']?.toString() ?? 'N/A'),
+                        const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                        _detailRow(Icons.home_rounded, 'Is staying here?', s['is_staying_here'] == true ? 'Yes' : 'No'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (s['owner_name'] != null && s['owner_name'].toString().isNotEmpty) ...[
+                    const Text(
+                      'OWNER DETAILS',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF64748B),
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        children: [
+                          _detailRow(Icons.person_outline, 'Owner Name', s['owner_name']?.toString() ?? 'N/A'),
+                          const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                          _detailRow(Icons.phone_outlined, 'Owner Phone', s['owner_phone']?.toString() ?? 'N/A'),
+                          if (s['owner_email'] != null && s['owner_email'].toString().isNotEmpty) ...[
+                            const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                            _detailRow(Icons.email_outlined, 'Owner Email', s['owner_email']?.toString() ?? 'N/A'),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  if (status == 'pending') ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              Navigator.pop(context);
+                              await _handleSuggestionAction(id, 'approved');
+                            },
+                            icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+                            label: const Text('Approve Suggestion', style: TextStyle(color: Colors.white)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF16A34A),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              Navigator.pop(context);
+                              await _handleSuggestionAction(id, 'rejected');
+                            },
+                            icon: const Icon(Icons.cancel_outlined, color: Color(0xFFDC2626)),
+                            label: const Text('Reject Suggestion', style: TextStyle(color: Color(0xFFDC2626))),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFFDC2626)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   // ─────────────────── Build ───────────────────
 
   @override
@@ -250,12 +784,16 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen>
 
                     const SizedBox(height: 8),
 
-                    // ─── Tab-based Content ───
-                    _buildTabBar(),
-                    _buildTabContent(
-                      user, info, permissions, verification,
-                      isActive, isHoster, rawRole,
-                    ),
+          _buildTabBar(),
+          _buildTabContent(
+            user,
+            info,
+            permissions,
+            verification,
+            isActive,
+            isHoster,
+            rawRole,
+          ),
 
                     const SizedBox(height: 80),
                   ],
@@ -502,6 +1040,51 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen>
     bool isHoster,
     String rawRole,
   ) {
+    final studentInfo = Map<String, dynamic>.from(user['student_info'] ?? {});
+    final hasStudentInfo = studentInfo.values.any((v) => v != null && v.toString().trim().isNotEmpty);
+
+    final professionalInfo = Map<String, dynamic>.from(user['professional_info'] ?? {});
+    final hasProfessionalInfo = professionalInfo.values.any((v) => v != null && v.toString().trim().isNotEmpty);
+
+    final emergencyContact = Map<String, dynamic>.from(user['emergency_contact'] ?? {});
+    final hasEmergencyContact = emergencyContact.values.any((v) => v != null && v.toString().trim().isNotEmpty);
+
+    final bankInfo = Map<String, dynamic>.from(user['bank_info'] ?? {});
+    final bankName = bankInfo['bankName']?.toString() ?? user['bankName']?.toString() ?? '';
+    final bankAccount = bankInfo['accountNumber']?.toString() ?? bankInfo['bankAccountNo']?.toString() ?? user['bankAccNo']?.toString() ?? '';
+    final bankIfsc = bankInfo['ifsc']?.toString() ?? bankInfo['bankIfsc']?.toString() ?? user['bankIfsc']?.toString() ?? '';
+    final bankVerified = bankInfo['verified'] == true || bankInfo['bankVerified'] == true || user['bankVerified'] == true;
+    final hasBankInfo = bankName.isNotEmpty || bankAccount.isNotEmpty || bankIfsc.isNotEmpty;
+
+    final housingPrefs = Map<String, dynamic>.from(user['housing_preferences'] ?? {});
+    final hasHousingPrefs = housingPrefs.values.any((v) => v != null && v.toString().trim().isNotEmpty);
+
+    final prefCity = housingPrefs['preferredCity']?.toString() ?? 'Not provided';
+    final budgetMin = housingPrefs['budgetMin'];
+    final budgetMax = housingPrefs['budgetMax'];
+    final budgetStr = (budgetMin != null && budgetMax != null)
+        ? '₹$budgetMin - ₹$budgetMax'
+        : 'Not provided';
+    final lookingForVal = housingPrefs['lookingFor'];
+    final lookingForStr = lookingForVal is List
+        ? lookingForVal.join(', ')
+        : lookingForVal?.toString() ?? 'Not provided';
+    final moveInVal = housingPrefs['moveInDate'];
+    final moveInDateStr = _formatDate(moveInVal);
+    final stayDuration = housingPrefs['stayDuration']?.toString() ?? 'Not provided';
+    final familySize = housingPrefs['familySize']?.toString() ?? 'Not provided';
+
+    final hostPrefs = Map<String, dynamic>.from(user['host_preferences'] ?? {});
+    final hasHostPrefs = hostPrefs.values.any((v) => v != null && v.toString().trim().isNotEmpty);
+
+    final bookingType = hostPrefs['bookingType'] ?? 'Approval Required';
+    final prefTenantsVal = hostPrefs['tenantTypes'] ?? hostPrefs['preferredTenants'];
+    final prefTenantsStr = prefTenantsVal is List
+        ? prefTenantsVal.join(', ')
+        : prefTenantsVal?.toString() ?? 'Students, Professionals';
+    final prefGender = hostPrefs['genderPreference'] ?? hostPrefs['preferredGender'] ?? 'Any';
+    final prefDuration = hostPrefs['durationPreference'] ?? hostPrefs['preferredDuration'] ?? 'Long Term';
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -574,8 +1157,148 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen>
 
           const SizedBox(height: 12),
 
+          // Student Info
+          if ((rawRole.toLowerCase() == 'student' || rawRole.toLowerCase() == 'user' || rawRole.isEmpty) && hasStudentInfo) ...[
+            _buildSection(
+              title: 'STUDENT INFORMATION',
+              icon: Icons.school_outlined,
+              expanded: _studentExpanded,
+              onToggle: () => setState(() => _studentExpanded = !_studentExpanded),
+              child: Column(
+                children: [
+                  _detailRow(Icons.account_balance_outlined, 'College / University', studentInfo['college']?.toString() ?? 'Not provided'),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.book_outlined, 'Course / Program', studentInfo['course']?.toString() ?? 'Not provided'),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.timeline_outlined, 'Semester / Year', studentInfo['semester']?.toString() ?? 'Not provided'),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.badge_outlined, 'Student ID', studentInfo['studentId']?.toString() ?? 'Not provided'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Professional Info
+          if (rawRole.toLowerCase() == 'professional' && hasProfessionalInfo) ...[
+            _buildSection(
+              title: 'PROFESSIONAL INFORMATION',
+              icon: Icons.business_center_outlined,
+              expanded: _professionalExpanded,
+              onToggle: () => setState(() => _professionalExpanded = !_professionalExpanded),
+              child: Column(
+                children: [
+                  _detailRow(Icons.business_outlined, 'Company Name', professionalInfo['companyName']?.toString() ?? 'Not provided'),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.badge_outlined, 'Designation / Job Title', professionalInfo['jobTitle']?.toString() ?? 'Not provided'),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.work_outline, 'Work Location', professionalInfo['workLocation']?.toString() ?? 'Not provided'),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.badge_outlined, 'Employee ID', professionalInfo['employeeId']?.toString() ?? 'Not provided'),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.star_outline_rounded, 'Experience', professionalInfo['experience']?.toString() ?? 'Not provided'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Emergency Contact
+          if (hasEmergencyContact) ...[
+            _buildSection(
+              title: 'EMERGENCY CONTACT',
+              icon: Icons.contacts_outlined,
+              expanded: _emergencyExpanded,
+              onToggle: () => setState(() => _emergencyExpanded = !_emergencyExpanded),
+              child: Column(
+                children: [
+                  _detailRow(Icons.person_outline, 'Contact Person', emergencyContact['name']?.toString() ?? 'Not provided'),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.people_outline, 'Relationship', emergencyContact['relationship']?.toString() ?? emergencyContact['relation']?.toString() ?? 'Not provided'),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.phone_outlined, 'Phone Number', emergencyContact['phone']?.toString() ?? 'Not provided'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Bank & Payout Details
+          if (hasBankInfo) ...[
+            _buildSection(
+              title: 'BANK & PAYOUT DETAILS',
+              icon: Icons.account_balance_outlined,
+              expanded: _bankExpanded,
+              onToggle: () => setState(() => _bankExpanded = !_bankExpanded),
+              child: Column(
+                children: [
+                  _detailRow(Icons.account_balance_outlined, 'Bank Name', bankName.isNotEmpty ? bankName : 'Not provided'),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.credit_card_outlined, 'Account Number', bankAccount.isNotEmpty ? bankAccount : 'Not provided'),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.code_rounded, 'IFSC Code', bankIfsc.isNotEmpty ? bankIfsc : 'Not provided'),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(
+                    Icons.verified_outlined,
+                    'Verification Status',
+                    bankVerified ? 'Verified' : 'Pending Verification',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Housing Preferences
+          if (hasHousingPrefs) ...[
+            _buildSection(
+              title: 'HOUSING PREFERENCES',
+              icon: Icons.tune_outlined,
+              expanded: _housingPrefsExpanded,
+              onToggle: () => setState(() => _housingPrefsExpanded = !_housingPrefsExpanded),
+              child: Column(
+                children: [
+                  _detailRow(Icons.location_city_outlined, 'Preferred City', prefCity),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.currency_rupee, 'Monthly Budget Range', budgetStr),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.home_outlined, 'Looking For', lookingForStr),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.calendar_month_outlined, 'Preferred Move-in Date', moveInDateStr),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.schedule_outlined, 'Preferred Stay Duration', stayDuration),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.people_outline, 'Family Size / Sharing', familySize),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Hosting Preferences
+          if (isHoster && hasHostPrefs) ...[
+            _buildSection(
+              title: 'HOSTING PREFERENCES',
+              icon: Icons.home_work_outlined,
+              expanded: _hostPrefsExpanded,
+              onToggle: () => setState(() => _hostPrefsExpanded = !_hostPrefsExpanded),
+              child: Column(
+                children: [
+                  _detailRow(Icons.bookmark_outline_rounded, 'Booking Flow Type', bookingType),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.people_outline, 'Preferred Tenant Types', prefTenantsStr),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.wc_outlined, 'Preferred Gender', prefGender),
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _detailRow(Icons.schedule_outlined, 'Preferred Duration', prefDuration),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
           // Verification Documents — full admin panel
-          _buildVerificationDocumentsPanel(user, verification),
+          _buildVerificationDocumentsPanel(user, verification, rawRole),
 
           const SizedBox(height: 12),
 
@@ -844,9 +1567,22 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen>
               offset: const Offset(0, 2))
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PropertyDetailScreen(
+                property: p,
+                adminService: widget.adminService,
+              ),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // Image header
           ClipRRect(
             borderRadius:
@@ -937,8 +1673,9 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen>
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
 
   Widget _propertyPlaceholder() => Container(
@@ -1038,15 +1775,19 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen>
     final statusColor = _statusColor(status);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: InkWell(
+        onTap: () => _showBookingDetailsBottomSheet(b),
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1103,8 +1844,11 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen>
           ),
         ],
       ),
-    );
-  }
+    ),
+  ),
+);
+}
+
 
   Widget _bookingInfoChip(IconData icon, String label) => Container(
         padding:
@@ -1340,10 +2084,12 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen>
   // ─────────────────── Verification Documents Panel ───────────────────
 
   Widget _buildVerificationDocumentsPanel(
-      Map<String, dynamic> user, Map<String, dynamic> verif) {
+      Map<String, dynamic> user, Map<String, dynamic> verif, String rawRole) {
     final emailVerified = user['emailVerified'] == true ||
         verif['emailVerified'] == true;
     final phoneVerified = verif['phoneVerified'] == true;
+    final isHosterRole = ['hoster', 'owner', 'manager', 'agency']
+        .contains(rawRole.toLowerCase());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1386,6 +2132,52 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen>
               setState(() => _verificationExpanded = !_verificationExpanded),
           child: Column(
             children: [
+              // Identity Document (Student/Professional ID)
+              _adminDocCard(
+                label: rawRole.toLowerCase().contains('student') 
+                    ? 'Student ID' 
+                    : 'Professional ID',
+                icon: Icons.school_outlined,
+                iconColor: const Color(0xFF8B5CF6),
+                frontUrl: verif['roleIdFrontUrl'],
+                backUrl: verif['roleIdBackUrl'],
+                isVerified: verif['roleIdVerified'] == true,
+                status: verif['roleIdStatus']?.toString(),
+                rejectReason: verif['roleIdRejectReason']?.toString(),
+                fieldKey: 'roleId',
+              ),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
+              // Address Verification
+              _adminDocCard(
+                label: 'Address Proof',
+                icon: Icons.location_on_outlined,
+                iconColor: const Color(0xFF10B981),
+                frontUrl: verif['addressFrontUrl'],
+                backUrl: verif['addressBackUrl'],
+                isVerified: verif['addressVerified'] == true,
+                status: verif['addressStatus']?.toString(),
+                rejectReason: verif['addressRejectReason']?.toString(),
+                fieldKey: 'address',
+                subtitle: verif['addressType']?.toString(),
+              ),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
+              // Selfie Verification
+              _adminDocCard(
+                label: 'Selfie Verification',
+                icon: Icons.face_retouching_natural,
+                iconColor: const Color(0xFFEC4899),
+                frontUrl: verif['selfieUrl'],
+                backUrl: null,
+                isVerified: verif['selfieVerified'] == true,
+                status: verif['selfieStatus']?.toString(),
+                rejectReason: verif['selfieRejectReason']?.toString(),
+                fieldKey: 'selfie',
+              ),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
+              // Government ID (Aadhaar)
               _adminDocCard(
                 label: 'Aadhaar Card',
                 icon: Icons.credit_card_rounded,
@@ -1399,46 +2191,77 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen>
                 rejectReason: verif['govIdRejectReason']?.toString(),
                 fieldKey: 'govId',
               ),
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              _adminDocCard(
-                label: 'PAN Card',
-                icon: Icons.article_outlined,
-                iconColor: const Color(0xFF8B5CF6),
-                frontUrl: verif['panFrontUrl'] ?? verif['panUrl'],
-                backUrl: null,
-                isVerified: verif['panVerified'] == true,
-                status: verif['panStatus']?.toString(),
-                rejectReason: verif['panRejectReason']?.toString(),
-                fieldKey: 'pan',
-              ),
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              _adminDocCard(
-                label: 'Business Proof',
-                icon: Icons.business_center_outlined,
-                iconColor: const Color(0xFFF59E0B),
-                frontUrl: verif['businessProofFrontUrl'] ??
-                    verif['businessProofUrl'],
-                backUrl: null,
-                isVerified: verif['businessProofVerified'] == true,
-                status: verif['businessProofStatus']?.toString(),
-                rejectReason: verif['businessProofRejectReason']?.toString(),
-                fieldKey: 'businessProof',
-                subtitle: verif['businessProofType']?.toString(),
-              ),
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              _adminDocCard(
-                label: 'Property Ownership',
-                icon: Icons.home_work_outlined,
-                iconColor: const Color(0xFF3B82F6),
-                frontUrl: verif['propertyProofFrontUrl'] ??
-                    verif['propertyProofUrl'],
-                backUrl: null,
-                isVerified: verif['propertyProofVerified'] == true,
-                status: verif['propertyProofStatus']?.toString(),
-                rejectReason: verif['propertyProofRejectReason']?.toString(),
-                fieldKey: 'propertyProof',
-                subtitle: verif['propertyProofType']?.toString(),
-              ),
+              
+              if (isHosterRole) ...[
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                _adminDocCard(
+                  label: 'PAN Card',
+                  icon: Icons.article_outlined,
+                  iconColor: const Color(0xFF8B5CF6),
+                  frontUrl: verif['panFrontUrl'] ?? verif['panUrl'],
+                  backUrl: null,
+                  isVerified: verif['panVerified'] == true,
+                  status: verif['panStatus']?.toString(),
+                  rejectReason: verif['panRejectReason']?.toString(),
+                  fieldKey: 'pan',
+                ),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                _adminDocCard(
+                  label: 'Business Proof',
+                  icon: Icons.business_center_outlined,
+                  iconColor: const Color(0xFFF59E0B),
+                  frontUrl: verif['businessProofFrontUrl'] ??
+                      verif['businessProofUrl'],
+                  backUrl: null,
+                  isVerified: verif['businessProofVerified'] == true,
+                  status: verif['businessProofStatus']?.toString(),
+                  rejectReason: verif['businessProofRejectReason']?.toString(),
+                  fieldKey: 'businessProof',
+                  subtitle: verif['businessProofType']?.toString(),
+                ),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                _adminDocCard(
+                  label: 'Property Ownership',
+                  icon: Icons.home_work_outlined,
+                  iconColor: const Color(0xFF3B82F6),
+                  frontUrl: verif['propertyProofFrontUrl'] ??
+                      verif['propertyProofUrl'],
+                  backUrl: null,
+                  isVerified: verif['propertyProofVerified'] == true,
+                  status: verif['propertyProofStatus']?.toString(),
+                  rejectReason: verif['propertyProofRejectReason']?.toString(),
+                  fieldKey: 'propertyProof',
+                  subtitle: verif['propertyProofType']?.toString(),
+                ),
+                if (verif['registrationCertificateUrl'] != null) ...[
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  _adminDocCard(
+                    label: 'Registration Certificate',
+                    icon: Icons.assignment_outlined,
+                    iconColor: const Color(0xFF10B981),
+                    frontUrl: verif['registrationCertificateUrl'],
+                    backUrl: null,
+                    isVerified: verif['registrationCertificateVerified'] == true,
+                    status: verif['registrationCertificateStatus']?.toString(),
+                    rejectReason: verif['registrationCertificateRejectReason']?.toString(),
+                    fieldKey: 'registrationCertificate',
+                  ),
+                ],
+                if (verif['agencyLicenseUrl'] != null) ...[
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  _adminDocCard(
+                    label: 'Agency License',
+                    icon: Icons.card_membership_outlined,
+                    iconColor: const Color(0xFF6366F1),
+                    frontUrl: verif['agencyLicenseUrl'],
+                    backUrl: null,
+                    isVerified: verif['agencyLicenseVerified'] == true,
+                    status: verif['agencyLicenseStatus']?.toString(),
+                    rejectReason: verif['agencyLicenseRejectReason']?.toString(),
+                    fieldKey: 'agencyLicense',
+                  ),
+                ],
+              ],
             ],
           ),
         ),
@@ -1953,15 +2776,19 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen>
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: InkWell(
+        onTap: () => _showSuggestionDetailsBottomSheet(s),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -2004,8 +2831,10 @@ class _UserProfileViewScreenState extends State<UserProfileViewScreen>
           ),
         ],
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 
   Widget _badge(String text, Color color) {
     return Container(

@@ -51,9 +51,9 @@ class _ActivityFeedWidgetState extends State<ActivityFeedWidget> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withOpacity(0.1),
+                color: const Color(0xFF10B981).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -107,7 +107,7 @@ class _ActivityFeedWidgetState extends State<ActivityFeedWidget> {
             child: OutlinedButton(
               onPressed: () {},
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.white.withOpacity(0.05)),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
@@ -143,7 +143,7 @@ class _ActivityItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: _getIconColor(activity['type']).withOpacity(0.1),
+              color: _getIconColor(activity['type']).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -162,7 +162,7 @@ class _ActivityItem extends StatelessWidget {
                   children: [
                     Text(
                       timeStr,
-                      style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 10),
                     ),
                   ],
                 ),
@@ -181,7 +181,7 @@ class _ActivityItem extends StatelessWidget {
                 if (activity['property'] != null)
                   Text(
                     activity['property'],
-                    style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11),
                   ),
               ],
             ),

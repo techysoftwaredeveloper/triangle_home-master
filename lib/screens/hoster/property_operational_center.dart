@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -15,6 +16,7 @@ import 'package:triangle_home/models/room_model.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 
 import 'package:triangle_home/services/staff_service.dart';
+import 'package:triangle_home/services/hoster_service.dart';
 import 'package:triangle_home/models/staff_model.dart';
 import 'package:triangle_home/models/user.dart' as model;
 
@@ -94,13 +96,17 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
                       propertyService: _propertyService,
                       bookingService: _bookingService,
                       leadService: _leadService,
+                      tabController: _tabController,
                     ),
                     _BedsTab(propertyId: widget.propertyId),
                     _ResidentsTab(propertyId: widget.propertyId),
                     _BookingsTab(propertyId: widget.propertyId, bookingService: _bookingService),
                     _FinanceTab(propertyId: widget.propertyId),
                     _LeadsTab(propertyId: widget.propertyId, leadService: _leadService),
-                    _HostsTab(propertyId: widget.propertyId),
+                    _HostsTab(
+                      propertyId: widget.propertyId,
+                      ownerId: widget.propertyData['ownerId'] ?? '',
+                    ),
                   ],
                 ),
               ),
@@ -263,7 +269,15 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
 
   Widget _buildTabBar() {
     return Container(
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: const Color(0xFFE2E8F0),
+            width: 1,
+          ),
+        ),
+      ),
       child: TabBar(
         controller: _tabController,
         isScrollable: true,
@@ -271,8 +285,19 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
         unselectedLabelColor: const Color(0xFF64748B),
         indicatorColor: const Color(0xFF16A34A),
         indicatorWeight: 3,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Outfit'),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+        indicatorSize: TabBarIndicatorSize.label,
+        onTap: (index) {
+          // Add haptic feedback if needed
+        },
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+          fontFamily: 'Outfit',
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 13,
+        ),
         tabs: const [
           Tab(text: 'Overview'),
           Tab(text: 'Beds & Inventory'),
@@ -299,6 +324,7 @@ class _OverviewTab extends StatelessWidget {
   final PropertyService propertyService;
   final BookingService bookingService;
   final LeadService leadService;
+  final TabController tabController;
 
   const _OverviewTab({
     required this.propertyId,
@@ -311,6 +337,7 @@ class _OverviewTab extends StatelessWidget {
     required this.propertyService,
     required this.bookingService,
     required this.leadService,
+    required this.tabController,
   });
 
   @override
@@ -362,7 +389,17 @@ class _OverviewTab extends StatelessWidget {
                   Text('Occupancy Overview', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1E293B))),
                 ],
               ),
-              Text('View Details', style: TextStyle(color: AppTheme.successColor, fontSize: 12, fontWeight: FontWeight.bold)),
+              TextButton(
+                onPressed: () {
+                  tabController.animateTo(1);
+                },
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text('View Details', style: TextStyle(color: AppTheme.successColor, fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -415,12 +452,27 @@ class _OverviewTab extends StatelessWidget {
           builder: (context, bedSnapshot) {
             final rooms = roomSnapshot.data ?? [];
             final beds = bedSnapshot.data ?? [];
-            
+
+            // Group rooms by floor
+            final Map<int, List<RoomModel>> roomsByFloor = {};
+            for (final r in rooms) {
+              roomsByFloor.putIfAbsent(r.floor, () => []).add(r);
+            }
+            final sortedFloors = roomsByFloor.keys.toList()..sort();
+
+            // Build bed status summary for header
+            final totalRooms = rooms.length;
+            final totalBedCount = beds.length;
+            final occupiedCount = beds.where((b) => (b['status'] ?? '').toString().toLowerCase() == 'occupied').length;
+            final availableCount = beds.where((b) => (b['status'] ?? '').toString().toLowerCase() == 'available').length;
+
             return Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -428,7 +480,7 @@ class _OverviewTab extends StatelessWidget {
                         children: [
                           Icon(Icons.inventory_2_outlined, color: Color(0xFF64748B), size: 20),
                           SizedBox(width: 12),
-                          Text('Bed Inventory Snapshot', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1E293B))),
+                          Text('Bed Inventory', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1E293B))),
                           SizedBox(width: 8),
                           Text('(Floor Wise)', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
                         ],
@@ -436,62 +488,96 @@ class _OverviewTab extends StatelessWidget {
                       Text('View All Beds', style: TextStyle(color: AppTheme.successColor, fontSize: 12, fontWeight: FontWeight.bold)),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  ...['Floor 1', 'Floor 2', 'Floor 3'].map((f) => _floorItem(f, f == 'Floor 2')),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: rooms.take(4).map((r) {
-                          final roomBeds = beds.where((b) => b['roomId'] == r.id).toList();
-                          final statuses = roomBeds.map((b) => (b['status'] ?? 'V').toString().substring(0, 1).toUpperCase()).toList();
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 12.0),
-                            child: _roomCard('Room ${r.roomNumber}', '${r.totalBeds} Beds', statuses),
-                          );
-                        }).toList(),
-                      ),
+
+                  // Quick stats strip
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _inventoryStat('$totalRooms', 'Rooms', const Color(0xFF8B5CF6)),
+                        _inventoryStat('$totalBedCount', 'Total Beds', const Color(0xFF1E293B)),
+                        _inventoryStat('$occupiedCount', 'Occupied', const Color(0xFF16A34A)),
+                        _inventoryStat('$availableCount', 'Available', const Color(0xFF3B82F6)),
+                      ],
                     ),
                   ),
+
+                  const SizedBox(height: 16),
+
+                  // Floor-wise room listing
+                  if (sortedFloors.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            const Icon(Icons.bed_outlined, size: 40, color: Color(0xFFCBD5E1)),
+                            const SizedBox(height: 12),
+                            const Text('No rooms added yet', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                            const SizedBox(height: 4),
+                            Text('Use the + button to add your first room & beds', style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    ...sortedFloors.map((floor) {
+                      final floorRooms = roomsByFloor[floor]!;
+                      final floorBeds = beds.where((b) => floorRooms.any((r) => r.id == b['roomId'])).toList();
+                      final floorOccupied = floorBeds.where((b) => (b['status'] ?? '').toString().toLowerCase() == 'occupied').length;
+                      final floorTotal = floorBeds.length;
+                      return _FloorSection(
+                        floorNumber: floor,
+                        rooms: floorRooms,
+                        beds: beds,
+                        floorOccupied: floorOccupied,
+                        floorTotal: floorTotal,
+                        bedIndicatorBuilder: _bedIndicator,
+                        roomCardBuilder: _roomCard,
+                      );
+                    }),
+
                   const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  // Legend
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 8,
                     children: [
                       _legend('Occupied', const Color(0xFF16A34A)),
-                      const SizedBox(width: 16),
-                      _legend('Vacant', const Color(0xFF3B82F6)),
-                      const SizedBox(width: 16),
+                      _legend('Available', const Color(0xFF3B82F6)),
                       _legend('Reserved', const Color(0xFFD97706)),
-                      const SizedBox(width: 16),
                       _legend('Maintenance', const Color(0xFFEF4444)),
+                      _legend('Blocked', const Color(0xFF94A3B8)),
                     ],
                   ),
                 ],
               ),
             );
-          }
+          },
         );
-      }
+      },
     );
   }
 
-  Widget _floorItem(String title, bool expanded) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B))),
-          Icon(expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, color: const Color(0xFF64748B)),
-        ],
-      ),
+  Widget _inventoryStat(String val, String label, Color color) {
+    return Column(
+      children: [
+        Text(val, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color)),
+        Text(label, style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold)),
+      ],
     );
   }
 
-  Widget _roomCard(String name, String capacity, List<String> statuses) {
+
+  Widget _roomCard(String name, String capacity, List<String> statuses, {String? occupancyType}) {
     return Container(
-      width: 130,
+      width: 140,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
@@ -503,28 +589,49 @@ class _OverviewTab extends StatelessWidget {
         children: [
           Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B))),
           Text(capacity, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
-          const SizedBox(height: 12),
+          if (occupancyType != null) ...
+            [Text(occupancyType, style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8)))],
+          const SizedBox(height: 10),
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: statuses.map((s) => _bedIndicator(s)).toList(),
+            children: statuses.isEmpty
+                ? [const Text('No beds', style: TextStyle(fontSize: 9, color: Color(0xFF94A3B8)))]
+                : statuses.map((s) => _bedIndicator(s)).toList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _bedIndicator(String s) {
-    Color c = const Color(0xFF16A34A);
-    if (s == 'V') c = const Color(0xFF3B82F6);
-    if (s == 'R') c = const Color(0xFFD97706);
-    if (s == 'M') c = const Color(0xFFEF4444);
-
+  Widget _bedIndicator(String rawStatus) {
+    final s = rawStatus.toLowerCase();
+    Color c;
+    String label;
+    if (s == 'occupied') {
+      c = const Color(0xFF16A34A);
+      label = 'O';
+    } else if (s == 'available') {
+      c = const Color(0xFF3B82F6);
+      label = 'V';
+    } else if (s == 'reserved') {
+      c = const Color(0xFFD97706);
+      label = 'R';
+    } else if (s == 'maintenance') {
+      c = const Color(0xFFEF4444);
+      label = 'M';
+    } else if (s == 'blocked') {
+      c = const Color(0xFF94A3B8);
+      label = 'B';
+    } else {
+      c = const Color(0xFF3B82F6);
+      label = s.isNotEmpty ? s[0].toUpperCase() : 'V';
+    }
     return Container(
       width: 24,
       height: 24,
       decoration: BoxDecoration(color: c, shape: BoxShape.circle),
-      child: Center(child: Text(s, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
+      child: Center(child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold))),
     );
   }
 
@@ -687,56 +794,99 @@ class _OverviewTab extends StatelessWidget {
   }
 
   Widget _buildAssignedHost() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Assigned Host', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B))),
-          const SizedBox(height: 16),
-          Row(
+    final staffService = StaffService();
+    return StreamBuilder<List<StaffMember>>(
+      stream: staffService.getPropertyStaffMembers(propertyId),
+      builder: (context, snapshot) {
+        final staff = snapshot.data ?? [];
+        final primaryHost = staff.firstWhere(
+          (s) => s.assignment.role == StaffRole.primaryHost,
+          orElse: () => StaffMember(
+            assignment: HostAssignment(
+              id: '',
+              propertyId: propertyId,
+              userId: '',
+              role: StaffRole.primaryHost,
+              status: StaffStatus.inactive,
+              assignedAt: DateTime.now(),
+            ),
+            user: model.User(
+              id: '',
+              name: 'No Primary Host',
+              phoneNumber: 'N/A',
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+          ),
+        );
+
+        final hasPrimaryHost = primaryHost.user.id.isNotEmpty;
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const CircleAvatar(radius: 28, backgroundColor: Color(0xFFF1F5F9), child: Icon(Icons.person, size: 32, color: Colors.grey)),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              const Text('Assigned Host', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B))),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: const Color(0xFFF1F5F9),
+                    backgroundImage: primaryHost.user.profilePicture != null
+                        ? NetworkImage(primaryHost.user.profilePicture!)
+                        : null,
+                    child: primaryHost.user.profilePicture == null
+                        ? const Icon(Icons.person, size: 32, color: Colors.grey)
+                        : null,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Ajay Kumar', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                        const SizedBox(width: 8),
-                        Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(6)), child: const Text('Primary Host', style: TextStyle(color: Color(0xFF16A34A), fontSize: 9, fontWeight: FontWeight.bold))),
+                        Row(
+                          children: [
+                            Text(primaryHost.user.name ?? 'Unknown', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                            const SizedBox(width: 8),
+                            Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(6)), child: const Text('Primary Host', style: TextStyle(color: Color(0xFF16A34A), fontSize: 9, fontWeight: FontWeight.bold))),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(children: [const Icon(Icons.phone_outlined, size: 12, color: Color(0xFF94A3B8)), const SizedBox(width: 6), Text(primaryHost.user.phoneNumber, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)))]),
+                        if (primaryHost.user.email != null)
+                          Row(children: [const Icon(Icons.email_outlined, size: 12, color: Color(0xFF94A3B8)), const SizedBox(width: 6), Text(primaryHost.user.email!, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)))]),
+                        Row(children: [const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF94A3B8)), const SizedBox(width: 6), Text('Since ${DateFormat('dd MMM yyyy').format(primaryHost.assignment.assignedAt)}', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)))]),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    const Row(children: [Icon(Icons.phone_outlined, size: 12, color: Color(0xFF94A3B8)), SizedBox(width: 6), Text('+91 98765 43210', style: TextStyle(fontSize: 11, color: Color(0xFF64748B)))]),
-                    const Row(children: [Icon(Icons.email_outlined, size: 12, color: Color(0xFF94A3B8)), SizedBox(width: 6), Text('ajaykumar@trianglehomes.in', style: TextStyle(fontSize: 11, color: Color(0xFF64748B)))]),
-                    const Row(children: [Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF94A3B8)), SizedBox(width: 6), Text('Since 12 Jan 2024', style: TextStyle(fontSize: 11, color: Color(0xFF64748B)))]),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(child: _hostAction(Icons.call_outlined, 'Call', onTap: hasPrimaryHost ? () {} : null)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _hostAction(Icons.person_outline_rounded, 'Change Host')),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(child: _hostAction(Icons.call_outlined, 'Call')),
-              const SizedBox(width: 12),
-              Expanded(child: _hostAction(Icons.person_outline_rounded, 'Change Host')),
-            ],
-          ),
-        ],
-      ),
+        );
+      }
     );
   }
 
-  Widget _hostAction(IconData i, String l) {
+  Widget _hostAction(IconData i, String l, {VoidCallback? onTap}) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFF1F5F9))),
-      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(i, size: 16, color: const Color(0xFF16A34A)), const SizedBox(width: 8), Text(l, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)))]),
+      child: InkWell(
+        onTap: onTap,
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(i, size: 16, color: const Color(0xFF16A34A)), const SizedBox(width: 8), Text(l, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)))]),
+      ),
     );
   }
 
@@ -753,28 +903,50 @@ class _OverviewTab extends StatelessWidget {
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
           children: [
-            _qAction(Icons.event_available_outlined, 'Add Booking', const Color(0xFF16A34A), const Color(0xFFDCFCE7)),
-            _qAction(Icons.bed_outlined, 'Assign Bed', const Color(0xFF3B82F6), const Color(0xFFDBEAFE)),
-            _qAction(Icons.people_outline_rounded, 'Residents', const Color(0xFF8B5CF6), const Color(0xFFF3E8FF)),
-            _qAction(Icons.calendar_today_outlined, 'Bookings', const Color(0xFFF59E0B), const Color(0xFFFEF3C7)),
-            _qAction(Icons.payments_outlined, 'Payments', const Color(0xFF16A34A), const Color(0xFFDCFCE7)),
-            _qAction(Icons.report_gmailerrorred_rounded, 'Complaints', const Color(0xFFEF4444), const Color(0xFFFEE2E2)),
+            _qAction(Icons.event_available_outlined, 'Add Booking', const Color(0xFF16A34A), const Color(0xFFDCFCE7), onTap: () => tabController.animateTo(3)),
+            _qAction(Icons.bed_outlined, 'Assign Bed', const Color(0xFF3B82F6), const Color(0xFFDBEAFE), onTap: () => tabController.animateTo(1)),
+            _qAction(Icons.people_outline_rounded, 'Residents', const Color(0xFF8B5CF6), const Color(0xFFF3E8FF), onTap: () => tabController.animateTo(2)),
+            _qAction(Icons.calendar_today_outlined, 'Bookings', const Color(0xFFF59E0B), const Color(0xFFFEF3C7), onTap: () => tabController.animateTo(3)),
+            _qAction(Icons.payments_outlined, 'Payments', const Color(0xFF16A34A), const Color(0xFFDCFCE7), onTap: () => tabController.animateTo(4)),
+            _qAction(Icons.report_gmailerrorred_rounded, 'Complaints', const Color(0xFFEF4444), const Color(0xFFFEE2E2), onTap: () {}),
           ],
         ),
       ],
     );
   }
 
-  Widget _qAction(IconData i, String l, Color c, Color bg) {
-    return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: bg, shape: BoxShape.circle), child: Icon(i, color: c, size: 20)),
-          const SizedBox(height: 8),
-          Text(l, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
-        ],
+  Widget _qAction(IconData i, String l, Color c, Color bg, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.01),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+              child: Icon(i, color: c, size: 20),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -796,7 +968,6 @@ class _OverviewTab extends StatelessWidget {
           _activityItem(Icons.bed_outlined, 'Bed D203-C marked as Vacant', 'Today, 09:30 AM', const Color(0xFF3B82F6), const Color(0xFFDBEAFE)),
           _activityItem(Icons.calendar_today_outlined, 'New booking confirmed for Bed D204-A', 'Today, 08:15 AM', const Color(0xFF16A34A), const Color(0xFFDCFCE7)),
           _activityItem(Icons.payments_outlined, 'Rent collected from 3 residents', 'Yesterday, 07:45 PM', const Color(0xFFF59E0B), const Color(0xFFFEF3C7)),
-          _activityItem(Icons.person_add_outlined, 'Host Ajay Kumar assigned to this property', '25 May 2025, 11:20 AM', const Color(0xFF8B5CF6), const Color(0xFFF3E8FF)),
         ],
       ),
     );
@@ -867,6 +1038,110 @@ class _OverviewTab extends StatelessWidget {
           Text(l, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
         ],
       ),
+    );
+  }
+}
+
+// ── Floor Section (collapsible, real data) ────────────────────────────────────
+class _FloorSection extends StatefulWidget {
+  final int floorNumber;
+  final List<RoomModel> rooms;
+  final List<Map<String, dynamic>> beds;
+  final int floorOccupied;
+  final int floorTotal;
+  final Widget Function(String) bedIndicatorBuilder;
+  final Widget Function(String, String, List<String>, {String? occupancyType}) roomCardBuilder;
+
+  const _FloorSection({
+    required this.floorNumber,
+    required this.rooms,
+    required this.beds,
+    required this.floorOccupied,
+    required this.floorTotal,
+    required this.bedIndicatorBuilder,
+    required this.roomCardBuilder,
+  });
+
+  @override
+  State<_FloorSection> createState() => _FloorSectionState();
+}
+
+class _FloorSectionState extends State<_FloorSection> {
+  bool _expanded = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = widget.floorNumber == 0 ? 'Ground Floor' : 'Floor ${widget.floorNumber}';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Floor header — tappable to expand/collapse
+        GestureDetector(
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.layers_outlined, size: 16, color: Color(0xFF64748B)),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${widget.rooms.length} room${widget.rooms.length != 1 ? 's' : ''} · ${widget.floorOccupied}/${widget.floorTotal} occupied',
+                    style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  _expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                  color: const Color(0xFF64748B),
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Rooms row — shown when expanded
+        if (_expanded)
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 8),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: widget.rooms.map((r) {
+                  final roomBeds = widget.beds.where((b) => b['roomId'] == r.id).toList();
+                  final statuses = roomBeds.map((b) => (b['status'] ?? 'available').toString()).toList();
+                  final occupiedInRoom = roomBeds.where((b) => (b['status'] ?? '').toString().toLowerCase() == 'occupied').length;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: widget.roomCardBuilder(
+                      'Room ${r.roomNumber}',
+                      '${r.totalBeds} Beds · $occupiedInRoom occupied',
+                      statuses,
+                      occupancyType: r.occupancyType.isNotEmpty ? r.occupancyType : null,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        const SizedBox(height: 8),
+      ],
     );
   }
 }
@@ -2334,7 +2609,8 @@ class _LeadCard extends StatelessWidget {
 // ── Hosts Tab ────────────────────────────────────────────────────────────
 class _HostsTab extends StatefulWidget {
   final String propertyId;
-  const _HostsTab({super.key, required this.propertyId});
+  final String ownerId;
+  const _HostsTab({super.key, required this.propertyId, required this.ownerId});
 
   @override
   State<_HostsTab> createState() => _HostsTabState();
@@ -2342,39 +2618,57 @@ class _HostsTab extends StatefulWidget {
 
 class _HostsTabState extends State<_HostsTab> {
   final StaffService _staffService = StaffService();
+  final HosterService _hosterService = HosterService();
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<Map<String, dynamic>>(
-      stream: _staffService.getStaffKPIs(widget.propertyId),
-      builder: (context, kpiSnapshot) {
-        final kpis = kpiSnapshot.data ?? {
-          'totalHosts': 0,
-          'primaryHosts': 0,
-          'assistantHosts': 0,
-          'activePermissions': 0,
-          'pendingInvitations': 0,
-        };
+    return StreamBuilder<List<StaffMember>>(
+      stream: _staffService.getPropertyStaffMembers(widget.propertyId),
+      builder: (context, staffSnapshot) {
+        final staff = staffSnapshot.data ?? [];
+        
+        // Calculate KPIs from real staff data
+        final totalHosts = staff.length;
+        final primaryHosts = staff.where((s) => s.assignment.role == StaffRole.primaryHost).length;
+        final assistantHosts = staff.where((s) => s.assignment.role == StaffRole.assistantHost).length;
+        final activePermissions = staff.fold<int>(0, (acc, s) => acc + s.assignment.permissions.length);
+        
+        return StreamBuilder<Map<String, dynamic>>(
+          stream: _staffService.getStaffKPIs(widget.propertyId), // For pending invites
+          builder: (context, kpiSnapshot) {
+            final kpis = kpiSnapshot.data ?? {
+              'pendingInvitations': 0,
+            };
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildStaffKPIs(kpis),
-              const SizedBox(height: 24),
-              _buildOwnerSection(),
-              const SizedBox(height: 24),
-              _buildPrimaryHostSection(),
-              const SizedBox(height: 24),
-              _buildAssistantHostsSection(),
-              const SizedBox(height: 24),
-              _buildActivityFeed(),
-              const SizedBox(height: 24),
-              _buildQuickActionsStaff(),
-              const SizedBox(height: 100),
-            ],
-          ),
+            final combinedKpis = {
+              'totalHosts': totalHosts,
+              'primaryHosts': primaryHosts,
+              'assistantHosts': assistantHosts,
+              'activePermissions': activePermissions,
+              'pendingInvitations': kpis['pendingInvitations'],
+            };
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStaffKPIs(combinedKpis),
+                  const SizedBox(height: 24),
+                  _buildOwnerSection(),
+                  const SizedBox(height: 24),
+                  _buildPrimaryHostSection(staff),
+                  const SizedBox(height: 24),
+                  _buildAssistantHostsSection(staff),
+                  const SizedBox(height: 24),
+                  _buildActivityFeed(staff),
+                  const SizedBox(height: 24),
+                  _buildQuickActionsStaff(),
+                  const SizedBox(height: 100),
+                ],
+              ),
+            );
+          }
         );
       }
     );
@@ -2423,111 +2717,151 @@ class _HostsTabState extends State<_HostsTab> {
   }
 
   Widget _buildOwnerSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Property Owner', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
-          child: Row(
-            children: [
-              const CircleAvatar(radius: 28, backgroundColor: Color(0xFFF1F5F9), child: Icon(Icons.person, size: 32, color: Colors.grey)),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Text('Rahul Nair', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 8),
-                        Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(6)), child: const Text('Owner', style: TextStyle(color: Color(0xFF16A34A), fontSize: 9, fontWeight: FontWeight.bold))),
-                      ],
-                    ),
-                    const Text('+91 98765 43210', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                    const Text('rahul.nair@email.com', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
-                  ],
-                ),
-              ),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('Owner Since', style: TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
-                  Text('12 Jan 2023', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 4),
-                  Row(children: [Icon(Icons.inventory_2_outlined, size: 12, color: Color(0xFF64748B)), SizedBox(width: 4), Text('4 Properties', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold))]),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+    if (widget.ownerId.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
-  Widget _buildPrimaryHostSection() {
-    return StreamBuilder<List<HostAssignment>>(
-      stream: _staffService.getPropertyStaff(widget.propertyId),
+    return StreamBuilder<Map<String, dynamic>?>(
+      stream: _hosterService.getUserProfileStream(widget.ownerId),
       builder: (context, snapshot) {
-        final primary = snapshot.data?.firstWhere((s) => s.role == StaffRole.primaryHost, orElse: () => HostAssignment(id: '', propertyId: widget.propertyId, userId: '', role: StaffRole.primaryHost, status: StaffStatus.inactive, assignedAt: DateTime.now()));
-        
+        final userData = snapshot.data ?? {};
+        if (userData.isEmpty) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return const SizedBox.shrink();
+        }
+
+        final info = userData['info'] as Map? ?? {};
+        final name = info['name'] ?? userData['name'] ?? 'Unknown Owner';
+        final phone = userData['phone'] ?? userData['phoneNumber'] ?? 'N/A';
+        final email = userData['email'] ?? 'N/A';
+        final profileImage = info['profileImage'] ?? userData['profilePicture'];
+        final createdAt = (userData['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Primary Host', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                Row(
-                  children: [
-                    Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFF16A34A), shape: BoxShape.circle)),
-                    const SizedBox(width: 6),
-                    const Text('Active', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.chevron_right_rounded, color: Color(0xFF64748B), size: 16),
-                  ],
-                ),
-              ],
-            ),
+            const Text('Property Owner', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
-              child: Column(
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      const CircleAvatar(radius: 28, backgroundColor: Color(0xFFF1F5F9), child: Icon(Icons.person, size: 32, color: Colors.grey)),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  CircleAvatar(
+                    radius: 28, 
+                    backgroundColor: const Color(0xFFF1F5F9), 
+                    backgroundImage: profileImage != null ? NetworkImage(profileImage) : null,
+                    child: profileImage == null ? const Icon(Icons.person, size: 32, color: Colors.grey) : null,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            Row(
-                              children: [
-                                const Text('Ajay Kumar', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                                const SizedBox(width: 8),
-                                Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(6)), child: const Text('Primary Host', style: TextStyle(color: Color(0xFF16A34A), fontSize: 9, fontWeight: FontWeight.bold))),
-                              ],
-                            ),
-                            const Text('+91 98765 43210', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                            const Text('ajay.kumar@trianglehomes.in', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
-                            const Text('Assigned Since: 12 Jan 2024', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                            Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                            const SizedBox(width: 8),
+                            Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(6)), child: const Text('Owner', style: TextStyle(color: Color(0xFF16A34A), fontSize: 9, fontWeight: FontWeight.bold))),
                           ],
                         ),
-                      ),
+                        Text(phone, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                        Text(email, style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text('Owner Since', style: TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
+                      Text(DateFormat('dd MMM yyyy').format(createdAt), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                     ],
                   ),
-                  const Divider(height: 32, color: Color(0xFFF1F5F9)),
-                  _buildPermissionsGrid(['Leads', 'Bookings', 'Beds', 'Payments', 'Residents', 'Complaints']),
                 ],
               ),
             ),
           ],
         );
       }
+    );
+  }
+
+  Widget _buildPrimaryHostSection(List<StaffMember> staff) {
+    final primary = staff.firstWhere(
+      (s) => s.assignment.role == StaffRole.primaryHost,
+      orElse: () => StaffMember(
+        assignment: HostAssignment(id: '', propertyId: widget.propertyId, userId: '', role: StaffRole.primaryHost, status: StaffStatus.inactive, assignedAt: DateTime.now()),
+        user: model.User(id: '', name: 'Not Assigned', phoneNumber: 'N/A', createdAt: DateTime.now(), updatedAt: DateTime.now()),
+      ),
+    );
+
+    final isActive = primary.assignment.status == StaffStatus.active;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Primary Host', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+            if (primary.user.id.isNotEmpty)
+              Row(
+                children: [
+                  Container(width: 8, height: 8, decoration: BoxDecoration(color: isActive ? const Color(0xFF16A34A) : Colors.grey, shape: BoxShape.circle)),
+                  const SizedBox(width: 6),
+                  Text(isActive ? 'Active' : 'Inactive', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isActive ? const Color(0xFF16A34A) : Colors.grey)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.chevron_right_rounded, color: Color(0xFF64748B), size: 16),
+                ],
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28, 
+                    backgroundColor: const Color(0xFFF1F5F9), 
+                    backgroundImage: primary.user.profilePicture != null ? NetworkImage(primary.user.profilePicture!) : null,
+                    child: primary.user.profilePicture == null ? const Icon(Icons.person, size: 32, color: Colors.grey) : null,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(primary.user.name ?? 'Not Assigned', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                            const SizedBox(width: 8),
+                            Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(6)), child: const Text('Primary Host', style: TextStyle(color: Color(0xFF16A34A), fontSize: 9, fontWeight: FontWeight.bold))),
+                          ],
+                        ),
+                        Text(primary.user.phoneNumber, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                        if (primary.user.email != null)
+                          Text(primary.user.email!, style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                        if (primary.user.id.isNotEmpty)
+                          Text('Assigned Since: ${DateFormat('dd MMM yyyy').format(primary.assignment.assignedAt)}', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (primary.user.id.isNotEmpty) ...[
+                const Divider(height: 32, color: Color(0xFFF1F5F9)),
+                _buildPermissionsGrid(primary.assignment.permissions),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -2539,14 +2873,14 @@ class _HostsTabState extends State<_HostsTab> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Permissions', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8))),
-            Text('${perms.length} / 18 Enabled', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+            Text('${perms.length} Enabled', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
           ],
         ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: perms.map((p) => _permissionChip(p)).toList()..add(_viewAllChip()),
+          children: perms.take(6).map((p) => _permissionChip(p)).toList()..add(_viewAllChip()),
         ),
       ],
     );
@@ -2574,30 +2908,25 @@ class _HostsTabState extends State<_HostsTab> {
     );
   }
 
-  Widget _buildAssistantHostsSection() {
-    return StreamBuilder<List<HostAssignment>>(
-      stream: _staffService.getPropertyStaff(widget.propertyId),
-      builder: (context, snapshot) {
-        final assistants = snapshot.data?.where((s) => s.role == StaffRole.assistantHost).toList() ?? [];
-        
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildAssistantHostsSection(List<StaffMember> staff) {
+    final assistants = staff.where((s) => s.assignment.role == StaffRole.assistantHost).toList();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Assistant Hosts', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                const Text('View all', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (assistants.isEmpty)
-              _buildEmptyStaffState()
-            else
-              ...assistants.map((s) => _assistantHostCard(s)).toList(),
+            const Text('Assistant Hosts', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+            const Text('View all', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
           ],
-        );
-      }
+        ),
+        const SizedBox(height: 12),
+        if (assistants.isEmpty)
+          _buildEmptyStaffState()
+        else
+          ...assistants.map((s) => _assistantHostCard(s)).toList(),
+      ],
     );
   }
 
@@ -2610,16 +2939,17 @@ class _HostsTabState extends State<_HostsTab> {
         children: [
           Container(padding: const EdgeInsets.all(16), decoration: const BoxDecoration(color: Color(0xFFDCFCE7), shape: BoxShape.circle), child: const Icon(Icons.mail_outline_rounded, color: Color(0xFF16A34A), size: 32)),
           const SizedBox(height: 16),
-          const Text('No pending invitations', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-          const Text('All invitations are accepted', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+          const Text('No assistant hosts yet', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const Text('Invite staff to manage your property', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
         ],
       ),
     );
   }
 
-  Widget _assistantHostCard(HostAssignment staff) {
+  Widget _assistantHostCard(StaffMember staff) {
+    final isActive = staff.assignment.status == StaffStatus.active;
     return InkWell(
-      onTap: () => _showManagePermissionsDialog(staff),
+      onTap: () => _showManagePermissionsDialog(staff.assignment),
       borderRadius: BorderRadius.circular(20),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -2627,16 +2957,22 @@ class _HostsTabState extends State<_HostsTab> {
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
         child: Row(
           children: [
-            const CircleAvatar(radius: 24, backgroundColor: Color(0xFFF1F5F9), child: Icon(Icons.person, size: 24, color: Colors.grey)),
+            CircleAvatar(
+              radius: 24, 
+              backgroundColor: const Color(0xFFF1F5F9), 
+              backgroundImage: staff.user.profilePicture != null ? NetworkImage(staff.user.profilePicture!) : null,
+              child: staff.user.profilePicture == null ? const Icon(Icons.person, size: 24, color: Colors.grey) : null,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Sneha Menon', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                  const Text('+91 81234 56789', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                  const Text('sneha.menon@trianglehomes.in', style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-                  Text('Assigned Since: 05 Feb 2024', style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                  Text(staff.user.name ?? 'Unknown', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text(staff.user.phoneNumber, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                  if (staff.user.email != null)
+                    Text(staff.user.email!, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                  Text('Assigned: ${DateFormat('dd MMM yyyy').format(staff.assignment.assignedAt)}', style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
                 ],
               ),
             ),
@@ -2644,9 +2980,9 @@ class _HostsTabState extends State<_HostsTab> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 const Text('Permissions', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8))),
-                Text('${staff.permissions.length} / 18', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                Text('${staff.assignment.permissions.length} Enabled', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(6)), child: const Text('Active', style: TextStyle(color: Color(0xFF16A34A), fontSize: 9, fontWeight: FontWeight.bold))),
+                Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(6)), child: Text(isActive ? 'Active' : 'Inactive', style: TextStyle(color: isActive ? const Color(0xFF16A34A) : Colors.grey, fontSize: 9, fontWeight: FontWeight.bold))),
               ],
             ),
             const SizedBox(width: 12),
@@ -2657,7 +2993,7 @@ class _HostsTabState extends State<_HostsTab> {
     );
   }
 
-  Widget _buildActivityFeed() {
+  Widget _buildActivityFeed(List<StaffMember> staff) {
     return StreamBuilder<List<StaffActivity>>(
       stream: _staffService.getPropertyActivity(widget.propertyId),
       builder: (context, snapshot) {
@@ -2682,7 +3018,7 @@ class _HostsTabState extends State<_HostsTab> {
                   if (activities.isEmpty)
                     const Text('No recent activity', style: TextStyle(fontSize: 12, color: Colors.grey))
                   else
-                    ...activities.map((a) => _activityItem(a)).toList(),
+                    ...activities.map((a) => _activityItem(a, staff)).toList(),
                 ],
               ),
             ),
@@ -2692,7 +3028,12 @@ class _HostsTabState extends State<_HostsTab> {
     );
   }
 
-  Widget _activityItem(StaffActivity activity) {
+  Widget _activityItem(StaffActivity activity, List<StaffMember> staff) {
+    final host = staff.firstWhere((s) => s.user.id == activity.hostId, orElse: () => StaffMember(
+      assignment: HostAssignment(id: '', propertyId: widget.propertyId, userId: activity.hostId, role: StaffRole.assistantHost, status: StaffStatus.inactive, assignedAt: DateTime.now()),
+      user: model.User(id: activity.hostId, name: 'Unknown Host', phoneNumber: '', createdAt: DateTime.now(), updatedAt: DateTime.now()),
+    ));
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
@@ -2708,16 +3049,15 @@ class _HostsTabState extends State<_HostsTab> {
                   text: TextSpan(
                     style: const TextStyle(fontSize: 11, color: Color(0xFF475569)),
                     children: [
-                      const TextSpan(text: 'Ajay Kumar', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                      TextSpan(text: ' assigned bed ${activity.entityId} to Arjun Nair'),
+                      TextSpan(text: host.user.name ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                      TextSpan(text: ' ${activity.description}'),
                     ],
                   ),
                 ),
-                Text(DateFormat('hh:mm a').format(activity.timestamp), style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
+                Text(DateFormat('hh:mm a, dd MMM').format(activity.timestamp), style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
               ],
             ),
           ),
-          const Text('Today', style: TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
         ],
       ),
     );
@@ -2802,50 +3142,119 @@ class _AddRoomDialogState extends State<_AddRoomDialog> {
   final _numberController = TextEditingController();
   final _floorController = TextEditingController();
   final _rentController = TextEditingController();
-  RoomType _selectedType = RoomType.double;
+  final _bedCountController = TextEditingController(text: '1');
+  RoomType _selectedType = RoomType.single;
   bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add New Room'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(controller: _numberController, decoration: const InputDecoration(labelText: 'Room Number')),
-          TextField(controller: _floorController, decoration: const InputDecoration(labelText: 'Floor'), keyboardType: TextInputType.number),
-          TextField(controller: _rentController, decoration: const InputDecoration(labelText: 'Rent'), keyboardType: TextInputType.number),
-        ],
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text('Add New Room', style: TextStyle(fontWeight: FontWeight.bold)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildField(_numberController, 'Room Number (e.g. 101, A203)', Icons.meeting_room_outlined),
+            const SizedBox(height: 16),
+            _buildField(_floorController, 'Floor Number', Icons.layers_outlined, isNumber: true),
+            const SizedBox(height: 16),
+            _buildField(_rentController, 'Monthly Rent (₹)', Icons.payments_outlined, isNumber: true),
+            const SizedBox(height: 16),
+            _buildField(_bedCountController, 'Number of Beds', Icons.bed_outlined, isNumber: true),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<RoomType>(
+              value: _selectedType,
+              decoration: InputDecoration(
+                labelText: 'Room Type',
+                prefixIcon: const Icon(Icons.category_outlined),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              items: RoomType.values.map((type) => DropdownMenuItem(
+                value: type,
+                child: Text(type.name.capitalize()),
+              )).toList(),
+              onChanged: (val) => setState(() => _selectedType = val!),
+            ),
+          ],
+        ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        ElevatedButton(onPressed: _isLoading ? null : _submit, child: const Text('Add')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _submit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.successColor,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          child: _isLoading 
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Text('Add Room'),
+        ),
       ],
     );
   }
 
+  Widget _buildField(TextEditingController controller, String label, IconData icon, {bool isNumber = false}) {
+    return TextField(
+      controller: controller,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+    );
+  }
+
   Future<void> _submit() async {
+    if (_numberController.text.isEmpty || _floorController.text.isEmpty || _rentController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all required fields')));
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
+      final bedCount = int.tryParse(_bedCountController.text) ?? 1;
+      final rent = double.tryParse(_rentController.text) ?? 0;
+      final floor = int.tryParse(_floorController.text) ?? 1;
+
       final room = RoomModel(
         id: '',
         propertyId: widget.propertyId,
         roomNumber: _numberController.text,
         roomType: _selectedType,
         occupancyType: '${_selectedType.name.capitalize()} Sharing',
-        floor: int.tryParse(_floorController.text) ?? 1,
-        totalBeds: 2,
-        availableBeds: 2,
+        floor: floor,
+        totalBeds: bedCount,
+        availableBeds: bedCount,
         occupiedBeds: 0,
-        baseRent: double.tryParse(_rentController.text) ?? 0,
-        baseDeposit: 0,
+        baseRent: rent,
+        baseDeposit: rent * 2, // Default 2 months deposit
         amenities: [],
         images: [],
         genderRestriction: 'Anyone',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      await InventoryService().createRoomWithBeds(propertyId: widget.propertyId, room: room, bedData: []);
+
+      final List<Map<String, dynamic>> bedData = List.generate(bedCount, (index) => {
+        'bedNumber': '${_numberController.text}-${String.fromCharCode(65 + index)}',
+        'status': BedStatus.available.name,
+        'price': rent,
+      });
+
+      await InventoryService().createRoomWithBeds(
+        propertyId: widget.propertyId, 
+        room: room, 
+        bedData: bedData,
+      );
+
       widget.onComplete();
       Navigator.pop(context);
     } catch (e) {
@@ -3099,11 +3508,14 @@ class _InviteHostDialogState extends State<_InviteHostDialog> {
     if (_emailController.text.isEmpty) return;
     setState(() => _isLoading = true);
     try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      final invitedBy = currentUser?.displayName ?? currentUser?.email ?? 'Property Admin';
+
       await StaffService().inviteHost(
         propertyId: widget.propertyId,
         email: _emailController.text,
         role: _selectedRole,
-        invitedBy: 'Rahul Nair', // In real app, get from current user
+        invitedBy: invitedBy,
       );
       widget.onComplete();
       if (mounted) Navigator.pop(context);

@@ -668,6 +668,7 @@ class FirebaseService {
   Stream<QuerySnapshot<Map<String, dynamic>>> getPropertyPayments(
     String propertyId,
   ) {
+    if (propertyId.isEmpty) return const Stream.empty();
     return _firestore
         .collection('payments')
         .where('property_id', isEqualTo: propertyId)

@@ -3,16 +3,16 @@ import 'package:triangle_home/theme/app_theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class HostProfileSection extends StatelessWidget {
-  final Map<String, dynamic> host;
+  final Map<String, dynamic>? host;
 
   const HostProfileSection({super.key, required this.host});
 
   @override
   Widget build(BuildContext context) {
-    if (host.isEmpty) return const SizedBox.shrink();
+    if (host == null || host!.isEmpty) return const SizedBox.shrink();
 
-    final info = host['info'] as Map? ?? {};
-    final verif = host['verification'] as Map? ?? {};
+    final info = host!['info'] as Map? ?? {};
+    final verif = host!['verification'] as Map? ?? {};
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -54,7 +54,7 @@ class HostProfileSection extends StatelessWidget {
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(width: 8),
-                        if (host['status'] == 'approved')
+                        if (host!['status'] == 'approved')
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
@@ -76,7 +76,7 @@ class HostProfileSection extends StatelessWidget {
                       children: [
                         const Icon(Icons.home_outlined, size: 14, color: Colors.grey),
                         const SizedBox(width: 4),
-                        Text('${host['totalProperties'] ?? 0} Properties', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                        Text('${host!['totalProperties'] ?? 0} Properties', style: const TextStyle(color: Colors.grey, fontSize: 12)),
                         const SizedBox(width: 12),
                         const Icon(Icons.access_time, size: 14, color: Colors.grey),
                         const SizedBox(width: 4),

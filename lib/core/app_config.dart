@@ -11,7 +11,7 @@ class AppConfig {
     switch (environment) {
       case Environment.dev:
         // Use 10.0.2.2 for Android Emulator to connect to localhost
-        return 'http://10.0.2.2:3000';
+        return 'http://10.0.2.2:5000';
       case Environment.staging:
         return 'https://staging.api.trianglehomes.com';
       case Environment.prod:

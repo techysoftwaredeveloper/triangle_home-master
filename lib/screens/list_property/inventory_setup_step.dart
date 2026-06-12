@@ -1,3 +1,9 @@
+// ⚠️ DEPRECATED — This screen is no longer used in the main "List Your Property"
+// onboarding flow (see list_property_screen.dart). It has been superseded by
+// PropertyDetailsStep (property_details_step.dart) which manages the full
+// Floor → Room → Bed hierarchy using Firestore subcollections.
+// Do NOT add rooms here. This file is kept for reference only and will be removed.
+
 import 'package:flutter/material.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/models/room_model.dart';

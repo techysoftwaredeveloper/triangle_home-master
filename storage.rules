@@ -13,6 +13,13 @@ service firebase.storage {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Helper: Is user an admin? (Cross-service check to Firestore)
+    function isAdmin() {
+      return isSignedIn() &&
+        (firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'] ||
+         firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid)));
+    }
+
     // Profile Images: User can upload and update their own profile photo
     match /profile_images/{userId} {
       allow read: if true;
@@ -22,7 +29,7 @@ service firebase.storage {
     // Verification Documents: Secure folder for sensitive IDs
     match /verifications/{userId}/{allPaths=**} {
       // Only the user and admins should be able to read these
-      allow read: if isOwner(userId);
+      allow read: if isOwner(userId) || isAdmin();
 
       // Only the user can upload to their own folder
       allow write: if isOwner(userId);

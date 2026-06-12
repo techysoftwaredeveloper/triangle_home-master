@@ -32,7 +32,7 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserver {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -48,10 +48,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final user = _auth.currentUser;
     if (user != null) {
       _userStream = _firestore.collection('users').doc(user.uid).snapshots();
       _loadInitialData();
+      _reloadAndSyncStatus();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _reloadAndSyncStatus();
+    }
+  }
+
+  Future<void> _reloadAndSyncStatus() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+      await user.reload();
+      final refreshed = _auth.currentUser;
+      if (refreshed == null) return;
+
+      Map<String, dynamic> updates = {};
+      if (refreshed.emailVerified) updates['emailVerified'] = true;
+      if (refreshed.phoneNumber != null) updates['phoneVerified'] = true;
+
+      if (updates.isNotEmpty) {
+        await _firestore.collection('users').doc(refreshed.uid).set({
+          'verification': updates,
+        }, SetOptions(merge: true));
+      }
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('Sync error: $e');
     }
   }
 
@@ -91,29 +129,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
               .get();
 
       if (activeStaySnapshot.docs.isNotEmpty) {
+        final stayData = activeStaySnapshot.docs.first.data();
         activeStay = {
           'id': activeStaySnapshot.docs.first.id,
-          ...activeStaySnapshot.docs.first.data(),
+          ...stayData,
         };
+
+        // Fetch Hoster Details
+        final hosterId = stayData['hoster_id'] ?? stayData['hosterId'];
+        if (hosterId != null) {
+          final hosterDoc =
+              await _firestore.collection('users').doc(hosterId).get();
+          if (hosterDoc.exists) {
+            final hosterData = hosterDoc.data()!;
+            final info = hosterData['info'] as Map? ?? {};
+            activeStay!['hosterName'] = info['name'] ?? 'Property Manager';
+            activeStay!['hosterPhone'] = info['phoneNumber'] ?? 'N/A';
+          }
+        }
       } else {
-        activeStay = {
-          'id': 'MOCK_STAY',
-          'roomNumber': 'A-203',
-          'price': 6500,
-          'status': 'confirmed',
-          'paymentStatus': 'paid',
-          'checkIn': Timestamp.now(),
-          'checkOut': Timestamp.fromDate(
-            DateTime.now().add(const Duration(days: 30)),
-          ),
-          'propertyData': {
-            'title': 'Sunrise Residency',
-            'location': 'Kozhikode, Kerala',
-            'image':
-                'https://images.unsplash.com/photo-1580587767303-9f99edb5103a?q=80&w=400&auto=format&fit=crop',
-          },
-        };
+        activeStay = null;
       }
+
+      if (mounted) setState(() {});
     } catch (e) {
       debugPrint('Error loading initial profile data: $e');
     }
@@ -724,7 +762,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(width: 12),
         _buildStatBox(
           Icons.emoji_events_outlined,
-          '250',
+          '0',
           'Points',
           const Color(0xFF8B5CF6),
         ),
@@ -778,8 +816,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildCurrentlyStaying() {
     final propertyData = activeStay?['propertyData'] as Map? ?? {};
-    final hosterName =
-        activeStay?['hosterName'] ?? 'Rajesh Kumar'; // Mock or from data
+    final hosterName = activeStay?['hosterName'] ?? 'Property Manager';
 
     return Container(
       width: double.infinity,
@@ -914,7 +951,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _buildStayDetail(
                           'Room',
-                          activeStay?['roomNumber'] ?? 'A-203',
+                          activeStay?['roomNumber'] ?? activeStay?['selectedRoomNumber'] ?? 'N/A',
                         ),
                         const SizedBox(width: 24),
                         _buildStayDetail('Hoster', hosterName),
@@ -1005,52 +1042,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   double _calculateBookingReadiness(Map<String, dynamic>? userData) {
     if (userData == null) return 0.0;
-    double score = 0;
-
-    // 1. Profile Completion (30% weight)
-    double completion = _calculateProfileCompletion(userData);
-    score += completion * 30;
-
-    // 2. Communication Verification (20% weight)
     final verif = userData['verification'] as Map? ?? {};
-    if (verif['phoneVerified'] == true) score += 10;
-    if (verif['emailVerified'] == true) score += 10;
+    final user = _auth.currentUser;
 
-    // 3. Document & Identity Verification (50% weight)
-    // Points for having uploaded OR being verified
+    int totalSteps = 6;
+    int completedSteps = 0;
 
-    // Gov ID (15 pts)
-    if (verif['govIdVerified'] == true) {
-      score += 15;
-    } else if (verif['govIdFrontUrl'] != null &&
-        verif['govIdBackUrl'] != null) {
-      score += 8;
-    }
+    if (verif['phoneVerified'] == true || user?.phoneNumber != null) completedSteps++;
+    if (verif['emailVerified'] == true || user?.emailVerified == true) completedSteps++;
+    if (verif['roleIdVerified'] == true) completedSteps++;
+    if (verif['govIdVerified'] == true) completedSteps++;
+    if (verif['addressVerified'] == true) completedSteps++;
+    if (verif['selfieVerified'] == true) completedSteps++;
 
-    // Role ID (10 pts)
-    if (verif['roleIdVerified'] == true) {
-      score += 10;
-    } else if (verif['roleIdFrontUrl'] != null ||
-        verif['roleIdBackUrl'] != null) {
-      score += 5;
-    }
-
-    // Address Proof (10 pts)
-    if (verif['addressVerified'] == true) {
-      score += 10;
-    } else if (verif['addressFrontUrl'] != null &&
-        verif['addressBackUrl'] != null) {
-      score += 5;
-    }
-
-    // Selfie (15 pts)
-    if (verif['selfieVerified'] == true) {
-      score += 15;
-    } else if (verif['selfieUrl'] != null) {
-      score += 8;
-    }
-
-    return (score / 100).clamp(0.0, 1.0);
+    return (completedSteps / totalSteps).clamp(0.0, 1.0);
   }
 
   Widget _buildBookingReadinessCard(
@@ -1126,6 +1131,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             verif['addressVerified'] ?? false,
             'Address Verification',
             isPending: verif['addressStatus'] == 'pending',
+          ),
+          _buildReadinessItem(
+            verif['selfieVerified'] ?? false,
+            'Selfie Verification',
+            isPending: verif['selfieStatus'] == 'pending',
           ),
           const SizedBox(height: 24),
           ElevatedButton(

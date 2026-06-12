@@ -151,7 +151,7 @@ class StayInfoScreen extends StatelessWidget {
                       ),
                       _buildInfoRow(
                         'Room / Bed',
-                        booking['roomNumber'] ?? 'A-203',
+                        booking['roomNumber'] ?? booking['selectedRoomNumber'] ?? 'N/A',
                       ),
                       _buildInfoRow(
                         'Monthly Rent',
@@ -168,9 +168,9 @@ class StayInfoScreen extends StatelessWidget {
                     icon: Icons.person_outline_rounded,
                     children: [
                       _buildHosterProfile(
-                        name: booking['hosterName'] ?? 'Rajesh Kumar',
+                        name: booking['hosterName'] ?? 'Property Manager',
                         role: 'Property Manager',
-                        phone: '+91 98765 43210',
+                        phone: booking['hosterPhone'] ?? 'N/A',
                       ),
                     ],
                   ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.05, end: 0),

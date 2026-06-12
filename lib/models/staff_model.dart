@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:triangle_home/models/user.dart' as model;
 
 enum StaffRole {
   owner,
@@ -67,6 +68,13 @@ class HostAssignment {
       'metadata': metadata,
     };
   }
+}
+
+class StaffMember {
+  final HostAssignment assignment;
+  final model.User user;
+
+  StaffMember({required this.assignment, required this.user});
 }
 
 class HostInvitation {

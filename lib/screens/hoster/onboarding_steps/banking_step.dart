@@ -16,6 +16,7 @@ class _BankingStepState extends State<BankingStep> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _accNameController;
   late TextEditingController _accNoController;
+  late TextEditingController _confirmAccNoController;
   late TextEditingController _ifscController;
   late TextEditingController _upiController;
 
@@ -24,6 +25,7 @@ class _BankingStepState extends State<BankingStep> {
     super.initState();
     _accNameController = TextEditingController(text: widget.initialData['bankAccName'] ?? '');
     _accNoController = TextEditingController(text: widget.initialData['bankAccNo'] ?? '');
+    _confirmAccNoController = TextEditingController(text: widget.initialData['bankAccNo'] ?? '');
     _ifscController = TextEditingController(text: widget.initialData['bankIfsc'] ?? '');
     _upiController = TextEditingController(text: widget.initialData['upiId'] ?? '');
   }
@@ -32,6 +34,7 @@ class _BankingStepState extends State<BankingStep> {
   void dispose() {
     _accNameController.dispose();
     _accNoController.dispose();
+    _confirmAccNoController.dispose();
     _ifscController.dispose();
     _upiController.dispose();
     super.dispose();
@@ -60,7 +63,32 @@ class _BankingStepState extends State<BankingStep> {
             const SizedBox(height: 16),
             InputField(label: 'Account Number', controller: _accNoController, required: true, keyboardType: TextInputType.number),
             const SizedBox(height: 16),
-            InputField(label: 'IFSC Code', controller: _ifscController, required: true, textCapitalization: TextCapitalization.characters),
+            InputField(
+              label: 'Confirm Account Number',
+              controller: _confirmAccNoController,
+              required: true,
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Please confirm account number';
+                if (value != _accNoController.text) return 'Account numbers do not match';
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            InputField(
+              label: 'IFSC Code',
+              controller: _ifscController,
+              required: true,
+              textCapitalization: TextCapitalization.characters,
+              hintText: 'SBIN0012345',
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'IFSC code is required';
+                if (!RegExp(r'^[A-Z]{4}0[A-Z0-9]{6}$').hasMatch(value.toUpperCase())) {
+                  return 'Enter a valid 11-digit IFSC code';
+                }
+                return null;
+              },
+            ),
             const SizedBox(height: 16),
             InputField(label: 'UPI ID (Optional)', controller: _upiController, hintText: 'e.g. name@okaxis'),
             const SizedBox(height: 40),
@@ -72,7 +100,7 @@ class _BankingStepState extends State<BankingStep> {
                     widget.onContinue({
                       'bankAccName': _accNameController.text,
                       'bankAccNo': _accNoController.text,
-                      'bankIfsc': _ifscController.text,
+                      'bankIfsc': _ifscController.text.toUpperCase(),
                       'upiId': _upiController.text,
                     });
                   }

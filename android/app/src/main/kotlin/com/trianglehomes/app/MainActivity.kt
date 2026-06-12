@@ -1,4 +1,4 @@
-package com.example.triangle_home
+package com.trianglehomes.app
 
 import io.flutter.embedding.android.FlutterActivity
 

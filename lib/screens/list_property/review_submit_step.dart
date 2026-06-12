@@ -20,6 +20,7 @@ class ReviewSubmitStep extends StatelessWidget {
     final basics = propertyData['propertyBasics'] ?? {};
     final location = propertyData['location'] ?? {};
     final pricing = propertyData['pricing'] ?? {};
+    final details = propertyData['propertyDetails'] ?? {};
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -54,7 +55,7 @@ class ReviewSubmitStep extends StatelessWidget {
               'Type: ${basics['type'] ?? 'N/A'}',
               'Manager: ${basics['wardenName'] ?? 'N/A'}',
             ],
-            onEdit: () => onEdit(2),
+            onEdit: () => onEdit(0),
           ),
 
           _buildSummaryCard(
@@ -64,7 +65,7 @@ class ReviewSubmitStep extends StatelessWidget {
               '${location['locality'] ?? 'N/A'}, ${location['city'] ?? 'N/A'}',
               'Pincode: ${location['pincode'] ?? 'N/A'}',
             ],
-            onEdit: () => onEdit(3),
+            onEdit: () => onEdit(1),
           ),
 
           _buildSummaryCard(
@@ -74,38 +75,45 @@ class ReviewSubmitStep extends StatelessWidget {
               'Single Room: ₹${pricing['singleRent'] ?? 'N/A'}',
               'Double Sharing: ₹${pricing['doubleRent'] ?? 'N/A'}',
             ],
-            onEdit: () => onEdit(7),
+            onEdit: () => onEdit(5),
           ),
 
-          _buildSummaryItem(
-            Icons.person_outline_rounded,
-            'Host Profile',
-            true,
-            onEdit: () => onEdit(0),
+          _buildSummaryCard(
+            title: 'Property Details & Inventory',
+            icon: Icons.meeting_room_outlined,
+            details: [
+              'Gender Preference: ${details['gender'] ?? 'N/A'}',
+              'Total Capacity: ${details['totalCapacity'] ?? 0} Residents',
+              'Number of Floors: ${details['floorsCount'] ?? 1}',
+              'Numbering System: ${details['numberingSystem'] ?? 'N/A'}',
+              'Single / Double / Triple Rooms: ${details['singleRooms'] ?? 0} / ${details['doubleRooms'] ?? 0} / ${details['tripleRooms'] ?? 0}',
+              'Dormitory Beds: ${details['dormitoryBeds'] ?? 0}',
+            ],
+            onEdit: () => onEdit(2),
           ),
           _buildSummaryItem(
-            Icons.verified_user_outlined,
-            'Identity Verification',
-            true,
-            onEdit: () => onEdit(1),
-          ),
-          _buildSummaryItem(
-            Icons.meeting_room_outlined,
-            'Amenities & Rooms',
-            true,
-            onEdit: () => onEdit(4),
+            Icons.star_outline_rounded,
+            'Amenities',
+            propertyData['amenities'] != null,
+            onEdit: () => onEdit(3),
           ),
           _buildSummaryItem(
             Icons.photo_library_outlined,
             'Photos (${(propertyData['image_urls'] as List?)?.length ?? 0})',
             (propertyData['image_urls'] as List?)?.isNotEmpty == true,
-            onEdit: () => onEdit(6),
+            onEdit: () => onEdit(4),
           ),
           _buildSummaryItem(
             Icons.description_outlined,
             'Documents',
             (propertyData['documents'] as Map?)?['isCompleted'] == true,
-            onEdit: () => onEdit(8),
+            onEdit: () => onEdit(6),
+          ),
+          _buildSummaryItem(
+            Icons.person_outline_rounded,
+            'Host Profile & Verification',
+            propertyData['hostProfile'] != null,
+            onEdit: () => onEdit(7),
           ),
 
           const SizedBox(height: 40),
