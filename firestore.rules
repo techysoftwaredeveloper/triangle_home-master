@@ -136,8 +136,8 @@ service cloud.firestore {
 
       allow update, delete: if isSignedIn() && (
         isAdmin() ||
-        (isHoster() && 
-          (resource.data.hoster_id == request.auth.uid || resource.data.hosterId == request.auth.uid) && 
+        (isHoster() &&
+          (resource.data.hoster_id == request.auth.uid || resource.data.hosterId == request.auth.uid) &&
           (request.resource.data.hoster_id == request.auth.uid || request.resource.data.hosterId == request.auth.uid)
         )
       );
@@ -193,8 +193,7 @@ service cloud.firestore {
     match /propertyStats/{propertyId} {
       allow read: if true;
       allow update: if isSignedIn() || isAdmin() || userIsHosterOf(propertyId);
-      allow create: if isSignedIn() || isAdmin() || userIsHosterOf(propertyId);
-      allow delete: if isAdmin() || userIsHosterOf(propertyId);
+      allow create, delete: if isAdmin() || userIsHosterOf(propertyId);
     }
 
     match /bed_reservations/{reservationId} {

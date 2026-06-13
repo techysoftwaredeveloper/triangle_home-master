@@ -10,8 +10,8 @@ class AppConfig {
   static String get apiBaseUrl {
     switch (environment) {
       case Environment.dev:
-        // Use 10.0.2.2 for Android Emulator to connect to localhost
-        return 'http://10.0.2.2:5000';
+        // Use local IP to support both physical devices and emulators
+        return 'http://192.168.31.25:5000';
       case Environment.staging:
         return 'https://staging.api.trianglehomes.com';
       case Environment.prod:

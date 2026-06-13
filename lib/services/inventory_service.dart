@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/models/room_model.dart';
+import 'package:triangle_home/services/admin_api_service.dart';
 
 class InventoryService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AdminApiService _adminApiService = AdminApiService();
 
   /// Creates a room and its child beds atomically, updating property counters in flat structure
   Future<void> createRoomWithBeds({
@@ -12,35 +14,56 @@ class InventoryService {
     required List<Map<String, dynamic>> bedData,
   }) async {
     final roomRef = _firestore.collection('rooms').doc();
+    final nestedRoomRef = _firestore
+        .collection('properties')
+        .doc(propertyId)
+        .collection('rooms')
+        .doc(roomRef.id);
     final statsRef = _firestore.collection('propertyStats').doc(propertyId);
 
     await _firestore.runTransaction((transaction) async {
-      // 1. Create Room
-      transaction.set(roomRef, {
+      // 1. Create Room in flat and nested structures
+      final roomPayload = {
         ...room.toFirestore(),
         'id': roomRef.id,
         'propertyId': propertyId,
         'totalBeds': bedData.length,
         'availableBeds': bedData.length,
         'occupiedBeds': 0,
-      });
+      };
+      transaction.set(roomRef, roomPayload);
+      transaction.set(nestedRoomRef, roomPayload);
 
-      // 2. Create Beds in top-level collection
+      // 2. Create Beds in flat, property, and room collections
       for (final bed in bedData) {
-        final bedRef = _firestore.collection('beds').doc();
-        transaction.set(bedRef, {
+        final flatBedRef = _firestore.collection('beds').doc();
+        final bedId = flatBedRef.id;
+        final propBedRef = _firestore
+            .collection('properties')
+            .doc(propertyId)
+            .collection('beds')
+            .doc(bedId);
+        final roomBedRef = nestedRoomRef.collection('beds').doc(bedId);
+
+        final bedPayload = {
           ...bed,
-          'id': bedRef.id,
+          'id': bedId,
+          'bedId': bedId,
           'propertyId': propertyId,
           'roomId': roomRef.id,
           'status': BedStatus.available.name,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
-        });
+        };
+
+        transaction.set(flatBedRef, bedPayload);
+        transaction.set(propBedRef, bedPayload);
+        transaction.set(roomBedRef, bedPayload);
       }
 
       // 3. Update Property Stats Aggregates
       transaction.set(statsRef, {
+        'totalBeds': FieldValue.increment(bedData.length),
         'availableBeds': FieldValue.increment(bedData.length),
         'availableRooms': FieldValue.increment(1),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -55,6 +78,9 @@ class InventoryService {
         'timestamp': FieldValue.serverTimestamp(),
       });
     });
+
+    // 5. Trigger Deep Reconciliation
+    await _adminApiService.reconcileProperty(propertyId);
   }
 
   /// Locks a bed for a user with a 15-minute expiry window in flat structure
@@ -69,13 +95,16 @@ class InventoryService {
     }
 
     final roomRef = _firestore.collection('rooms').doc(roomId);
-    final bedRef = _firestore.collection('beds').doc(bedId);
+    final nestedRoomRef = _firestore.collection('properties').doc(propertyId).collection('rooms').doc(roomId);
+    final flatBedRef = _firestore.collection('beds').doc(bedId);
+    final propBedRef = _firestore.collection('properties').doc(propertyId).collection('beds').doc(bedId);
+    final roomBedRef = nestedRoomRef.collection('beds').doc(bedId);
     final statsRef = _firestore.collection('propertyStats').doc(propertyId);
     final reservationRef = _firestore.collection('bed_reservations').doc();
 
     await _firestore.runTransaction((transaction) async {
       // 1. Verify Bed Existence & Status
-      final bedDoc = await transaction.get(bedRef);
+      final bedDoc = await transaction.get(flatBedRef);
       if (!bedDoc.exists) throw 'Bed document not found';
 
       final bedData = bedDoc.data()!;
@@ -89,13 +118,16 @@ class InventoryService {
 
       final expiry = DateTime.now().add(const Duration(minutes: 15));
 
-      // 3. Update Bed Status
-      transaction.update(bedRef, {
+      // 3. Update Bed Status in all 3 collections
+      final bedUpdates = {
         'status': BedStatus.reserved.name,
         'reservedBy': userId,
         'reservationExpiresAt': Timestamp.fromDate(expiry),
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      };
+      transaction.update(flatBedRef, bedUpdates);
+      transaction.update(propBedRef, bedUpdates);
+      transaction.update(roomBedRef, bedUpdates);
 
       // 4. Create Reservation Audit
       transaction.set(reservationRef, {
@@ -137,18 +169,24 @@ class InventoryService {
     required String residentId,
   }) async {
     final roomRef = _firestore.collection('rooms').doc(roomId);
-    final bedRef = _firestore.collection('beds').doc(bedId);
+    final nestedRoomRef = _firestore.collection('properties').doc(propertyId).collection('rooms').doc(roomId);
+    final flatBedRef = _firestore.collection('beds').doc(bedId);
+    final propBedRef = _firestore.collection('properties').doc(propertyId).collection('beds').doc(bedId);
+    final roomBedRef = nestedRoomRef.collection('beds').doc(bedId);
     final statsRef = _firestore.collection('propertyStats').doc(propertyId);
 
     await _firestore.runTransaction((transaction) async {
-      // 1. Update Bed
-      transaction.update(bedRef, {
+      // 1. Update Bed in all 3 collections
+      final bedUpdates = {
         'status': BedStatus.occupied.name,
         'currentResidentId': residentId,
         'reservedBy': null,
         'reservationExpiresAt': null,
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      };
+      transaction.update(flatBedRef, bedUpdates);
+      transaction.update(propBedRef, bedUpdates);
+      transaction.update(roomBedRef, bedUpdates);
 
       // 2. Update Counters
       transaction.update(roomRef, {'occupiedBeds': FieldValue.increment(1)});
@@ -167,6 +205,9 @@ class InventoryService {
         'timestamp': FieldValue.serverTimestamp(),
       });
     });
+
+    // 4. Trigger Deep Reconciliation
+    await _adminApiService.reconcileProperty(propertyId);
   }
 
   /// Get all rooms for a property ordered by floor
@@ -244,6 +285,11 @@ class InventoryService {
         .doc(roomId)
         .collection('beds')
         .doc(bedId);
+    final propBedRef = _firestore
+        .collection('properties')
+        .doc(propertyId)
+        .collection('beds')
+        .doc(bedId);
     final nestedRoomRef = _firestore
         .collection('properties')
         .doc(propertyId)
@@ -266,23 +312,22 @@ class InventoryService {
 
       final isOccupied = status == BedStatus.occupied.name;
 
-      // 2. Update Flat Bed Document
-      transaction.update(flatBedRef, {
+      final bedUpdates = {
         'status': BedStatus.available.name,
         'currentResidentId': null,
         'reservedBy': null,
         'reservationExpiresAt': null,
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      };
+
+      // 2. Update Flat Bed Document
+      transaction.update(flatBedRef, bedUpdates);
 
       // 3. Update Nested Bed Document
-      transaction.update(nestedBedRef, {
-        'status': BedStatus.available.name,
-        'currentResidentId': null,
-        'reservedBy': null,
-        'reservationExpiresAt': null,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      transaction.update(nestedBedRef, bedUpdates);
+
+      // 3b. Update Property Bed Document
+      transaction.update(propBedRef, bedUpdates);
 
       // 4. Update Counters if Bed was Occupied
       if (isOccupied) {
@@ -333,5 +378,8 @@ class InventoryService {
         'timestamp': FieldValue.serverTimestamp(),
       });
     });
+
+    // 6. Trigger Deep Reconciliation
+    await _adminApiService.reconcileProperty(propertyId);
   }
 }

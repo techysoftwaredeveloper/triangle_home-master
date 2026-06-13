@@ -148,6 +148,8 @@ class BookingService {
                 .doc(roomId)
                 .collection('beds')
                 .doc(bedId);
+            final flatBedRef = _firestore.collection('beds').doc(bedId);
+            final propBedRef = propertyRef.collection('beds').doc(bedId);
             final bedDoc = await transaction.get(bedRef);
 
             if (!bedDoc.exists) {
@@ -163,10 +165,13 @@ class BookingService {
                   bedStatus != BedStatus.reserved.name) {
                 throw const BookingFailure('Bed is no longer available');
               }
-              transaction.update(bedRef, {
+              final updates = {
                 'status': BedStatus.booked.name,
                 'updatedAt': FieldValue.serverTimestamp(),
-              });
+              };
+              transaction.update(bedRef, updates);
+              transaction.update(flatBedRef, updates);
+              transaction.update(propBedRef, updates);
               // Cache update on property
               transaction.update(propertyRef, {
                 'currentOccupancy': FieldValue.increment(1),
@@ -177,10 +182,13 @@ class BookingService {
             // Transition: Checking In
             if (newStatus == BookingStatus.checkedIn &&
                 currentStatus != BookingStatus.checkedIn) {
-              transaction.update(bedRef, {
+              final updates = {
                 'status': BedStatus.occupied.name,
                 'updatedAt': FieldValue.serverTimestamp(),
-              });
+              };
+              transaction.update(bedRef, updates);
+              transaction.update(flatBedRef, updates);
+              transaction.update(propBedRef, updates);
             }
 
             // Transition: Cancellation/Checkout
@@ -189,10 +197,13 @@ class BookingService {
                 (newStatus == BookingStatus.checkedOut &&
                     currentStatus == BookingStatus.checkedIn) ||
                 (newStatus == BookingStatus.reservationExpired)) {
-              transaction.update(bedRef, {
+              final updates = {
                 'status': BedStatus.available.name,
                 'updatedAt': FieldValue.serverTimestamp(),
-              });
+              };
+              transaction.update(bedRef, updates);
+              transaction.update(flatBedRef, updates);
+              transaction.update(propBedRef, updates);
               transaction.update(propertyRef, {
                 'currentOccupancy': FieldValue.increment(-1),
                 'updatedAt': FieldValue.serverTimestamp(),

@@ -14,9 +14,8 @@ class AdminApiService {
   static String get _host {
     if (kIsWeb) return 'localhost';
     if (Platform.isAndroid) {
-      // Use standard emulator bridge by default. 
-      // Change to _customPhysicalIp if debugging on a real phone.
-      return '10.0.2.2'; 
+      // Use custom local IP to support both physical devices and emulators
+      return _customPhysicalIp; 
     }
     return 'localhost';
   }
@@ -142,6 +141,13 @@ class AdminApiService {
       method: 'PATCH',
       endpoint: '/admin/properties/$propertyId/status',
       body: {'status': status},
+    );
+  }
+
+  Future<Map<String, dynamic>> reconcileProperty(String propertyId) async {
+    return await _performRequest(
+      method: 'POST',
+      endpoint: '/properties/$propertyId/reconcile',
     );
   }
 

@@ -1,10 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:triangle_home/core/bootstrap/app_check_initializer.dart';
 import 'package:triangle_home/splash_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/services/isar_service.dart';
@@ -33,27 +32,8 @@ void main() async {
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // ✅ Robust App Check Initialization
-  try {
-    await FirebaseAppCheck.instance.activate(
-      androidProvider:
-          kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
-      appleProvider:
-          kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
-      webProvider: ReCaptchaV3Provider(
-        '6LcC4N8sAAAAAPxY6w6R3yM8QQhCtx1HH-w0vuSD',
-      ),
-    );
-    // Add this to show the debug token in logs
-    if (!kReleaseMode) {
-      FirebaseAppCheck.instance.getToken().then(
-        (token) => debugPrint('App Check Token: $token'),
-      );
-    }
-    debugPrint('🚀 Firebase App Check activated.');
-  } catch (e) {
-    debugPrint('⚠️ Firebase App Check activation warning: $e');
-  }
+  // Initialize App Check
+  await AppCheckInitializer.initialize();
 
   runApp(const ProviderScope(child: TriangleHomes()));
 }

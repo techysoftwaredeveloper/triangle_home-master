@@ -10,7 +10,9 @@ import 'package:triangle_home/services/property_service.dart';
 import 'package:triangle_home/services/booking_service.dart';
 import 'package:triangle_home/services/hoster_service.dart';
 import 'package:triangle_home/services/lead_service.dart';
+import 'package:triangle_home/services/admin_api_service.dart';
 import 'package:triangle_home/models/lead.dart';
+import 'package:triangle_home/models/property_stats_model.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/hoster/hoster_bottom_nav.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
@@ -38,6 +40,7 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
   final PropertyService _propertyService = PropertyService();
   final BookingService _bookingService = BookingService();
   final HosterService _hosterService = HosterService();
+  final AdminApiService _adminApiService = AdminApiService();
 
   String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
 
@@ -57,7 +60,11 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
         final isRejected = accountStatus == 'rejected';
 
         final tabs = [
-          _DashboardTab(uid: _uid, hosterService: _hosterService),
+          _DashboardTab(
+            uid: _uid, 
+            hosterService: _hosterService,
+            onRefresh: _handleGlobalRefresh,
+          ),
           _PropertiesTab(uid: _uid, propertyService: _propertyService),
           _BookingsTab(uid: _uid, bookingService: _bookingService),
           _LeadsTab(uid: _uid),
@@ -147,13 +154,35 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
       ),
     );
   }
+
+  Future<void> _handleGlobalRefresh() async {
+    try {
+      // 1. Get properties
+      final snapshot = await _propertyService.getHosterProperties(_uid).first;
+      
+      // 2. Trigger reconciliation for each property
+      for (var doc in snapshot) {
+        await _adminApiService.reconcileProperty(doc.id);
+      }
+      
+      // 3. Force rebuild
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('Refresh error: $e');
+    }
+  }
 }
 
 // ── Dashboard Tab ────────────────────────────────────────────────────────────
 class _DashboardTab extends StatelessWidget {
   final String uid;
   final HosterService hosterService;
-  const _DashboardTab({required this.uid, required this.hosterService});
+  final Future<void> Function() onRefresh;
+  const _DashboardTab({
+    required this.uid, 
+    required this.hosterService,
+    required this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -173,8 +202,7 @@ class _DashboardTab extends StatelessWidget {
           backgroundColor: const Color(0xFFF8FAFC),
           appBar: _buildHeader(context, data),
           body: RefreshIndicator(
-            onRefresh:
-                () async => hosterService.getDetailedHosterStatsStream(uid),
+            onRefresh: onRefresh,
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1774,26 +1802,20 @@ class _EnhancedPropertyCard extends StatelessWidget {
       ),
       child: propertyId.isEmpty
           ? const SizedBox.shrink()
-          : StreamBuilder<QuerySnapshot>(
+          : StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
-            .collection('bookings')
-            .where('property_id', isEqualTo: propertyId)
+            .collection('propertyStats')
+            .doc(propertyId)
             .snapshots(),
         builder: (context, snapshot) {
-          final bookings = snapshot.data?.docs ?? [];
+          final stats = snapshot.hasData && snapshot.data!.exists
+              ? PropertyStatsModel.fromFirestore(snapshot.data!)
+              : null;
           
-          final activeResidents = bookings.where((doc) {
-            final s = (doc.data() as Map<String, dynamic>)['status']?.toString().toLowerCase();
-            return s == 'confirmed' || s == 'active' || s == 'checkedin';
-          }).length;
-
-          final inquiries = bookings.where((doc) {
-            final s = (doc.data() as Map<String, dynamic>)['status']?.toString().toLowerCase();
-            return s == 'pending' || s == 'inquirycreated';
-          }).length;
-
-          final int occupancyPercent = totalCapacity > 0 ? (activeResidents / totalCapacity * 100).round() : 0;
-          final int vacantBeds = totalCapacity - activeResidents;
+          final int totalBeds = stats?.totalBeds ?? _parseNum(details['totalCapacity'] ?? data['capacity']).toInt();
+          final int activeResidents = stats?.occupiedBeds ?? 0;
+          final int vacantBeds = stats?.availableBeds ?? (totalBeds - activeResidents);
+          final int occupancyPercent = totalBeds > 0 ? (activeResidents / totalBeds * 100).round() : 0;
 
           return Column(
             children: [
@@ -1935,7 +1957,7 @@ class _EnhancedPropertyCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Expanded(child: _actionBtn(Icons.calendar_today_outlined, 'Bookings ($inquiries)')),
+                      Expanded(child: _actionBtn(Icons.calendar_today_outlined, 'Bookings')),
                       const SizedBox(width: 8),
                       Expanded(child: _actionBtn(Icons.people_outline, 'Tenants')),
                       const SizedBox(width: 8),
@@ -2161,20 +2183,26 @@ class _BookingsTabState extends State<_BookingsTab> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const Spacer(),
               Text('$count', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-              Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
             ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            label, 
+            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -2696,7 +2724,12 @@ class _LeadsTabState extends State<_LeadsTab> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+          Text(
+            label, 
+            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           const Text('View all', style: TextStyle(fontSize: 9, color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
         ],
       ),

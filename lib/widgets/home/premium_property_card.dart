@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/screens/property_detail_screen_v2.dart';
+import 'package:triangle_home/models/property_stats_model.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 class PremiumPropertyCard extends StatelessWidget {
@@ -21,228 +22,248 @@ class PremiumPropertyCard extends StatelessWidget {
     final propertyId = property['id']?.toString() ?? '';
     final user = FirebaseAuth.instance.currentUser;
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PropertyDetailScreenV2(property: property),
-          ),
-        );
-      },
-      child: Container(
-        width: width,
-        margin: const EdgeInsets.only(bottom: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('propertyStats').doc(propertyId).snapshots(),
+      builder: (context, statsSnapshot) {
+        final stats = statsSnapshot.hasData && statsSnapshot.data!.exists
+            ? PropertyStatsModel.fromFirestore(statsSnapshot.data!)
+            : null;
+
+        final imageUrl = _getImageUrl();
+        final bool hasValidImage = imageUrl.isNotEmpty && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PropertyDetailScreenV2(property: property),
+              ),
+            );
+          },
+          child: Container(
+            width: width,
+            margin: const EdgeInsets.only(bottom: 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. Image Section
-            Stack(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: CachedNetworkImage(
-                    imageUrl: _getImageUrl(),
-                    height: 220,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      height: 220,
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                // 1. Image Section
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: !hasValidImage
+                          ? Container(
+                              height: 220,
+                              color: Colors.grey[300],
+                              width: double.infinity,
+                              child: const Icon(Icons.image_not_supported_outlined, size: 40, color: Colors.grey),
+                            )
+                          : CachedNetworkImage(
+                              imageUrl: imageUrl,
+                              height: 220,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                height: 220,
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                height: 220,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.image_not_supported_outlined, size: 40, color: Colors.grey),
+                              ),
+                            ),
+                    ),
+
+                    // Wishlist Button (Real-time)
+                    if (user != null)
+                      Positioned(
+                        top: 16,
+                        right: 16,
+                        child: _WishlistButton(propertyId: propertyId, propertyData: property),
+                      ),
+
+                    // Verification Badge
+                    if (property['verification']?['isVerified'] == true || property['status'] == 'approved')
+                      Positioned(
+                        top: 16,
+                        left: 16,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.successColor,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.verified, color: Colors.white, size: 14),
+                              SizedBox(width: 4),
+                              Text(
+                                'VERIFIED',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                    // Property Type Badge
+                    Positioned(
+                      bottom: 16,
+                      left: 16,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor.withValues(alpha: 0.9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              (property['propertyType'] ?? property['type'] ?? 'PG').toString().toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          _AvailabilityBadge(stats: stats),
+                        ],
                       ),
                     ),
-                    errorWidget: (context, url, error) => Container(
-                      height: 220,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.image_not_supported_outlined, size: 40, color: Colors.grey),
-                    ),
-                  ),
+                  ],
                 ),
 
-                // Wishlist Button (Real-time)
-                if (user != null)
-                  Positioned(
-                    top: 16,
-                    right: 16,
-                    child: _WishlistButton(propertyId: propertyId, propertyData: property),
-                  ),
-
-                // Verification Badge
-                if (property['verification']?['isVerified'] == true || property['status'] == 'approved')
-                  Positioned(
-                    top: 16,
-                    left: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppTheme.successColor,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Row(
+                // 2. Content Section
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(Icons.verified, color: Colors.white, size: 14),
-                          SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              (property['name'] ?? property['title'] ?? 'Unnamed Property').toString(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: AppTheme.fontFamily,
+                                color: AppTheme.textColor,
+                              ),
+                            ),
+                          ),
+                          _RatingDisplay(property: property),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_outlined, size: 14, color: AppTheme.textLightColor),
+                          const SizedBox(width: 4),
                           Text(
-                            'VERIFIED',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
+                            _formatLocation(),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.textLightColor,
+                              fontFamily: AppTheme.fontFamily,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
 
-                // Property Type Badge
-                Positioned(
-                  bottom: 16,
-                  left: 16,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          (property['propertyType'] ?? property['type'] ?? 'PG').toString().toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                      const SizedBox(height: 16),
+
+                      // Pricing
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '₹${property['monthlyRent'] ?? property['price'] ?? '0'}',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textColor,
+                            ),
                           ),
-                        ),
+                          const Text(
+                            '/month',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.textLightColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                      _AvailabilityBadge(propertyId: propertyId),
+                      if ((property['availableBeds'] as num? ?? 0) > 0)
+                        const Text(
+                          'Starting From',
+                          style: TextStyle(fontSize: 11, color: AppTheme.textMutedColor, fontWeight: FontWeight.w500),
+                        ),
+
+                      const SizedBox(height: 16),
+
+                      // Occupancy Stats
+                      _OccupancyStats(stats: stats, propertyData: property),
+
+                      const SizedBox(height: 16),
+
+                      // Amenities
+                      _AmenitiesRow(amenities: property['amenities'] as List?),
+
+                      const SizedBox(height: 16),
+                      const Divider(height: 1),
+                      const SizedBox(height: 12),
+                      const Row(
+                        children: [
+                          Icon(Icons.check_circle_outline, color: AppTheme.successColor, size: 14),
+                          SizedBox(width: 6),
+                          Text(
+                            'Verified Property',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.successColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
-
-            // 2. Content Section
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          (property['name'] ?? property['title'] ?? 'Unnamed Property').toString(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: AppTheme.fontFamily,
-                            color: AppTheme.textColor,
-                          ),
-                        ),
-                      ),
-                      _RatingDisplay(property: property),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on_outlined, size: 14, color: AppTheme.textLightColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        _formatLocation(),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppTheme.textLightColor,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Pricing
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '₹${property['monthlyRent'] ?? property['price'] ?? '0'}',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textColor,
-                        ),
-                      ),
-                      const Text(
-                        '/month',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppTheme.textLightColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Text(
-                    'Starting From',
-                    style: TextStyle(fontSize: 11, color: AppTheme.textMutedColor),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Occupancy Stats
-                  _OccupancyStats(propertyId: propertyId),
-
-                  const SizedBox(height: 16),
-
-                  // Amenities
-                  _AmenitiesRow(amenities: property['amenities'] as List?),
-
-                  const SizedBox(height: 16),
-                  const Divider(height: 1),
-                  const SizedBox(height: 12),
-                  const Row(
-                    children: [
-                      Icon(Icons.check_circle_outline, color: AppTheme.successColor, size: 14),
-                      SizedBox(width: 6),
-                      Text(
-                        'Verified Property',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.successColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -329,51 +350,45 @@ class _WishlistButton extends StatelessWidget {
 }
 
 class _AvailabilityBadge extends StatelessWidget {
-  final String propertyId;
+  final PropertyStatsModel? stats;
 
-  const _AvailabilityBadge({required this.propertyId});
+  const _AvailabilityBadge({required this.stats});
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('propertyStats').doc(propertyId).snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return const SizedBox.shrink();
-        }
+    if (stats == null) {
+      return const SizedBox.shrink();
+    }
 
-        final data = snapshot.data!.data() as Map<String, dynamic>;
-        final int total = (data['totalBeds'] as num? ?? 0).toInt();
-        final int occupied = (data['occupiedBeds'] as num? ?? 0).toInt();
-        final int available = total - occupied;
+    final int total = stats!.totalBeds;
+    final int occupied = stats!.occupiedBeds;
+    final int available = total - occupied;
 
-        String label = 'Available Now';
-        Color color = AppTheme.successColor;
+    String label = 'Available Now';
+    Color color = AppTheme.successColor;
 
-        if (available == 0) {
-          label = 'Currently Full';
-          color = AppTheme.errorColor;
-        } else if (available <= 3) {
-          label = 'Limited Availability';
-          color = AppTheme.warningColor;
-        }
+    if (available == 0) {
+      label = 'Currently Full';
+      color = AppTheme.errorColor;
+    } else if (available <= 3) {
+      label = 'Limited Availability';
+      color = AppTheme.warningColor;
+    }
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        );
-      },
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
@@ -408,42 +423,31 @@ class _RatingDisplay extends StatelessWidget {
 }
 
 class _OccupancyStats extends StatelessWidget {
-  final String propertyId;
+  final PropertyStatsModel? stats;
+  final Map<String, dynamic> propertyData;
 
-  const _OccupancyStats({required this.propertyId});
+  const _OccupancyStats({required this.stats, required this.propertyData});
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('propertyStats').doc(propertyId).snapshots(),
-      builder: (context, snapshot) {
-        int total = 0;
-        int occupied = 0;
-        int available = 0;
+    final int total = stats?.totalBeds ?? (propertyData['totalBeds'] as num? ?? propertyData['beds'] ?? 0).toInt();
+    final int occupied = stats?.occupiedBeds ?? (propertyData['currentOccupancy'] as num? ?? 0).toInt();
+    final int available = stats?.availableBeds ?? (total - occupied);
 
-        if (snapshot.hasData && snapshot.data!.exists) {
-          final data = snapshot.data!.data() as Map<String, dynamic>;
-          total = (data['totalBeds'] as num? ?? 0).toInt();
-          occupied = (data['occupiedBeds'] as num? ?? 0).toInt();
-          available = total - occupied;
-        }
-
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStat(Icons.bed_outlined, total.toString(), 'Total Beds'),
-              _buildStat(Icons.people_outline, occupied.toString(), 'Occupied'),
-              _buildStat(Icons.circle, available.toString(), 'Available', iconColor: AppTheme.successColor),
-            ],
-          ),
-        );
-      },
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStat(Icons.bed_outlined, total.toString(), 'Total Beds'),
+          _buildStat(Icons.people_outline, occupied.toString(), 'Occupied'),
+          _buildStat(Icons.circle, available.toString(), 'Available', iconColor: AppTheme.successColor),
+        ],
+      ),
     );
   }
 

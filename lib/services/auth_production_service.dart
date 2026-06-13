@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
 enum UserRole { student, hoster, admin, superadmin, none }
@@ -85,5 +86,54 @@ class AuthProductionService {
   // 3. Secure Sign Out
   Future<void> signOut() async {
     await _auth.signOut();
+  }
+
+  // 4. Complete Data Safety: Account Deletion
+  Future<void> deleteUserAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final String uid = user.uid;
+
+    try {
+      // 1. Delete User Collections
+      // Delete user's own document
+      await _firestore.collection('users').doc(uid).delete();
+
+      // Delete user's wishlists
+      final wishlists = await _firestore
+          .collection('wishlists')
+          .where('user_id', isEqualTo: uid)
+          .get();
+      for (var doc in wishlists.docs) {
+        await doc.reference.delete();
+      }
+
+      // 2. Cleanup Storage (Best effort)
+      try {
+        final storage = FirebaseStorage.instance;
+        // Delete verification documents
+        await storage.ref().child('verifications/$uid').listAll().then((result) {
+          for (var file in result.items) {
+            file.delete();
+          }
+        });
+        // Delete profile images
+        await storage.ref().child('profile_images/$uid').delete().catchError((_) {});
+      } catch (e) {
+        debugPrint('Storage cleanup warning: $e');
+      }
+
+      // 3. Delete Firebase Auth Account
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        throw 'Sensitive actions require recent authentication. Please sign out and sign in again before deleting your account.';
+      }
+      rethrow;
+    } catch (e) {
+      debugPrint('Error deleting account: $e');
+      rethrow;
+    }
   }
 }

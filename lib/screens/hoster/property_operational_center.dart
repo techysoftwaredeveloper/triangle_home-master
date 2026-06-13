@@ -11,6 +11,7 @@ import 'package:triangle_home/services/lead_service.dart';
 import 'package:triangle_home/services/inventory_service.dart';
 import 'package:triangle_home/services/resident_service.dart';
 import 'package:triangle_home/services/finance_service.dart';
+import 'package:triangle_home/services/admin_api_service.dart';
 import 'package:triangle_home/models/lead.dart';
 import 'package:triangle_home/models/room_model.dart';
 import 'package:triangle_home/core/constants/enums.dart';
@@ -46,6 +47,7 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
   final PropertyService _propertyService = PropertyService();
   final BookingService _bookingService = BookingService();
   final LeadService _leadService = LeadService();
+  final AdminApiService _adminApiService = AdminApiService();
 
   @override
   void initState() {
@@ -69,48 +71,54 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
         final occupiedBeds = allBeds.where((b) => (b['status'] ?? '').toString().toLowerCase() == 'occupied').length;
         final vacantBeds = allBeds.where((b) => (b['status'] ?? '').toString().toLowerCase() == 'available').length;
         final reservedBeds = allBeds.where((b) => (b['status'] ?? '').toString().toLowerCase() == 'reserved').length;
-        final maintenanceBeds = allBeds.where((b) => (b['status'] ?? '').toString().toLowerCase() == 'maintenance').length;
         final blockedBeds = allBeds.where((b) => (b['status'] ?? '').toString().toLowerCase() == 'blocked').length;
 
         final occupancyRate = totalBeds > 0 ? (occupiedBeds / totalBeds * 100).round() : 0;
 
         return Scaffold(
           backgroundColor: const Color(0xFFF8FAFC),
-          appBar: _buildAppBar(),
-          body: Column(
-            children: [
-              _buildPropertyHeroSummary(occupancyRate, vacantBeds, occupiedBeds),
-              _buildTabBar(),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _OverviewTab(
-                      propertyId: widget.propertyId,
-                      totalBeds: totalBeds,
-                      occupiedBeds: occupiedBeds,
-                      vacantBeds: vacantBeds,
-                      reservedBeds: reservedBeds,
-                      blockedBeds: blockedBeds,
-                      occupancyRate: occupancyRate,
-                      propertyService: _propertyService,
-                      bookingService: _bookingService,
-                      leadService: _leadService,
-                      tabController: _tabController,
-                    ),
-                    _BedsTab(propertyId: widget.propertyId),
-                    _ResidentsTab(propertyId: widget.propertyId),
-                    _BookingsTab(propertyId: widget.propertyId, bookingService: _bookingService),
-                    _FinanceTab(propertyId: widget.propertyId),
-                    _LeadsTab(propertyId: widget.propertyId, leadService: _leadService),
-                    _HostsTab(
-                      propertyId: widget.propertyId,
-                      ownerId: widget.propertyData['ownerId'] ?? '',
-                    ),
-                  ],
+          body: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                _buildSliverAppBar(),
+                SliverToBoxAdapter(
+                  child: _buildPropertyHeroSummary(occupancyRate, vacantBeds, occupiedBeds),
                 ),
-              ),
-            ],
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _SliverTabBarDelegate(
+                    child: _buildTabBar(),
+                  ),
+                ),
+              ];
+            },
+            body: TabBarView(
+              controller: _tabController,
+              children: [
+                _OverviewTab(
+                  propertyId: widget.propertyId,
+                  totalBeds: totalBeds,
+                  occupiedBeds: occupiedBeds,
+                  vacantBeds: vacantBeds,
+                  reservedBeds: reservedBeds,
+                  blockedBeds: blockedBeds,
+                  occupancyRate: occupancyRate,
+                  propertyService: _propertyService,
+                  bookingService: _bookingService,
+                  leadService: _leadService,
+                  tabController: _tabController,
+                ),
+                _BedsTab(propertyId: widget.propertyId),
+                _ResidentsTab(propertyId: widget.propertyId),
+                _BookingsTab(propertyId: widget.propertyId, bookingService: _bookingService),
+                _FinanceTab(propertyId: widget.propertyId),
+                _LeadsTab(propertyId: widget.propertyId, leadService: _leadService),
+                _HostsTab(
+                  propertyId: widget.propertyId,
+                  ownerId: widget.propertyData['ownerId'] ?? '',
+                ),
+              ],
+            ),
           ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _showAddRoomDialog(),
@@ -139,10 +147,11 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
+  Widget _buildSliverAppBar() {
+    return SliverAppBar(
       backgroundColor: Colors.white,
       elevation: 0,
+      pinned: true,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B), size: 20),
         onPressed: () => Navigator.pop(context),
@@ -171,6 +180,35 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
         ],
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.sync_rounded, color: AppTheme.successColor, size: 22),
+          tooltip: 'Reconcile Property',
+          onPressed: () async {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Reconciling property stats and pricing...')),
+            );
+            try {
+              await _adminApiService.reconcileProperty(widget.propertyId);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Property reconciled successfully!'),
+                    backgroundColor: AppTheme.successColor,
+                  ),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to reconcile property: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          },
+        ),
         IconButton(icon: const Icon(Icons.edit_outlined, color: Color(0xFF1E293B), size: 22), onPressed: () {}),
         IconButton(icon: const Icon(Icons.share_outlined, color: Color(0xFF1E293B), size: 22), onPressed: () {}),
         IconButton(icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF1E293B)), onPressed: () {}),
@@ -1497,7 +1535,12 @@ class _ResidentsTabState extends State<_ResidentsTab> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+          Text(
+            label, 
+            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -1705,7 +1748,12 @@ class _BookingsTabState extends State<_BookingsTab> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+          Text(
+            label, 
+            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -2190,7 +2238,12 @@ class _LeadsTabState extends State<_LeadsTab> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+          Text(
+            label, 
+            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           const Text('View all >', style: TextStyle(fontSize: 9, color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
         ],
       ),
@@ -3619,5 +3672,26 @@ class _ManagePermissionsDialogState extends State<_ManagePermissionsDialog> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+}
+
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _SliverTabBarDelegate({required this.child});
+
+  @override
+  double get minExtent => 48.0;
+  @override
+  double get maxExtent => 48.0;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
+    return false;
   }
 }

@@ -95,6 +95,8 @@ exports.updateBookingStatus = asyncHandler(async (req, res) => {
             // SOURCE OF TRUTH: Bed Inventory
             if (bedId && roomId) {
                 const bedRef = propertyRef.collection('rooms').doc(roomId).collection('beds').doc(bedId);
+                const flatBedRef = db.collection('beds').doc(bedId);
+                const propBedRef = propertyRef.collection('beds').doc(bedId);
                 const bedDoc = await transaction.get(bedRef);
 
                 if (!bedDoc.exists) {
@@ -108,10 +110,13 @@ exports.updateBookingStatus = asyncHandler(async (req, res) => {
                     if (bedStatus !== 'available' && bedStatus !== 'reserved') {
                         throw new Error('Bed is no longer available');
                     }
-                    transaction.update(bedRef, {
+                    const updates = {
                         status: 'booked',
                         updatedAt: new Date().toISOString()
-                    });
+                    };
+                    transaction.update(bedRef, updates);
+                    transaction.update(flatBedRef, updates);
+                    transaction.update(propBedRef, updates);
                     // Cache update on property
                     transaction.update(propertyRef, {
                         currentOccupancy: db.FieldValue.increment(1),
@@ -121,20 +126,26 @@ exports.updateBookingStatus = asyncHandler(async (req, res) => {
 
                 // Transition: Checking In
                 if (status === 'checkedIn' && currentStatus !== 'checkedIn') {
-                    transaction.update(bedRef, {
+                    const updates = {
                         status: 'occupied',
                         updatedAt: new Date().toISOString()
-                    });
+                    };
+                    transaction.update(bedRef, updates);
+                    transaction.update(flatBedRef, updates);
+                    transaction.update(propBedRef, updates);
                 }
 
                 // Transition: Cancellation/Checkout
                 if ((status === 'cancelled' && currentStatus === 'confirmed') ||
                     (status === 'checkedOut' && currentStatus === 'checkedIn') ||
                     (status === 'expired')) {
-                    transaction.update(bedRef, {
+                    const updates = {
                         status: 'available',
                         updatedAt: new Date().toISOString()
-                    });
+                    };
+                    transaction.update(bedRef, updates);
+                    transaction.update(flatBedRef, updates);
+                    transaction.update(propBedRef, updates);
                     transaction.update(propertyRef, {
                         currentOccupancy: db.FieldValue.increment(-1),
                         updatedAt: new Date().toISOString()

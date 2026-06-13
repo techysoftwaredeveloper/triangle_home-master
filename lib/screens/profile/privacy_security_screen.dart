@@ -4,6 +4,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/providers/privacy_security_provider.dart';
 import 'package:triangle_home/services/biometric_service.dart';
+import 'package:triangle_home/services/auth_production_service.dart';
+import 'package:triangle_home/screens/auth/login_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 class PrivacySecurityScreen extends ConsumerStatefulWidget {
@@ -16,6 +18,8 @@ class PrivacySecurityScreen extends ConsumerStatefulWidget {
 
 class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
   final BiometricService _biometricService = BiometricService();
+  final AuthProductionService _authService = AuthProductionService();
+  bool _isDeleting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -361,9 +365,26 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
                 ),
               ),
               ElevatedButton(
-                onPressed: () {
-                  // Implementation for account deletion
+                onPressed: _isDeleting ? null : () async {
+                  setState(() => _isDeleting = true);
                   Navigator.pop(context);
+                  
+                  try {
+                    await _authService.deleteUserAccount();
+                    Fluttertoast.showToast(msg: "Account deleted successfully");
+                    
+                    if (mounted) {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen(isStudent: true)),
+                        (route) => false,
+                      );
+                    }
+                  } catch (e) {
+                    Fluttertoast.showToast(msg: e.toString());
+                  } finally {
+                    if (mounted) setState(() => _isDeleting = false);
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.errorColor,
