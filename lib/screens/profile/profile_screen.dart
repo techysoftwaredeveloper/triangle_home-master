@@ -1623,6 +1623,15 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                 'https://cdn-icons-png.flaticon.com/512/3233/3233486.png',
                 width: 80,
                 height: 80,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 80,
+                  height: 80,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF1F5F9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.people_outline, color: Color(0xFF94A3B8), size: 36),
+                ),
               ),
             ],
           ),

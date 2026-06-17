@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:triangle_home/theme/app_theme.dart';
+import 'package:sms_autofill/sms_autofill.dart';
 
 class VerificationOtpScreen extends StatefulWidget {
   final String verificationId;
@@ -31,6 +33,7 @@ class _VerificationOtpScreenState extends State<VerificationOtpScreen> {
   Timer? _timer;
   bool _isLoading = false;
   int _focusedIndex = 0;
+  StreamSubscription? _smsSubscription;
 
   @override
   void initState() {
@@ -43,11 +46,50 @@ class _VerificationOtpScreenState extends State<VerificationOtpScreen> {
         }
       });
     }
+    _initSmsListener();
+    _initBackspaceHandlers();
+  }
+
+  void _initBackspaceHandlers() {
+    for (int i = 0; i < 6; i++) {
+      _focusNodes[i].onKeyEvent = (node, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.backspace) {
+          if (_controllers[i].text.isEmpty && i > 0) {
+            _controllers[i - 1].clear();
+            _focusNodes[i - 1].requestFocus();
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      };
+    }
+  }
+
+  void _initSmsListener() async {
+    try {
+      _smsSubscription = SmsAutoFill().code.listen((code) {
+        if (code.length == 6) {
+          for (int i = 0; i < 6; i++) {
+            _controllers[i].text = code[i];
+          }
+          setState(() {});
+          _verifyOTP();
+        }
+      });
+      await SmsAutoFill().listenForCode();
+      final sign = await SmsAutoFill().getAppSignature;
+      debugPrint('SMS AutoFill Signature: $sign');
+    } catch (e) {
+      debugPrint('Error starting SMS listener: $e');
+    }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _smsSubscription?.cancel();
+    SmsAutoFill().unregisterListener();
     for (var c in _controllers) {
       c.dispose();
     }
@@ -223,6 +265,7 @@ class _VerificationOtpScreenState extends State<VerificationOtpScreen> {
         child: TextField(
           controller: _controllers[index],
           focusNode: _focusNodes[index],
+          autofillHints: const [AutofillHints.oneTimeCode],
           textAlign: TextAlign.center,
           keyboardType: TextInputType.number,
           maxLength: 1,
@@ -241,7 +284,7 @@ class _VerificationOtpScreenState extends State<VerificationOtpScreen> {
             if (value.length == 1 && index < 5) {
               _focusNodes[index + 1].requestFocus();
             }
-            if (value.isEmpty && index > 0) {
+            if (value.isEmpty && index > 0 && _focusNodes[index].hasFocus) {
               _focusNodes[index - 1].requestFocus();
             }
             if (value.length == 1 && index == 5) {

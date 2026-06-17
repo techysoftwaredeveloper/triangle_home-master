@@ -86,9 +86,11 @@ class _EvidenceItem extends StatelessWidget {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Could not open file')));
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Could not open file')));
+        }
       }
     }
   }

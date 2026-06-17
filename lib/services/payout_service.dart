@@ -1,22 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/core/constants/enums.dart';
+import 'package:triangle_home/services/admin_api_service.dart';
 
 class PayoutService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AdminApiService _apiService = AdminApiService();
 
-  /// Requests a payout for a hoster (usually triggered after check-in hold)
+  /// Requests a payout via the API
   Future<void> requestPayout(String bookingId) async {
-    await _firestore.collection('escrow').doc(bookingId).update({
-      'escrowStatus': EscrowStatus.payoutRequested.name,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    final response = await _apiService.performRequest(
+      method: 'POST',
+      endpoint: '/compliance/payout/request',
+      body: {'bookingId': bookingId},
+    );
 
-    await _firestore.collection('financial_events').add({
-      'bookingId': bookingId,
-      'event': FinancialEventType.payoutRequested.name,
-      'performedBy': 'hoster',
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+    if (response['success'] != true) {
+      throw Exception(response['error'] ?? 'Failed to request payout');
+    }
   }
 
   /// Final approval and release of funds (Admin Only)

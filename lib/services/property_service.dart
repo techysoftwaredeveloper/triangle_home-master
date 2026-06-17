@@ -8,19 +8,21 @@ import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/core/errors/failures.dart';
 import 'package:triangle_home/models/property_private_details.dart';
 import 'package:uuid/uuid.dart';
+import 'package:triangle_home/services/admin_api_service.dart';
 
 class PropertyService {
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
   final FirebaseAuth _auth;
+  final AdminApiService _apiService = AdminApiService();
 
   PropertyService({
     FirebaseFirestore? firestore,
     FirebaseStorage? storage,
     FirebaseAuth? auth,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _storage = storage ?? FirebaseStorage.instance,
+       _auth = auth ?? FirebaseAuth.instance;
 
   // ==================== IMAGE HANDLING ====================
 
@@ -65,9 +67,7 @@ class PropertyService {
       final String cityName = (data['city'] ?? '').toString().trim();
       final String localityName = (data['locality'] ?? '').toString().trim();
 
-      final String cityId =
-          cityName.toLowerCase().replaceAll(' ', '_') ??
-          'unknown';
+      final String cityId = cityName.toLowerCase().replaceAll(' ', '_');
       final String stateId =
           data['state']?.toString().toLowerCase().replaceAll(' ', '_') ??
           'unknown';
@@ -158,7 +158,12 @@ class PropertyService {
         .collection('rooms')
         .where('propertyId', isEqualTo: propertyId)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => {'id': doc.id, ...doc.data()})
+                  .toList(),
+        );
   }
 
   /// Get beds for a property
@@ -167,7 +172,12 @@ class PropertyService {
         .collection('beds')
         .where('propertyId', isEqualTo: propertyId)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => {'id': doc.id, ...doc.data()})
+                  .toList(),
+        );
   }
 
   /// Get reviews for a property
@@ -177,7 +187,36 @@ class PropertyService {
         .where('property_id', isEqualTo: propertyId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => {'id': doc.id, ...doc.data()})
+                  .toList(),
+        );
+  }
+
+  Future<bool> _isHosterApproved(String? hosterId) async {
+    if (hosterId == null || hosterId.trim().isEmpty) return false;
+    try {
+      final userDoc = await _firestore.collection('users').doc(hosterId.trim()).get();
+      if (!userDoc.exists) return false;
+      final userData = userDoc.data();
+      if (userData == null) return false;
+      
+      final status = userData['status']?.toString();
+      final onboardingStatus = userData['onboardingStatus']?.toString();
+      final accountStatus = userData['accountStatus']?.toString();
+      final permissions = userData['permissions'];
+      final permissionsStatus = (permissions is Map) ? permissions['status']?.toString() : null;
+
+      return status == 'approved' || 
+             onboardingStatus == 'approved' || 
+             accountStatus == 'active' || 
+             permissionsStatus == 'approved';
+    } catch (e) {
+      debugPrint('Error checking hoster approval for $hosterId: $e');
+      return false;
+    }
   }
 
   /// Real-time stream for properties with city and status filters
@@ -190,29 +229,48 @@ class PropertyService {
         .where('status', isEqualTo: status.name);
 
     if (city != null && city.isNotEmpty && city != 'Global') {
-      query = query.where('city_normalized', isEqualTo: city.toLowerCase().trim());
+      query = query.where(
+        'city_normalized',
+        isEqualTo: city.toLowerCase().trim(),
+      );
     }
 
-    return query
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
+    return query.orderBy('createdAt', descending: true).snapshots().asyncMap((
+      snapshot,
+    ) async {
+      final results = <Map<String, dynamic>>[];
+      final hosterApprovedCache = <String, bool>{};
+
+      for (final doc in snapshot.docs) {
         final data = doc.data();
+        final hosterId = (data['hoster_id'] ?? data['hosterId'] ?? '').toString().trim();
+
+        bool approved = false;
+        if (hosterId.isNotEmpty) {
+          if (hosterApprovedCache.containsKey(hosterId)) {
+            approved = hosterApprovedCache[hosterId]!;
+          } else {
+            approved = await _isHosterApproved(hosterId);
+            hosterApprovedCache[hosterId] = approved;
+          }
+        }
+
+        if (!approved) continue;
+
         final basicInfo = data['basicInfo'] as Map<String, dynamic>? ?? {};
         final propertyCity = data['city'] as String? ?? '';
         final locality = data['locality'] as String? ?? '';
 
-        return {
+        results.add({
           'id': doc.id,
           ...data,
           'title': basicInfo['collegeName'] ?? data['name'] ?? 'Property',
           'location': '$locality, $propertyCity',
           'price':
               int.tryParse(
-                    data['monthlyRent']?.toString().replaceAll(',', '') ?? '0',
-                  ) ??
-                  0,
+                data['monthlyRent']?.toString().replaceAll(',', '') ?? '0',
+              ) ??
+              0,
           'rating': (data['rating'] as num?)?.toDouble() ?? 4.0,
           'reviewCount': (data['reviewCount'] as num?)?.toInt() ?? 0,
           'image':
@@ -221,10 +279,11 @@ class PropertyService {
                   : 'https://via.placeholder.com/150',
           'amenities':
               (data['features'] as List?)?.map((e) => e.toString()).toList() ??
-                  [],
+              [],
           'distance': '2.5 km',
-        };
-      }).toList();
+        });
+      }
+      return results;
     });
   }
 
@@ -244,24 +303,51 @@ class PropertyService {
         .where('status', isEqualTo: PropertyStatus.approved.name);
 
     if (city != null && city.isNotEmpty && city != 'Global') {
-      query = query.where('city_normalized', isEqualTo: city.toLowerCase().trim());
+      query = query.where(
+        'city_normalized',
+        isEqualTo: city.toLowerCase().trim(),
+      );
     }
 
-    return query.orderBy('createdAt', descending: true).snapshots().map((snapshot) {
+    return query.orderBy('createdAt', descending: true).snapshots().asyncMap((
+      snapshot,
+    ) async {
       final results = <Map<String, dynamic>>[];
+      final hosterApprovedCache = <String, bool>{};
 
       for (final doc in snapshot.docs) {
         final data = doc.data();
+        final hosterId = (data['hoster_id'] ?? data['hosterId'] ?? '').toString().trim();
+
+        bool approved = false;
+        if (hosterId.isNotEmpty) {
+          if (hosterApprovedCache.containsKey(hosterId)) {
+            approved = hosterApprovedCache[hosterId]!;
+          } else {
+            approved = await _isHosterApproved(hosterId);
+            hosterApprovedCache[hosterId] = approved;
+          }
+        }
+
+        if (!approved) continue;
+
         final basicInfo = data['basicInfo'] as Map<String, dynamic>? ?? {};
 
         // 1. Price filter
-        final price = int.tryParse(data['monthlyRent']?.toString().replaceAll(',', '') ?? '0') ?? 0;
+        final price =
+            int.tryParse(
+              data['monthlyRent']?.toString().replaceAll(',', '') ?? '0',
+            ) ??
+            0;
         if (minPrice != null && price < minPrice) continue;
         if (maxPrice != null && price > maxPrice) continue;
 
         final propertyCity = data['city'] as String? ?? '';
         final locality = data['locality'] as String? ?? '';
-        final collegeName = basicInfo['collegeName'] as String? ?? '';
+        final collegeName = basicInfo['collegeName'] as String? ?? 
+                            basicInfo['name'] as String? ?? 
+                            data['name'] as String? ?? 
+                            data['title'] as String? ?? '';
         final propertyTenantType = basicInfo['tenantType'] as String? ?? '';
         final sharing = basicInfo['sharing'] as String? ?? '';
 
@@ -300,17 +386,77 @@ class PropertyService {
         if (tenantType != null &&
             tenantType.isNotEmpty &&
             tenantType != 'Anyone') {
-          if (!propertyTenantType.toLowerCase().contains(
-            tenantType.toLowerCase(),
-          )) {
-            continue;
+          final propertyGender = (data['gender'] as String? ?? 
+                                  data['propertyDetails']?['gender'] as String? ?? 
+                                  propertyTenantType).toLowerCase().trim();
+          
+          bool isMatch = false;
+          if (propertyGender.isEmpty || propertyGender == 'anyone' || propertyGender == 'unisex') {
+            isMatch = true;
+          } else {
+            final q = tenantType.toLowerCase().trim();
+            if (q == 'man' || q == 'men' || q == 'boys' || q == 'boy') {
+              isMatch = propertyGender == 'men' || 
+                        propertyGender == 'boys' || 
+                        propertyGender.contains('man') || 
+                        propertyGender.contains('men') || 
+                        propertyGender.contains('boy');
+            } else if (q == 'woman' || q == 'women' || q == 'girls' || q == 'girl') {
+              isMatch = propertyGender == 'women' || 
+                        propertyGender == 'girls' || 
+                        propertyGender.contains('woman') || 
+                        propertyGender.contains('women') || 
+                        propertyGender.contains('girl');
+            } else {
+              isMatch = propertyGender.contains(q) || q.contains(propertyGender);
+            }
           }
+          if (!isMatch) continue;
         }
 
         // 6. Room type filter
         if (roomType != null && roomType.isNotEmpty && roomType != 'Any') {
-          if (!sharing.toLowerCase().contains(roomType.toLowerCase())) {
-            continue;
+          final propType = data['propertyType'] as String? ?? '';
+          final isApartment = (accommodationType == 'Apartments') ||
+                              propType.toLowerCase().contains('apartment') ||
+                              propType.toLowerCase().contains('flat');
+          if (isApartment) {
+            final bhkDetails = data['bhkDetails'] as Map<String, dynamic>?;
+            final pricingInfo = data['pricingInfo'] as Map<String, dynamic>?;
+            final areaInfo = data['areaInfo'] as Map<String, dynamic>?;
+
+            final normalizedRoomType = roomType.trim().toLowerCase();
+            final is4Plus = normalizedRoomType.contains('4+') || normalizedRoomType.contains('4+ bhk');
+
+            bool matchKey(String k) {
+              final keyNorm = k.toLowerCase().trim();
+              if (is4Plus) {
+                final match = RegExp(r'(\d+)\s*bhk').firstMatch(keyNorm);
+                if (match != null) {
+                  final numVal = int.tryParse(match.group(1) ?? '');
+                  if (numVal != null && numVal >= 4) return true;
+                }
+                return keyNorm.contains('4+') || keyNorm.contains('5') || keyNorm.contains('6');
+              }
+              return keyNorm == normalizedRoomType;
+            }
+
+            bool hasBhk = false;
+            if (bhkDetails != null) {
+              hasBhk = bhkDetails.keys.any(matchKey);
+            }
+            if (!hasBhk && pricingInfo != null) {
+              hasBhk = pricingInfo.keys.any(matchKey);
+            }
+            if (!hasBhk && areaInfo != null) {
+              hasBhk = areaInfo.keys.any(matchKey);
+            }
+
+            if (!hasBhk) continue;
+          } else {
+            if (!sharing.toLowerCase().contains(roomType.toLowerCase())) {
+              continue;
+            }
           }
         }
 
@@ -354,7 +500,10 @@ class PropertyService {
       }
 
       if (city != null) {
-        query = query.where('city_normalized', isEqualTo: city.toLowerCase().trim());
+        query = query.where(
+          'city_normalized',
+          isEqualTo: city.toLowerCase().trim(),
+        );
       }
 
       query = query.limit(limit);
@@ -379,121 +528,38 @@ class PropertyService {
     double? minPrice,
     double? maxPrice,
     int limit = 20,
-    DocumentSnapshot? startAfter,
+    int offset = 0,
   }) async {
     try {
-      Query<Map<String, dynamic>> query = _firestore.collection('properties');
+      final queryParams = <String, String>{
+        if (city != null) 'city': city,
+        if (localities != null && localities.isNotEmpty)
+          'localities': localities.join(','),
+        if (college != null) 'college': college,
+        if (accommodationType != null) 'accommodationType': accommodationType,
+        if (tenantType != null) 'tenantType': tenantType,
+        if (roomType != null) 'roomType': roomType,
+        if (minPrice != null) 'minPrice': minPrice.toString(),
+        if (maxPrice != null) 'maxPrice': maxPrice.toString(),
+        'limit': limit.toString(),
+        'offset': offset.toString(),
+      };
 
-      if (city != null && city.isNotEmpty) {
-        query = query.where('city_normalized', isEqualTo: city.toLowerCase().trim());
+      final queryString = Uri(queryParameters: queryParams).query;
+      final finalEndpoint = '/search/properties?$queryString';
+
+      final result = await _apiService.performRequest(
+        method: 'GET',
+        endpoint: finalEndpoint,
+      );
+
+      if (result != null && result['success'] == true) {
+        return List<Map<String, dynamic>>.from(result['results']);
+      } else {
+        throw PropertyFailure(result?['error'] ?? 'Search failed');
       }
-
-      // Add status filter for security
-      query = query.where('status', isEqualTo: PropertyStatus.approved.name);
-
-      query = query.orderBy('createdAt', descending: true).limit(limit);
-
-      if (startAfter != null) {
-        query = query.startAfterDocument(startAfter);
-      }
-
-      final snapshot = await query.get();
-      final results = <Map<String, dynamic>>[];
-
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final basicInfo = data['basicInfo'] as Map<String, dynamic>? ?? {};
-
-        // Price check
-        final price =
-            int.tryParse(
-              data['monthlyRent']?.toString().replaceAll(',', '') ?? '0',
-            ) ??
-            0;
-        if (minPrice != null && price < minPrice) continue;
-        if (maxPrice != null && price > maxPrice) continue;
-        final propertyCity = data['city'] as String? ?? '';
-        final locality = data['locality'] as String? ?? '';
-        final collegeName = basicInfo['collegeName'] as String? ?? '';
-        final propertyTenantType = basicInfo['tenantType'] as String? ?? '';
-        final sharing = basicInfo['sharing'] as String? ?? '';
-
-        // College filter
-        if (college != null && college.isNotEmpty) {
-          if (!collegeName.toLowerCase().contains(college.toLowerCase())) {
-            continue;
-          }
-        }
-
-        // Locality filter (OR condition)
-        if (localities != null && localities.isNotEmpty) {
-          final localityMatch = localities.any(
-            (loc) => locality.toLowerCase().contains(loc.toLowerCase()),
-          );
-          if (!localityMatch) continue;
-        }
-
-        // Accommodation type filter
-        if (accommodationType != null && accommodationType.isNotEmpty) {
-          final propType = data['propertyType'] as String? ?? '';
-          if (accommodationType == 'Paying Guest Hostels') {
-            if (!propType.toLowerCase().contains('pg') &&
-                !propType.toLowerCase().contains('hostel')) {
-              continue;
-            }
-          } else if (accommodationType == 'Apartments') {
-            if (!propType.toLowerCase().contains('apartment') &&
-                !propType.toLowerCase().contains('flat')) {
-              continue;
-            }
-          }
-        }
-
-        // Tenant type filter
-        if (tenantType != null &&
-            tenantType.isNotEmpty &&
-            tenantType != 'Anyone') {
-          if (!propertyTenantType.toLowerCase().contains(
-            tenantType.toLowerCase(),
-          )) {
-            continue;
-          }
-        }
-
-        // Room type filter
-        if (roomType != null && roomType.isNotEmpty && roomType != 'Any') {
-          if (!sharing.toLowerCase().contains(roomType.toLowerCase())) {
-            continue;
-          }
-        }
-
-        // Add formatted data
-        results.add({
-          'id': doc.id,
-          'doc': doc, // Store doc for pagination cursor
-          ...data,
-          'title': basicInfo['collegeName'] ?? data['name'] ?? 'Property',
-          'location': '$locality, $propertyCity',
-          'price':
-              int.tryParse(
-                data['monthlyRent']?.toString().replaceAll(',', '') ?? '0',
-              ) ??
-              0,
-          'rating': (data['rating'] as num?)?.toDouble() ?? 4.0,
-          'reviewCount': (data['reviewCount'] as num?)?.toInt() ?? 0,
-          'image':
-              (data['images'] as List?)?.isNotEmpty == true
-                  ? (data['images'] as List).first
-                  : 'https://via.placeholder.com/150',
-          'amenities':
-              (data['features'] as List?)?.map((e) => e.toString()).toList() ??
-              [],
-          'distance': '2.5 km',
-        });
-      }
-
-      return results;
     } catch (e) {
+      debugPrint('Search API Error: $e');
       throw PropertyFailure('Failed to search properties: $e');
     }
   }
@@ -501,14 +567,16 @@ class PropertyService {
   Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> getHosterProperties(
     String hosterId,
   ) {
-    final snake = _firestore
-        .collection('properties')
-        .where('hoster_id', isEqualTo: hosterId)
-        .snapshots();
-    final camel = _firestore
-        .collection('properties')
-        .where('hosterId', isEqualTo: hosterId)
-        .snapshots();
+    final snake =
+        _firestore
+            .collection('properties')
+            .where('hoster_id', isEqualTo: hosterId)
+            .snapshots();
+    final camel =
+        _firestore
+            .collection('properties')
+            .where('hosterId', isEqualTo: hosterId)
+            .snapshots();
 
     return Rx.combineLatest2(snake, camel, (a, b) {
       final seen = <String>{};
@@ -530,7 +598,23 @@ class PropertyService {
 
   // ==================== CONFIG & METADATA ====================
 
+  /// Fetches a centralized list of major cities from the Node.js server
   Future<List<String>> getCities() async {
+    try {
+      final response = await _apiService.performRequest(
+        method: 'GET',
+        endpoint: '/locations/major-cities',
+      );
+
+      if (response != null && response['success'] == true) {
+        return List<String>.from(response['cities'])..sort();
+      }
+    } catch (e) {
+      debugPrint(
+        'Error fetching cities from API, falling back to Firestore: $e',
+      );
+    }
+
     try {
       final snapshot = await _firestore.collection('cities').get();
       final cities = snapshot.docs.map((doc) => doc.id).toList();
@@ -541,7 +625,7 @@ class PropertyService {
       debugPrint('Error fetching cities from Firestore: $e');
     }
 
-    // Default Fallback Cities for the project
+    // Ultimate Fallback
     return [
       "Kozhikode",
       "Malappuram",
@@ -594,5 +678,86 @@ class PropertyService {
       'propertyData': propertyData,
       'addedAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  /// Fetches localities for a specific city from the Node.js server
+  /// Improved: Now returns enriched data with Hub info (Colleges/Industries)
+  Future<List<Map<String, dynamic>>> getLocalities(String city) async {
+    try {
+      final response = await _apiService.performRequest(
+        method: 'GET',
+        endpoint: '/locations/$city/localities',
+      );
+
+      if (response != null && response['success'] == true) {
+        return List<Map<String, dynamic>>.from(response['localities']);
+      }
+    } catch (e) {
+      debugPrint('Error fetching localities from API, falling back to Firestore: $e');
+    }
+
+    try {
+      final snapshot =
+          await _firestore
+              .collection('cities')
+              .doc(city.toLowerCase())
+              .collection('localities')
+              .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        return snapshot.docs.map((doc) => {
+          'name': doc.id,
+          ...doc.data(),
+        }).toList();
+      }
+
+      // Legacy fallback for old collection name
+      final legacySnapshot = await _firestore
+          .collection('cities')
+          .doc(city)
+          .collection('areas')
+          .get();
+          
+      if (legacySnapshot.docs.isNotEmpty) {
+        return legacySnapshot.docs.map((doc) => {
+          'name': doc.id,
+        }).toList();
+      }
+
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching localities: $e');
+      return [];
+    }
+  }
+
+  /// Fetches unique college names from properties
+  Future<List<String>> getColleges() async {
+    try {
+      final snapshot = await _firestore.collection('properties').get();
+      final colleges = <String>{};
+      for (final doc in snapshot.docs) {
+        final basicInfo = doc.data()['basicInfo'] as Map<String, dynamic>?;
+        final college = basicInfo?['collegeName'] as String?;
+        if (college != null && college.isNotEmpty) {
+          colleges.add(college);
+        }
+      }
+      if (colleges.isNotEmpty) {
+        return colleges.toList()..sort();
+      }
+    } catch (e) {
+      debugPrint('Error fetching colleges: $e');
+    }
+
+    // Default Fallback
+    return [
+      "Yenepoya University",
+      "Anna University",
+      "St. Aloysius College",
+      "Madras Christian College",
+      "Cochin University (CUSAT)",
+      "Amrita Vishwa Vidyapeetham",
+    ]..sort();
   }
 }

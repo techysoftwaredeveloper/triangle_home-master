@@ -138,7 +138,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
                 titleColor: AppTheme.errorColor,
                 iconColor: AppTheme.errorColor,
                 showTrailing: false,
-                onTap: () => _showDeleteConfirmation(context),
+                onTap: () => _showDeleteConfirmation(),
               ),
             ]),
             const SizedBox(height: 60),
@@ -334,11 +334,11 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context) {
+  void _showDeleteConfirmation() {
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
+          (dialogContext) => AlertDialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
             ),
@@ -358,7 +358,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(dialogContext),
                 child: const Text(
                   'Cancel',
                   style: TextStyle(color: Colors.grey, fontFamily: 'Outfit'),
@@ -367,7 +367,7 @@ class _PrivacySecurityScreenState extends ConsumerState<PrivacySecurityScreen> {
               ElevatedButton(
                 onPressed: _isDeleting ? null : () async {
                   setState(() => _isDeleting = true);
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
                   
                   try {
                     await _authService.deleteUserAccount();

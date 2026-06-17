@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:triangle_home/services/firebase_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
@@ -28,6 +29,33 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
   final Set<int> _uploadingIndices = {};
 
   Future<void> _pickImage() async {
+    final status = Platform.isIOS 
+        ? await Permission.photos.request() 
+        : await Permission.storage.request();
+        
+    if (status.isDenied || status.isPermanentlyDenied) {
+      if (Platform.isAndroid) {
+        final photoStatus = await Permission.photos.request();
+        if (photoStatus.isDenied || photoStatus.isPermanentlyDenied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Gallery access is required to add property photos')),
+            );
+          }
+          if (photoStatus.isPermanentlyDenied) openAppSettings();
+          return;
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Gallery access is required to add property photos')),
+          );
+        }
+        if (status.isPermanentlyDenied) openAppSettings();
+        return;
+      }
+    }
+
     final List<XFile> images = await _picker.pickMultiImage(imageQuality: 70);
     if (images.isNotEmpty) {
       final firebaseService = FirebaseService();

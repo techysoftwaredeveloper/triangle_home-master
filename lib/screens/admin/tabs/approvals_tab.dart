@@ -458,7 +458,7 @@ class _ApprovalsTabState extends State<ApprovalsTab>
     try {
       // Note: In production, use FirebaseFirestore.instance.batch()
       // This is a simplified loop for the current service architecture
-      for (final id in _selectedIds) {
+      for (final _ in _selectedIds) {
         // We'd need the type here; for now this is a logic placeholder
       }
       if (mounted) {

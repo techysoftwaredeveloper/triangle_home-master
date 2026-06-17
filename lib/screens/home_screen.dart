@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:triangle_home/providers/location_provider.dart';
 import 'package:triangle_home/providers/property_provider.dart';
 import 'package:triangle_home/screens/auth/login_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
@@ -33,14 +34,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final IsarService _isarService = IsarService();
 
   List<String> _states = [];
-  String _currentCity = '';
-  String _detectedCity = '';
 
   @override
   void initState() {
     super.initState();
     _checkUserRole();
-    _loadUserPreferences();
     _fetchCitiesFromFirestore();
     _getCurrentCityFromLocation();
   }
@@ -72,16 +70,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           }
         }
       }
-    }
-  }
-
-  Future<void> _loadUserPreferences() async {
-    final prefs = await _isarService.getLocationPreference();
-    if (prefs != null && mounted) {
-      setState(() {
-        _currentCity = prefs.lastSelectedCity ?? '';
-        _detectedCity = prefs.lastDetectedCity ?? '';
-      });
     }
   }
 
@@ -149,8 +137,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _getCurrentCityFromLocation() async {
     try {
       LocationPermission permission = await Geolocator.checkPermission();
-      // Guide: Do NOT request permission on startup.
-      // Only proceed if already granted.
 
       if (permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always) {
@@ -165,16 +151,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         );
         if (placemarks.isNotEmpty) {
           final Placemark place = placemarks.first;
+          final detected = place.locality?.trim() ?? '';
+          final subLocality = place.subLocality?.trim() ?? '';
+          
           if (mounted) {
-            setState(() {
-              _detectedCity = place.locality?.trim() ?? '';
-              // If no city selected yet, use detected
-              if (_currentCity.isEmpty) _currentCity = _detectedCity;
-            });
-            _isarService.saveLocationPreference(
-              selected: _currentCity,
-              detected: _detectedCity,
-            );
+            final locNotifier = ref.read(locationProvider.notifier);
+            locNotifier.updateDetectedCity(detected);
+            locNotifier.updateDetectedLocality(subLocality);
+            
+            final currentSelected = ref.read(locationProvider).selectedCity;
+            if (currentSelected.isEmpty) {
+              locNotifier.updateSelectedCity(detected);
+            }
+          }
+
+          if (detected.isNotEmpty) {
+            _locationApi.addLocation(city: detected, locality: subLocality);
           }
         }
       }
@@ -187,18 +179,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (city == 'near_me_trigger') {
       _handleNearMeSelected();
     } else {
-      setState(() => _currentCity = city);
-      _isarService.saveLocationPreference(
-        selected: city,
-        detected: _detectedCity,
-      );
-      // No need to manually invalidate if using .family correctly, 
-      // but ref.invalidate(paginatedPropertiesProvider(city)) could be used if needed.
+      ref.read(locationProvider.notifier).updateSelectedCity(city);
     }
   }
 
   Future<void> _handleNearMeSelected() async {
-    setState(() => _currentCity = 'Detecting...');
+    ref.read(locationProvider.notifier).setDetecting(true);
     try {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -225,15 +211,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final String? detectedLocality = place.subLocality?.trim();
 
         if (mounted) {
-          setState(() {
-            _detectedCity = detectedCity ?? '';
-            _currentCity = detectedCity ?? 'Unknown';
-          });
-
-          _isarService.saveLocationPreference(
-            selected: _currentCity,
-            detected: _detectedCity,
-          );
+          final locNotifier = ref.read(locationProvider.notifier);
+          locNotifier.updateDetectedCity(detectedCity ?? '');
+          locNotifier.updateDetectedLocality(detectedLocality ?? '');
+          locNotifier.updateSelectedCity(detectedCity ?? 'Unknown');
+          locNotifier.setDetecting(false);
 
           Fluttertoast.showToast(
             msg:
@@ -242,15 +224,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             textColor: Colors.white,
           );
         }
+
+        if (detectedCity != null && detectedCity.isNotEmpty) {
+          _locationApi.addLocation(city: detectedCity, locality: detectedLocality ?? '');
+        }
       }
     } catch (e) {
       debugPrint('Near Me Error: $e');
       if (mounted) {
-        setState(
-          () =>
-              _currentCity =
-                  _detectedCity.isNotEmpty ? _detectedCity : 'Global',
-        );
+        ref.read(locationProvider.notifier).setDetecting(false);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
@@ -275,14 +257,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final propertiesState = ref.watch(paginatedPropertiesProvider(_currentCity));
+    final locationState = ref.watch(locationProvider);
+    final currentCity = locationState.selectedCity;
+    final propertiesState = ref.watch(paginatedPropertiesProvider(currentCity));
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: RefreshIndicator(
         onRefresh: () async {
           await _fetchCitiesFromFirestore();
-          ref.invalidate(paginatedPropertiesProvider(_currentCity));
+          ref.invalidate(paginatedPropertiesProvider(currentCity));
         },
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -391,8 +375,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: StateTags(
                     states: _states,
-                    selectedState: _currentCity,
-                    currentLocation: _detectedCity,
+                    selectedState: locationState.isDetecting ? 'Detecting...' : currentCity,
+                    currentLocation: locationState.detectedCity,
                     onStateSelected: _handleCitySelected,
                   ),
                 ),
@@ -429,9 +413,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     color: Colors.grey.shade300),
                                 const SizedBox(height: 12),
                                 Text(
-                                  _currentCity.isEmpty
+                                  currentCity.isEmpty
                                       ? 'No properties available yet'
-                                      : 'No properties in $_currentCity yet',
+                                      : 'No properties in $currentCity yet',
                                   style: const TextStyle(
                                       fontSize: 14,
                                       color: AppTheme.textLightColor),
@@ -443,7 +427,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         }
                         return NearbyAccommodations(
                           accommodations: accommodations,
-                          selectedCity: _currentCity,
+                          selectedCity: currentCity,
                         );
                       },
                       loading: () => const Padding(

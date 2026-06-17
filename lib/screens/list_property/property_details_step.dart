@@ -232,7 +232,7 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: status,
+                      initialValue: status,
                     decoration: const InputDecoration(
                       labelText: 'Floor Status',
                       border: OutlineInputBorder(),
@@ -374,7 +374,7 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
     final floorNumber = (floor['floorNumber'] as num).toInt();
 
     // Determine default room number based on selected numbering system.
-    // Numeric: floor 0 (Ground) → 101+, floor 1 → 201+, etc.
+    // Numeric: floor 0 (Ground) â†’ 101+, floor 1 â†’ 201+, etc.
     // Floor Based: F1-R1, F2-R1 (use floorNumber+1 as display level).
     // Alpha-Numeric: uses per-floor room count for suffix.
     String defaultRoomNumber = '';
@@ -458,7 +458,7 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: roomType,
+                      initialValue: roomType,
                       decoration: const InputDecoration(
                         labelText: 'Room Type',
                         border: OutlineInputBorder(),
@@ -566,7 +566,7 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: status,
+                      initialValue: status,
                       decoration: const InputDecoration(
                         labelText: 'Room Status',
                         border: OutlineInputBorder(),
@@ -609,6 +609,26 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                             return;
                           }
 
+                          // Check for duplicate room number
+                          final isDuplicate = await _structureService
+                              .isDuplicateRoomNumber(
+                                _propertyId!,
+                                numberController.text,
+                              );
+                          if (isDuplicate) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Room ${numberController.text} already exists. Choose a different number.',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                            return;
+                          }
+
                           final payload = {
                             'roomNumber': numberController.text,
                             'roomType': roomType,
@@ -621,6 +641,7 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                             'status': status,
                             'area': double.tryParse(areaController.text),
                             'amenities': roomAmenities,
+                            'genderRestriction': _selectedGender, // Inherit property gender
                           };
 
                           try {
@@ -737,7 +758,7 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                     ),
                     const SizedBox(height: 20),
                     DropdownButtonFormField<String>(
-                      value: roomType,
+                      initialValue: roomType,
                       decoration: const InputDecoration(
                         labelText: 'Room Type',
                         border: OutlineInputBorder(),
@@ -769,7 +790,7 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                       controller: areaController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Room Area (Sq. Ft. — Optional)',
+                        labelText: 'Room Area (Sq. Ft. â€” Optional)',
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -806,7 +827,7 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: status,
+                      initialValue: status,
                       decoration: const InputDecoration(
                         labelText: 'Room Status',
                         border: OutlineInputBorder(),
@@ -1210,7 +1231,7 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                       floorId,
                     );
                     if (!canDelete) {
-                      if (context.mounted) {
+                      if (mounted) {
                         showDialog(
                           context: context,
                           builder:
@@ -1231,7 +1252,7 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                       return;
                     }
 
-                    if (context.mounted) {
+                    if (mounted) {
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder:
@@ -1375,7 +1396,7 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                       roomId,
                     );
                     if (!canDelete) {
-                      if (context.mounted) {
+                      if (mounted) {
                         showDialog(
                           context: context,
                           builder:
@@ -1396,7 +1417,7 @@ class _PropertyDetailsStepState extends State<PropertyDetailsStep> {
                       return;
                     }
 
-                    if (context.mounted) {
+                    if (mounted) {
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder:

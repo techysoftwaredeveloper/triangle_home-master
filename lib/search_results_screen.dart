@@ -1,14 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:triangle_home/providers/service_providers.dart';
 import 'package:triangle_home/widgets/home/premium_property_card.dart';
-import 'package:triangle_home/services/property_service.dart';
+import 'package:triangle_home/providers/property_provider.dart';
+import 'package:triangle_home/models/search_filter.dart';
+import 'package:triangle_home/widgets/locality_search_popup.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/home/bottom_nav_bar.dart';
 
-class SearchResultsScreen extends StatefulWidget {
+class SearchResultsScreen extends ConsumerStatefulWidget {
   final String searchQuery;
   final String selectedCity;
   final String searchType;
@@ -33,78 +35,84 @@ class SearchResultsScreen extends StatefulWidget {
   });
 
   @override
-  State<SearchResultsScreen> createState() => _SearchResultsScreenState();
+  ConsumerState<SearchResultsScreen> createState() => _SearchResultsScreenState();
 }
 
-class _SearchResultsScreenState extends State<SearchResultsScreen> {
-  final PropertyService _propertyService = PropertyService();
+class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   final ScrollController _scrollController = ScrollController();
-  StreamSubscription? _searchSubscription;
 
   String _sortBy = 'Price: Low to High';
   String _propertyType = 'All';
   String _priceRange = 'All';
-
-  List<Map<String, dynamic>> _allResults = [];
-  List<Map<String, dynamic>> _filteredResults = [];
-  bool _isLoading = true;
+  List<String> _selectedLocalities = [];
+  List<Map<String, dynamic>> _availableLocalities = [];
 
   @override
   void initState() {
     super.initState();
-    _initRealtimeSearch();
+    _selectedLocalities = List.from(widget.selectedLocalities);
+    
+    // Set initial filters in provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(searchFilterProvider.notifier).state = SearchFilter(
+        city: widget.selectedCity,
+        localities: widget.selectedLocalities,
+        college: widget.selectedCollege,
+        accommodationType: widget.accommodationType,
+        tenantType: widget.tenantType,
+        roomType: widget.roomType,
+      );
+    });
+
+    _loadAvailableLocalities();
+  }
+
+  Future<void> _loadAvailableLocalities() async {
+    if (widget.selectedCity.isEmpty) return;
+    try {
+      final service = ref.read(propertyServiceProvider);
+      final localities =
+          await service.getLocalities(widget.selectedCity);
+      if (mounted) {
+        setState(() {
+          _availableLocalities = localities;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading localities: $e');
+    }
+  }
+
+  void _updatePriceRangeFilter(String value) {
+    setState(() => _priceRange = value);
+    
+    double? minP, maxP;
+    if (value != 'All') {
+      final parts = value.split('-');
+      if (parts.length == 2) {
+        minP = double.tryParse(parts[0].replaceAll(RegExp(r'[^0-9]'), ''));
+        maxP = double.tryParse(parts[1].replaceAll(RegExp(r'[^0-9]'), ''));
+      } else if (value.contains('<')) {
+        maxP = double.tryParse(value.replaceAll(RegExp(r'[^0-9]'), ''));
+      } else if (value.contains('>')) {
+        minP = double.tryParse(value.replaceAll(RegExp(r'[^0-9]'), ''));
+      }
+    }
+
+    ref.read(searchFilterProvider.notifier).update((s) => s.copyWith(
+      minPrice: minP,
+      maxPrice: maxP,
+    ));
   }
 
   @override
   void dispose() {
-    _searchSubscription?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _initRealtimeSearch() {
-    setState(() => _isLoading = true);
-    _searchSubscription?.cancel();
-
-    double? minP, maxP;
-    if (_priceRange != 'All') {
-      final parts = _priceRange.split('-');
-      if (parts.length == 2) {
-        minP = double.tryParse(parts[0].replaceAll(RegExp(r'[^0-9]'), ''));
-        maxP = double.tryParse(parts[1].replaceAll(RegExp(r'[^0-9]'), ''));
-      }
-    }
-
-    _searchSubscription = _propertyService
-        .getFilteredPropertiesStream(
-          city: widget.selectedCity,
-          localities: widget.selectedLocalities,
-          college: widget.selectedCollege,
-          accommodationType: widget.accommodationType,
-          tenantType: widget.tenantType,
-          roomType: widget.roomType,
-          minPrice: minP,
-          maxPrice: maxP,
-        )
-        .listen(
-          (results) {
-            if (mounted) {
-              setState(() {
-                _allResults = results;
-                _isLoading = false;
-              });
-              _applyFilters();
-            }
-          },
-          onError: (e) {
-            debugPrint('Search Stream Error: $e');
-            if (mounted) setState(() => _isLoading = false);
-          },
-        );
-  }
-
-  void _applyFilters() {
-    List<Map<String, dynamic>> filtered = List.from(_allResults);
+  List<Map<String, dynamic>> _applyLocalFilters(List<Map<String, dynamic>> results) {
+    List<Map<String, dynamic>> filtered = List.from(results);
 
     // Apply property type filter
     if (_propertyType != 'All') {
@@ -131,24 +139,6 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
           }).toList();
     }
 
-    // Apply price range filter
-    if (_priceRange != 'All') {
-      filtered =
-          filtered.where((property) {
-            final price = property['price'] as int? ?? 0;
-            switch (_priceRange) {
-              case '< ₹5000':
-                return price < 5000;
-              case '₹5000-₹10000':
-                return price >= 5000 && price <= 10000;
-              case '> ₹10000':
-                return price > 10000;
-              default:
-                return true;
-            }
-          }).toList();
-    }
-
     // Apply sorting
     switch (_sortBy) {
       case 'Price: Low to High':
@@ -167,17 +157,16 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
         );
         break;
       case 'Distance':
-        // Keep original order for distance
         break;
     }
 
-    setState(() {
-      _filteredResults = filtered;
-    });
+    return filtered;
   }
 
   @override
   Widget build(BuildContext context) {
+    final streamAsync = ref.watch(filteredPropertiesStreamProvider);
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -198,13 +187,17 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                 fontFamily: AppTheme.fontFamily,
               ),
             ),
-            Text(
-              '${_filteredResults.length} properties found in ${widget.selectedCity}',
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: AppTheme.fontSM,
-                fontFamily: AppTheme.fontFamily,
+            streamAsync.when(
+              data: (results) => Text(
+                '${_applyLocalFilters(results).length} properties found',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: AppTheme.fontSM,
+                  fontFamily: AppTheme.fontFamily,
+                ),
               ),
+              loading: () => const Text('Searching...', style: TextStyle(color: Colors.white70, fontSize: 10)),
+              error: (_, __) => const Text('Error', style: TextStyle(color: Colors.red, fontSize: 10)),
             ),
           ],
         ),
@@ -215,22 +208,25 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
             children: [
               _buildFilters(),
               Expanded(
-                child:
-                    _isLoading
-                        ? _buildSkeletonLoader()
-                        : _filteredResults.isEmpty
-                        ? _buildEmptyState()
-                        : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                          itemCount: _filteredResults.length,
-                          itemBuilder: (context, index) {
-                            return _buildPropertyCard(_filteredResults[index])
-                                .animate()
-                                .fadeIn(delay: const Duration(milliseconds: 50))
-                                .slideY(begin: 0.1, end: 0);
-                          },
-                        ),
+                child: streamAsync.when(
+                  data: (results) {
+                    final filtered = _applyLocalFilters(results);
+                    if (filtered.isEmpty) return _buildEmptyState();
+                    return ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        return _buildPropertyCard(filtered[index])
+                            .animate()
+                            .fadeIn(delay: const Duration(milliseconds: 50))
+                            .slideY(begin: 0.1, end: 0);
+                      },
+                    );
+                  },
+                  loading: () => _buildSkeletonLoader(),
+                  error: (e, __) => Center(child: Text('Error: $e')),
+                ),
               ),
             ],
           ),
@@ -274,7 +270,10 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                 _propertyType = 'All';
                 _priceRange = 'All';
               });
-              _applyFilters();
+              ref.read(searchFilterProvider.notifier).update((s) => s.copyWith(
+                minPrice: null,
+                maxPrice: null,
+              ));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryColor,
@@ -315,7 +314,6 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
               ],
               (value) {
                 setState(() => _sortBy = value);
-                _applyFilters();
               },
             ),
           ),
@@ -327,7 +325,6 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
               ['All', 'PG', 'Hostel', 'Apartment'],
               (value) {
                 setState(() => _propertyType = value);
-                _applyFilters();
               },
             ),
           ),
@@ -338,8 +335,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
               _priceRange,
               ['All', '< ₹5000', '₹5000-₹10000', '> ₹10000'],
               (value) {
-                setState(() => _priceRange = value);
-                _applyFilters();
+                _updatePriceRangeFilter(value);
               },
             ),
           ),
@@ -503,7 +499,14 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                             _propertyType = 'All';
                             _priceRange = 'All';
                           });
-                          _applyFilters();
+                          ref.read(searchFilterProvider.notifier).state = SearchFilter(
+                            city: widget.selectedCity,
+                            localities: widget.selectedLocalities,
+                            college: widget.selectedCollege,
+                            accommodationType: widget.accommodationType,
+                            tenantType: widget.tenantType,
+                            roomType: widget.roomType,
+                          );
                           Navigator.pop(context);
                         },
                         child: const Text('Reset All'),
@@ -540,6 +543,10 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                         _priceRange,
                         (v) => setState(() => _priceRange = v),
                       ),
+                      if (_availableLocalities.isNotEmpty) ...[
+                        const Divider(),
+                        _buildLocalityFilterSection(),
+                      ],
                     ],
                   ),
                 ),
@@ -549,7 +556,6 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        _applyFilters();
                         Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
@@ -613,6 +619,87 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
         ),
         const SizedBox(height: 16),
       ],
+    );
+  }
+
+  Widget _buildLocalityFilterSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Locality',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            TextButton(
+              onPressed: _showLocalityPicker,
+              child: const Text('Edit'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_selectedLocalities.isEmpty)
+          const Text(
+            'All Localities',
+            style: TextStyle(color: AppTheme.textLightColor, fontSize: 14),
+          )
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children:
+                _selectedLocalities.map((locality) {
+                  return Chip(
+                    label: Text(locality),
+                    onDeleted: () {
+                      setState(() {
+                        _selectedLocalities.remove(locality);
+                      });
+                      ref.read(searchFilterProvider.notifier).update((s) => s.copyWith(
+                        localities: _selectedLocalities,
+                      ));
+                    },
+                    deleteIcon: const Icon(Icons.close, size: 16),
+                    backgroundColor: AppTheme.primaryColor.withValues(
+                      alpha: 0.1,
+                    ),
+                    labelStyle: const TextStyle(
+                      color: AppTheme.primaryColor,
+                      fontSize: 12,
+                    ),
+                  );
+                }).toList(),
+          ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  void _showLocalityPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder:
+          (context) => LocalitySearchPopup(
+            localities: _availableLocalities,
+            selectedLocalities: _selectedLocalities,
+            onLocalityToggled: (locality) {
+              setState(() {
+                if (_selectedLocalities.contains(locality)) {
+                  _selectedLocalities.remove(locality);
+                } else if (_selectedLocalities.length < 5) {
+                  _selectedLocalities.add(locality);
+                }
+              });
+              ref.read(searchFilterProvider.notifier).update((s) => s.copyWith(
+                localities: _selectedLocalities,
+              ));
+            },
+          ),
     );
   }
 

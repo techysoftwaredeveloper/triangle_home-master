@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,6 +9,7 @@ import 'package:triangle_home/screens/hoster/partner_onboarding_screen.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/screens/home_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
+import 'package:sms_autofill/sms_autofill.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String verificationId;
@@ -29,39 +29,41 @@ class OtpVerificationScreen extends StatefulWidget {
   State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
 }
 
-class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
-  final List<TextEditingController> _controllers = List.generate(
-    6,
-    (index) => TextEditingController(),
-  );
-  final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
+class _OtpVerificationScreenState extends State<OtpVerificationScreen> with CodeAutoFill {
+  String _otpCode = "";
   Timer? _timer;
   int _timeLeft = 30;
   bool _isLoading = false;
 
   @override
+  void codeUpdated() {
+    setState(() {
+      _otpCode = code ?? "";
+    });
+    if (_otpCode.length == 6) {
+      _verifyOTP(_otpCode);
+    }
+  }
+
+  @override
   void initState() {
     super.initState();
+    listenForCode();
     startTimer();
-    // Listen to all OTP controllers to update reactive button state
-    for (final c in _controllers) {
-      c.addListener(() => setState(() {}));
-    }
+    _printAppSignature();
+  }
+
+  void _printAppSignature() async {
+    final signature = await SmsAutoFill().getAppSignature;
+    debugPrint("App Signature for SMS: $signature");
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
-    for (var node in _focusNodes) {
-      node.dispose();
-    }
+    cancel(); // from CodeAutoFill
     super.dispose();
   }
-
-  bool get _isOtpComplete => _controllers.every((c) => c.text.length == 1);
 
   void startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -79,8 +81,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     return '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
   }
 
-  Future<void> _verifyOTP() async {
-    final otp = _controllers.map((c) => c.text).join();
+  Future<void> _verifyOTP(String otp) async {
     if (otp.length != 6) return;
 
     setState(() => _isLoading = true);
@@ -154,7 +155,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           }
           break;
         case UserRole.none:
-          // New User Onboarding
           if (widget.onLoginNavigateTo != null) {
             Navigator.pushAndRemoveUntil(
               context,
@@ -203,12 +203,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     setState(() {
       _timeLeft = 30;
       _isLoading = true;
+      _otpCode = "";
     });
 
-    for (var controller in _controllers) {
-      controller.clear();
-    }
-    _focusNodes[0].requestFocus();
     startTimer();
 
     try {
@@ -224,10 +221,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           );
         },
         codeSent: (String newVerificationId, int? resendToken) {
-          // Note: Since widget.verificationId is now final, we can't update it directly.
-          // In a real app, you'd likely want to manage this in the state.
-          // For now, if we need to support resending, we should probably
-          // have a local variable in the state to hold the current verificationId.
+          // Update verificationId locally if needed
         },
         codeAutoRetrievalTimeout: (String verificationId) {},
       );
@@ -238,19 +232,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
-  void _onOtpDigitChanged(int index, String value) {
-    if (value.length == 1 && index < 5) {
-      _focusNodes[index + 1].requestFocus();
-    }
-    if (value.length == 1 && index == 5) {
-      _verifyOTP();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final lastFourDigits = widget.phoneNumber.substring(
-      widget.phoneNumber.length - 4,
+      widget.phoneNumber.length.clamp(0, 4) > 4 ? widget.phoneNumber.length - 4 : 0,
     );
 
     return Scaffold(
@@ -262,7 +247,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // In-body back button (no AppBar per Figma)
                 Align(
                   alignment: Alignment.centerLeft,
                   child: IconButton(
@@ -271,14 +255,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     padding: EdgeInsets.zero,
                   ),
                 ),
-
                 const SizedBox(height: 8),
-
-                // Static OTP illustration (Figma: man at desk with OTP)
                 _OtpIllustration(),
-
                 const SizedBox(height: 32),
-
                 const Text(
                   'One Time Password',
                   style: TextStyle(
@@ -287,9 +266,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     fontFamily: AppTheme.fontFamily,
                   ),
                 ).animate().fadeIn(delay: 200.ms),
-
                 const SizedBox(height: 12),
-
                 Text(
                   'Please enter the one-time password sent to\nyour mobile number ending ****$lastFourDigits',
                   textAlign: TextAlign.center,
@@ -300,58 +277,37 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     fontFamily: AppTheme.fontFamily,
                   ),
                 ).animate().fadeIn(delay: 400.ms),
-
                 const SizedBox(height: 36),
-
-                // Underline-style OTP boxes
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(
-                    6,
-                    (index) => SizedBox(
-                      width: 42,
-                      child: TextField(
-                        controller: _controllers[index],
-                        focusNode: _focusNodes[index],
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        maxLength: 1,
-                        style: const TextStyle(
-                          fontSize: AppTheme.font2XL,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                          color: AppTheme.textDarkColor,
-                        ),
-                        decoration: InputDecoration(
-                          counterText: '',
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 8,
-                          ),
-                          filled: false,
-                          enabledBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(
-                              color: Colors.grey.shade400,
-                              width: 2,
-                            ),
-                          ),
-                          focusedBorder: const UnderlineInputBorder(
-                            borderSide: BorderSide(
-                              color: AppTheme.primaryColor,
-                              width: 2.5,
-                            ),
-                          ),
-                        ),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        onChanged: (value) => _onOtpDigitChanged(index, value),
+                
+                // Unified PinFieldAutoFill for reliable SMS extraction
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: PinFieldAutoFill(
+                    currentCode: _otpCode,
+                    codeLength: 6,
+                    onCodeChanged: (code) {
+                      setState(() {
+                        _otpCode = code ?? "";
+                      });
+                      if (_otpCode.length == 6) {
+                        _verifyOTP(_otpCode);
+                      }
+                    },
+                    decoration: UnderlineDecoration(
+                      textStyle: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textDarkColor,
                       ),
+                      colorBuilder: FixedColorBuilder(
+                        AppTheme.primaryColor.withValues(alpha: 0.8),
+                      ),
+                      gapSpace: 12,
                     ),
                   ),
                 ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
 
-                const SizedBox(height: 28),
-
+                const SizedBox(height: 36),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -394,14 +350,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     ),
                   ],
                 ).animate().fadeIn(delay: 800.ms),
-
                 const SizedBox(height: 32),
-
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed:
-                        (_isLoading || !_isOtpComplete) ? null : _verifyOTP,
+                        (_isLoading || _otpCode.length != 6) ? null : () => _verifyOTP(_otpCode),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryColor,
                       disabledBackgroundColor: AppTheme.dividerColor,
@@ -413,9 +367,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     ),
                     child:
                         _isLoading
-                            ? const CircularProgressIndicator(
-                              color: Colors.white,
-                            )
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
                             : const Text(
                               'Continue',
                               style: TextStyle(
@@ -426,7 +385,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             ),
                   ),
                 ).animate().fadeIn(delay: 1000.ms).slideY(begin: 0.2, end: 0),
-
                 const SizedBox(height: 32),
               ],
             ),
@@ -437,196 +395,186 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 }
 
-/// Static illustration matching the Figma OTP screen design
-/// (person at desk receiving an OTP on their phone)
 class _OtpIllustration extends StatelessWidget {
   const _OtpIllustration();
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-          height: 180,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Desk surface
-              Positioned(
-                bottom: 20,
-                child: Container(
-                  width: 220,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: AppTheme.dividerColor,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusFull),
-                  ),
-                ),
+      height: 180,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            bottom: 20,
+            child: Container(
+              width: 220,
+              height: 6,
+              decoration: BoxDecoration(
+                color: AppTheme.dividerColor,
+                borderRadius: BorderRadius.circular(AppTheme.radiusFull),
               ),
-              // Monitor
-              Positioned(
-                bottom: 26,
-                left: 40,
-                child: Column(
-                  children: [
-                    Container(
-                      width: 90,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(AppTheme.radiusSM),
-                        border: Border.all(
-                          color: AppTheme.primaryColor.withValues(alpha: 0.25),
-                          width: 2,
-                        ),
-                      ),
-                      child: Column(
+            ),
+          ),
+          Positioned(
+            bottom: 26,
+            left: 40,
+            child: Column(
+              children: [
+                Container(
+                  width: 90,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusSM),
+                    border: Border.all(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.25),
+                      width: 2,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(
-                              4,
-                              (_) => Container(
-                                width: 12,
-                                height: 3,
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryColor.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
+                        children: List.generate(
+                          4,
+                          (_) => Container(
+                            width: 12,
+                            height: 3,
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 2,
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            width: 60,
-                            height: 14,
                             decoration: BoxDecoration(
                               color: AppTheme.primaryColor.withValues(
-                                alpha: 0.15,
+                                alpha: 0.5,
                               ),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'OTP',
-                                style: TextStyle(
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.primaryColor.withValues(
-                                    alpha: 0.8,
-                                  ),
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                              ),
+                              borderRadius: BorderRadius.circular(2),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    // Monitor stand
-                    Container(
-                      width: 16,
-                      height: 10,
-                      color: AppTheme.dividerColor,
-                    ),
-                    Container(
-                      width: 32,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppTheme.dividerColor,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Person silhouette
-              Positioned(
-                bottom: 26,
-                right: 28,
-                child: Column(
-                  children: [
-                    // Head
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.7),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    // Body
-                    Container(
-                      width: 44,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.6),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          topRight: Radius.circular(12),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              // Phone in hand (right side)
-              Positioned(
-                bottom: 48,
-                right: 18,
-                child: Container(
-                  width: 18,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: AppTheme.textDarkColor,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: AppTheme.primaryColor,
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 10,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(2),
+                      const SizedBox(height: 6),
+                      Container(
+                        width: 60,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor.withValues(
+                            alpha: 0.15,
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'OTP',
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryColor.withValues(
+                                alpha: 0.8,
+                              ),
+                              fontFamily: AppTheme.fontFamily,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-              ),
-              // Lock/shield icon on monitor glow
-              Positioned(
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
+                Container(
+                  width: 16,
+                  height: 10,
+                  color: AppTheme.dividerColor,
+                ),
+                Container(
+                  width: 32,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    color: AppTheme.dividerColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: 26,
+            right: 28,
+            child: Column(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.7),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.lock_outline_rounded,
-                    color: AppTheme.primaryColor,
-                    size: 28,
+                ),
+                const SizedBox(height: 2),
+                Container(
+                  width: 44,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.6),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: 48,
+            right: 18,
+            child: Container(
+              width: 18,
+              height: 30,
+              decoration: BoxDecoration(
+                color: AppTheme.textDarkColor,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: AppTheme.primaryColor,
+                  width: 1.5,
+                ),
+              ),
+              child: Center(
+                child: Container(
+                  width: 10,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
-        )
-        .animate()
-        .fadeIn(duration: 600.ms)
-        .scale(
-          begin: const Offset(0.9, 0.9),
-          end: const Offset(1, 1),
-          duration: 600.ms,
-        );
+          Positioned(
+            top: 8,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.lock_outline_rounded,
+                color: AppTheme.primaryColor,
+                size: 28,
+              ),
+            ),
+          ),
+        ],
+      ),
+    )
+    .animate()
+    .fadeIn(duration: 600.ms)
+    .scale(
+      begin: const Offset(0.9, 0.9),
+      end: const Offset(1, 1),
+      duration: 600.ms,
+    );
   }
 }

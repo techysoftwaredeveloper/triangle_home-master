@@ -691,6 +691,7 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> wit
           Fluttertoast.showToast(msg: e.message ?? 'Verification failed');
         },
         codeSent: (String verificationId, int? resendToken) {
+          if (!mounted) return;
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -805,6 +806,7 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> wit
     }
 
     final picker = ImagePicker();
+    if (!mounted) return;
     final source = await showDialog<ImageSource>(
       context: context,
       builder:
@@ -996,6 +998,16 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> wit
   }
 
   Future<void> _uploadSelfie() async {
+    final status = await Permission.camera.request();
+    if (status.isDenied || status.isPermanentlyDenied) {
+      Fluttertoast.showToast(
+        msg: 'Camera permission is required to capture a selfie',
+        backgroundColor: Colors.red,
+      );
+      if (status.isPermanentlyDenied) openAppSettings();
+      return;
+    }
+
     final picker = ImagePicker();
     final XFile? image = await picker.pickImage(
       source: ImageSource.camera,

@@ -1,10 +1,4 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:triangle_home/screens/profile/verification_center_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
 
 void main() {
   // This is a minimal test to ensure the screen builds and has the right labels

@@ -36,10 +36,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   int _logoTapCount = 0;
 
-  // Static instance to prevent multiple initialization issues
-  static final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-  );
 
   final List<String> _studentContent = [
     'Apartments? PG Accommodations? We\'ve got you!',
@@ -250,10 +246,12 @@ class _LoginScreenState extends State<LoginScreen> {
             message = 'Too many requests. Please try again later.';
           } else if (e.code == 'invalid-phone-number') {
             message = 'The provided phone number is not valid.';
-          } else if (e.toString().contains('reCAPTCHA')) {
+          } else if (e.code == 'missing-recaptcha-token' ||
+              e.code == 'app-not-verified' ||
+              e.toString().contains('reCAPTCHA')) {
             message =
-                'Safety check failed. Please ensure you are not on a VPN and have Google Play Services updated.';
-            debugPrint('🛡️ ReCAPTCHA Error Detail: ${e.toString()}');
+                'Safety check failed (${e.code}). Please ensure your app is registered in Firebase and Play Integrity is enabled.';
+            debugPrint('🛡️ Safety Check Error Detail: ${e.code} - ${e.message}');
           }
 
           ScaffoldMessenger.of(context).showSnackBar(

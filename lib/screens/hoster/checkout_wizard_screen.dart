@@ -24,7 +24,6 @@ class _CheckoutWizardScreenState extends State<CheckoutWizardScreen> {
   // Step 2: Inspection Data
   InspectionCondition _condition = InspectionCondition.good;
   final TextEditingController _damageNotesController = TextEditingController();
-  final List<String> _inspectionPhotos = [];
 
   // Step 3: Settlement Data
   final List<DepositDeduction> _deductions = [];

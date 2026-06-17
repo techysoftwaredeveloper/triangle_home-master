@@ -1,22 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:triangle_home/search_results_screen.dart';
+import 'package:triangle_home/providers/property_provider.dart';
+import 'package:triangle_home/providers/location_provider.dart';
+import 'package:triangle_home/models/search_filter.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/college_search_popup.dart';
+import 'package:triangle_home/screens/profile/help_support_screen.dart';
 
-class CollegeSearchScreen extends StatefulWidget {
+class CollegeSearchScreen extends ConsumerStatefulWidget {
   final String gender; // 'Men' or 'Women'
 
   const CollegeSearchScreen({super.key, required this.gender});
 
   @override
-  State<CollegeSearchScreen> createState() => _CollegeSearchScreenState();
+  ConsumerState<CollegeSearchScreen> createState() => _CollegeSearchScreenState();
 }
 
-class _CollegeSearchScreenState extends State<CollegeSearchScreen> {
+class _CollegeSearchScreenState extends ConsumerState<CollegeSearchScreen> {
   String _selectedCollege = '';
   String _selectedSharing = 'Any';
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Use addPostFrameCallback to avoid modifying provider during build/init
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _updateGlobalFilter();
+    });
+  }
+
+  void _updateGlobalFilter() {
+    final selectedCity = ref.read(locationProvider).selectedCity;
+    ref.read(searchFilterProvider.notifier).state = SearchFilter(
+      city: selectedCity,
+      college: _selectedCollege,
+      accommodationType: 'Paying Guest Hostels',
+      tenantType: widget.gender == 'Men' ? 'Man' : 'Woman',
+      roomType: _selectedSharing,
+    );
+  }
 
   @override
   void dispose() {
@@ -141,6 +166,7 @@ class _CollegeSearchScreenState extends State<CollegeSearchScreen> {
               setState(() {
                 _selectedCollege = college;
               });
+              _updateGlobalFilter();
             },
           ),
     );
@@ -185,7 +211,12 @@ class _CollegeSearchScreenState extends State<CollegeSearchScreen> {
                     options.map((label) {
                       final isSelected = _selectedSharing == label;
                       return InkWell(
-                        onTap: () => setState(() => _selectedSharing = label),
+                        onTap: () {
+                          setState(() => _selectedSharing = label);
+                          // Use addPostFrameCallback or a microtask if this is somehow triggered during build
+                          // though onTap is usually safe.
+                          _updateGlobalFilter();
+                        },
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
                           width: itemWidth,
@@ -305,52 +336,80 @@ class _CollegeSearchScreenState extends State<CollegeSearchScreen> {
   }
 
   Widget _buildSearchButton() {
+    final streamAsync = ref.watch(filteredPropertiesStreamProvider);
     final isEnabled = _selectedCollege.isNotEmpty;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: SizedBox(
-        width: double.infinity,
-        height: 56,
-        child: ElevatedButton(
-          onPressed:
-              isEnabled
-                  ? () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (_) => SearchResultsScreen(
-                              searchQuery: _selectedCollege,
-                              selectedCity: '', // Should be passed if known
-                              searchType: 'College',
-                              selectedLocalities: const [],
-                              selectedState: '',
-                              tenantType:
-                                  widget.gender == 'Men' ? 'Man' : 'Woman',
-                              roomType: _selectedSharing,
-                            ),
-                      ),
-                    );
-                  }
-                  : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor:
-                isEnabled ? AppTheme.primaryColor : const Color(0xFFE5E5E5),
-            foregroundColor: isEnabled ? Colors.white : AppTheme.textMutedColor,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isEnabled)
+            streamAsync.when(
+              data: (results) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  '${results.length} properties matching your criteria',
+                  style: const TextStyle(
+                    color: AppTheme.accentColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    fontFamily: 'Outfit',
+                  ),
+                ),
+              ),
+              loading: () => const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: SizedBox(height: 2, width: 100, child: LinearProgressIndicator()),
+              ),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed:
+                  isEnabled
+                      ? () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => SearchResultsScreen(
+                                  searchQuery: _selectedCollege,
+                                  selectedCity: ref.read(locationProvider).selectedCity,
+                                  searchType: 'College',
+                                  selectedLocalities: const [],
+                                  selectedState: '',
+                                  selectedCollege: _selectedCollege,
+                                  tenantType:
+                                      widget.gender == 'Men' ? 'Man' : 'Woman',
+                                  roomType: _selectedSharing,
+                                ),
+                          ),
+                        );
+                      }
+                      : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    isEnabled ? AppTheme.primaryColor : const Color(0xFFE5E5E5),
+                foregroundColor: isEnabled ? Colors.white : AppTheme.textMutedColor,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Text(
+                'Search',
+                style: TextStyle(
+                  fontSize: AppTheme.fontMD,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: AppTheme.fontFamily,
+                ),
+              ),
             ),
           ),
-          child: const Text(
-            'Search',
-            style: TextStyle(
-              fontSize: AppTheme.fontMD,
-              fontWeight: FontWeight.bold,
-              fontFamily: AppTheme.fontFamily,
-            ),
-          ),
-        ),
+        ],
       ),
     ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.1, end: 0);
   }
@@ -404,8 +463,13 @@ class _CollegeSearchScreenState extends State<CollegeSearchScreen> {
                   height: 56,
                   child: ElevatedButton(
                     onPressed: () {
-                      // TODO: Implement contact support
                       Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HelpSupportScreen(),
+                        ),
+                      );
                     },
                     child: const Text('Contact Support'),
                   ),

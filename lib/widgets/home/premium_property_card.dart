@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/screens/property_detail_screen_v2.dart';
 import 'package:triangle_home/models/property_stats_model.dart';
 import 'package:triangle_home/theme/app_theme.dart';

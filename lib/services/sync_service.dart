@@ -2,8 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/services/isar_service.dart';
 import 'package:triangle_home/models/pending_action.dart';
+import 'package:triangle_home/services/maintenance_service.dart';
+import 'package:triangle_home/services/booking_service.dart';
+import 'package:triangle_home/services/payment_service.dart';
+
 
 class SyncService {
   final IsarService _isarService;
@@ -86,21 +91,55 @@ class SyncService {
 
   Future<bool> _executeAction(PendingAction action) async {
     try {
-      final payload = json.decode(action.payload);
+      final payloadData = json.decode(action.payload);
 
       switch (action.type) {
         case 'BOOKING_CONFIRM':
-          // TODO: Inject BookingService and process booking
+          final bs = BookingService();
+          await bs.updateBookingStatus(
+            payloadData['bookingId'],
+            BookingStatus.values.firstWhere(
+              (e) => e.name == payloadData['status'],
+              orElse: () => BookingStatus.bookingConfirmed,
+            ),
+            reason: payloadData['reason'],
+            performerId: payloadData['performerId'],
+          );
           debugPrint('SyncService: Processing offline BOOKING_CONFIRM');
           return true;
 
         case 'PAYMENT_VERIFY':
-          // TODO: Process payment
+          final ps = PaymentService();
+          await ps.recordPayment(
+            bookingId: payloadData['bookingId'],
+            requestId: payloadData['requestId'],
+            amount: payloadData['amount']?.toDouble() ?? 0.0,
+            type: PaymentType.values.firstWhere(
+              (e) => e.name == payloadData['type'],
+              orElse: () => PaymentType.other,
+            ),
+            paymentMethod: payloadData['paymentMethod'],
+            extraData: payloadData['extraData'],
+          );
           debugPrint('SyncService: Processing offline PAYMENT_VERIFY');
           return true;
 
         case 'MAINTENANCE_CREATE':
-          // TODO: Inject MaintenanceService and process ticket
+          final ms = MaintenanceService();
+          await ms.createTicket(
+            residentId: payloadData['residentId'],
+            stayId: payloadData['stayId'],
+            title: payloadData['title'],
+            description: payloadData['description'],
+            category: TicketCategory.values.firstWhere(
+              (e) => e.name == payloadData['category'],
+              orElse: () => TicketCategory.other,
+            ),
+            priority: TicketPriority.values.firstWhere(
+              (e) => e.name == payloadData['priority'],
+              orElse: () => TicketPriority.low,
+            ),
+          );
           debugPrint('SyncService: Processing offline MAINTENANCE_CREATE');
           return true;
 

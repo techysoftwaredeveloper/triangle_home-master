@@ -49,6 +49,28 @@ class PropertyStructureService {
     return false;
   }
 
+  /// Returns true if another room with [roomNumber] already exists on this property.
+  Future<bool> isDuplicateRoomNumber(
+    String propertyId,
+    String roomNumber, {
+    String? excludeRoomId,
+  }) async {
+    final query = await _db
+        .collection('properties')
+        .doc(propertyId)
+        .collection('rooms')
+        .where('roomNumber', isEqualTo: roomNumber.trim())
+        .limit(5)
+        .get();
+
+    for (final doc in query.docs) {
+      if (excludeRoomId == null || doc.id != excludeRoomId) {
+        return true; // Found a duplicate
+      }
+    }
+    return false;
+  }
+
   Future<void> createFloor(String propertyId, Map<String, dynamic> data) async {
     final floorId =
         data['id'] ??
@@ -70,6 +92,133 @@ class PropertyStructureService {
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
+  }
+
+  /// Suggests the next room number based on strategy and existing rooms.
+  Future<String> getNextRoomNumber(String propertyId, int floor, String numberingSystem) async {
+    final roomsSnap = await _db
+        .collection('properties')
+        .doc(propertyId)
+        .collection('rooms')
+        .where('floor', isEqualTo: floor)
+        .get();
+    
+    if (numberingSystem == 'Numeric (101)') {
+      // Suggest (Floor + 1) * 100 + Count + 1
+      final int base = (floor + 1) * 100;
+      int maxNum = base;
+      for (var doc in roomsSnap.docs) {
+        final rNum = int.tryParse(doc.data()['roomNumber']?.toString() ?? '');
+        if (rNum != null && rNum > maxNum) maxNum = rNum;
+      }
+      return '${maxNum + 1}';
+    } else if (numberingSystem == 'Floor Based') {
+      // Expects F{Floor}-R{N}
+      int maxR = 0;
+      final regex = RegExp(r'R(\d+)');
+      for (var doc in roomsSnap.docs) {
+        final rStr = doc.data()['roomNumber']?.toString() ?? '';
+        final match = regex.firstMatch(rStr);
+        if (match != null) {
+          final n = int.tryParse(match.group(1)!);
+          if (n != null && n > maxR) maxR = n;
+        }
+      }
+      return 'F${floor + 1}-R${maxR + 1}';
+    } else if (numberingSystem == 'Alpha-Numeric') {
+      // Expects A{N}
+      int maxA = 0;
+      final regex = RegExp(r'A(\d+)');
+      for (var doc in roomsSnap.docs) {
+        final rStr = doc.data()['roomNumber']?.toString() ?? '';
+        final match = regex.firstMatch(rStr);
+        if (match != null) {
+          final n = int.tryParse(match.group(1)!);
+          if (n != null && n > maxA) maxA = n;
+        }
+      }
+      return 'A${maxA + 1}';
+    }
+    
+    return '';
+  }
+
+  Future<void> addBedsToRoom({
+    required String propertyId,
+    required String roomId,
+    required String floorId,
+    required int floor,
+    required int count,
+    required String roomNumber,
+    required double rent,
+    required String numberingSystem,
+  }) async {
+    final roomRef = _db.collection('properties').doc(propertyId).collection('rooms').doc(roomId);
+    final flatRoomRef = _db.collection('rooms').doc(roomId);
+    final statsRef = _db.collection('propertyStats').doc(propertyId);
+
+    await _db.runTransaction((transaction) async {
+      final roomDoc = await transaction.get(roomRef);
+      if (!roomDoc.exists) throw 'Room not found';
+      
+      // Find max existing bed index in this room
+      final bedsSnap = await roomRef.collection('beds').get();
+      int maxBedIndex = 0;
+      final regex = RegExp(r'B(\d+)');
+      
+      for (var doc in bedsSnap.docs) {
+        final bNum = doc.data()['bedNumber']?.toString() ?? '';
+        final match = regex.firstMatch(bNum);
+        if (match != null) {
+          final n = int.tryParse(match.group(1)!);
+          if (n != null && n > maxBedIndex) maxBedIndex = n;
+        }
+      }
+
+      for (int i = 1; i <= count; i++) {
+        final nextIndex = maxBedIndex + i;
+        final bedId = _db.collection('beds').doc().id;
+        final bedRef = _db.collection('properties').doc(propertyId).collection('beds').doc(bedId);
+        final nestedBedRef = roomRef.collection('beds').doc(bedId);
+        final flatBedRef = _db.collection('beds').doc(bedId);
+
+        final bedLabel = (numberingSystem == 'Alpha-Numeric' || numberingSystem == 'Custom')
+            ? 'B$nextIndex'
+            : '$roomNumber-B$nextIndex';
+
+        final bedPayload = {
+          'id': bedId,
+          'bedId': bedId,
+          'bedNumber': bedLabel,
+          'roomId': roomId,
+          'floorId': floorId,
+          'propertyId': propertyId,
+          'status': 'available',
+          'currentResidentId': null,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+          'monthlyRent': rent,
+        };
+
+        transaction.set(bedRef, bedPayload);
+        transaction.set(nestedBedRef, bedPayload);
+        transaction.set(flatBedRef, bedPayload);
+      }
+
+      final updates = {
+        'totalBeds': FieldValue.increment(count),
+        'availableBeds': FieldValue.increment(count),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      
+      transaction.update(roomRef, updates);
+      transaction.update(flatRoomRef, updates);
+      transaction.update(statsRef, {
+        'totalBeds': FieldValue.increment(count),
+        'availableBeds': FieldValue.increment(count),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
   }
 
   Future<void> updateFloor(
@@ -158,6 +307,20 @@ class PropertyStructureService {
     await batch.commit();
   }
 
+  /// Suggests the next floor number.
+  Future<int> getNextFloorNumber(String propertyId) async {
+    final floorsSnap = await _db
+        .collection('properties')
+        .doc(propertyId)
+        .collection('floors')
+        .orderBy('floorNumber', descending: true)
+        .limit(1)
+        .get();
+    
+    if (floorsSnap.docs.isEmpty) return 0;
+    return (floorsSnap.docs.first.data()['floorNumber'] as int? ?? 0) + 1;
+  }
+
   // ==================== ROOMS & BEDS ====================
 
   Future<void> createRoomWithBeds({
@@ -167,7 +330,6 @@ class PropertyStructureService {
     required int bedCount,
     required String numberingSystem,
   }) async {
-    final batch = _db.batch();
     final roomId =
         roomData['id'] ??
         _db
@@ -183,6 +345,8 @@ class PropertyStructureService {
         .collection('rooms')
         .doc(roomId);
     final flatRoomRef = _db.collection('rooms').doc(roomId);
+    final statsRef = _db.collection('propertyStats').doc(propertyId);
+    final floorRef = _db.collection('properties').doc(propertyId).collection('floors').doc(floorId);
 
     final roomPayload = {
       ...roomData,
@@ -196,56 +360,64 @@ class PropertyStructureService {
       'updatedAt': FieldValue.serverTimestamp(),
     };
 
-    batch.set(roomRef, roomPayload, SetOptions(merge: true));
-    batch.set(flatRoomRef, roomPayload, SetOptions(merge: true));
+    await _db.runTransaction((transaction) async {
+      // 1. Ensure Floor document exists (handles cases where floor is created on-the-fly)
+      final floorDoc = await transaction.get(floorRef);
+      if (!floorDoc.exists) {
+        final floorNum = roomData['floor'] as int? ?? 0;
+        transaction.set(floorRef, {
+          'id': floorId,
+          'propertyId': propertyId,
+          'name': floorNum == 0 ? 'Ground Floor' : 'Floor $floorNum',
+          'floorNumber': floorNum,
+          'status': 'Active',
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
 
-    // Generate beds
-    final roomNumber = roomData['roomNumber'] ?? 'Room';
-    for (int i = 1; i <= bedCount; i++) {
-      final bedId = _db
-          .collection('properties')
-          .doc(propertyId)
-          .collection('beds')
-          .doc()
-          .id;
-      final bedRef = _db
-          .collection('properties')
-          .doc(propertyId)
-          .collection('beds')
-          .doc(bedId);
-      final nestedBedRef = _db
-          .collection('properties')
-          .doc(propertyId)
-          .collection('rooms')
-          .doc(roomId)
-          .collection('beds')
-          .doc(bedId);
-      final flatBedRef = _db.collection('beds').doc(bedId);
+      // 2. Set Room in both nested and flat locations
+      transaction.set(roomRef, roomPayload, SetOptions(merge: true));
+      transaction.set(flatRoomRef, roomPayload, SetOptions(merge: true));
 
-      final bedLabel =
-          (numberingSystem == 'Alpha-Numeric' || numberingSystem == 'Custom')
-              ? 'B$i'
-              : '$roomNumber-B$i';
+      // 3. Generate and set Beds
+      final roomNumber = roomData['roomNumber'] ?? 'Room';
+      for (int i = 1; i <= bedCount; i++) {
+        final bedId = _db.collection('beds').doc().id;
+        final bedRef = _db.collection('properties').doc(propertyId).collection('beds').doc(bedId);
+        final nestedBedRef = roomRef.collection('beds').doc(bedId);
+        final flatBedRef = _db.collection('beds').doc(bedId);
 
-      final bedPayload = {
-        'id': bedId,
-        'bedId': bedId,
-        'bedNumber': bedLabel,
-        'roomId': roomId,
-        'floorId': floorId,
-        'propertyId': propertyId,
-        'status': 'available',
-        'currentResidentId': null,
-        'createdAt': FieldValue.serverTimestamp(),
+        final bedLabel = (numberingSystem == 'Alpha-Numeric' || numberingSystem == 'Custom')
+            ? 'B$i'
+            : '$roomNumber-B$i';
+
+        final bedPayload = {
+          'id': bedId,
+          'bedId': bedId,
+          'bedNumber': bedLabel,
+          'roomId': roomId,
+          'floorId': floorId,
+          'propertyId': propertyId,
+          'status': 'available',
+          'currentResidentId': null,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+
+        transaction.set(bedRef, bedPayload, SetOptions(merge: true));
+        transaction.set(nestedBedRef, bedPayload, SetOptions(merge: true));
+        transaction.set(flatBedRef, bedPayload, SetOptions(merge: true));
+      }
+
+      // 4. Atomic Stat Update
+      transaction.set(statsRef, {
+        'totalBeds': FieldValue.increment(bedCount),
+        'availableBeds': FieldValue.increment(bedCount),
+        'availableRooms': FieldValue.increment(1),
         'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      batch.set(bedRef, bedPayload, SetOptions(merge: true));
-      batch.set(nestedBedRef, bedPayload, SetOptions(merge: true));
-      batch.set(flatBedRef, bedPayload, SetOptions(merge: true));
-    }
-
-    await batch.commit();
+      }, SetOptions(merge: true));
+    });
   }
 
   /// Updates room details (type, amenities, area, status) and syncs to both
@@ -391,11 +563,11 @@ class PropertyStructureService {
       for (final doc in snapshot.docs) {
         final status = (doc.data()['status'] ?? 'available').toString().toLowerCase();
         total++;
-        if (status == 'available') available++;
-        else if (status == 'occupied') occupied++;
-        else if (status == 'maintenance') maintenance++;
-        else if (status == 'blocked') blocked++;
-        else if (status == 'reserved' || status == 'booked') booked++;
+        if (status == 'available') { available++; }
+        else if (status == 'occupied') { occupied++; }
+        else if (status == 'maintenance') { maintenance++; }
+        else if (status == 'blocked') { blocked++; }
+        else if (status == 'reserved' || status == 'booked') { booked++; }
       }
 
       return InventorySummary(

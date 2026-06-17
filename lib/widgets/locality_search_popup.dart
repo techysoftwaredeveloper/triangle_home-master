@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 class LocalitySearchPopup extends StatefulWidget {
-  final List<String> localities;
+  final List<Map<String, dynamic>> localities;
   final List<String> selectedLocalities;
   final Function(String) onLocalityToggled;
 
@@ -20,6 +20,13 @@ class LocalitySearchPopup extends StatefulWidget {
 class _LocalitySearchPopupState extends State<LocalitySearchPopup> {
   String _searchQuery = '';
   final TextEditingController _controller = TextEditingController();
+  late List<String> _tempSelectedLocalities;
+
+  @override
+  void initState() {
+    super.initState();
+    _tempSelectedLocalities = List.from(widget.selectedLocalities);
+  }
 
   @override
   void dispose() {
@@ -31,7 +38,12 @@ class _LocalitySearchPopupState extends State<LocalitySearchPopup> {
   Widget build(BuildContext context) {
     final filteredLocalities =
         widget.localities
-            .where((l) => l.toLowerCase().contains(_searchQuery.toLowerCase()))
+            .where((l) {
+              final name = l['name']?.toString().toLowerCase() ?? '';
+              final hub = l['hub']?.toString().toLowerCase() ?? '';
+              final query = _searchQuery.toLowerCase();
+              return name.contains(query) || hub.contains(query);
+            })
             .toList();
 
     return DraggableScrollableSheet(
@@ -165,13 +177,38 @@ class _LocalitySearchPopupState extends State<LocalitySearchPopup> {
                         );
                       }
 
-                      final locality = filteredLocalities[index];
-                      final isSelected = widget.selectedLocalities.contains(
+                      final localityMap = filteredLocalities[index];
+                      final locality = localityMap['name'] as String;
+                      final hub = localityMap['hub'] as String?;
+                      final type = localityMap['type'] as String? ?? 'General';
+                      
+                      final isSelected = _tempSelectedLocalities.contains(
                         locality,
                       );
 
+                      IconData getIcon() {
+                        if (type.toLowerCase().contains('college')) {
+                          return Icons.school_rounded;
+                        }
+                        if (type.toLowerCase().contains('industrial') || 
+                            type.toLowerCase().contains('hub') ||
+                            type.toLowerCase().contains('park')) {
+                          return Icons.business_rounded;
+                        }
+                        return Icons.location_on_rounded;
+                      }
+
                       return InkWell(
-                        onTap: () => widget.onLocalityToggled(locality),
+                        onTap: () {
+                          setState(() {
+                            if (isSelected) {
+                              _tempSelectedLocalities.remove(locality);
+                            } else if (_tempSelectedLocalities.length < 5) {
+                              _tempSelectedLocalities.add(locality);
+                            }
+                          });
+                          widget.onLocalityToggled(locality);
+                        },
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           decoration: const BoxDecoration(
@@ -193,7 +230,7 @@ class _LocalitySearchPopupState extends State<LocalitySearchPopup> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
-                                  Icons.location_on_rounded,
+                                  getIcon(),
                                   color:
                                       isSelected
                                           ? AppTheme.primaryColor
@@ -203,20 +240,36 @@ class _LocalitySearchPopupState extends State<LocalitySearchPopup> {
                               ),
                               const SizedBox(width: 16),
                               Expanded(
-                                child: Text(
-                                  locality,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight:
-                                        isSelected
-                                            ? FontWeight.w600
-                                            : FontWeight.w500,
-                                    fontFamily: 'Outfit',
-                                    color:
-                                        isSelected
-                                            ? AppTheme.primaryColor
-                                            : AppTheme.textColor,
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      locality,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight:
+                                            isSelected
+                                                ? FontWeight.w600
+                                                : FontWeight.w500,
+                                        fontFamily: 'Outfit',
+                                        color:
+                                            isSelected
+                                                ? AppTheme.primaryColor
+                                                : AppTheme.textColor,
+                                      ),
+                                    ),
+                                    if (hub != null)
+                                      Text(
+                                        'Near $hub',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey[500],
+                                          fontFamily: 'Outfit',
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                  ],
                                 ),
                               ),
                               if (isSelected)

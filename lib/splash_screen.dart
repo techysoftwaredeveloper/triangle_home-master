@@ -7,10 +7,10 @@ import 'package:triangle_home/screens/admin/admin_dashboard_redesign.dart';
 import 'package:triangle_home/screens/hoster/partner_onboarding_screen.dart';
 import 'package:triangle_home/services/auth_production_service.dart';
 import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
-import 'package:triangle_home/screens/list_property/list_property_screen.dart';
 import 'package:triangle_home/services/isar_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -25,7 +25,23 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkAuth();
+    _initializeSplash();
+  }
+
+  Future<void> _initializeSplash() async {
+    await _requestLocationPermission();
+    await _checkAuth();
+  }
+
+  Future<void> _requestLocationPermission() async {
+    try {
+      final status = await Permission.location.status;
+      if (status.isDenied) {
+        await Permission.location.request();
+      }
+    } catch (e) {
+      debugPrint('Error requesting location permission: $e');
+    }
   }
 
   Future<void> _checkAuth() async {
@@ -64,7 +80,7 @@ class _SplashScreenState extends State<SplashScreen> {
       }
 
       // 2. Check for active hoster workflow drafts & requests
-      final propertyDraft = await _isarService.getPropertyDraft(uid);
+      await _isarService.getPropertyDraft(uid);
       final hosterAppDraft = await _isarService.getAdminCache(
         'partner_onboarding_draft_$uid',
       );
@@ -104,6 +120,7 @@ class _SplashScreenState extends State<SplashScreen> {
         // Rejected users need the dashboard to see the feedback banner.
         if (isApproved || onboardingStatus == 'submitted' || status == 'rejected') {
           await _isarService.clearAdminCache('partner_onboarding_draft_$uid');
+          if (!mounted) return;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => HosterDashboardScreen()),

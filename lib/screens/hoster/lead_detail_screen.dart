@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:triangle_home/models/lead.dart';
-import 'package:triangle_home/services/lead_service.dart';
 
 class LeadDetailScreen extends StatefulWidget {
   final Lead lead;
@@ -13,7 +12,6 @@ class LeadDetailScreen extends StatefulWidget {
 }
 
 class _LeadDetailScreenState extends State<LeadDetailScreen> {
-  final LeadService _leadService = LeadService();
 
   @override
   Widget build(BuildContext context) {

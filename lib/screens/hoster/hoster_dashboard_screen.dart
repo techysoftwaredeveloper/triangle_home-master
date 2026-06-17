@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:triangle_home/screens/hoster/hoster_profile_screen.dart';
@@ -173,7 +173,7 @@ class _HosterDashboardScreenState extends State<HosterDashboardScreen> {
   }
 }
 
-// ── Dashboard Tab ────────────────────────────────────────────────────────────
+// â”€â”€ Dashboard Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _DashboardTab extends StatelessWidget {
   final String uid;
   final HosterService hosterService;
@@ -274,7 +274,7 @@ class _DashboardTab extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Good Morning, $name 👋',
+                  'Good Morning, $name ðŸ‘‹',
                   style: const TextStyle(
                     color: Color(0xFF1E293B),
                     fontSize: 16,
@@ -508,14 +508,14 @@ class _DashboardTab extends StatelessWidget {
   }
 
   String _joinedDate(Map? property) {
-    if (property == null) return '—';
+    if (property == null) return 'â€”';
     final ts = property['createdAt'];
     if (ts is Timestamp) {
       final d = ts.toDate();
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       return '${months[d.month - 1]} ${d.year}';
     }
-    return '—';
+    return 'â€”';
   }
 
   Widget _buildCircularOccupancy(int value) {
@@ -676,7 +676,7 @@ class _DashboardTab extends StatelessWidget {
         ),
         _overviewCard(
           'Monthly Revenue',
-          '₹${(data['monthlyRevenue'] ?? 0).toString()}',
+          'â‚¹${(data['monthlyRevenue'] ?? 0).toString()}',
           '',
           true,
         ),
@@ -896,9 +896,9 @@ class _DashboardTab extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               _propStat(propStatus, 'Status'),
-                              _propStat(p['city']?.toString() ?? '—', 'City'),
+                              _propStat(p['city']?.toString() ?? 'â€”', 'City'),
                               _propStat(
-                                '₹${(p['monthlyRent'] ?? p['price'] ?? 0).toString()}',
+                                'â‚¹${(p['monthlyRent'] ?? p['price'] ?? 0).toString()}',
                                 'Rent/mo',
                               ),
                             ],
@@ -997,7 +997,7 @@ class _DashboardTab extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '₹${(data['monthlyRevenue'] ?? 0).toString()}',
+            'â‚¹${(data['monthlyRevenue'] ?? 0).toString()}',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -1381,7 +1381,7 @@ class _DashboardTab extends StatelessWidget {
   }
 }
 
-// ── Properties Tab ────────────────────────────────────────────────────────────
+// â”€â”€ Properties Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _PropertiesTab extends StatefulWidget {
   final String uid;
   final PropertyService propertyService;
@@ -1788,7 +1788,6 @@ class _EnhancedPropertyCard extends StatelessWidget {
     final statusColor = isActive ? const Color(0xFF16A34A) : isUnderReview ? const Color(0xFFD97706) : const Color(0xFF64748B);
     final statusBg = isActive ? const Color(0xFFDCFCE7) : isUnderReview ? const Color(0xFFFEF3C7) : const Color(0xFFF1F5F9);
 
-    final int totalCapacity = _parseNum(details['totalCapacity'] ?? data['capacity']).toInt();
     final double monthlyRent = _parseNum(data['monthlyRent'] ?? data['price']).toDouble();
 
     return Container(
@@ -1904,7 +1903,7 @@ class _EnhancedPropertyCard extends StatelessWidget {
                               _miniStat('$occupancyPercent%', 'Occupancy', const Color(0xFF16A34A)),
                               _miniStat('$vacantBeds', 'Vacant Beds', const Color(0xFF1E293B)),
                               _miniStat('$activeResidents', 'Residents', const Color(0xFF1E293B)),
-                              _miniStat('₹${(monthlyRent / 1000).toStringAsFixed(1)}k', 'Monthly Rent', const Color(0xFF16A34A)),
+                              _miniStat('â‚¹${(monthlyRent / 1000).toStringAsFixed(1)}k', 'Monthly Rent', const Color(0xFF16A34A)),
                             ],
                           ),
                         ],
@@ -2010,7 +2009,7 @@ class _EnhancedPropertyCard extends StatelessWidget {
   }
 }
 
-// ── Bookings Tab ──────────────────────────────────────────────────────────────
+// â”€â”€ Bookings Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _BookingsTab extends StatefulWidget {
   final String uid;
   final BookingService bookingService;
@@ -2363,7 +2362,6 @@ class _EnhancedBookingCard extends StatelessWidget {
     final isConfirmed = status == 'confirmed';
     final isUpcoming = status == 'pending';
     final isCompleted = status == 'completed';
-    final isCancelled = status == 'cancelled';
 
     final statusLabel = status.toUpperCase();
     final statusColor = isConfirmed ? const Color(0xFF2563EB) : isUpcoming ? const Color(0xFFD97706) : isCompleted ? const Color(0xFF16A34A) : const Color(0xFFEF4444);
@@ -2471,7 +2469,7 @@ class _EnhancedBookingCard extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text('₹${(rent / 1000).toStringAsFixed(1)}k', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+                      Text('â‚¹${(rent / 1000).toStringAsFixed(1)}k', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
                       const Text('Monthly Rent', style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
                     ],
                   ),
@@ -2957,7 +2955,7 @@ class _LeadCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _leadInfoItem('Sharing Preference', lead.preferredSharing ?? 'Double Sharing'),
-                  _leadInfoItem('Budget Range', lead.budgetRange ?? '₹7,000 - ₹9,000'),
+                  _leadInfoItem('Budget Range', lead.budgetRange ?? 'â‚¹7,000 - â‚¹9,000'),
                   const SizedBox(width: 80), // Placeholder
                 ],
               ),
@@ -3043,43 +3041,5 @@ class _LeadCard extends StatelessWidget {
       default:
         return status.name.toUpperCase();
     }
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  final String status;
-  const _StatusChip({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    Color color;
-    switch (status.toLowerCase()) {
-      case 'confirmed':
-        color = AppTheme.successColor;
-        break;
-      case 'rejected':
-      case 'cancelled':
-        color = AppTheme.errorColor;
-        break;
-      default:
-        color = AppTheme.warningColor;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        status.toUpperCase(),
-        style: TextStyle(
-          fontSize: 10,
-          color: color,
-          fontWeight: FontWeight.bold,
-          fontFamily: AppTheme.fontFamily,
-        ),
-      ),
-    );
   }
 }

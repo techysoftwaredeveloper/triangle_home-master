@@ -35,6 +35,14 @@ class AppCheckInitializer {
 
       debugPrint('✅ Firebase App Check initialized');
     } catch (e, s) {
+      if (e.toString().contains('DEVELOPER_ERROR') || 
+          e.toString().contains('10') || 
+          e.toString().contains('FirebaseException')) {
+        debugPrint('❌ App Check: DEVELOPER_ERROR (10) or configuration issue detected.');
+        debugPrint('👉 This usually means SHA-1 mismatch or Play Integrity API is not enabled.');
+        debugPrint('👉 Check Firebase Console > Project Settings > App Check.');
+        debugPrint('👉 See: .artifacts/20260616-231728-53265fce-2239-4020-a96c-4228db301542/app_check_troubleshooting.artifact.md');
+      }
       debugPrint('❌ App Check init failed: $e');
       debugPrint('$s');
     }

@@ -4,23 +4,13 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:triangle_home/core/app_config.dart';
 
 class AdminApiService {
-  /// NETWORK CONFIGURATION
-  /// Default: 10.0.2.2 for Android Emulators, localhost for Web/iOS/Desktop.
-  /// If using a physical Android device, replace '10.0.2.2' with your Machine's Local IP.
-  static const String _customPhysicalIp = '192.168.31.25'; // Set your IP here
-  
-  static String get _host {
-    if (kIsWeb) return 'localhost';
-    if (Platform.isAndroid) {
-      // Use custom local IP to support both physical devices and emulators
-      return _customPhysicalIp; 
-    }
-    return 'localhost';
-  }
-
-  final String baseUrl = 'http://$_host:5000/api';
+  /// Base URL is resolved from AppConfig based on the current environment.
+  /// - Dev: http://192.168.31.25:5000 (local server)
+  /// - Prod: https://api.trianglehomes.com
+  String get baseUrl => '${AppConfig.apiBaseUrl}/api';
 
   Future<String?> _getToken() async {
     return await FirebaseAuth.instance.currentUser?.getIdToken();
@@ -29,6 +19,10 @@ class AdminApiService {
   Future<Map<String, String>> _getHeaders() async {
     final token = await _getToken();
     final appCheckToken = await FirebaseAppCheck.instance.getToken();
+    
+    if (appCheckToken == null && !kDebugMode) {
+      debugPrint('⚠️ [API] Warning: App Check token is null. Request will likely fail on production server.');
+    }
 
     return {
       'Authorization': 'Bearer $token',
@@ -38,7 +32,7 @@ class AdminApiService {
   }
 
   /// UNIFIED REQUEST WRAPPER WITH DIAGNOSTICS
-  Future<dynamic> _performRequest({
+  Future<dynamic> performRequest({
     required String method,
     required String endpoint,
     Map<String, dynamic>? body,
@@ -75,7 +69,7 @@ class AdminApiService {
     } catch (e) {
       if (e is SocketException || e is http.ClientException) {
         debugPrint('⚠️ [API] CONNECTION FAILED: $method $url');
-        debugPrint('👉 HINT: Check if server is running on port 5000 and if bridge IP ($_host) is correct.');
+        debugPrint('👉 HINT: Check if server is running at $baseUrl');
       } else {
         debugPrint('🚨 [API] UNEXPECTED ERROR: $e');
       }
@@ -94,14 +88,14 @@ class AdminApiService {
 
   // Statistics
   Future<Map<String, dynamic>> getStats() async {
-    final data = await _performRequest(method: 'GET', endpoint: '/admin/stats');
+    final data = await performRequest(method: 'GET', endpoint: '/admin/stats');
     if (data['success'] == true) return data;
     throw Exception(data['error'] ?? 'Failed to load stats');
   }
 
   // Users
   Future<Map<String, dynamic>> getAllUsers() async {
-    final data = await _performRequest(method: 'GET', endpoint: '/admin/users');
+    final data = await performRequest(method: 'GET', endpoint: '/admin/users');
     if (data['success'] == true) return data;
     throw Exception(data['error'] ?? 'Failed to load users');
   }
@@ -111,7 +105,7 @@ class AdminApiService {
     String? status,
     bool? isActive,
   }) async {
-    await _performRequest(
+    await performRequest(
       method: 'POST',
       endpoint: '/admin/users/toggle-status',
       body: {
@@ -123,7 +117,7 @@ class AdminApiService {
   }
 
   Future<void> updateUserRole(String userId, String role) async {
-    await _performRequest(
+    await performRequest(
       method: 'PATCH',
       endpoint: '/admin/users/$userId/role',
       body: {'role': role},
@@ -132,12 +126,12 @@ class AdminApiService {
 
   // Properties
   Future<List<Map<String, dynamic>>> getAllProperties() async {
-    final List data = await _performRequest(method: 'GET', endpoint: '/admin/properties');
+    final List data = await performRequest(method: 'GET', endpoint: '/admin/properties');
     return data.cast<Map<String, dynamic>>();
   }
 
   Future<void> updatePropertyStatus(String propertyId, String status) async {
-    await _performRequest(
+    await performRequest(
       method: 'PATCH',
       endpoint: '/admin/properties/$propertyId/status',
       body: {'status': status},
@@ -145,7 +139,7 @@ class AdminApiService {
   }
 
   Future<Map<String, dynamic>> reconcileProperty(String propertyId) async {
-    return await _performRequest(
+    return await performRequest(
       method: 'POST',
       endpoint: '/properties/$propertyId/reconcile',
     );
@@ -153,23 +147,23 @@ class AdminApiService {
 
   // Bookings
   Future<List<Map<String, dynamic>>> getAllBookings() async {
-    final List data = await _performRequest(method: 'GET', endpoint: '/admin/bookings');
+    final List data = await performRequest(method: 'GET', endpoint: '/admin/bookings');
     return data.cast<Map<String, dynamic>>();
   }
 
   // Hoster Approval
   Future<void> approveHoster(String hosterId) async {
-    await _performRequest(method: 'POST', endpoint: '/admin/hosters/$hosterId/approve');
+    await performRequest(method: 'POST', endpoint: '/admin/hosters/$hosterId/approve');
   }
 
   // Hoster Re-submission
   Future<void> resubmitHoster() async {
-    await _performRequest(method: 'POST', endpoint: '/admin/resubmit-hoster');
+    await performRequest(method: 'POST', endpoint: '/admin/resubmit-hoster');
   }
 
   // Suggestions
   Future<void> updateSuggestionStatus(String id, String status) async {
-    await _performRequest(
+    await performRequest(
       method: 'PATCH',
       endpoint: '/admin/suggestions/$id/status',
       body: {'status': status},
@@ -177,7 +171,7 @@ class AdminApiService {
   }
 
   Future<void> convertSuggestion(String id) async {
-    await _performRequest(method: 'POST', endpoint: '/suggestions/$id/convert');
+    await performRequest(method: 'POST', endpoint: '/suggestions/$id/convert');
   }
 
   // Reports
@@ -186,7 +180,7 @@ class AdminApiService {
     String status, {
     String? resolution,
   }) async {
-    await _performRequest(
+    await performRequest(
       method: 'PATCH',
       endpoint: '/admin/reports/$id/status',
       body: {

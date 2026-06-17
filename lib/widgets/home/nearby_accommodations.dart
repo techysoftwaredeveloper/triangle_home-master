@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:triangle_home/widgets/home/premium_property_card.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 

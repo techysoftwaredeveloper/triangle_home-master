@@ -316,7 +316,14 @@ class _CheckInVerificationSheetState extends State<_CheckInVerificationSheet> {
                       data: widget.bookingId,
                       version: QrVersions.auto,
                       size: 200.0,
-                      foregroundColor: AppTheme.textDarkColor,
+                      eyeStyle: const QrEyeStyle(
+                        eyeShape: QrEyeShape.square,
+                        color: AppTheme.textDarkColor,
+                      ),
+                      dataModuleStyle: const QrDataModuleStyle(
+                        dataModuleShape: QrDataModuleShape.square,
+                        color: AppTheme.textDarkColor,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     const Text(

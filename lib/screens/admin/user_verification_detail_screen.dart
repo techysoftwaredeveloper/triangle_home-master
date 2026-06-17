@@ -3,7 +3,6 @@ import 'package:triangle_home/services/admin_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
-import 'package:triangle_home/theme/app_theme.dart';
 
 class UserVerificationDetailScreen extends StatefulWidget {
   final Map<String, dynamic> request;
@@ -371,6 +370,7 @@ class _UserVerificationDetailScreenState extends State<UserVerificationDetailScr
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
+              final messenger = ScaffoldMessenger.of(this.context);
               setState(() => _isProcessing = true);
               try {
                 await FirebaseFirestore.instance.collection('users').doc(uid).set({
@@ -382,11 +382,11 @@ class _UserVerificationDetailScreenState extends State<UserVerificationDetailScr
                   }
                 }, SetOptions(merge: true));
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request rejected')));
-                  Navigator.pop(context);
+                  messenger.showSnackBar(const SnackBar(content: Text('Request rejected')));
+                  Navigator.pop(this.context);
                 }
               } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                if (mounted) messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
               } finally {
                 if (mounted) setState(() => _isProcessing = false);
               }

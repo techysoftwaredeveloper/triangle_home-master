@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:triangle_home/core/app_config.dart';
 import 'package:triangle_home/core/bootstrap/app_check_initializer.dart';
 import 'package:triangle_home/splash_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
@@ -32,6 +34,14 @@ void main() async {
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // Initialize App Check immediately after Firebase
+  await AppCheckInitializer.initialize();
+
+  // Set environment based on build mode (dev for debug, prod for release)
+  AppConfig.initialize(
+    env: kReleaseMode ? Environment.prod : Environment.dev,
+  );
+
   // Initialize App Check
   await AppCheckInitializer.initialize();
 
@@ -58,7 +68,6 @@ class TriangleHomes extends StatelessWidget {
         Locale('en', 'US'), // English, American
       ],
       home: const SplashScreen(),
-      //home: AdminToolsScreen(),
     );
   }
 }

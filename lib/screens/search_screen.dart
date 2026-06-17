@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:triangle_home/search_results_screen.dart';
-import 'package:triangle_home/services/firebase_service.dart';
+import 'package:triangle_home/services/property_service.dart';
+import 'package:triangle_home/widgets/locality_search_popup.dart';
+import 'package:triangle_home/providers/location_provider.dart';
+import 'package:triangle_home/providers/property_provider.dart';
+import 'package:triangle_home/models/search_filter.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
-class SearchScreen extends StatefulWidget {
+class SearchScreen extends ConsumerStatefulWidget {
   final String? initialSearchType;
   final String? initialAccommodationType;
   final String? initialTenantType;
@@ -16,14 +21,14 @@ class SearchScreen extends StatefulWidget {
   });
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
-  final FirebaseService _firebaseService = FirebaseService();
+class _SearchScreenState extends ConsumerState<SearchScreen> {
+  final PropertyService _propertyService = PropertyService();
 
   List<String> _cities = [];
-  List<String> _localities = [];
+  List<Map<String, dynamic>> _localities = [];
   List<String> _colleges = [];
 
   String _selectedCity = '';
@@ -43,18 +48,34 @@ class _SearchScreenState extends State<SearchScreen> {
     _selectedAccommodationType =
         widget.initialAccommodationType ?? 'Paying Guest Hostels';
     _selectedTenantType = widget.initialTenantType ?? 'Anyone';
+    
     _loadInitialData();
+  }
+
+  void _updateGlobalFilter() {
+     ref.read(searchFilterProvider.notifier).state = SearchFilter(
+        city: _selectedCity,
+        localities: _selectedLocalities,
+        college: _selectedSearchType == 'By College' ? _selectedCollege : '',
+        accommodationType: _selectedAccommodationType,
+        tenantType: _selectedTenantType,
+        roomType: _selectedRoomType,
+      );
   }
 
   Future<void> _loadInitialData() async {
     try {
-      final cities = await _firebaseService.getCities();
-      final colleges = await _firebaseService.getColleges();
+      final cities = await _propertyService.getCities();
+      final colleges = await _propertyService.getColleges();
+
+      final globalCity = ref.read(locationProvider).selectedCity;
 
       setState(() {
         _cities = cities;
         _colleges = colleges;
-        if (cities.isNotEmpty) {
+        if (globalCity.isNotEmpty && cities.contains(globalCity)) {
+          _selectedCity = globalCity;
+        } else if (cities.isNotEmpty) {
           _selectedCity = cities.first;
         }
         _isLoading = false;
@@ -73,7 +94,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _loadLocalities(String city) async {
     try {
-      final localities = await _firebaseService.getLocalities(city);
+      final localities = await _propertyService.getLocalities(city);
       setState(() {
         _localities = localities;
       });
@@ -97,119 +118,22 @@ class _SearchScreenState extends State<SearchScreen> {
         backgroundColor: Colors.transparent,
         isScrollControlled: true,
         builder:
-            (context) => _buildLocalitySelectionSheet(),
+            (context) => LocalitySearchPopup(
+              localities: _localities,
+              selectedLocalities: _selectedLocalities,
+              onLocalityToggled: (locality) {
+                setState(() {
+                  if (_selectedLocalities.contains(locality)) {
+                    _selectedLocalities.remove(locality);
+                  } else if (_selectedLocalities.length < 5) {
+                    _selectedLocalities.add(locality);
+                  }
+                });
+                _updateGlobalFilter();
+              },
+            ),
       );
     }
-  }
-
-  Widget _buildLocalitySelectionSheet() {
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.6,
-      maxChildSize: 0.9,
-      minChildSize: 0.4,
-      builder:
-          (_, controller) => Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 12, 12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Select Locality',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1E293B),
-                          fontFamily: 'Outfit',
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.close,
-                          color: Color(0xFF64748B),
-                          size: 22,
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child:
-                      _localities.isEmpty
-                          ? const Center(child: Text('No localities available'))
-                          : ListView.builder(
-                            controller: controller,
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            itemCount: _localities.length,
-                            itemBuilder: (context, index) {
-                              final locality = _localities[index];
-                              final isSelected = _selectedLocalities.contains(
-                                locality,
-                              );
-
-                              return Material(
-                                color: Colors.transparent,
-                                child: ListTile(
-                                  title: Text(
-                                    locality,
-                                    style: TextStyle(
-                                      color:
-                                          isSelected
-                                              ? AppTheme.primaryColor
-                                              : const Color(0xFF334155),
-                                      fontWeight:
-                                          isSelected
-                                              ? FontWeight.w600
-                                              : FontWeight.w400,
-                                      fontFamily: 'Outfit',
-                                    ),
-                                  ),
-                                  trailing:
-                                      isSelected
-                                          ? const Icon(
-                                            Icons.check_circle,
-                                            color: AppTheme.primaryColor,
-                                          )
-                                          : null,
-                                  onTap: () {
-                                    setState(() {
-                                      if (isSelected) {
-                                        _selectedLocalities.remove(locality);
-                                      } else if (_selectedLocalities.length <
-                                          5) {
-                                        _selectedLocalities.add(locality);
-                                      } else {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'You can select up to 5 localities',
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    });
-                                    Navigator.pop(context);
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                ),
-              ],
-            ),
-          ),
-    );
   }
 
   Widget _buildCollegeSelectionSheet() {
@@ -347,6 +271,7 @@ class _SearchScreenState extends State<SearchScreen> {
         setState(() {
           _selectedCollege = college;
         });
+        _updateGlobalFilter();
         Navigator.pop(context);
       },
       child: Container(
@@ -439,6 +364,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   setState(() {
                     _selectedCollege = inst['name']!;
                   });
+                  _updateGlobalFilter();
                   Navigator.pop(context);
                 },
                 child: Row(
@@ -540,6 +466,8 @@ class _SearchScreenState extends State<SearchScreen> {
         (_selectedSearchType == 'By Area' && _selectedLocalities.isEmpty) ||
         (_selectedSearchType == 'By College' && _selectedCollege.isEmpty);
 
+    final streamAsync = ref.watch(filteredPropertiesStreamProvider);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -614,26 +542,51 @@ class _SearchScreenState extends State<SearchScreen> {
           ],
         ),
         child: SafeArea(
-          child: ElevatedButton(
-            onPressed: isSearchDisabled ? null : _handleSearch,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              disabledBackgroundColor: const Color(0xFFE2E8F0),
-              minimumSize: const Size(double.infinity, 54),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!isSearchDisabled) 
+                streamAsync.when(
+                  data: (results) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      '${results.length} properties matching your criteria',
+                      style: const TextStyle(
+                        color: AppTheme.accentColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
+                  ),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: SizedBox(height: 2, width: 100, child: LinearProgressIndicator()),
+                  ),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+              ElevatedButton(
+                onPressed: isSearchDisabled ? null : _handleSearch,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  disabledBackgroundColor: const Color(0xFFE2E8F0),
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  'Search',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Outfit',
+                    color: isSearchDisabled ? Colors.black26 : Colors.white,
+                  ),
+                ),
               ),
-              elevation: 0,
-            ),
-            child: Text(
-              'Search',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Outfit',
-                color: isSearchDisabled ? Colors.black26 : Colors.white,
-              ),
-            ),
+            ],
           ),
         ),
       ),
@@ -692,6 +645,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             _selectedLocalities.clear();
                           });
                           _loadLocalities(city);
+                          _updateGlobalFilter();
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -734,18 +688,24 @@ class _SearchScreenState extends State<SearchScreen> {
             children: [
               Expanded(
                 child: _buildToggleTab(
-                  'By Area',
-                  _selectedSearchType == 'By Area',
-                  () => setState(() => _selectedSearchType = 'By Area'),
-                ),
+                'By Area',
+                _selectedSearchType == 'By Area',
+                () {
+                  setState(() => _selectedSearchType = 'By Area');
+                  _updateGlobalFilter();
+                },
+              ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildToggleTab(
-                  'By College',
-                  _selectedSearchType == 'By College',
-                  () => setState(() => _selectedSearchType = 'By College'),
-                ),
+                'By College',
+                _selectedSearchType == 'By College',
+                () {
+                  setState(() => _selectedSearchType = 'By College');
+                  _updateGlobalFilter();
+                },
+              ),
               ),
             ],
           ),
@@ -837,6 +797,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                   setState(() {
                                     _selectedLocalities.remove(locality);
                                   });
+                                  _updateGlobalFilter();
                                 },
                                 child: const Icon(
                                   Icons.close,
@@ -972,9 +933,12 @@ class _SearchScreenState extends State<SearchScreen> {
                 child: _buildPreferenceButton(
                   'Paying Guest Hostels',
                   _selectedAccommodationType == 'Paying Guest Hostels',
-                  () => setState(
-                    () => _selectedAccommodationType = 'Paying Guest Hostels',
-                  ),
+                  () {
+                    setState(
+                      () => _selectedAccommodationType = 'Paying Guest Hostels',
+                    );
+                    _updateGlobalFilter();
+                  },
                 ),
               ),
               const SizedBox(width: 12),
@@ -982,8 +946,10 @@ class _SearchScreenState extends State<SearchScreen> {
                 child: _buildPreferenceButton(
                   'Apartments',
                   _selectedAccommodationType == 'Apartments',
-                  () =>
-                      setState(() => _selectedAccommodationType = 'Apartments'),
+                  () {
+                      setState(() => _selectedAccommodationType = 'Apartments');
+                      _updateGlobalFilter();
+                  },
                 ),
               ),
             ],
@@ -1010,7 +976,10 @@ class _SearchScreenState extends State<SearchScreen> {
                       child: _buildPreferenceButton(
                         'Man',
                         _selectedTenantType == 'Man',
-                        () => setState(() => _selectedTenantType = 'Man'),
+                        () {
+                          setState(() => _selectedTenantType = 'Man');
+                          _updateGlobalFilter();
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1018,7 +987,10 @@ class _SearchScreenState extends State<SearchScreen> {
                       child: _buildPreferenceButton(
                         'Woman',
                         _selectedTenantType == 'Woman',
-                        () => setState(() => _selectedTenantType = 'Woman'),
+                        () {
+                          setState(() => _selectedTenantType = 'Woman');
+                          _updateGlobalFilter();
+                        },
                       ),
                     ),
                   ],
@@ -1027,7 +999,10 @@ class _SearchScreenState extends State<SearchScreen> {
                 _buildPreferenceButton(
                   'Anyone',
                   _selectedTenantType == 'Anyone',
-                  () => setState(() => _selectedTenantType = 'Anyone'),
+                  () {
+                    setState(() => _selectedTenantType = 'Anyone');
+                    _updateGlobalFilter();
+                  },
                 ),
               ],
             ),
@@ -1078,7 +1053,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     options.map((type) {
                       final isSelected = _selectedRoomType == type;
                       return InkWell(
-                        onTap: () => setState(() => _selectedRoomType = type),
+                        onTap: () {
+                          setState(() => _selectedRoomType = type);
+                          _updateGlobalFilter();
+                        },
                         borderRadius: BorderRadius.circular(10),
                         child: Container(
                           width: itemWidth,

@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/models/escrow_record.dart';
+import 'package:triangle_home/services/admin_api_service.dart';
 
 class EscrowService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AdminApiService _apiService = AdminApiService();
 
-  /// Creates an escrow record for a booking with automated commission calculation
+  /// Creates an escrow record via the API
   Future<void> createEscrow({
     required String bookingId,
     required double deposit,
@@ -13,42 +15,21 @@ class EscrowService {
     required double platformFee,
     double commissionRate = 25.0,
   }) async {
-    final double gross = deposit + rent + platformFee;
-    final double commissionAmount = (rent * commissionRate) / 100 + platformFee;
-    final double hosterAmount = gross - commissionAmount;
-
-    final record = EscrowRecord(
-      bookingId: bookingId,
-      depositAmount: deposit,
-      rentAmount: rent,
-      platformFeeAmount: platformFee,
-      grossAmount: gross,
-      commissionRate: commissionRate,
-      commissionAmount: commissionAmount,
-      hosterAmount: hosterAmount,
-      status: EscrowStatus.held,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      // MVP Policy: 48h after check-in.
-      // Set to null initially, will be populated by Janitor or explicit Check-in event
-      releaseEligibleAt: null,
-      isFrozen: false,
-      freezeReason: null,
+    final response = await _apiService.performRequest(
+      method: 'POST',
+      endpoint: '/compliance/escrow',
+      body: {
+        'bookingId': bookingId,
+        'deposit': deposit,
+        'rent': rent,
+        'platformFee': platformFee,
+        'commissionRate': commissionRate,
+      },
     );
 
-    await _firestore
-        .collection('escrow')
-        .doc(bookingId)
-        .set(record.toFirestore());
-
-    // Log financial event
-    await _firestore.collection('financial_events').add({
-      'bookingId': bookingId,
-      'event': FinancialEventType.escrowCreated.name,
-      'amount': gross,
-      'performedBy': 'system',
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+    if (response['success'] != true) {
+      throw Exception(response['error'] ?? 'Failed to create escrow');
+    }
   }
 
   /// Checks if a booking is ready for payout (48h after check-in, no disputes, not frozen)

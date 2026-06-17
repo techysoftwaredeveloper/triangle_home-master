@@ -73,8 +73,8 @@ service cloud.firestore {
     // =========================================================
 
     match /users/{userId} {
-      // Own profile OR admin
-      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Allow anyone to check status/profile by ID (prevent permission errors in properties list/details)
+      allow get: if true;
 
       // Admin can list all users
       allow list: if isAdmin();
@@ -179,21 +179,31 @@ service cloud.firestore {
     match /rooms/{roomId} {
       allow read: if true;
       allow create: if isAdmin() || (isSignedIn() && userIsHosterOf(request.resource.data.propertyId));
-      allow update: if isSignedIn() || isAdmin() || userIsHosterOf(resource.data.propertyId);
+      allow update: if isAdmin() || (
+        isSignedIn() &&
+        userIsHosterOf(resource.data.propertyId) &&
+        // Prevent moving room to another property
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['propertyId'])
+      );
       allow delete: if isAdmin() || (isSignedIn() && userIsHosterOf(resource.data.propertyId));
     }
 
     match /beds/{bedId} {
       allow read: if true;
       allow create: if isAdmin() || (isSignedIn() && userIsHosterOf(request.resource.data.propertyId));
-      allow update: if isSignedIn() || isAdmin() || userIsHosterOf(resource.data.propertyId);
+      allow update: if isAdmin() || (
+        isSignedIn() &&
+        userIsHosterOf(resource.data.propertyId) &&
+        // Prevent moving bed to another property or room
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['propertyId', 'roomId'])
+      );
       allow delete: if isAdmin() || (isSignedIn() && userIsHosterOf(resource.data.propertyId));
     }
 
     match /propertyStats/{propertyId} {
       allow read: if true;
-      allow update: if isSignedIn() || isAdmin() || userIsHosterOf(propertyId);
-      allow create, delete: if isAdmin() || userIsHosterOf(propertyId);
+      allow update: if isAdmin() || (isSignedIn() && userIsHosterOf(propertyId));
+      allow create, delete: if isAdmin() || (isSignedIn() && userIsHosterOf(propertyId));
     }
 
     match /bed_reservations/{reservationId} {
@@ -204,7 +214,7 @@ service cloud.firestore {
 
     match /inventory_events/{eventId} {
       allow read: if isAdmin() || (isSignedIn() && userIsHosterOf(resource.data.propertyId));
-      allow create: if isSignedIn();
+      allow create: if isSignedIn() && (isAdmin() || userIsHosterOf(request.resource.data.propertyId));
       allow update, delete: if isAdmin();
     }
 
@@ -228,8 +238,9 @@ service cloud.firestore {
         isAdmin()
       );
 
-      allow create: if isSignedIn() && (request.resource.data.user_id == request.auth.uid || request.resource.data.userId == request.auth.uid);
-      allow update: if isAdmin() || (isSignedIn() && (request.auth.uid == resource.data.user_id || request.auth.uid == resource.data.userId) && (request.resource.data.status == 'cancelled' || request.resource.data.status == 'canceled'));
+      // Clients can no longer create or update bookings directly (must use API)
+      allow create: if false;
+      allow update: if false;
       allow delete: if isSuperAdmin();
     }
 
@@ -458,7 +469,7 @@ service cloud.firestore {
       );
       allow update: if isSignedIn() && (
         isAdmin() ||
-        userIsHosterOf(resource.data.propertyId)
+        userIsHosterOf(request.resource.data.propertyId)
       );
       allow delete: if isAdmin() || (isSignedIn() && userIsHosterOf(resource.data.propertyId));
     }
@@ -475,7 +486,7 @@ service cloud.firestore {
       );
       allow update: if isSignedIn() && (
         isAdmin() ||
-        userIsHosterOf(resource.data.propertyId) ||
+        userIsHosterOf(request.resource.data.propertyId) ||
         request.auth.token.email == resource.data.email
       );
       allow delete: if isAdmin() || (isSignedIn() && userIsHosterOf(resource.data.propertyId));

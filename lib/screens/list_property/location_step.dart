@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/list_property/input_field.dart';
+import 'package:triangle_home/services/location_api_service.dart';
 
 class LocationStep extends StatefulWidget {
   final Function(Map<String, dynamic>) onContinue;
@@ -117,6 +118,12 @@ class _LocationStepState extends State<LocationStep> {
               child: ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
+                    final city = _cityController.text.trim();
+                    final locality = _localityController.text.trim();
+                    if (city.isNotEmpty) {
+                      LocationApiService().addLocation(city: city, locality: locality);
+                    }
+
                     widget.onContinue({
                       'location': {
                         'address': _addressController.text,

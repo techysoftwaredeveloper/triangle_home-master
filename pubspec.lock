@@ -453,10 +453,10 @@ packages:
     dependency: "direct main"
     description:
       name: file_picker
-      sha256: f13a03000d942e476bc1ff0a736d2e9de711d2f89a95cd4c1d88f861c3348387
+      sha256: c904b4ab56d53385563c7c39d8e9fa9af086f91495dfc48717ad84a42c3cf204
       url: "https://pub.dev"
     source: hosted
-    version: "11.0.2"
+    version: "8.1.7"
   file_selector_linux:
     dependency: transitive
     description:
@@ -716,7 +716,7 @@ packages:
     source: sdk
     version: "0.0.0"
   flutter_plugin_android_lifecycle:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: flutter_plugin_android_lifecycle
       sha256: "38d1c268de9097ff59cf0e844ac38759fc78f76836d37edad06fa21e182055a0"
@@ -1581,6 +1581,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.2"
+  pin_input_text_field:
+    dependency: transitive
+    description:
+      name: pin_input_text_field
+      sha256: f45683032283d30b670ec343781660655e3e1953438b281a0bc6e2d358486236
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.5.2"
   platform:
     dependency: transitive
     description:
@@ -1802,6 +1810,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
+  sms_autofill:
+    dependency: "direct main"
+    description:
+      name: sms_autofill
+      sha256: "5c6c5569a310fce12117eaefab5be6e29cc676b635e43be8b70b1946ec21ae91"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.0"
   source_gen:
     dependency: transitive
     description:

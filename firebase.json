@@ -10,7 +10,7 @@
       "android": {
         "default": {
           "projectId": "trianglehome",
-          "appId": "1:318624228870:android:bea08e67e5ed8637ea8587",
+          "appId": "1:318624228870:android:199abed7f2a2285aea8587",
           "fileOutput": "android/app/google-services.json"
         }
       },
@@ -18,7 +18,7 @@
         "lib/firebase_options.dart": {
           "projectId": "trianglehome",
           "configurations": {
-            "android": "1:318624228870:android:bea08e67e5ed8637ea8587",
+            "android": "1:318624228870:android:199abed7f2a2285aea8587",
             "ios": "1:318624228870:ios:081b60a18e363746ea8587",
             "web": "1:318624228870:web:ecd79eaeb323d5d3ea8587"
           }

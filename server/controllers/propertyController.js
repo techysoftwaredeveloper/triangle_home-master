@@ -103,11 +103,20 @@ async function performReconciliation(propertyId) {
                 roomObj.calculatedOccupiedBeds++;
             } else if (status === 'reserved') {
                 roomObj.calculatedReservedBeds++;
+                }
+
+            // NEW: Track minimum bed price for this room to sync with room baseRent
+            const bedRent = parseFloat(bed.monthlyRent || bed.price || 0);
+            if (bedRent > 0) {
+                if (!roomObj.minBedRent || bedRent < roomObj.minBedRent) {
+                    roomObj.minBedRent = bedRent;
+                }
             }
         }
     });
 
     // Reconcile and auto-heal room documents
+    let availableRoomsCount = 0;
     roomsMap.forEach((room, roomId) => {
         let baseRent = parseFloat(room.baseRent || 0);
         let baseDeposit = parseFloat(room.baseDeposit || 0);
@@ -116,7 +125,13 @@ async function performReconciliation(propertyId) {
         let derivedRent = baseRent;
         let derivedDeposit = baseDeposit;
 
-        if (derivedRent === 0) {
+        // Healing logic: if room rent is 0 or suspiciously low (e.g. 15 or 20), derive from beds
+        if (derivedRent < 100 && room.minBedRent >= 100) {
+            derivedRent = room.minBedRent;
+        }
+
+        // Fallback to property-level pricing map if still 0 or low
+        if (derivedRent < 100) {
             if (roomType === 'single') {
                 derivedRent = parseFloat(pricing.singleRent || pricing.price || 0);
             } else if (roomType === 'double') {
@@ -125,10 +140,19 @@ async function performReconciliation(propertyId) {
                 derivedRent = parseFloat(pricing.tripleRent || 0);
             } else if (roomType === 'dormitory') {
                 derivedRent = parseFloat(pricing.dormitoryRent || 0);
+                // Smart fallback for dormitory if specific rent is missing
+                if (derivedRent === 0) {
+                    derivedRent = parseFloat(pricing.tripleRent || pricing.price || 0) * 0.8;
+                }
+            }
+
+            // Final safety fallback to property default price if still 0
+            if (derivedRent === 0) {
+                derivedRent = parseFloat(pricing.price || currentData.monthlyRent || currentData.price || 0);
             }
         }
 
-        if (derivedDeposit === 0) {
+        if (derivedDeposit < 100) {
             derivedDeposit = parseFloat(pricing.deposit || currentData.securityDeposit || currentData.deposit || 0);
         }
 
@@ -152,6 +176,10 @@ async function performReconciliation(propertyId) {
         const calculatedTotal = room.calculatedTotalBeds || 0;
         const calculatedAvailable = room.calculatedAvailableBeds || 0;
         const calculatedOccupied = room.calculatedOccupiedBeds || 0;
+
+        if (calculatedAvailable > 0) {
+            availableRoomsCount++;
+        }
 
         if (
             baseRent !== derivedRent ||
@@ -202,10 +230,12 @@ async function performReconciliation(propertyId) {
         let derivedRent = rent;
         let derivedAdvance = advance;
 
-        if (derivedRent === 0) {
-            if (room.baseRent && parseFloat(room.baseRent) > 0) {
+        // Force healing if current rent is suspiciously low or missing
+        if (derivedRent < 100) {
+            if (room.baseRent && parseFloat(room.baseRent) >= 100) {
                 derivedRent = parseFloat(room.baseRent);
             } else {
+                // Last ditch fallback to pricing map if room also failed to heal
                 if (roomType === 'single') {
                     derivedRent = parseFloat(pricing.singleRent || pricing.price || 0);
                 } else if (roomType === 'double') {
@@ -214,12 +244,15 @@ async function performReconciliation(propertyId) {
                     derivedRent = parseFloat(pricing.tripleRent || 0);
                 } else if (roomType === 'dormitory') {
                     derivedRent = parseFloat(pricing.dormitoryRent || 0);
+                    if (derivedRent === 0) {
+                        derivedRent = parseFloat(pricing.tripleRent || pricing.price || 0) * 0.8;
+                    }
                 }
             }
         }
 
-        if (derivedAdvance === 0) {
-            if (room.baseDeposit && parseFloat(room.baseDeposit) > 0) {
+        if (derivedAdvance < 100) {
+            if (room.baseDeposit && parseFloat(room.baseDeposit) >= 100) {
                 derivedAdvance = parseFloat(room.baseDeposit);
             } else {
                 derivedAdvance = parseFloat(pricing.deposit || currentData.securityDeposit || currentData.deposit || 0);
@@ -227,7 +260,7 @@ async function performReconciliation(propertyId) {
         }
 
         // Use batch.set with merge: true to defensively handle missing documents
-        if (rent !== derivedRent || advance !== derivedAdvance || !bed.monthlyRent || !bed.securityDeposit) {
+        if (rent !== derivedRent || advance !== derivedAdvance || !bed.monthlyRent || !bed.securityDeposit || rent < 100) {
             hasUpdates = true;
             const bedUpdates = {
                 monthlyRent: derivedRent,
@@ -302,6 +335,7 @@ async function performReconciliation(propertyId) {
         occupiedBeds,
         availableBeds,
         reservedBeds,
+        availableRooms: availableRoomsCount,
         monthlyRent: finalMinRent,
         securityDeposit: finalMinAdvance,
         currentOccupancy: occupiedBeds,
@@ -315,6 +349,7 @@ async function performReconciliation(propertyId) {
             securityDeposit: finalMinAdvance,
             availableBeds: availableBeds,
             totalBeds: totalBeds,
+            availableRooms: availableRoomsCount,
             currentOccupancy: occupiedBeds,
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
@@ -324,6 +359,7 @@ async function performReconciliation(propertyId) {
             occupiedBeds,
             availableBeds,
             reservedBeds,
+            availableRooms: availableRoomsCount,
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
     });

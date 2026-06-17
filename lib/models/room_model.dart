@@ -8,6 +8,7 @@ class RoomModel {
   final RoomType roomType;
   final String occupancyType; // e.g., "Single Occupancy", "Double Sharing"
   final int floor;
+  final String floorId;
   final int totalBeds;
   final int availableBeds;
   final int occupiedBeds;
@@ -26,6 +27,7 @@ class RoomModel {
     required this.roomType,
     required this.occupancyType,
     required this.floor,
+    required this.floorId,
     required this.totalBeds,
     required this.availableBeds,
     required this.occupiedBeds,
@@ -49,10 +51,11 @@ class RoomModel {
         orElse: () => RoomType.single,
       ),
       occupancyType: data['occupancyType'] ?? '',
-      floor: data['floor'] ?? 0,
-      totalBeds: data['totalBeds'] ?? 0,
-      availableBeds: data['availableBeds'] ?? 0,
-      occupiedBeds: data['occupiedBeds'] ?? 0,
+      floor: (data['floor'] as num?)?.toInt() ?? 0,
+      floorId: data['floorId'] ?? '',
+      totalBeds: (data['totalBeds'] as num?)?.toInt() ?? 0,
+      availableBeds: (data['availableBeds'] as num?)?.toInt() ?? 0,
+      occupiedBeds: (data['occupiedBeds'] as num?)?.toInt() ?? 0,
       baseRent: (data['baseRent'] ?? 0).toDouble(),
       baseDeposit: (data['baseDeposit'] ?? 0).toDouble(),
       amenities: List<String>.from(data['amenities'] ?? []),
@@ -70,6 +73,7 @@ class RoomModel {
       'roomType': roomType.name,
       'occupancyType': occupancyType,
       'floor': floor,
+      'floorId': floorId,
       'totalBeds': totalBeds,
       'availableBeds': availableBeds,
       'occupiedBeds': occupiedBeds,

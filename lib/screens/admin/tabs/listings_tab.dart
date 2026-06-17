@@ -588,18 +588,57 @@ class _ListingsTabState extends State<ListingsTab> {
     final propertyId = _selectedProperty?['id'];
     if (propertyId == null) return _EmptyState(label: 'Select a property');
 
+    final roomsStream = FirebaseFirestore.instance
+        .collection('properties')
+        .doc(propertyId)
+        .collection('rooms')
+        .orderBy('floor')
+        .orderBy('roomNumber')
+        .snapshots();
+
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance.collection('properties').doc(propertyId).collection('rooms').snapshots(),
+      stream: roomsStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
         final rooms = snapshot.data?.docs ?? [];
         if (rooms.isEmpty) return const _NotConfigured(label: 'Rooms');
+
+        // Group by floor for production-grade visibility
+        final Map<int, List<Map<String, dynamic>>> grouped = {};
+        for (var doc in rooms) {
+          final data = doc.data();
+          final f = (data['floor'] as num?)?.toInt() ?? 0;
+          grouped.putIfAbsent(f, () => []).add(data);
+        }
+
+        final sortedFloors = grouped.keys.toList()..sort();
+
         return ListView.builder(
           padding: const EdgeInsets.all(24),
-          itemCount: rooms.length,
-          itemBuilder: (context, index) {
-            final room = rooms[index].data();
-            return _DrawerListTile(title: 'Room ${room['roomNumber']}', subtitle: '${room['type'] ?? "Standard"} • ${room['sharing'] ?? 1} Sharing', trailing: '${room['occupancy'] ?? 0}% Full', icon: Icons.meeting_room_rounded, color: const Color(0xFF6366F1));
+          itemCount: sortedFloors.length,
+          itemBuilder: (context, floorIndex) {
+            final fNum = sortedFloors[floorIndex];
+            final floorRooms = grouped[fNum]!;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    fNum == 0 ? 'GROUND FLOOR' : 'FLOOR $fNum',
+                    style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.2),
+                  ),
+                ),
+                ...floorRooms.map((room) => _DrawerListTile(
+                  title: 'Room ${room['roomNumber']}',
+                  subtitle: '${room['roomType']?.toString().toUpperCase() ?? "STANDARD"} • ${room['genderRestriction'] ?? "Anyone"}',
+                  trailing: '${room['totalBeds'] ?? 0} Beds',
+                  icon: Icons.meeting_room_rounded,
+                  color: const Color(0xFF1E293B),
+                )),
+                const SizedBox(height: 16),
+              ],
+            );
           },
         );
       },

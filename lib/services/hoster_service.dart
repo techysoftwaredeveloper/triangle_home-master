@@ -293,8 +293,9 @@ class HosterService {
           filledFields++;
         }
         // 4. Profile photo
-        if (hostInfo['profileImage'] != null || onb['profileImage'] != null)
+        if (hostInfo['profileImage'] != null || onb['profileImage'] != null) {
           filledFields++;
+        }
 
         // 5. Email verified (Firebase Auth OR Firestore flag)
         if (userData['emailVerified'] == true ||

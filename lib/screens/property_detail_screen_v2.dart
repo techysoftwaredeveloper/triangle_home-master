@@ -174,7 +174,7 @@ class _PropertyDetailScreenV2State extends ConsumerState<PropertyDetailScreenV2>
               _buildRulesList(),
               SliverToBoxAdapter(
                 child: hostAsync.when(
-                  data: (host) => host != null ? HostProfileSection(host: host) : const SizedBox.shrink(),
+                  data: (host) => host.isNotEmpty ? HostProfileSection(host: host) : const SizedBox.shrink(),
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
                 ),

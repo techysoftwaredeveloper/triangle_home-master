@@ -6,6 +6,8 @@ import 'package:triangle_home/services/maintenance_service.dart';
 import 'package:triangle_home/services/isar_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:triangle_home/services/sync_service.dart';
 
 class SupportHubScreen extends StatefulWidget {
   const SupportHubScreen({super.key});
@@ -357,9 +359,42 @@ class _NewTicketBottomSheetState extends State<_NewTicketBottomSheet> {
   }
 
   void _submit() async {
-    // TODO: Create ticket via MaintenanceService / SyncService
-    // After submission:
+    if (_titleController.text.trim().isEmpty || _descController.text.trim().isEmpty) return;
+    
     if (_uid != null) {
+      // 1. Fetch active stay for the resident
+      final staysSnap = await FirebaseFirestore.instance
+          .collection('resident_stays')
+          .where('residentId', isEqualTo: _uid)
+          .where('status', isNotEqualTo: StayStatus.completed.name)
+          .get();
+          
+      if (staysSnap.docs.isEmpty) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No active stay found to report issue.')));
+        return;
+      }
+      
+      final stayId = staysSnap.docs.first.id;
+
+      // 2. Enqueue the creation action for SyncService
+      final payload = {
+        'residentId': _uid,
+        'stayId': stayId,
+        'title': _titleController.text.trim(),
+        'description': _descController.text.trim(),
+        'category': TicketCategory.other.name,
+        'priority': TicketPriority.low.name,
+      };
+
+      await _isarService.enqueueAction(
+        DateTime.now().millisecondsSinceEpoch.toString(),
+        'MAINTENANCE_CREATE',
+        json.encode(payload),
+      );
+
+      // Trigger immediate sync attempt
+      SyncService().forceSync();
+      
       await _isarService.clearMaintenanceDraft(_uid!);
     }
     if (mounted) {

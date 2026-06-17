@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:triangle_home/screens/hoster/hoster_profile_extra_screens.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
@@ -110,7 +110,7 @@ class HosterProfileDetailsScreen extends StatelessWidget {
         children: [
           _buildSectionHeader('Basic Information', onEdit: () {}),
           _buildDetailRow(Icons.person_outline_rounded, 'Full Name', value: 'Rahul Sharma'),
-          _buildDetailRow(Icons.cake_outlined, 'Gender & DOB', value: 'Male • 15 Mar 1988'),
+          _buildDetailRow(Icons.cake_outlined, 'Gender & DOB', value: 'Male â€¢ 15 Mar 1988'),
           _buildDetailRow(Icons.phone_android_outlined, 'Phone Number', value: '+91 98765 43210'),
           _buildDetailRow(Icons.email_outlined, 'Email Address', value: 'rahul.sharma@gmail.com'),
           _buildDetailRow(
@@ -221,7 +221,7 @@ class HosterProfileDetailsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -580,7 +580,7 @@ class HosterProfileDetailsScreen extends StatelessWidget {
               _buildGridStat('Active Listings', '7', Colors.green),
               _buildGridStat('Occupied Rooms', '35', Colors.purple),
               _buildGridStat('Vacant Rooms', '7', Colors.orange),
-              _buildGridStat('Monthly Revenue', '₹2,45,000', Colors.indigo),
+              _buildGridStat('Monthly Revenue', 'â‚¹2,45,000', Colors.indigo),
               _buildGridStat('Total Bookings', '128', Colors.teal),
               _buildGridStat('Completed Bookings', '110', Colors.blue),
               _buildGridStat('Cancellations', '8', Colors.red),
@@ -911,45 +911,7 @@ class HosterProfileDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionTile(
-    IconData icon,
-    String label,
-    Color color, {
-    bool isLast = false,
-  }) {
-    return Container(
-      margin: EdgeInsets.only(bottom: isLast ? 0 : 12),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey[100]!),
-          ),
-          child: ListTile(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            title: Text(
-              label,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-            trailing: const Icon(Icons.chevron_right_rounded, size: 20),
-            onTap: () {},
-          ),
-        ),
-      ),
-    );
-  }
+
 }
 
 class HalfGaugePainter extends CustomPainter {

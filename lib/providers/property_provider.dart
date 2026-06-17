@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:triangle_home/services/property_service.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 
-final propertyServiceProvider = Provider((ref) => PropertyService());
+import 'package:triangle_home/providers/service_providers.dart';
+import 'package:triangle_home/providers/location_provider.dart';
 
 // ── Real-time stream provider (replaces paginated future) ───────────────────
 //
@@ -13,53 +13,84 @@ final propertyServiceProvider = Provider((ref) => PropertyService());
 // City filtering is done client-side to avoid needing a composite Firestore
 // index for (status + city + createdAt). Works fine for reasonable dataset sizes.
 
+import 'package:triangle_home/models/search_filter.dart';
+
+final searchFilterProvider = StateProvider<SearchFilter>((ref) => SearchFilter());
+
 final propertiesStreamProvider =
     StreamProvider.family<List<Map<String, dynamic>>, String?>((ref, city) {
   final service = ref.watch(propertyServiceProvider);
+  final locationState = ref.watch(locationProvider);
 
-  // For major cities, we can use server filtering
-  // For detected localities (like "Chingavanam"), we fetch all and broad match
   return service
       .getPropertiesStream(
         status: PropertyStatus.approved,
-        city: null, // Fetch all and filter client-side for "broad match" support
+        city: null, 
       )
       .map((all) {
     final normalized = _normalize(all);
     
-    if (city == null ||
-        city.isEmpty ||
-        city.toLowerCase() == 'global' ||
-        city.toLowerCase() == 'all' ||
-        city.toLowerCase() == 'near me' ||
-        city.toLowerCase() == 'detecting...') {
+    final selectedCity = (city ?? locationState.selectedCity).toLowerCase().trim();
+    final detectedCity = locationState.detectedCity.toLowerCase().trim();
+    final detectedLocality = locationState.detectedLocality.toLowerCase().trim();
+
+    if (selectedCity.isEmpty ||
+        selectedCity == 'global' ||
+        selectedCity == 'all' ||
+        selectedCity == 'near me' ||
+        selectedCity == 'detecting...') {
+      if (detectedCity.isNotEmpty) {
+        return normalized.where((p) {
+          final pCity = p['city']?.toString().toLowerCase() ?? '';
+          final pLocality = (p['locality'] ?? p['basicInfo']?['locality'] ?? '').toString().toLowerCase();
+          
+          return pCity == detectedCity || 
+                 (detectedLocality.isNotEmpty && pLocality.contains(detectedLocality));
+        }).toList();
+      }
       return normalized;
     }
 
-    final query = city.toLowerCase().trim();
+    final query = selectedCity;
     
-    // Broad Matching Logic:
-    // 1. Matches City
-    // 2. Matches Locality
-    // 3. Any search term starts with/contains the query
     final results = normalized.where((p) {
       final pCity = p['city']?.toString().toLowerCase() ?? '';
       final pLocality = (p['locality'] ?? p['basicInfo']?['locality'] ?? '').toString().toLowerCase();
       final pTitle = p['title']?.toString().toLowerCase() ?? '';
       
-      return pCity.contains(query) || 
-             pLocality.contains(query) || 
-             pTitle.contains(query);
+      final matchesSelected = pCity.contains(query) || 
+                              pLocality.contains(query) || 
+                              pTitle.contains(query);
+                              
+      final matchesDetectedLocality = (query == detectedCity) && 
+                                      detectedLocality.isNotEmpty && 
+                                      pLocality.contains(detectedLocality);
+                                      
+      return matchesSelected || matchesDetectedLocality;
     }).toList();
 
-    // Fallback: If no results for a specific locality, show all properties
-    // (Better to show something than an empty screen for "Near Me")
-    if (results.isEmpty && (city.toLowerCase() == 'unknown' || query.length > 3)) {
+    if (results.isEmpty && (query == 'unknown' || query.length > 3)) {
        return normalized;
     }
 
     return results;
   });
+});
+
+final filteredPropertiesStreamProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final filter = ref.watch(searchFilterProvider);
+  final service = ref.watch(propertyServiceProvider);
+  
+  return service.getFilteredPropertiesStream(
+    city: filter.city,
+    localities: filter.localities,
+    college: filter.college,
+    accommodationType: filter.accommodationType,
+    tenantType: filter.tenantType,
+    roomType: filter.roomType,
+    minPrice: filter.minPrice,
+    maxPrice: filter.maxPrice,
+  ).map((list) => _normalize(list));
 });
 
 /// Normalize a raw Firestore property map into the shape NearbyAccommodations expects.

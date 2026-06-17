@@ -11,6 +11,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:triangle_home/services/location_api_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -214,6 +215,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _pickImage() async {
+    final status = Platform.isIOS 
+        ? await Permission.photos.request() 
+        : await Permission.storage.request();
+        
+    if (status.isDenied || status.isPermanentlyDenied) {
+      if (Platform.isAndroid) {
+        final photoStatus = await Permission.photos.request();
+        if (photoStatus.isDenied || photoStatus.isPermanentlyDenied) {
+          Fluttertoast.showToast(msg: 'Gallery access is required to pick a profile photo');
+          if (photoStatus.isPermanentlyDenied) openAppSettings();
+          return;
+        }
+      } else {
+        Fluttertoast.showToast(msg: 'Gallery access is required to pick a profile photo');
+        if (status.isPermanentlyDenied) openAppSettings();
+        return;
+      }
+    }
+
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) setState(() => _newImageFile = File(picked.path));
@@ -319,6 +339,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           profileData['role'] = _userRole;
         }
         await docRef.update(profileData);
+      }
+
+      // Register preferred location to backend
+      final userCity = _preferredCity.trim();
+      final userLocality = _locationController.text.trim();
+      if (userCity.isNotEmpty) {
+        LocationApiService().addLocation(city: userCity, locality: userLocality);
       }
 
       if (mounted) {

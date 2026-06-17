@@ -59,7 +59,7 @@ class StayLifecycleService {
       );
     }
 
-    final data = stayDoc.data()!;
+    // Validate the stay document is present (data not needed directly here)
     // 1. Check Overdue Rent
     final overdueRent =
         await _firestore

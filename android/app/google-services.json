@@ -8,58 +8,6 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:318624228870:android:bea08e67e5ed8637ea8587",
-        "android_client_info": {
-          "package_name": "com.example.triangle_home"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "318624228870-a6c836sj94gplbltnd1uaq6h9vkhpfon.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.triangle_home",
-            "certificate_hash": "80f3fa309347f540c90e03e6f35d68d0ac60fd02"
-          }
-        },
-        {
-          "client_id": "318624228870-e4e5cc1dedqt54o46jct6hticrr8g71e.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.triangle_home",
-            "certificate_hash": "8577c9a90c101518886c745384c3a4e13e9ff3a8"
-          }
-        },
-        {
-          "client_id": "318624228870-mhe0tmmc8ecl0ovv4hoevk3v498j26k8.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCq42OG1bSYpR9c1OFex2N0E0tOJl7FiDA"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "318624228870-mhe0tmmc8ecl0ovv4hoevk3v498j26k8.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "318624228870-jqsi16fdadh000dmdtj7p0fo6jaho5db.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.triangleHome"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:318624228870:android:199abed7f2a2285aea8587",
         "android_client_info": {
           "package_name": "com.trianglehomes.app"
@@ -67,11 +15,27 @@
       },
       "oauth_client": [
         {
+          "client_id": "318624228870-4bd6hls8944e6uqrte4n7fq3neilgo6o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.trianglehomes.app",
+            "certificate_hash": "41ec005e2f93b7582544207ad01a03053926391d"
+          }
+        },
+        {
           "client_id": "318624228870-amkttktlvn3222rhsb3k1a11fdmif1mc.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.trianglehomes.app",
             "certificate_hash": "80f3fa309347f540c90e03e6f35d68d0ac60fd02"
+          }
+        },
+        {
+          "client_id": "318624228870-dbnga07hd9euuart903gf4ehegq40vcm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.trianglehomes.app",
+            "certificate_hash": "f60d01662d297f93d20ee7a6bd9835c0d9c4d2c9"
           }
         },
         {

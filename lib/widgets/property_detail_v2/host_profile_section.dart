@@ -12,7 +12,6 @@ class HostProfileSection extends StatelessWidget {
     if (host == null || host!.isEmpty) return const SizedBox.shrink();
 
     final info = host!['info'] as Map? ?? {};
-    final verif = host!['verification'] as Map? ?? {};
 
     return Container(
       padding: const EdgeInsets.all(16),

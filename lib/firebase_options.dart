@@ -58,7 +58,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCq42OG1bSYpR9c1OFex2N0E0tOJl7FiDA',
-    appId: '1:318624228870:android:bea08e67e5ed8637ea8587',
+    appId: '1:318624228870:android:199abed7f2a2285aea8587',
     messagingSenderId: '318624228870',
     projectId: 'trianglehome',
     storageBucket: 'trianglehome.firebasestorage.app',

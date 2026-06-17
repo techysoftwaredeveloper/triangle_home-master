@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:triangle_home/providers/property_provider.dart';
+import 'package:triangle_home/providers/service_providers.dart';
 import 'package:triangle_home/services/hoster_service.dart';
 
 final propertyStatsProvider = StreamProvider.family<Map<String, dynamic>, String>((ref, propertyId) {

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:triangle_home/services/firebase_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
@@ -27,7 +28,6 @@ class RealtimeDocumentUpload extends StatefulWidget {
 class _RealtimeDocumentUploadState extends State<RealtimeDocumentUpload> {
   bool _isUploading = false;
   String? _currentUrl;
-  double _uploadProgress = 0;
 
   @override
   void initState() {
@@ -36,8 +36,35 @@ class _RealtimeDocumentUploadState extends State<RealtimeDocumentUpload> {
   }
 
   Future<void> _pickAndUpload() async {
+    final status = Platform.isIOS 
+        ? await Permission.photos.request() 
+        : await Permission.storage.request();
+        
+    if (status.isDenied || status.isPermanentlyDenied) {
+      if (Platform.isAndroid) {
+        final photoStatus = await Permission.photos.request();
+        if (photoStatus.isDenied || photoStatus.isPermanentlyDenied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Storage access is required to upload documents')),
+            );
+          }
+          if (photoStatus.isPermanentlyDenied) openAppSettings();
+          return;
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Storage access is required to upload documents')),
+          );
+        }
+        if (status.isPermanentlyDenied) openAppSettings();
+        return;
+      }
+    }
+
     try {
-      final result = await FilePicker.pickFiles(
+      final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
       );
@@ -45,7 +72,6 @@ class _RealtimeDocumentUploadState extends State<RealtimeDocumentUpload> {
       if (result != null && result.files.single.path != null) {
         setState(() {
           _isUploading = true;
-          _uploadProgress = 0.1; // Starting
         });
 
         final file = File(result.files.single.path!);
@@ -57,7 +83,6 @@ class _RealtimeDocumentUploadState extends State<RealtimeDocumentUpload> {
         setState(() {
           _currentUrl = url;
           _isUploading = false;
-          _uploadProgress = 1.0;
         });
 
         widget.onUploadComplete(url);

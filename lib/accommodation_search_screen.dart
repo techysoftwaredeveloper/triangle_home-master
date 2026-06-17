@@ -1,18 +1,21 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:triangle_home/search_results_screen.dart';
 import 'package:triangle_home/services/property_service.dart';
+import 'package:triangle_home/providers/property_provider.dart';
+import 'package:triangle_home/models/search_filter.dart';
+import 'package:triangle_home/widgets/locality_search_popup.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
-class AccommodationSearchScreen extends StatefulWidget {
+class AccommodationSearchScreen extends ConsumerStatefulWidget {
   const AccommodationSearchScreen({super.key});
 
   @override
-  State<AccommodationSearchScreen> createState() =>
+  ConsumerState<AccommodationSearchScreen> createState() =>
       _AccommodationSearchScreenState();
 }
 
-class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
+class _AccommodationSearchScreenState extends ConsumerState<AccommodationSearchScreen> {
   final PropertyService _propertyService = PropertyService();
   List<String> _cities = [];
   String _selectedCity = '';
@@ -59,34 +62,12 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
     if (_selectedCity.isEmpty) return;
 
     try {
-      // First, find the document by city name (case-insensitive)
-      final snapshot =
-          await FirebaseFirestore.instance.collection('cities').get();
-
-      String? docId;
-      for (final doc in snapshot.docs) {
-        final cityName = doc['name'].toString();
-        if (cityName.toLowerCase() == _selectedCity.toLowerCase()) {
-          docId = doc.id;
-          break;
-        }
-      }
-
-      if (docId != null) {
-        final docSnapshot =
-            await FirebaseFirestore.instance
-                .collection('cities')
-                .doc(docId)
-                .get();
-        final data = docSnapshot.data();
-        if (data != null && data['areas'] is List) {
-          final areas = List<String>.from(data['areas']);
-          setState(() {
-            _selectedLocalities = areas.take(2).toList();
-          });
-        }
-      } else {
-        debugPrint('City "$_selectedCity" not found in Firestore.');
+      final areas = await _propertyService.getLocalities(_selectedCity);
+      if (mounted) {
+        setState(() {
+          _selectedLocalities =
+              areas.take(2).map((a) => a['name'].toString()).toList();
+        });
       }
     } catch (e) {
       debugPrint('Error fetching areas: $e');
@@ -102,6 +83,16 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
     } catch (e) {
       debugPrint('Error fetching sharing types: $e');
     }
+  }
+
+  void _updateGlobalFilter() {
+     ref.read(searchFilterProvider.notifier).state = SearchFilter(
+        city: _selectedCity,
+        localities: _selectedLocalities,
+        college: _searchType == 'By College' ? 'Near Colleges' : '',
+        accommodationType: 'Paying Guest Hostels',
+        roomType: _selectedSharing,
+      );
   }
 
   @override
@@ -189,6 +180,7 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
                   _selectedLocalities = [];
                 });
                 _fetchAreasByCity();
+                _updateGlobalFilter();
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -225,7 +217,10 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
           child: _buildOptionButton(
             'By Area',
             _searchType == 'By Area',
-            () => setState(() => _searchType = 'By Area'),
+            () {
+              setState(() => _searchType = 'By Area');
+              _updateGlobalFilter();
+            },
           ),
         ),
         const SizedBox(width: 12),
@@ -233,7 +228,10 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
           child: _buildOptionButton(
             'By College',
             _searchType == 'By College',
-            () => setState(() => _searchType = 'By College'),
+            () {
+              setState(() => _searchType = 'By College');
+              _updateGlobalFilter();
+            },
           ),
         ),
       ],
@@ -319,9 +317,12 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
                       const SizedBox(width: 8),
                       InkWell(
                         onTap:
-                            () => setState(
-                              () => _selectedLocalities.remove(locality),
-                            ),
+                            () {
+                              setState(
+                                () => _selectedLocalities.remove(locality),
+                              );
+                              _updateGlobalFilter();
+                            },
                         child: const Icon(
                           Icons.close,
                           color: Colors.white,
@@ -339,72 +340,39 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
 
   Future<void> _showLocalityPicker() async {
     try {
-      // First, find the document by city name (case-insensitive)
-      final snapshot =
-          await FirebaseFirestore.instance.collection('cities').get();
-
-      String? docId;
-      for (final doc in snapshot.docs) {
-        final cityName = doc['name'].toString();
-        if (cityName.toLowerCase() == _selectedCity.toLowerCase()) {
-          docId = doc.id;
-          break;
-        }
-      }
-
-      if (docId == null) {
-        debugPrint('City "$_selectedCity" not found for locality picker.');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('No areas found for $_selectedCity')),
-          );
-        }
-        return;
-      }
-
-      final querySnapshot =
-          await FirebaseFirestore.instance
-              .collection('cities')
-              .doc(docId)
-              .collection('areas')
-              .get();
-
-      final options = querySnapshot.docs.map((doc) => doc.id).toList();
+      final options = await _propertyService.getLocalities(_selectedCity);
       if (options.isNotEmpty) {
         if (!mounted) return;
         showModalBottomSheet(
           context: context,
+          backgroundColor: Colors.transparent,
+          isScrollControlled: true,
           builder: (context) {
-            return ListView(
-              children:
-                  options.map((locality) {
-                    final alreadySelected = _selectedLocalities.contains(
-                      locality,
-                    );
-                    return ListTile(
-                      title: Text(locality),
-                      trailing:
-                          alreadySelected
-                              ? const Icon(Icons.check, color: Colors.green)
-                              : null,
-                      onTap: () {
-                        setState(() {
-                          if (!alreadySelected) {
-                            _selectedLocalities.add(locality);
-                          }
-                        });
-                        Navigator.pop(context);
-                      },
-                    );
-                  }).toList(),
+            return LocalitySearchPopup(
+              localities: options,
+              selectedLocalities: _selectedLocalities,
+              onLocalityToggled: (locality) {
+                setState(() {
+                  if (_selectedLocalities.contains(locality)) {
+                    _selectedLocalities.remove(locality);
+                  } else if (_selectedLocalities.length < 5) {
+                    _selectedLocalities.add(locality);
+                  }
+                });
+                _updateGlobalFilter();
+              },
             );
           },
         );
       } else {
-        debugPrint('No areas found for city $_selectedCity');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No localities found for this city')),
+          );
+        }
       }
     } catch (e) {
-      debugPrint('Error fetching areas for picker: $e');
+      debugPrint('Error showing locality picker: $e');
     }
   }
 
@@ -416,7 +384,10 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
           _sharingOptions.map((option) {
             final isSelected = _selectedSharing == option;
             return InkWell(
-              onTap: () => setState(() => _selectedSharing = option),
+              onTap: () {
+                setState(() => _selectedSharing = option);
+                _updateGlobalFilter();
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 15,
@@ -450,39 +421,72 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
   }
 
   Widget _buildSearchButton() {
+    final streamAsync = ref.watch(filteredPropertiesStreamProvider);
+    final isSearchDisabled = _selectedCity.isEmpty;
+
     return Container(
       padding: const EdgeInsets.all(16),
       width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (_) => SearchResultsScreen(
-                    searchQuery:
-                        _searchType == 'By Area'
-                            ? _selectedLocalities.join(', ')
-                            : 'Near Colleges',
-                    selectedCity: _selectedCity,
-                    selectedState: '',
-                    searchType: _searchType,
-                    selectedLocalities: _selectedLocalities,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!isSearchDisabled) 
+            streamAsync.when(
+              data: (results) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  '${results.length} properties matching your criteria',
+                  style: const TextStyle(
+                    color: AppTheme.accentColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    fontFamily: 'Outfit',
                   ),
+                ),
+              ),
+              loading: () => const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: SizedBox(height: 2, width: 100, child: LinearProgressIndicator()),
+              ),
+              error: (_, __) => const SizedBox.shrink(),
             ),
-          );
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primaryColor,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => SearchResultsScreen(
+                          searchQuery:
+                              _searchType == 'By Area'
+                                  ? _selectedLocalities.join(', ')
+                                  : 'Near Colleges',
+                          selectedCity: _selectedCity,
+                          selectedState: '',
+                          searchType: _searchType,
+                          selectedLocalities: _selectedLocalities,
+                          accommodationType: 'Paying Guest Hostels',
+                          roomType: _selectedSharing,
+                        ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Search',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
           ),
-        ),
-        child: const Text(
-          'Search',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
+        ],
       ),
     );
   }

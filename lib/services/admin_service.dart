@@ -5,9 +5,7 @@ import 'package:triangle_home/services/audit_service.dart';
 import 'package:triangle_home/services/isar_service.dart';
 import 'package:triangle_home/services/admin_api_service.dart';
 import 'package:triangle_home/services/hoster_service.dart';
-import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:intl/intl.dart';
 
 class AdminService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -25,18 +23,6 @@ class AdminService {
     return value;
   }
 
-  String _formatTime(dynamic timestamp) {
-    if (timestamp == null) return 'N/A';
-    DateTime date;
-    if (timestamp is Timestamp) {
-      date = timestamp.toDate();
-    } else if (timestamp is String) {
-      date = DateTime.tryParse(timestamp) ?? DateTime.now();
-    } else {
-      date = DateTime.now();
-    }
-    return DateFormat('hh:mm a').format(date);
-  }
 
   Stream<Map<String, dynamic>> getGlobalStatsStream() {
     return _firestore
@@ -222,7 +208,8 @@ class AdminService {
             approvalMap[doc.id] = {
               ...data,
               'id': doc.id,
-              'uid': doc.id,
+              'uid': doc.id, // Primary ID for detail screens
+              'userId': doc.id,
               'type': type,
               'name': info['name'] ?? 'User Applicant',
               'email': info['email'],

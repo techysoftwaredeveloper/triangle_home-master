@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 
 
@@ -46,6 +47,33 @@ class _ProfileStepState extends State<ProfileStep> {
   }
 
   Future<void> _pickImage() async {
+    final status = Platform.isIOS 
+        ? await Permission.photos.request() 
+        : await Permission.storage.request();
+        
+    if (status.isDenied || status.isPermanentlyDenied) {
+      if (Platform.isAndroid) {
+        final photoStatus = await Permission.photos.request();
+        if (photoStatus.isDenied || photoStatus.isPermanentlyDenied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Gallery access is required to upload a profile image')),
+            );
+          }
+          if (photoStatus.isPermanentlyDenied) openAppSettings();
+          return;
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Gallery access is required to upload a profile image')),
+          );
+        }
+        if (status.isPermanentlyDenied) openAppSettings();
+        return;
+      }
+    }
+
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
     if (picked == null) return;

@@ -298,104 +298,106 @@ class FirebaseService {
   }
 
   /// Get localities for a city - with Fallback
-  Future<List<String>> getLocalities(String city) async {
+  Future<List<Map<String, dynamic>>> getLocalities(String city) async {
     try {
       final snapshot = await _firestore
           .collection('cities')
-          .doc(city)
-          .collection('areas')
+          .doc(city.toLowerCase())
+          .collection('localities')
           .get();
 
       if (snapshot.docs.isNotEmpty) {
-        return snapshot.docs.map((doc) => doc.id).toList()..sort();
+        return snapshot.docs.map((doc) => {
+          'name': doc.id,
+          ...doc.data(),
+        }).toList();
       }
     } catch (e) {
       debugPrint('Error fetching localities: $e');
     }
 
     // Default Fallback Localities for major cities
-    final Map<String, List<String>> cityLocalities = {
+    final Map<String, List<Map<String, dynamic>>> cityLocalities = {
       'Kochi': [
-        'Kalamassery',
-        'Edappally',
-        'Kakkanad',
-        'Aluva',
-        'Vytila',
-        'Tripunithura',
-        'Panampilly Nagar',
-        'Fort Kochi'
+        {'name': 'Kalamassery', 'hub': 'CUSAT'},
+        {'name': 'Edappally', 'hub': 'Amrita'},
+        {'name': 'Kakkanad', 'hub': 'Infopark'},
+        {'name': 'Aluva', 'hub': 'Industrial Belt'},
+        {'name': 'Vytila'},
+        {'name': 'Tripunithura'},
+        {'name': 'Panampilly Nagar'},
+        {'name': 'Fort Kochi'}
       ],
       'Kozhikode': [
-        'Mavoor Road',
-        'Thondayad',
-        'Nadakkavu',
-        'Medical College',
-        'Pantheeramkavu',
-        'Feroke',
-        'West Hill'
+        {'name': 'Mavoor Road'},
+        {'name': 'Thondayad'},
+        {'name': 'Nadakkavu'},
+        {'name': 'Medical College', 'hub': 'Calicut Medical College'},
+        {'name': 'Pantheeramkavu'},
+        {'name': 'Feroke'},
+        {'name': 'West Hill'}
       ],
       'Malappuram': [
-        'Manjeri',
-        'Kottakkal',
-        'Perinthalmanna',
-        'Tirur',
-        'Ponnani',
-        'Nilambur',
-        'Kondotty'
+        {'name': 'Manjeri'},
+        {'name': 'Kottakkal'},
+        {'name': 'Perinthalmanna'},
+        {'name': 'Tirur'},
+        {'name': 'Ponnani'},
+        {'name': 'Nilambur'},
+        {'name': 'Kondotty'}
       ],
       'Bangalore': [
-        'Koramangala',
-        'Indiranagar',
-        'HSR Layout',
-        'Whitefield',
-        'Electronic City',
-        'Jayanagar',
-        'BTM Layout',
-        'Hebbal'
+        {'name': 'Koramangala', 'hub': 'Startup Hub'},
+        {'name': 'Indiranagar'},
+        {'name': 'HSR Layout'},
+        {'name': 'Whitefield', 'hub': 'ITPL'},
+        {'name': 'Electronic City', 'hub': 'Infosys'},
+        {'name': 'Jayanagar'},
+        {'name': 'BTM Layout'},
+        {'name': 'Hebbal'}
       ],
       'Chennai': [
-        'Adyar',
-        'Anna Nagar',
-        'T. Nagar',
-        'Velachery',
-        'Mylapore',
-        'Guindy',
-        'OMR',
-        'Besant Nagar'
+        {'name': 'Adyar', 'hub': 'IIT Madras'},
+        {'name': 'Anna Nagar'},
+        {'name': 'T. Nagar'},
+        {'name': 'Velachery'},
+        {'name': 'Mylapore'},
+        {'name': 'Guindy', 'hub': 'Anna University'},
+        {'name': 'OMR', 'hub': 'Tidel Park'},
+        {'name': 'Besant Nagar'}
       ],
       'Mumbai': [
-        'Andheri',
-        'Bandra',
-        'Borivali',
-        'Colaba',
-        'Dadar',
-        'Goregaon',
-        'Powai',
-        'Worli'
+        {'name': 'Andheri'},
+        {'name': 'Bandra'},
+        {'name': 'Borivali'},
+        {'name': 'Colaba'},
+        {'name': 'Dadar'},
+        {'name': 'Goregaon'},
+        {'name': 'Powai', 'hub': 'IIT Bombay'},
+        {'name': 'Worli'}
       ],
       'Hyderabad': [
-        'Banjara Hills',
-        'Gachibowli',
-        'HITEC City',
-        'Jubilee Hills',
-        'Kukatpally',
-        'Madhapur',
-        'Secunderabad'
+        {'name': 'Banjara Hills'},
+        {'name': 'Gachibowli', 'hub': 'Financial District'},
+        {'name': 'HITEC City', 'hub': 'Cyber Towers'},
+        {'name': 'Jubilee Hills'},
+        {'name': 'Kukatpally', 'hub': 'JNTU'},
+        {'name': 'Madhapur'},
+        {'name': 'Secunderabad'}
       ],
       'Delhi': [
-        'Connaught Place',
-        'Dwarka',
-        'Hauz Khas',
-        'Karol Bagh',
-        'Lajpat Nagar',
-        'Rohini',
-        'Saket',
-        'South Ext'
+        {'name': 'Connaught Place'},
+        {'name': 'Dwarka'},
+        {'name': 'Hauz Khas', 'hub': 'IIT Delhi'},
+        {'name': 'Karol Bagh'},
+        {'name': 'Lajpat Nagar'},
+        {'name': 'Rohini'},
+        {'name': 'Saket'},
+        {'name': 'South Ext'}
       ],
     };
 
-    return cityLocalities[city] ?? []
-      ..sort();
+    return cityLocalities[city] ?? [];
   }
 
   /// Get all unique colleges from properties - with Fallback
@@ -469,7 +471,10 @@ class FirebaseService {
       final basicInfo = data['basicInfo'] as Map<String, dynamic>? ?? {};
       final propertyCity = data['city'] as String? ?? '';
       final locality = data['locality'] as String? ?? '';
-      final collegeName = basicInfo['collegeName'] as String? ?? '';
+      final collegeName = basicInfo['collegeName'] as String? ?? 
+                          basicInfo['name'] as String? ?? 
+                          data['name'] as String? ?? 
+                          data['title'] as String? ?? '';
       final propertyTenantType = basicInfo['tenantType'] as String? ?? '';
       final sharing = basicInfo['sharing'] as String? ?? '';
 
@@ -508,17 +513,77 @@ class FirebaseService {
       if (tenantType != null &&
           tenantType.isNotEmpty &&
           tenantType != 'Anyone') {
-        if (!propertyTenantType.toLowerCase().contains(
-          tenantType.toLowerCase(),
-        )) {
-          continue;
+        final propertyGender = (data['gender'] as String? ?? 
+                                data['propertyDetails']?['gender'] as String? ?? 
+                                propertyTenantType).toLowerCase().trim();
+        
+        bool isMatch = false;
+        if (propertyGender.isEmpty || propertyGender == 'anyone' || propertyGender == 'unisex') {
+          isMatch = true;
+        } else {
+          final q = tenantType.toLowerCase().trim();
+          if (q == 'man' || q == 'men' || q == 'boys' || q == 'boy') {
+            isMatch = propertyGender == 'men' || 
+                      propertyGender == 'boys' || 
+                      propertyGender.contains('man') || 
+                      propertyGender.contains('men') || 
+                      propertyGender.contains('boy');
+          } else if (q == 'woman' || q == 'women' || q == 'girls' || q == 'girl') {
+            isMatch = propertyGender == 'women' || 
+                      propertyGender == 'girls' || 
+                      propertyGender.contains('woman') || 
+                      propertyGender.contains('women') || 
+                      propertyGender.contains('girl');
+          } else {
+            isMatch = propertyGender.contains(q) || q.contains(propertyGender);
+          }
         }
+        if (!isMatch) continue;
       }
 
       // Room type filter
       if (roomType != null && roomType.isNotEmpty && roomType != 'Any') {
-        if (!sharing.toLowerCase().contains(roomType.toLowerCase())) {
-          continue;
+        final propType = data['propertyType'] as String? ?? '';
+        final isApartment = (accommodationType == 'Apartments') ||
+                            propType.toLowerCase().contains('apartment') ||
+                            propType.toLowerCase().contains('flat');
+        if (isApartment) {
+          final bhkDetails = data['bhkDetails'] as Map<String, dynamic>?;
+          final pricingInfo = data['pricingInfo'] as Map<String, dynamic>?;
+          final areaInfo = data['areaInfo'] as Map<String, dynamic>?;
+
+          final normalizedRoomType = roomType.trim().toLowerCase();
+          final is4Plus = normalizedRoomType.contains('4+') || normalizedRoomType.contains('4+ bhk');
+
+          bool matchKey(String k) {
+            final keyNorm = k.toLowerCase().trim();
+            if (is4Plus) {
+              final match = RegExp(r'(\d+)\s*bhk').firstMatch(keyNorm);
+              if (match != null) {
+                final numVal = int.tryParse(match.group(1) ?? '');
+                if (numVal != null && numVal >= 4) return true;
+              }
+              return keyNorm.contains('4+') || keyNorm.contains('5') || keyNorm.contains('6');
+            }
+            return keyNorm == normalizedRoomType;
+          }
+
+          bool hasBhk = false;
+          if (bhkDetails != null) {
+            hasBhk = bhkDetails.keys.any(matchKey);
+          }
+          if (!hasBhk && pricingInfo != null) {
+            hasBhk = pricingInfo.keys.any(matchKey);
+          }
+          if (!hasBhk && areaInfo != null) {
+            hasBhk = areaInfo.keys.any(matchKey);
+          }
+
+          if (!hasBhk) continue;
+        } else {
+          if (!sharing.toLowerCase().contains(roomType.toLowerCase())) {
+            continue;
+          }
         }
       }
 

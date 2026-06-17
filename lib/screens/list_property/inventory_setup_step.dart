@@ -62,6 +62,7 @@ class _InventorySetupStepState extends State<InventorySetupStep> {
               ? 'Single Occupancy'
               : '${roomData['type'].name[0].toUpperCase()}${roomData['type'].name.substring(1)} Sharing',
           floor: roomData['floor'],
+          floorId: 'manual_entry',
           totalBeds: roomData['beds'].length,
           availableBeds: roomData['beds'].length,
           occupiedBeds: 0,

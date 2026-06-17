@@ -1009,6 +1009,7 @@ class _HosterVerificationCenterScreenState
     }
 
     final picker = ImagePicker();
+    if (!mounted) return;
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -1310,6 +1311,7 @@ class _HosterVerificationCenterScreenState
           Fluttertoast.showToast(msg: e.message ?? 'Verification failed');
         },
         codeSent: (String verificationId, int? resendToken) {
+          if (!mounted) return;
           Navigator.push(
             context,
             MaterialPageRoute(

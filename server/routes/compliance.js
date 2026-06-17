@@ -1,12 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const complianceController = require('../controllers/complianceController');
+const escrowController = require('../controllers/escrowController');
 const { verifyToken } = require('../middleware/auth');
 
-// User self-check or automated check
-router.get('/check-risk/:userId', verifyToken, complianceController.checkFraudRisks);
+router.use(verifyToken);
 
-// Admin-only high risk report
-router.get('/high-risk-users', verifyToken, complianceController.getHighRiskUsers);
+router.post('/escrow', escrowController.createEscrow);
+router.post('/payout/request', escrowController.requestPayout);
 
 module.exports = router;

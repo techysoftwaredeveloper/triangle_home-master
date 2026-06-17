@@ -1,4 +1,4 @@
-const { db } = require('../config/firebase-config');
+const { db, admin } = require('../config/firebase-config');
 const { validationResult } = require('express-validator');
 const asyncHandler = require('../utils/asyncHandler');
 
@@ -86,11 +86,12 @@ exports.updateBookingStatus = asyncHandler(async (req, res) => {
             throw new Error(`Cannot change status from ${currentStatus}`);
         }
 
-        // Handle Occupancy & Bed Inventory Side Effects
+        // 2. Handle Occupancy & Bed Inventory Side Effects
+        const roomId = currentBookingData.roomId;
+        const bedId = currentBookingData.bedId;
+
         if (propertyId) {
             const propertyRef = db.collection('properties').doc(propertyId);
-            const roomId = currentBookingData.roomId;
-            const bedId = currentBookingData.bedId;
 
             // SOURCE OF TRUTH: Bed Inventory
             if (bedId && roomId) {
@@ -106,75 +107,99 @@ exports.updateBookingStatus = asyncHandler(async (req, res) => {
                 const bedStatus = bedDoc.data().status;
 
                 // Transition: Confirming Booking
-                if (status === 'confirmed' && currentStatus !== 'confirmed') {
-                    if (bedStatus !== 'available' && bedStatus !== 'reserved') {
-                        throw new Error('Bed is no longer available');
+                if (status === 'confirmed' || status === 'bookingConfirmed') {
+                    if (currentStatus !== 'confirmed' && currentStatus !== 'bookingConfirmed') {
+                        if (bedStatus !== 'available' && bedStatus !== 'reserved') {
+                            throw new Error('Bed is no longer available');
+                        }
+                        const updates = {
+                            status: 'booked',
+                            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                        };
+                        transaction.update(bedRef, updates);
+                        transaction.update(flatBedRef, updates);
+                        transaction.update(propBedRef, updates);
+                        // Cache update on property
+                        transaction.update(propertyRef, {
+                            currentOccupancy: admin.firestore.FieldValue.increment(1),
+                            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                        });
                     }
-                    const updates = {
-                        status: 'booked',
-                        updatedAt: new Date().toISOString()
-                    };
-                    transaction.update(bedRef, updates);
-                    transaction.update(flatBedRef, updates);
-                    transaction.update(propBedRef, updates);
-                    // Cache update on property
-                    transaction.update(propertyRef, {
-                        currentOccupancy: db.FieldValue.increment(1),
-                        updatedAt: new Date().toISOString()
-                    });
                 }
 
                 // Transition: Checking In
                 if (status === 'checkedIn' && currentStatus !== 'checkedIn') {
                     const updates = {
                         status: 'occupied',
-                        updatedAt: new Date().toISOString()
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp()
                     };
                     transaction.update(bedRef, updates);
                     transaction.update(flatBedRef, updates);
                     transaction.update(propBedRef, updates);
+
+                    // Set release eligibility on escrow
+                    transaction.update(db.collection('escrow').doc(bookingId), {
+                        releaseEligibleAt: admin.firestore.Timestamp.fromDate(
+                            new Date(Date.now() + 48 * 60 * 60 * 1000)
+                        ),
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    });
                 }
 
                 // Transition: Cancellation/Checkout
-                if ((status === 'cancelled' && currentStatus === 'confirmed') ||
+                if ((status === 'cancelled' && (currentStatus === 'confirmed' || currentStatus === 'bookingConfirmed')) ||
                     (status === 'checkedOut' && currentStatus === 'checkedIn') ||
-                    (status === 'expired')) {
+                    (status === 'expired' || status === 'reservationExpired')) {
                     const updates = {
                         status: 'available',
-                        updatedAt: new Date().toISOString()
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp()
                     };
                     transaction.update(bedRef, updates);
                     transaction.update(flatBedRef, updates);
                     transaction.update(propBedRef, updates);
                     transaction.update(propertyRef, {
-                        currentOccupancy: db.FieldValue.increment(-1),
-                        updatedAt: new Date().toISOString()
+                        currentOccupancy: admin.firestore.FieldValue.increment(-1),
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp()
                     });
                 }
             } else {
                 // Fallback for property-level only occupancy
-                if (status === 'confirmed' && currentStatus !== 'confirmed') {
+                if ((status === 'confirmed' || status === 'bookingConfirmed') &&
+                    (currentStatus !== 'confirmed' && currentStatus !== 'bookingConfirmed')) {
                     transaction.update(propertyRef, {
-                        currentOccupancy: db.FieldValue.increment(1),
-                        updatedAt: new Date().toISOString(),
+                        currentOccupancy: admin.firestore.FieldValue.increment(1),
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
                     });
                 }
 
-                if ((status === 'cancelled' && currentStatus === 'confirmed') ||
+                if ((status === 'cancelled' && (currentStatus === 'confirmed' || currentStatus === 'bookingConfirmed')) ||
                     (status === 'checkedOut' && currentStatus === 'checkedIn')) {
                     transaction.update(propertyRef, {
-                        currentOccupancy: db.FieldValue.increment(-1),
-                        updatedAt: new Date().toISOString(),
+                        currentOccupancy: admin.firestore.FieldValue.increment(-1),
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
                     });
                 }
             }
         }
 
-        transaction.update(bookingRef, {
+        const bookingUpdates = {
             status: status,
-            updatedAt: new Date().toISOString()
-        });
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+
+        if (status === 'checkedIn') {
+            bookingUpdates.checkedInAt = admin.firestore.FieldValue.serverTimestamp();
+        }
+
+        transaction.update(bookingRef, bookingUpdates);
     });
+
+    // Handle financial side effects after transaction (or inside if atomic is strictly required,
+    // but here we might prefer a separate step or Cloud Function)
+    if (status === 'paymentSuccess') {
+        // We could trigger escrow creation here, but usually it's better to do it via a dedicated API call
+        // or a background trigger once the payment is verified.
+    }
 
     res.json({ success: true, message: `Booking updated to ${status}` });
 });

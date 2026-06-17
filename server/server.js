@@ -10,7 +10,7 @@ try {
   // Initialize cron jobs
   require('./scripts/cron');
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`
 🚀 Backend Server Ready
 -----------------------
@@ -19,6 +19,24 @@ Interface: 0.0.0.0
 Mode: ${process.env.NODE_ENV || 'development'}
     `);
   });
+
+  // Graceful Shutdown
+  const gracefulShutdown = () => {
+    console.log('Stopping server...');
+    server.close(() => {
+      console.log('Server stopped.');
+      process.exit(0);
+    });
+
+    // Force close after 10s
+    setTimeout(() => {
+      console.error('Could not close connections in time, forcefully shutting down');
+      process.exit(1);
+    }, 10000);
+  };
+
+  process.on('SIGTERM', gracefulShutdown);
+  process.on('SIGINT', gracefulShutdown);
 } catch (error) {
   console.error('FAILED TO START SERVER:');
   console.error(error.message);

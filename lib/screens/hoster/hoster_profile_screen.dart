@@ -12,6 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
+import 'package:permission_handler/permission_handler.dart';
 
 
 class HosterProfileScreen extends StatefulWidget {
@@ -46,6 +47,33 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
   }
 
   Future<void> _pickAndUploadImage() async {
+    final status = Platform.isIOS 
+        ? await Permission.photos.request() 
+        : await Permission.storage.request();
+        
+    if (status.isDenied || status.isPermanentlyDenied) {
+      if (Platform.isAndroid) {
+        final photoStatus = await Permission.photos.request();
+        if (photoStatus.isDenied || photoStatus.isPermanentlyDenied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Gallery access is required to update profile photo')),
+            );
+          }
+          if (photoStatus.isPermanentlyDenied) openAppSettings();
+          return;
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Gallery access is required to update profile photo')),
+          );
+        }
+        if (status.isPermanentlyDenied) openAppSettings();
+        return;
+      }
+    }
+
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
     if (picked == null) return;

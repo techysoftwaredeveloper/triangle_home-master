@@ -189,23 +189,21 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   );
                   try {
                     await AdminApiService().reconcileProperty(_property['id']);
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Property reconciled successfully!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Property reconciled successfully!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
                   } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Failed to reconcile property: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to reconcile property: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
                   }
                 },
               ),
@@ -1408,15 +1406,19 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                                               final bStatus =
                                                   bed['status'] ?? 'available';
                                               Color bColor = Colors.green;
-                                              if (bStatus == 'occupied')
+                                              if (bStatus == 'occupied') {
                                                 bColor = Colors.blue;
+                                              }
                                               if (bStatus == 'reserved' ||
-                                                  bStatus == 'booked')
+                                                  bStatus == 'booked') {
                                                 bColor = Colors.orange;
-                                              if (bStatus == 'maintenance')
+                                              }
+                                              if (bStatus == 'maintenance') {
                                                 bColor = Colors.red;
-                                              if (bStatus == 'blocked')
+                                              }
+                                              if (bStatus == 'blocked') {
                                                 bColor = Colors.grey;
+                                              }
 
                                               return InkWell(
                                                 onTap: () => _showAdminBedStatusOverride(

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:triangle_home/services/admin_service.dart';
 import 'package:triangle_home/splash_screen.dart';
@@ -161,13 +161,13 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
                     height: 40,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05), // Glassmorphism
+                      color: Colors.white.withValues(alpha: 0.05), // Glassmorphism
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white.withOpacity(0.05)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.search, color: Colors.white.withOpacity(0.4), size: 18),
+                        Icon(Icons.search, color: Colors.white.withValues(alpha: 0.4), size: 18),
                         const SizedBox(width: 12),
                         const Expanded(
                           child: TextField(
@@ -185,7 +185,7 @@ class _AdminDashboardRedesignState extends State<AdminDashboardRedesign> {
                   ),
                 )
               else
-                Icon(Icons.search, color: Colors.white.withOpacity(0.5), size: 24),
+                Icon(Icons.search, color: Colors.white.withValues(alpha: 0.5), size: 24),
 
               const SizedBox(width: 24),
 

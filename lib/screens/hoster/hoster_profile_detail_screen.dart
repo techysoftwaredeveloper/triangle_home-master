@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
 import 'package:triangle_home/services/hoster_service.dart';
@@ -9,7 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:intl/intl.dart';
 
 
-// ── Section identifiers ───────────────────────────────────────────────────────
+// â”€â”€ Section identifiers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 enum HosterProfileSection {
   basicInfo,
   identity,
@@ -212,7 +212,7 @@ class _HosterProfileDetailScreenState
                             color: _text)),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: selectedRole,
+                      initialValue: selectedRole,
                       decoration: const InputDecoration(
                         labelText: 'Host Type / Role',
                         border: OutlineInputBorder(),
@@ -228,7 +228,7 @@ class _HosterProfileDetailScreenState
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: selectedExp,
+                      initialValue: selectedExp,
                       decoration: const InputDecoration(
                         labelText: 'Experience',
                         border: OutlineInputBorder(),
@@ -337,7 +337,7 @@ class _HosterProfileDetailScreenState
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: selectedGender,
+                      initialValue: selectedGender,
                       decoration: const InputDecoration(
                         labelText: 'Gender',
                         border: OutlineInputBorder(),
@@ -564,7 +564,7 @@ class _HosterProfileDetailScreenState
                             color: _text)),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: bookingType,
+                      initialValue: bookingType,
                       decoration: const InputDecoration(
                         labelText: 'Booking Type',
                         border: OutlineInputBorder(),
@@ -580,7 +580,7 @@ class _HosterProfileDetailScreenState
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: gender,
+                      initialValue: gender,
                       decoration: const InputDecoration(
                         labelText: 'Preferred Gender',
                         border: OutlineInputBorder(),
@@ -596,7 +596,7 @@ class _HosterProfileDetailScreenState
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: duration,
+                      initialValue: duration,
                       decoration: const InputDecoration(
                         labelText: 'Preferred Duration',
                         border: OutlineInputBorder(),
@@ -841,11 +841,11 @@ class _HosterProfileDetailScreenState
     }
   }
 
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // 1. BASIC INFORMATION
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _basicInfoBody() {
-    final name = s['hosterName'] ?? '—';
+    final name = s['hosterName'] ?? 'â€”';
     final gender = s['gender']?.toString() ?? '';
     final dob = s['dob']?.toString() ?? '';
     final phone = s['phone']?.toString() ?? '';
@@ -868,7 +868,7 @@ class _HosterProfileDetailScreenState
                 _infoRow(
                   Icons.wc_rounded,
                   _blue,
-                  [gender, dob].where((v) => v.isNotEmpty).join(' · '),
+                  [gender, dob].where((v) => v.isNotEmpty).join(' Â· '),
                 ),
               if (phone.isNotEmpty)
                 _infoRow(Icons.phone_outlined, _green, phone),
@@ -900,9 +900,9 @@ class _HosterProfileDetailScreenState
     );
   }
 
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // 2. IDENTITY & COMPLIANCE
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _identityBody() {
     // Determine each doc status from verif fields
     String aadhaarStatus;
@@ -925,7 +925,7 @@ class _HosterProfileDetailScreenState
       panStatus = 'Not Uploaded';
     }
 
-    // Business & Property proof — surfaced from stats map
+    // Business & Property proof â€” surfaced from stats map
     final businessVerified = s['businessProofVerified'] == true;
     final businessUploaded = s['businessProofUrl'] != null;
     final businessStatus = businessVerified
@@ -1105,9 +1105,9 @@ class _HosterProfileDetailScreenState
     );
   }
 
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // 3. BUSINESS INFORMATION
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _businessBody() {
     final role = s['hosterRole']?.toString() ?? 'Individual Owner';
     final experience = s['experience']?.toString() ?? '3-5 Years';
@@ -1149,15 +1149,15 @@ class _HosterProfileDetailScreenState
     );
   }
 
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // 4. BANKING & PAYOUTS
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _bankingBody() {
     final bankName = s['bankName']?.toString() ?? '';
     final accNo = s['bankAccountNo']?.toString() ?? '';
     final ifsc = s['bankIfsc']?.toString() ?? '';
     final maskedAcc = accNo.length > 4
-        ? '•••• ${accNo.substring(accNo.length - 4)}'
+        ? 'â€¢â€¢â€¢â€¢ ${accNo.substring(accNo.length - 4)}'
         : accNo.isEmpty
             ? 'Not added'
             : accNo;
@@ -1241,7 +1241,7 @@ class _HosterProfileDetailScreenState
                 const Divider(height: 1, color: _border),
               ],
               _labelValue('Status',
-                  bankVerified ? '✓ Verified' : 'Pending verification'),
+                  bankVerified ? 'âœ“ Verified' : 'Pending verification'),
             ],
           ),
         ),
@@ -1250,7 +1250,7 @@ class _HosterProfileDetailScreenState
           title: 'Payout History',
           child: _labelValue(
             'Monthly Revenue',
-            '₹${(s['monthlyRevenue'] as num?)?.toStringAsFixed(0) ?? '0'}',
+            'â‚¹${(s['monthlyRevenue'] as num?)?.toStringAsFixed(0) ?? '0'}',
           ),
         ),
       ],
@@ -1288,16 +1288,16 @@ class _HosterProfileDetailScreenState
     );
   }
 
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // 5. PROPERTY SUMMARY
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _propertySummaryBody() {
     final totalProps = s['totalProperties'] as int? ?? 0;
     final activeListings = s['activeListings'] as int? ?? 0;
     final occupiedRooms = s['activeResidents'] as int? ?? 0;
     final vacantRooms = s['vacantBeds'] as int? ?? 0;
     final revenue =
-        '₹${((s['monthlyRevenue'] as num?) ?? 0).toStringAsFixed(0)}';
+        'â‚¹${((s['monthlyRevenue'] as num?) ?? 0).toStringAsFixed(0)}';
     final totalBookings = (s['bookingsConfirmed'] as int? ?? 0) +
         (s['pendingCheckins'] as int? ?? 0);
     final completedBookings = s['bookingsConfirmed'] as int? ?? 0;
@@ -1367,9 +1367,9 @@ class _HosterProfileDetailScreenState
     );
   }
 
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // 6. PERFORMANCE
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _performanceBody() {
     return Column(
       children: [
@@ -1411,9 +1411,9 @@ class _HosterProfileDetailScreenState
     );
   }
 
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // 7. REVIEWS & RATINGS
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _reviewsBody() {
     final rating = (s['rating'] as num?)?.toDouble() ?? 0.0;
     final reviewCount = s['reviewCount'] as int? ?? 0;
@@ -1487,11 +1487,11 @@ class _HosterProfileDetailScreenState
               Expanded(
                 child: Column(
                   children: [
-                    _ratingBar('5★', pct5, Colors.green),
-                    _ratingBar('4★', pct4, Colors.lightGreen),
-                    _ratingBar('3★', pct3, _amber),
-                    _ratingBar('2★', pct2, Colors.orange),
-                    _ratingBar('1★', pct1, _red),
+                    _ratingBar('5â˜…', pct5, Colors.green),
+                    _ratingBar('4â˜…', pct4, Colors.lightGreen),
+                    _ratingBar('3â˜…', pct3, _amber),
+                    _ratingBar('2â˜…', pct2, Colors.orange),
+                    _ratingBar('1â˜…', pct1, _red),
                   ],
                 ),
               ),
@@ -1601,9 +1601,9 @@ class _HosterProfileDetailScreenState
     );
   }
 
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // 8. TRUST SCORE
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _trustScoreBody() {
     final isVerified = s['hosterVerified'] == true;
     final trustScore = (s['trustScore'] as num?)?.toInt() ?? (isVerified ? 91 : 45);
@@ -1757,9 +1757,9 @@ class _HosterProfileDetailScreenState
     );
   }
 
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // 9. PREFERENCES
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _preferencesBody() {
     final bookingType = s['prefBookingType']?.toString() ?? '';
     final tenants = s['prefTenants'];
@@ -1817,9 +1817,9 @@ class _HosterProfileDetailScreenState
     );
   }
 
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // 10. EMERGENCY CONTACT
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _emergencyBody() {
     final name = s['emergencyContactName']?.toString() ?? '';
     final phone = s['emergencyContactPhone']?.toString() ?? '';
@@ -1909,9 +1909,9 @@ class _HosterProfileDetailScreenState
     );
   }
 
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // 11. SECURITY CENTER
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _securityBody() {
     return Column(
       children: [
@@ -1989,9 +1989,9 @@ class _HosterProfileDetailScreenState
     );
   }
 
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // 12. NOTIFICATION SETTINGS
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _notificationsBody() {
     return _sectionCard(
       title: 'Notification Preferences',
@@ -2028,9 +2028,9 @@ class _HosterProfileDetailScreenState
     });
   }
 
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // SHARED WIDGETS
-  // ────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _sectionCard({
     required String title,
     required Widget child,
@@ -2288,7 +2288,7 @@ class _HosterProfileDetailScreenState
   }
 }
 
-// ── Convenience factory to build the detail screen from the profile ──────────
+// â”€â”€ Convenience factory to build the detail screen from the profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 extension HosterProfileDetailRoute on HosterProfileSection {
   String get label {
     switch (this) {
@@ -2320,7 +2320,7 @@ extension HosterProfileDetailRoute on HosterProfileSection {
   }
 }
 
-// ── Quick Actions stand-alone screen ─────────────────────────────────────────
+// â”€â”€ Quick Actions stand-alone screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class HosterQuickActionsScreen extends StatelessWidget {
   final Map<String, dynamic> stats;
   const HosterQuickActionsScreen({super.key, required this.stats});
