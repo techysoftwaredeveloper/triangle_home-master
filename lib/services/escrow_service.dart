@@ -12,7 +12,6 @@ class EscrowService {
     required String bookingId,
     required double deposit,
     required double rent,
-    required double platformFee,
     double commissionRate = 25.0,
   }) async {
     final response = await _apiService.performRequest(
@@ -22,7 +21,6 @@ class EscrowService {
         'bookingId': bookingId,
         'deposit': deposit,
         'rent': rent,
-        'platformFee': platformFee,
         'commissionRate': commissionRate,
       },
     );

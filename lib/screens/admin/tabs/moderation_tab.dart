@@ -4,6 +4,9 @@ import 'package:triangle_home/screens/admin/widgets/admin_shared_widgets.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
+import 'package:triangle_home/services/review_service.dart';
+import 'package:triangle_home/models/review_model.dart';
+
 class ModerationTab extends StatefulWidget {
   final AdminService adminService;
   final bool isNarrow;
@@ -46,14 +49,23 @@ class _ModerationTabState extends State<ModerationTab>
 
   @override
   Widget build(BuildContext context) {
+    final ReviewService reviewService = ReviewService();
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: widget.adminService.getAuditLogsStream(),
-      builder: (context, snapshot) {
-        final allLogs = snapshot.data ?? [];
+      builder: (context, logSnapshot) {
+        return StreamBuilder<List<ReviewModel>>(
+          stream: FirebaseFirestore.instance.collection('reviews').snapshots().map((snap) => snap.docs.map((doc) => ReviewModel.fromFirestore(doc)).toList()),
+          builder: (context, reviewSnapshot) {
+            final allLogs = logSnapshot.data ?? [];
+            final allReviews = reviewSnapshot.data ?? [];
 
-        // Filtering
-        final filteredLogs =
-            allLogs.where((l) {
+            // Filtering Review Logic
+            if (_tabController.index == 3) {
+              return _buildReviewsModerationView(allReviews);
+            }
+
+            // Filtering Audit Logs
+            final filteredLogs = allLogs.where((l) {
               final matchesSearch =
                   (l['id']?.toString().toLowerCase().contains(_searchQuery) ??
                       false) ||
@@ -77,8 +89,6 @@ class _ModerationTabState extends State<ModerationTab>
                   return matchesSearch && type == 'property';
                 case 2:
                   return matchesSearch && type == 'users';
-                case 3:
-                  return matchesSearch && type == 'review';
                 case 4:
                   return matchesSearch && type == 'message';
                 default:
@@ -86,66 +96,148 @@ class _ModerationTabState extends State<ModerationTab>
               }
             }).toList();
 
-        return Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(widget.isNarrow ? 16 : 32),
-                child: Column(
-                  children: [
-                    TabHeader(
-                      title: 'Moderation',
-                      subtitle:
-                          'Review and take action on content, users and listings',
-                      isNarrow: widget.isNarrow,
-                      actions: [
-                        _buildHeaderAction(
-                          'Export',
-                          Icons.file_download_outlined,
-                          isOutline: true,
-                          onPressed: _handleExport,
+            return Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(widget.isNarrow ? 16 : 32),
+                    child: Column(
+                      children: [
+                        TabHeader(
+                          title: 'Moderation',
+                          subtitle:
+                              'Review and take action on content, users and listings',
+                          isNarrow: widget.isNarrow,
+                          actions: [
+                            _buildHeaderAction(
+                              'Export',
+                              Icons.file_download_outlined,
+                              isOutline: true,
+                              onPressed: _handleExport,
+                            ),
+                            const SizedBox(width: 12),
+                            _buildHeaderAction(
+                              'Filters',
+                              Icons.tune_rounded,
+                              hasDropdown: true,
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        _buildHeaderAction(
-                          'Filters',
-                          Icons.tune_rounded,
-                          hasDropdown: true,
-                        ),
+                        const SizedBox(height: 32),
+                        _buildSummaryCards(allLogs),
+                        const SizedBox(height: 32),
+                        _buildCategoryTabs(allLogs, allReviews),
+                        const SizedBox(height: 24),
+                        _buildFilterRow(),
+                        const SizedBox(height: 24),
+                        if (!widget.isNarrow) _buildTableHeader(),
+                        const SizedBox(height: 12),
+                        if (logSnapshot.connectionState == ConnectionState.waiting &&
+                            allLogs.isEmpty)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(40),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        else if (filteredLogs.isEmpty)
+                          _buildEmptyState()
+                        else
+                          _buildModerationList(filteredLogs),
+                        const SizedBox(height: 32),
+                        _buildPaginationFooter(filteredLogs.length),
                       ],
                     ),
-                    const SizedBox(height: 32),
-                    _buildSummaryCards(allLogs),
-                    const SizedBox(height: 32),
-                    _buildCategoryTabs(allLogs),
-                    const SizedBox(height: 24),
-                    _buildFilterRow(),
-                    const SizedBox(height: 24),
-                    if (!widget.isNarrow) _buildTableHeader(),
-                    const SizedBox(height: 12),
-                    if (snapshot.connectionState == ConnectionState.waiting &&
-                        allLogs.isEmpty)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(40),
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                    else if (filteredLogs.isEmpty)
-                      _buildEmptyState()
-                    else
-                      _buildModerationList(filteredLogs),
-                    const SizedBox(height: 32),
-                    _buildPaginationFooter(filteredLogs.length),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            if (!widget.isNarrow && _selectedItem != null) _buildDetailPanel(),
-          ],
+                if (!widget.isNarrow && _selectedItem != null) _buildDetailPanel(),
+              ],
+            );
+          }
         );
       },
     );
+  }
+
+  Widget _buildReviewsModerationView(List<ReviewModel> reviews) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          TabHeader(
+            title: 'Review Moderation',
+            subtitle: 'Delete or flag inappropriate guest reviews',
+            isNarrow: widget.isNarrow,
+          ),
+          const SizedBox(height: 32),
+          _buildCategoryTabs([], reviews),
+          const SizedBox(height: 24),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: reviews.length,
+            itemBuilder: (context, index) {
+              final r = reviews[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade100),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(r.userName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.star, color: Colors.amber, size: 14),
+                              Text(r.rating.toString()),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(r.comment, style: TextStyle(color: Colors.grey.shade600)),
+                          const SizedBox(height: 4),
+                          Text('Property ID: ${r.propertyId}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      onPressed: () => _handleDeleteReview(r),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleDeleteReview(ReviewModel review) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Review?'),
+        content: const Text('Are you sure you want to permanently delete this review?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await ReviewService().deleteReview(review.id, review.propertyId, review.rating);
+    }
   }
 
   Widget _buildEmptyState() {
@@ -303,7 +395,7 @@ class _ModerationTabState extends State<ModerationTab>
     );
   }
 
-  Widget _buildCategoryTabs(List<Map<String, dynamic>> logs) {
+  Widget _buildCategoryTabs(List<Map<String, dynamic>> logs, List<ReviewModel> reviews) {
     final properties = logs.where((l) => l['targetType'] == 'property').length;
     final users = logs.where((l) => l['targetType'] == 'users').length;
 
@@ -324,10 +416,10 @@ class _ModerationTabState extends State<ModerationTab>
           fontFamily: 'Outfit',
         ),
         tabs: [
-          Tab(text: 'All (${logs.length})'),
+          Tab(text: 'All (${logs.length + reviews.length})'),
           Tab(text: 'Listings ($properties)'),
           Tab(text: 'Users ($users)'),
-          const Tab(text: 'Reviews (0)'),
+          Tab(text: 'Reviews (${reviews.length})'),
           const Tab(text: 'Messages (0)'),
         ],
       ),

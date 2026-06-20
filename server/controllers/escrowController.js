@@ -7,21 +7,20 @@ const logger = require('../utils/logger');
  * Ported from EscrowService in Flutter.
  */
 exports.createEscrow = asyncHandler(async (req, res) => {
-    const { bookingId, deposit, rent, platformFee, commissionRate = 25.0 } = req.body;
+    const { bookingId, deposit, rent, commissionRate = 25.0 } = req.body;
 
     if (!bookingId) {
         return res.status(400).json({ success: false, error: 'Booking ID is required' });
     }
 
-    const gross = parseFloat(deposit || 0) + parseFloat(rent || 0) + parseFloat(platformFee || 0);
-    const commissionAmount = (parseFloat(rent || 0) * commissionRate) / 100 + parseFloat(platformFee || 0);
+    const gross = parseFloat(deposit || 0) + parseFloat(rent || 0);
+    const commissionAmount = (parseFloat(rent || 0) * commissionRate) / 100;
     const hosterAmount = gross - commissionAmount;
 
     const escrowData = {
         bookingId,
         depositAmount: deposit,
         rentAmount: rent,
-        platformFeeAmount: platformFee,
         grossAmount: gross,
         commissionRate,
         commissionAmount,

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -553,16 +554,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             _phoneController,
             Icons.phone_android_outlined,
           ),
-          _buildDropdownField(
+          _buildPickerField(
             'Gender',
             ['Male', 'Female', 'Other'],
-            _selectedGender,
+            _selectedGender ?? 'Select Gender',
             (v) => setState(() => _selectedGender = v),
           ),
-          _buildDateField(
+          _buildBottomDateField(
             'Date of Birth',
             _dob,
             (d) => setState(() => _dob = d),
+            maxDate: DateTime.now(),
           ),
         ],
       ),
@@ -678,11 +680,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildDropdownField(
+          _buildCityPickerField(
             'Preferred City',
-            ['Bangalore', 'Kochi', 'Calicut', 'Mumbai'],
             _preferredCity,
-            (v) => setState(() => _preferredCity = v!),
+            (v) => setState(() => _preferredCity = v),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -778,18 +779,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 }).toList(),
           ),
           const SizedBox(height: 24),
-          _buildDateField(
+          _buildBottomDateField(
             'Estimated Move-in Date',
             _moveInDate,
             (d) => setState(() => _moveInDate = d),
           ),
-          _buildDropdownField(
+          _buildPickerField(
             'Stay Duration',
             ['1 Month', '6 Months', '1 Year', '2 Years+'],
             _stayDuration,
-            (v) => setState(() => _stayDuration = v!),
+            (v) => setState(() => _stayDuration = v),
           ),
-          _buildDropdownField(
+          _buildPickerField(
             'Family Size',
             ['1', '2', '3', '4', '5+'],
             _familySize == 5 ? '5+' : _familySize.toString(),
@@ -798,7 +799,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 if (v == '5+') {
                   _familySize = 5;
                 } else {
-                  _familySize = int.parse(v!);
+                  _familySize = int.parse(v);
                 }
               });
             },
@@ -1166,6 +1167,262 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           filled: true,
           fillColor: readOnly ? AppTheme.secondaryColor : Colors.transparent,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCityPickerField(
+    String label,
+    String current,
+    Function(String) onSelected,
+  ) {
+    return _buildPickerField(
+      label,
+      null, // Fetch internally or pass null
+      current,
+      onSelected,
+      isCityPicker: true,
+    );
+  }
+
+  Widget _buildPickerField(
+    String label,
+    List<String>? options,
+    String current,
+    Function(String) onSelected, {
+    bool isCityPicker = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: InkWell(
+        onTap: () async {
+          List<String> items = options ?? [];
+          if (isCityPicker) {
+            items = await LocationApiService().getMajorCities();
+          }
+          if (items.isEmpty) return;
+
+          int selectedIndex = items.indexOf(current);
+          if (selectedIndex == -1) selectedIndex = 0;
+
+          if (!mounted) return;
+
+          showModalBottomSheet(
+            context: context,
+            backgroundColor: Colors.white,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            builder: (context) {
+              return SizedBox(
+                height: 300,
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: AppTheme.dividerColor),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancel'),
+                          ),
+                          Text(
+                            'Select $label',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              onSelected(items[selectedIndex]);
+                              Navigator.pop(context);
+                            },
+                            child: const Text(
+                              'Done',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: CupertinoPicker(
+                        itemExtent: 40,
+                        scrollController: FixedExtentScrollController(
+                          initialItem: selectedIndex,
+                        ),
+                        onSelectedItemChanged: (index) {
+                          selectedIndex = index;
+                        },
+                        children:
+                            items
+                                .map(
+                                  (c) => Center(
+                                    child: Text(
+                                      c,
+                                      style: const TextStyle(fontSize: 18),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: Icon(
+              isCityPicker ? Icons.location_city_outlined : Icons.list,
+              size: 20,
+              color: AppTheme.textMutedColor,
+            ),
+            border: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppTheme.dividerColor),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                current.isNotEmpty ? current : 'Select',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Icon(Icons.arrow_drop_down, color: AppTheme.textMutedColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomDateField(
+    String label,
+    DateTime? current,
+    Function(DateTime) onSelected, {
+    DateTime? minDate,
+    DateTime? maxDate,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: InkWell(
+        onTap: () {
+          DateTime selectedDate =
+              current ??
+              (label.contains('Birth') ? DateTime(2000) : DateTime.now());
+
+          showModalBottomSheet(
+            context: context,
+            backgroundColor: Colors.white,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            builder: (context) {
+              return SizedBox(
+                height: 350,
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: AppTheme.dividerColor),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancel'),
+                          ),
+                          Text(
+                            label,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              onSelected(selectedDate);
+                              Navigator.pop(context);
+                            },
+                            child: const Text(
+                              'Done',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: CupertinoDatePicker(
+                        mode: CupertinoDatePickerMode.date,
+                        initialDateTime: selectedDate,
+                        minimumDate: minDate ?? DateTime(1950),
+                        maximumDate:
+                            maxDate ??
+                            DateTime.now().add(const Duration(days: 730)),
+                        onDateTimeChanged: (DateTime newDate) {
+                          selectedDate = newDate;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: Icon(
+              Icons.calendar_today,
+              size: 20,
+              color: AppTheme.textMutedColor,
+            ),
+            border: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppTheme.dividerColor),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                current != null
+                    ? DateFormat('dd MMM yyyy').format(current)
+                    : 'Select Date',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Icon(Icons.arrow_drop_down, color: AppTheme.textMutedColor),
+            ],
+          ),
         ),
       ),
     );

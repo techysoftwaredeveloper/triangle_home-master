@@ -104,6 +104,24 @@ class PropertyService {
     await updateProperty(id, {'status': status.name});
   }
 
+  /// Request a specific management action for a property
+  Future<void> requestPropertyAction(String propertyId, PropertyStatus status) async {
+    try {
+      final result = await _apiService.performRequest(
+        method: 'PATCH',
+        endpoint: '/properties/$propertyId/status',
+        body: {'status': status.name},
+      );
+
+      if (result == null || result['success'] != true) {
+        throw PropertyFailure(result?['error'] ?? 'Failed to update property status');
+      }
+    } catch (e) {
+      debugPrint('Error updating property status: $e');
+      throw PropertyFailure('Failed to request property action: $e');
+    }
+  }
+
   // ==================== PRIVATE VAULT ====================
 
   Future<PropertyPrivateDetails?> getPrivateDetails(String propertyId) async {
@@ -515,6 +533,25 @@ class PropertyService {
       return await query.get();
     } catch (e) {
       throw PropertyFailure('Failed to fetch properties: $e');
+    }
+  }
+
+  /// Fetches personalized property recommendations from the Node.js backend
+  Future<List<Map<String, dynamic>>> getRecommendedProperties() async {
+    try {
+      final result = await _apiService.performRequest(
+        method: 'GET',
+        endpoint: '/recommendations',
+      );
+
+      if (result != null && result['success'] == true) {
+        return List<Map<String, dynamic>>.from(result['results']);
+      } else {
+        return [];
+      }
+    } catch (e) {
+      debugPrint('Recommendations API Error: $e');
+      return [];
     }
   }
 

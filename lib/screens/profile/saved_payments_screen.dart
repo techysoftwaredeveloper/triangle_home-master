@@ -342,12 +342,12 @@ class _SavedPaymentsScreenState extends State<SavedPaymentsScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppTheme.successColor.withValues(alpha: 0.1),
+                  color: AppTheme.successGreen.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.account_balance_rounded,
-                  color: AppTheme.successColor,
+                  color: AppTheme.successGreen,
                   size: 20,
                 ),
               ),

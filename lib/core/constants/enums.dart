@@ -45,7 +45,18 @@ enum BookingStatus {
   confirmed,
 }
 
-enum PropertyStatus { pending, approved, rejected, suspended, active, paused }
+enum PropertyStatus { 
+  pending, 
+  approved, 
+  rejected, 
+  suspended, 
+  active, 
+  paused, 
+  blocked, 
+  renewal, 
+  disabled, 
+  deleteRequested 
+}
 
 enum PaymentStatus { pending, completed, failed, refunded, partiallyPaid }
 

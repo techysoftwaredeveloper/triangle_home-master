@@ -16,6 +16,7 @@ class AppTheme {
     0xFF3B82F6,
   ); // Bright blue (links/focus)
   static const Color successColor = Color(0xFF1B4332); // Forest Green (Hoster side standard)
+  static const Color successGreen = Color(0xFF22C55E); // Light/Vibrant Green (User side standard)
   static const Color forestGreen = Color(0xFF1B4332);
   static const Color warningColor = Color(0xFFFBBF24); // Amber/Yellow
   static const Color errorColor = Color(0xFFEF4444); // Red

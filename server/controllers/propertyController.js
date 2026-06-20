@@ -397,3 +397,36 @@ exports.createProperty = asyncHandler(async (req, res) => {
     const docRef = await db.collection('properties').add(propertyData);
     res.status(201).json({ success: true, id: docRef.id });
 });
+
+// Update property status (Hoster self-action)
+exports.updateStatus = asyncHandler(async (req, res) => {
+    const { propertyId } = req.params;
+    const { status } = req.body;
+    const hosterId = req.user.uid;
+
+    const propertyRef = db.collection('properties').doc(propertyId);
+    const propertyDoc = await propertyRef.get();
+
+    if (!propertyDoc.exists) {
+        return res.status(404).json({ success: false, error: 'Property not found' });
+    }
+
+    const data = propertyDoc.data();
+    // Validate Ownership
+    if (data.hoster_id !== hosterId && data.hosterId !== hosterId) {
+        return res.status(403).json({ success: false, error: 'Unauthorized: You do not own this property' });
+    }
+
+    // Allowed status transitions for hosters
+    const allowedStatuses = ['active', 'blocked', 'renewal', 'disabled', 'deleteRequested'];
+    if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({ success: false, error: 'Invalid status requested' });
+    }
+
+    await propertyRef.update({
+        status: status,
+        updatedAt: new Date().toISOString()
+    });
+
+    res.json({ success: true, message: `Property status updated to ${status}` });
+});

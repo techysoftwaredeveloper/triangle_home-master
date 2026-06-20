@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:triangle_home/core/constants/enums.dart';
 import 'package:triangle_home/models/room_model.dart';
 import 'package:triangle_home/services/admin_api_service.dart';
@@ -83,7 +84,7 @@ class InventoryService {
     await _adminApiService.reconcileProperty(propertyId);
   }
 
-  /// Locks a bed for a user with a 15-minute expiry window in flat structure
+  /// Locks a bed for a user with a 15-minute expiry window via backend API
   Future<void> lockBedForUser({
     required String propertyId,
     required String roomId,
@@ -94,71 +95,55 @@ class InventoryService {
       throw 'Invalid identifiers provided for bed locking';
     }
 
-    final roomRef = _firestore.collection('rooms').doc(roomId);
-    final nestedRoomRef = _firestore.collection('properties').doc(propertyId).collection('rooms').doc(roomId);
-    final flatBedRef = _firestore.collection('beds').doc(bedId);
-    final propBedRef = _firestore.collection('properties').doc(propertyId).collection('beds').doc(bedId);
-    final roomBedRef = nestedRoomRef.collection('beds').doc(bedId);
-    final statsRef = _firestore.collection('propertyStats').doc(propertyId);
-    final reservationRef = _firestore.collection('bed_reservations').doc();
+    try {
+      final response = await _adminApiService.performRequest(
+        method: 'POST',
+        endpoint: '/bookings/lock-bed',
+        body: {
+          'propertyId': propertyId,
+          'roomId': roomId,
+          'bedId': bedId,
+        },
+      );
 
-    await _firestore.runTransaction((transaction) async {
-      // 1. Verify Bed Existence & Status
-      final bedDoc = await transaction.get(flatBedRef);
-      if (!bedDoc.exists) throw 'Bed document not found';
-
-      final bedData = bedDoc.data()!;
-      if (bedData['status'] != BedStatus.available.name) {
-        throw 'Bed is no longer available';
+      if (response['success'] != true) {
+        throw response['error'] ?? 'Failed to lock bed';
       }
+    } catch (e) {
+      debugPrint('Bed locking API error: $e');
+      rethrow;
+    }
+  }
 
-      // 2. Verify Room Existence
-      final roomDoc = await transaction.get(roomRef);
-      if (!roomDoc.exists) throw 'Room document not found';
-
-      final expiry = DateTime.now().add(const Duration(minutes: 15));
-
-      // 3. Update Bed Status in all 3 collections
-      final bedUpdates = {
-        'status': BedStatus.reserved.name,
-        'reservedBy': userId,
-        'reservationExpiresAt': Timestamp.fromDate(expiry),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-      transaction.update(flatBedRef, bedUpdates);
-      transaction.update(propBedRef, bedUpdates);
-      transaction.update(roomBedRef, bedUpdates);
-
-      // 4. Create Reservation Audit
-      transaction.set(reservationRef, {
-        'propertyId': propertyId,
-        'roomId': roomId,
-        'bedId': bedId,
-        'userId': userId,
-        'status': 'active',
-        'expiresAt': Timestamp.fromDate(expiry),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      // 5. Update Counters (Room)
-      transaction.update(roomRef, {'availableBeds': FieldValue.increment(-1)});
-      
-      // 6. Update Counters (Property Stats) - Use set with merge to be resilient to missing docs
-      transaction.set(statsRef, {
-        'availableBeds': FieldValue.increment(-1),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      // 7. Log Event
-      transaction.set(_firestore.collection('inventory_events').doc(), {
-        'type': InventoryEventType.bedReserved.name,
-        'propertyId': propertyId,
-        'roomId': roomId,
-        'bedId': bedId,
-        'userId': userId,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-    });
+  /// Releases a bed lock for a user via backend API
+  Future<void> releaseBedLock({
+    required String propertyId,
+    required String roomId,
+    required String bedId,
+  }) async {
+    try {
+      await _adminApiService.performRequest(
+        method: 'POST',
+        endpoint: '/bookings/unlock-bed',
+        body: {
+          'propertyId': propertyId,
+          'roomId': roomId,
+          'bedId': bedId,
+        },
+      );
+    } catch (e) {
+      debugPrint('Bed unlocking API error: $e');
+      // If API fails, fallback to direct Firestore update if possible
+      try {
+        await _firestore.collection('beds').doc(bedId).update({
+          'status': BedStatus.available.name,
+          'reservedBy': null,
+          'reservationExpiresAt': null,
+        });
+      } catch (firestoreError) {
+        debugPrint('Firestore fallback unlocking error: $firestoreError');
+      }
+    }
   }
 
   /// Permanently assigns a resident to a bed in flat structure

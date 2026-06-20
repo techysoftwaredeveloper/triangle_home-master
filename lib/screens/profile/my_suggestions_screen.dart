@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/models/property_suggestion.dart';
 
 class MySuggestionsScreen extends StatefulWidget {
@@ -225,7 +226,7 @@ class _MySuggestionsScreenState extends State<MySuggestionsScreen> {
           _buildStatItem(
             total.toString(),
             'Total\nSuggestions',
-            const Color(0xFF22C55E),
+            AppTheme.successGreen,
           ),
           _buildStatItem(
             review.toString(),
@@ -240,7 +241,7 @@ class _MySuggestionsScreenState extends State<MySuggestionsScreen> {
           _buildStatItem(
             approved.toString(),
             'Approved',
-            const Color(0xFF22C55E),
+            AppTheme.successGreen,
           ),
         ],
       ),
@@ -369,7 +370,7 @@ class _MySuggestionsScreenState extends State<MySuggestionsScreen> {
 
     switch (s.status) {
       case SuggestionStatus.approved:
-        statusColor = const Color(0xFF22C55E);
+        statusColor = AppTheme.successGreen;
         statusIcon = Icons.check_circle;
         statusBadgeText = 'Approved';
         badgeBg = const Color(0xFFF0FDF4);

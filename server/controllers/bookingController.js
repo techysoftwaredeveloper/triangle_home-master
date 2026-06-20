@@ -9,7 +9,7 @@ exports.createBooking = asyncHandler(async (req, res) => {
     return res.status(400).json({ success: false, errors: errors.array() });
   }
 
-  const { propertyId, price, type, tenantDetails } = req.body;
+  const { propertyId, roomId, bedId, price, type, tenantDetails, breakdown, moveInDate, floor, roomName, bedName } = req.body;
   const userId = req.user.uid;
 
   await db.runTransaction(async (transaction) => {
@@ -23,25 +23,37 @@ exports.createBooking = asyncHandler(async (req, res) => {
     }
 
     const propertyData = propertyDoc.data();
-    const capacity = propertyData.capacity || 0;
-    const currentOccupancy = propertyData.currentOccupancy || 0;
 
-    if (currentOccupancy >= capacity) {
-      const error = new Error('Property is already at full capacity');
-      error.statusCode = 400;
-      throw error;
+    // Check occupancy if not selecting a specific bed
+    if (!bedId) {
+      const capacity = propertyData.capacity || 0;
+      const currentOccupancy = propertyData.currentOccupancy || 0;
+
+      if (currentOccupancy >= capacity) {
+        const error = new Error('Property is already at full capacity');
+        error.statusCode = 400;
+        throw error;
+      }
     }
 
     const bookingRef = db.collection('bookings').doc();
     const bookingData = {
       user_id: userId,
       property_id: propertyId,
+      roomId: roomId || null,
+      bedId: bedId || null,
       propertyData: {
           title: propertyData.basicInfo?.collegeName || propertyData.name || 'Property',
           location: `${propertyData.locality || ''}, ${propertyData.city || ''}`,
-          image: propertyData.images?.[0] || ''
+          image: propertyData.images?.[0] || '',
+          type: type || propertyData.type || '',
+          floor: floor || null,
+          roomName: roomName || null,
+          bedName: bedName || null,
+          moveInDate: moveInDate || new Date().toISOString()
       },
       price,
+      breakdown: breakdown || null,
       type,
       tenantDetails,
       status: 'pending',

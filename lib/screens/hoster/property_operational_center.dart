@@ -174,18 +174,6 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
     );
   }
 
-  void _showAddFloorDialog() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _AddFloorBottomSheet(
-        propertyId: widget.propertyId,
-        onComplete: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Floor added successfully'))),
-      ),
-    );
-  }
-
   void _showAddBedDialog(Map<String, dynamic> room) {
     showModalBottomSheet(
       context: context,
@@ -246,9 +234,13 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
         children: [
           Row(
             children: [
-              Text(
-                widget.propertyData['name'] ?? 'Property Name',
-                style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'Outfit'),
+              Flexible(
+                child: Text(
+                  widget.propertyData['name'] ?? 'Property Name',
+                  style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'Outfit'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               const SizedBox(width: 8),
               Container(
@@ -262,9 +254,13 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
             children: [
               const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF64748B)),
               const SizedBox(width: 4),
-              Text(
-                '${widget.propertyData['locality'] ?? ""}, ${widget.propertyData['city'] ?? "Kochi"}',
-                style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+              Expanded(
+                child: Text(
+                  '${widget.propertyData['locality'] ?? ""}, ${widget.propertyData['city'] ?? "Kochi"}',
+                  style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -279,18 +275,25 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
   }
 
   Widget _appBarAction(IconData icon, String label, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: const Color(0xFF1E293B), size: 20),
-            Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 9)),
-          ],
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: const Color(0xFF1E293B), size: 18),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 8)),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
     );
   }
 
@@ -301,14 +304,17 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              _tag(Icons.apartment_rounded, 'Hostel / PG'),
-              const SizedBox(width: 8),
-              _tag(Icons.male_rounded, 'Male Accommodation'),
-              const SizedBox(width: 8),
-              _tag(Icons.restaurant_rounded, 'Food Available'),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _tag(Icons.apartment_rounded, 'Hostel / PG'),
+                const SizedBox(width: 8),
+                _tag(Icons.male_rounded, 'Male Accommodation'),
+                const SizedBox(width: 8),
+                _tag(Icons.restaurant_rounded, 'Food Available'),
+              ],
+            ),
           ),
           const SizedBox(height: 20),
           SingleChildScrollView(
@@ -841,7 +847,19 @@ class _OverviewTab extends StatelessWidget {
   Widget _qAction(IconData i, String l, Color c) {
     return Container(
       decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFE2E8F0))),
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(i, color: c, size: 14), const SizedBox(height: 2), Text(l, style: const TextStyle(fontSize: 7, fontWeight: FontWeight.bold), textAlign: TextAlign.center)]),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center, 
+        children: [
+          Flexible(child: Icon(i, color: c, size: 14)), 
+          const SizedBox(height: 2), 
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(l, style: const TextStyle(fontSize: 7, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -853,7 +871,19 @@ class _OverviewTab extends StatelessWidget {
   }
 
   Widget _amenity(IconData i, String l) {
-    return Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(i, size: 14, color: const Color(0xFF16A34A)), const SizedBox(height: 2), Text(l, style: const TextStyle(fontSize: 7, color: Color(0xFF64748B)))]);
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center, 
+      children: [
+        Flexible(child: Icon(i, size: 14, color: const Color(0xFF16A34A))), 
+        const SizedBox(height: 2), 
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(l, style: const TextStyle(fontSize: 7, color: Color(0xFF64748B))),
+          ),
+        ),
+      ],
+    );
   }
 
   Color _getBedColorByCode(String code) {
@@ -873,13 +903,11 @@ class _FloorSection extends StatefulWidget {
   final int floorTotal;
   final Widget Function(String) bedIndicatorBuilder;
   final Widget Function(String, String, List<String>, {String? occupancyType, VoidCallback? onAddBed}) roomCardBuilder;
-  final VoidCallback onAddRoom;
 
   const _FloorSection({
     required this.floorNumber, required this.rooms, required this.beds,
     required this.floorOccupied, required this.floorTotal,
     required this.bedIndicatorBuilder, required this.roomCardBuilder,
-    required this.onAddRoom,
   });
 
   @override
@@ -1348,10 +1376,6 @@ class _BedsTabState extends State<_BedsTab> {
             floorTotal: floorBeds.length,
             bedIndicatorBuilder: _bedIndicator,
             roomCardBuilder: _roomCard,
-            onAddRoom: () {
-               final state = context.findAncestorStateOfType<_PropertyOperationalCenterState>();
-               state?._showAddRoomDialog(initialFloor: floor);
-            },
           );
         }
 
@@ -1361,10 +1385,6 @@ class _BedsTabState extends State<_BedsTab> {
           floorTotal: floorBeds.length,
           bedIndicatorBuilder: _bedIndicator,
           roomCardBuilder: _roomCard,
-          onAddRoom: () {
-             final state = context.findAncestorStateOfType<_PropertyOperationalCenterState>();
-             state?._showAddRoomDialog(initialFloor: floor);
-          },
         );
       }).toList(),
     );
@@ -2614,83 +2634,372 @@ class _AddRoomBottomSheetState extends State<_AddRoomBottomSheet> {
   final _numberController = TextEditingController();
   final _floorController = TextEditingController();
   final _rentController = TextEditingController();
-  int _bedCount = 1; RoomType _selectedType = RoomType.single; bool _isLoading = false;
+  int _bedCount = 1;
+  RoomType _selectedType = RoomType.single;
+  bool _isLoading = false;
+  String? _newFloorNumberingSystem;
+  bool _isNewFloor = false;
 
-  @override void initState() {
+  final List<String> _numberingSystems = [
+    'Numeric (101)',
+    'Floor Based',
+    'Alpha-Numeric',
+  ];
+
+  @override
+  void initState() {
     super.initState();
     if (widget.initialFloor != null) {
       _floorController.text = widget.initialFloor.toString();
+      _checkIfNewFloor(widget.initialFloor.toString());
       _suggestRoomNumber();
     }
-    _floorController.addListener(_suggestRoomNumber);
+    _floorController.addListener(() {
+      _checkIfNewFloor(_floorController.text);
+      _suggestRoomNumber();
+    });
+  }
+
+  Future<void> _checkIfNewFloor(String val) async {
+    final floorNum = int.tryParse(val);
+    if (floorNum == null) return;
+
+    final floorsSnap = await FirebaseFirestore.instance
+        .collection('properties')
+        .doc(widget.propertyId)
+        .collection('floors')
+        .where('floorNumber', isEqualTo: floorNum)
+        .get();
+
+    if (mounted) {
+      setState(() {
+        _isNewFloor = floorsSnap.docs.isEmpty;
+        if (_isNewFloor && _newFloorNumberingSystem == null) {
+          _newFloorNumberingSystem = widget.propertyData['numberingSystem'] ?? 'Numeric (101)';
+        }
+      });
+    }
   }
 
   Future<void> _suggestRoomNumber() async {
     final floor = int.tryParse(_floorController.text);
     if (floor == null) return;
-    final system = widget.propertyData['numberingSystem'] ?? 'Numeric (101)';
+    final system = _isNewFloor
+        ? (_newFloorNumberingSystem ?? 'Numeric (101)')
+        : (widget.propertyData['numberingSystem'] ?? 'Numeric (101)');
     final suggestion = await _structureService.getNextRoomNumber(widget.propertyId, floor, system);
     if (suggestion.isNotEmpty && mounted) setState(() => _numberController.text = suggestion);
   }
 
-  @override Widget build(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
       padding: EdgeInsets.fromLTRB(24, 12, 24, MediaQuery.of(context).viewInsets.bottom + 24),
-      child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const SizedBox(height: 20),
-        const Text('Add New Room', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 24),
-        TextField(controller: _numberController, decoration: const InputDecoration(labelText: 'Room Number', border: OutlineInputBorder())),
-        const SizedBox(height: 16),
-        Row(children: [Expanded(child: TextField(controller: _floorController, decoration: const InputDecoration(labelText: 'Floor', border: OutlineInputBorder()), keyboardType: TextInputType.number)), const SizedBox(width: 16), Expanded(child: TextField(controller: _rentController, decoration: const InputDecoration(labelText: 'Rent', border: OutlineInputBorder()), keyboardType: TextInputType.number))]),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _submit,
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF064E3B), foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 50)),
-          child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Create Room'),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const Text('Add New Room', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+            const Text('Add room details for this property', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+            const SizedBox(height: 24),
+            _buildInputField(
+              controller: _numberController,
+              label: 'Room Number',
+              hint: 'e.g. 101, A-12',
+              icon: Icons.door_front_door_outlined,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildInputField(
+                    controller: _floorController,
+                    label: 'Floor Number',
+                    hint: 'e.g. 1, 2, 3',
+                    icon: Icons.layers_outlined,
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildInputField(
+                    controller: _rentController,
+                    label: 'Monthly Rent (₹)',
+                    hint: 'e.g. 5000',
+                    icon: Icons.payments_outlined,
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(child: _buildBedCounter()),
+                const SizedBox(width: 16),
+                Expanded(child: _buildTypeDropdown()),
+              ],
+            ),
+            if (_isNewFloor) ...[
+              const SizedBox(height: 16),
+              _buildNumberingSystemDropdown(),
+            ],
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(12)),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Color(0xFF3B82F6)),
+                  SizedBox(width: 8),
+                  Text('All fields are required', style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 56),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    child: const Text('Cancel', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF064E3B),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(0, 56),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text('Add Room', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-      ])),
+      ),
+    );
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: const Color(0xFF1E293B)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                TextField(
+                  controller: controller,
+                  keyboardType: keyboardType,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                    hintText: hint,
+                    hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                    border: InputBorder.none,
+                  ),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBedCounter() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Number of Beds', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.bed_outlined, size: 20, color: Color(0xFF1E293B)),
+              const Spacer(),
+              _counterBtn(Icons.remove, () { if (_bedCount > 1) setState(() => _bedCount--); }),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text('$_bedCount', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              ),
+              _counterBtn(Icons.add, () => setState(() => _bedCount++)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _counterBtn(IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(6)),
+        child: Icon(icon, size: 16, color: const Color(0xFF1E293B)),
+      ),
+    );
+  }
+
+  Widget _buildTypeDropdown() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Room Type', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          Row(
+            children: [
+              const Icon(Icons.category_outlined, size: 20, color: Color(0xFF1E293B)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<RoomType>(
+                    value: _selectedType,
+                    isDense: true,
+                    isExpanded: true,
+                    items: RoomType.values.map((t) => DropdownMenuItem(value: t, child: Text(t.name.capitalize(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)))).toList(),
+                    onChanged: (v) => setState(() => _selectedType = v!),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNumberingSystemDropdown() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('New Floor: Pick Numbering System', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _newFloorNumberingSystem,
+              isDense: true,
+              isExpanded: true,
+              items: _numberingSystems.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)))).toList(),
+              onChanged: (v) => setState(() => _newFloorNumberingSystem = v),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Future<void> _submit() async {
+    if (_numberController.text.isEmpty || _floorController.text.isEmpty || _rentController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all required fields')));
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
-      final floor = int.tryParse(_floorController.text) ?? 0;
-      final floorsSnap = await FirebaseFirestore.instance.collection('properties').doc(widget.propertyId).collection('floors').where('floorNumber', isEqualTo: floor).get();
-      String fId = floorsSnap.docs.isNotEmpty ? floorsSnap.docs.first.id : FirebaseFirestore.instance.collection('properties').doc(widget.propertyId).collection('floors').doc().id;
-      await _structureService.createRoomWithBeds(propertyId: widget.propertyId, floorId: fId, roomData: {'roomNumber': _numberController.text, 'roomType': _selectedType.name, 'floor': floor, 'genderRestriction': widget.propertyData['gender'] ?? 'Anyone'}, bedCount: _bedCount, numberingSystem: widget.propertyData['numberingSystem'] ?? 'Numeric (101)');
-      widget.onComplete(); Navigator.pop(context);
-    } catch (e) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'))); } finally { setState(() => _isLoading = false); }
-  }
-}
+      final floorNum = int.tryParse(_floorController.text) ?? 0;
+      final rent = double.tryParse(_rentController.text) ?? 0;
 
-class _AddFloorBottomSheet extends StatefulWidget {
-  final String propertyId; final VoidCallback onComplete;
-  const _AddFloorBottomSheet({required this.propertyId, required this.onComplete});
-  @override State<_AddFloorBottomSheet> createState() => _AddFloorBottomSheetState();
-}
-class _AddFloorBottomSheetState extends State<_AddFloorBottomSheet> {
-  final _structureService = PropertyStructureService();
-  final _nameController = TextEditingController(); final _numberController = TextEditingController(); bool _isLoading = false;
-  @override void initState() { super.initState(); _suggestFloor(); }
-  Future<void> _suggestFloor() async { final next = await _structureService.getNextFloorNumber(widget.propertyId); setState(() { _numberController.text = next.toString(); _nameController.text = next == 0 ? 'Ground Floor' : 'Floor $next'; }); }
-  @override Widget build(BuildContext context) {
-    return Container(padding: const EdgeInsets.all(24), decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(28))), child: Column(mainAxisSize: MainAxisSize.min, children: [
-      const Text('Add Floor', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 24),
-      TextField(controller: _numberController, decoration: const InputDecoration(labelText: 'Floor Number', border: OutlineInputBorder()), keyboardType: TextInputType.number),
-      const SizedBox(height: 16),
-      TextField(controller: _nameController, decoration: const InputDecoration(labelText: 'Floor Name', border: OutlineInputBorder())),
-      const SizedBox(height: 24),
-      ElevatedButton(onPressed: _isLoading ? null : _submit, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF064E3B), foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 50)), child: const Text('Add Floor')),
-    ]));
-  }
-  Future<void> _submit() async {
-    setState(() => _isLoading = true);
-    try { await _structureService.createFloor(widget.propertyId, {'floorNumber': int.tryParse(_numberController.text) ?? 0, 'name': _nameController.text, 'status': 'Active'}); widget.onComplete(); Navigator.pop(context); }
-    catch (e) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'))); } finally { setState(() => _isLoading = false); }
+      final floorsSnap = await FirebaseFirestore.instance
+          .collection('properties')
+          .doc(widget.propertyId)
+          .collection('floors')
+          .where('floorNumber', isEqualTo: floorNum)
+          .get();
+
+      String fId;
+      if (floorsSnap.docs.isNotEmpty) {
+        fId = floorsSnap.docs.first.id;
+      } else {
+        fId = FirebaseFirestore.instance.collection('properties').doc(widget.propertyId).collection('floors').doc().id;
+      }
+
+      await _structureService.createRoomWithBeds(
+        propertyId: widget.propertyId,
+        floorId: fId,
+        roomData: {
+          'roomNumber': _numberController.text,
+          'roomType': _selectedType.name,
+          'occupancyType': _selectedType == RoomType.single ? 'Single Occupancy' : '${_bedCount} Sharing',
+          'floor': floorNum,
+          'baseRent': rent,
+          'genderRestriction': widget.propertyData['gender'] ?? 'Anyone',
+        },
+        bedCount: _bedCount,
+        numberingSystem: _isNewFloor
+            ? (_newFloorNumberingSystem ?? 'Numeric (101)')
+            : (widget.propertyData['numberingSystem'] ?? 'Numeric (101)'),
+      );
+
+      widget.onComplete();
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 }
 
@@ -2701,20 +3010,130 @@ class _AddBedBottomSheet extends StatefulWidget {
 }
 class _AddBedBottomSheetState extends State<_AddBedBottomSheet> {
   final _structureService = PropertyStructureService();
-  int _count = 1; bool _isLoading = false;
-  @override Widget build(BuildContext context) {
-    return Container(padding: const EdgeInsets.all(24), decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(28))), child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Text('Add Bed to ${widget.room['roomNumber']}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 24),
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Number of Beds'), Row(children: [IconButton(icon: const Icon(Icons.remove), onPressed: () => setState(() => _count = _count > 1 ? _count - 1 : 1)), Text('$_count'), IconButton(icon: const Icon(Icons.add), onPressed: () => setState(() => _count++))])]),
-      const SizedBox(height: 24),
-      ElevatedButton(onPressed: _isLoading ? null : _submit, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF064E3B), foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 50)), child: const Text('Add Beds')),
-    ]));
+  int _count = 1;
+  bool _isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      padding: EdgeInsets.fromLTRB(24, 12, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          Text('Add Bed to ${widget.room['roomNumber']}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+          const Text('Increase bed capacity for this room', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.bed_outlined, size: 24, color: Color(0xFF1E293B)),
+                    SizedBox(width: 12),
+                    Text('Number of Beds', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    _counterBtn(Icons.remove, () { if (_count > 1) setState(() => _count--); }),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('$_count', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    ),
+                    _counterBtn(Icons.add, () => setState(() => _count++)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 56),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  child: const Text('Cancel', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF064E3B),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(0, 56),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Add Beds', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
+
+  Widget _counterBtn(IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
+        child: Icon(icon, size: 20, color: const Color(0xFF1E293B)),
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     setState(() => _isLoading = true);
-    try { await _structureService.addBedsToRoom(propertyId: widget.propertyId, roomId: widget.room['id'], floorId: widget.room['floorId'], floor: widget.room['floor'], count: _count, roomNumber: widget.room['roomNumber'], rent: (widget.room['baseRent'] as num?)?.toDouble() ?? 0, numberingSystem: widget.propertyData['numberingSystem'] ?? 'Numeric (101)'); widget.onComplete(); Navigator.pop(context); }
-    catch (e) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'))); } finally { setState(() => _isLoading = false); }
+    try {
+      await _structureService.addBedsToRoom(
+        propertyId: widget.propertyId,
+        roomId: widget.room['id'],
+        floorId: widget.room['floorId'],
+        floor: widget.room['floor'],
+        count: _count,
+        roomNumber: widget.room['roomNumber'],
+        rent: (widget.room['baseRent'] as num?)?.toDouble() ?? 0,
+        numberingSystem: widget.propertyData['numberingSystem'] ?? 'Numeric (101)',
+      );
+      widget.onComplete();
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 }
 

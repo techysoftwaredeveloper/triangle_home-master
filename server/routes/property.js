@@ -7,5 +7,6 @@ router.use(verifyToken);
 
 router.post('/', propertyController.createProperty);
 router.post('/:propertyId/reconcile', propertyController.reconcileOccupancy);
+router.patch('/:propertyId/status', propertyController.updateStatus);
 
 module.exports = router;

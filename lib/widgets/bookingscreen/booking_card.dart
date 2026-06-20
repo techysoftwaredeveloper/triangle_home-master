@@ -135,7 +135,9 @@
 // lib/widgets/bookingscreen/booking_card.dart
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:triangle_home/screens/payment/payment_screen.dart';
+import 'package:triangle_home/screens/payment/secure_checkout_page.dart';
+import 'package:triangle_home/screens/resident/submit_review_screen.dart';
+import 'package:triangle_home/theme/app_theme.dart';
 
 class BookingCard extends StatelessWidget {
   final Map<String, dynamic> booking;
@@ -144,7 +146,9 @@ class BookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isConfirmed = booking['status'] == 'confirmed';
+    final bool isConfirmed = booking['status'] == 'bookingConfirmed';
+    final bool canReview = booking['status'] == 'checkInCompleted' || booking['status'] == 'checkOutCompleted';
+    final bool needsPayment = booking['status'] == 'reservationPending' || booking['status'] == 'approved' || booking['status'] == 'pending';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -243,39 +247,66 @@ class BookingCard extends StatelessWidget {
                   style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
                 const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (isConfirmed) {
+                if (canReview)
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => PaymentScreen(booking: booking),
+                            builder: (_) => SubmitReviewScreen(
+                              propertyId: booking['propertyId'] ?? '',
+                              bookingId: booking['id'] ?? '',
+                              propertyName: booking['title'] ?? 'Property',
+                            ),
                           ),
                         );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          isConfirmed ? const Color(0xFF1E3A8A) : Colors.white,
-                      foregroundColor:
-                          isConfirmed ? Colors.white : const Color(0xFF1E3A8A),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side:
-                          isConfirmed
-                              ? null
-                              : const BorderSide(color: Color(0xFF1E3A8A)),
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.primaryColor,
+                        side: const BorderSide(color: AppTheme.primaryColor),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Rate Your Stay', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
-                    child: Text(
-                      isConfirmed ? 'Complete Payment' : 'View Details',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                  )
+                else
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (isConfirmed || needsPayment) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SecureCheckoutPage(booking: booking),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            (isConfirmed || needsPayment) ? AppTheme.primaryColor : Colors.white,
+                        foregroundColor:
+                            (isConfirmed || needsPayment) ? Colors.white : AppTheme.primaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side:
+                            (isConfirmed || needsPayment)
+                                ? null
+                                : const BorderSide(color: AppTheme.primaryColor),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text(
+                        (isConfirmed || needsPayment) ? 'Pay Now Securely' : 'View Details',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

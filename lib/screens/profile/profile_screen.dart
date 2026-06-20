@@ -11,6 +11,7 @@ import 'package:triangle_home/screens/profile/notifications_screen.dart';
 import 'package:triangle_home/screens/profile/privacy_security_screen.dart';
 import 'package:triangle_home/screens/profile/help_support_screen.dart';
 import 'package:triangle_home/screens/profile/about_screen.dart';
+import 'package:triangle_home/screens/profile/profile_details_screen.dart';
 import 'package:triangle_home/screens/profile/privacy_policy_screen.dart';
 import 'package:triangle_home/screens/profile/verification_center_screen.dart';
 import 'package:triangle_home/screens/profile/saved_payments_screen.dart';
@@ -536,7 +537,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                 Icons.check_circle,
                 'Verified Mobile',
                 info['phoneNumber'] != null
-                    ? AppTheme.successColor
+                    ? AppTheme.successGreen
                     : Colors.white24,
               ),
               const SizedBox(height: 2),
@@ -544,7 +545,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                 Icons.check_circle,
                 'Verified Email',
                 user?.emailVerified == true
-                    ? AppTheme.successColor
+                    ? AppTheme.successGreen
                     : Colors.white24,
               ),
             ],
@@ -586,7 +587,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
             children: [
               Row(
                 children: [
-                  Icon(Icons.shield, color: AppTheme.successColor, size: 16),
+                  Icon(Icons.shield, color: AppTheme.successGreen, size: 16),
                   const SizedBox(width: 4),
                   Text(
                     'Trust\nScore',
@@ -623,7 +624,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: AppTheme.successColor.withValues(alpha: 0.2),
+            color: AppTheme.successGreen.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(AppTheme.radiusSM),
           ),
           child: Text(
@@ -633,7 +634,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                 ? 'Good'
                 : 'Fair',
             style: TextStyle(
-              color: AppTheme.successColor,
+              color: AppTheme.successGreen,
               fontSize: 10,
               fontWeight: FontWeight.bold,
             ),
@@ -750,7 +751,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
           Icons.calendar_today_outlined,
           '$bookingsCount',
           'Bookings',
-          AppTheme.successColor,
+          AppTheme.successGreen,
         ),
         const SizedBox(width: 12),
         _buildStatBox(
@@ -869,13 +870,13 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppTheme.successColor.withValues(alpha: 0.1),
+                  color: AppTheme.successGreen.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   'Active',
                   style: TextStyle(
-                    color: AppTheme.successColor,
+                    color: AppTheme.successGreen,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1184,7 +1185,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
             size: 20,
             color:
                 isDone
-                    ? AppTheme.successColor
+                    ? AppTheme.successGreen
                     : (isPending
                         ? AppTheme.warningColor
                         : AppTheme.textMutedColor),
@@ -1279,7 +1280,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
             onTap:
                 () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AboutScreen()),
+                  MaterialPageRoute(builder: (_) => const ProfileDetailsScreen()),
                 ),
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1396,7 +1397,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                       Text(
                         'Verified',
                         style: TextStyle(
-                          color: AppTheme.successColor,
+                          color: AppTheme.successGreen,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1436,7 +1437,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
             'Mobile Number',
             verif['phoneVerified'] == true ? 'Verified' : 'Pending',
             verif['phoneVerified'] == true
-                ? AppTheme.successColor
+                ? AppTheme.successGreen
                 : AppTheme.warningColor,
           ),
           _buildVerifLinkTile(
@@ -1444,7 +1445,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
             'Email Address',
             verif['emailVerified'] == true ? 'Verified' : 'Pending',
             verif['emailVerified'] == true
-                ? AppTheme.successColor
+                ? AppTheme.successGreen
                 : AppTheme.warningColor,
           ),
           _buildVerifLinkTile(
@@ -1452,7 +1453,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
             'Professional ID',
             verif['roleIdVerified'] == true ? 'Verified' : 'Pending',
             verif['roleIdVerified'] == true
-                ? AppTheme.successColor
+                ? AppTheme.successGreen
                 : AppTheme.warningColor,
           ),
           _buildVerifLinkTile(
@@ -1460,7 +1461,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
             'Government ID',
             verif['govIdVerified'] == true ? 'Verified' : 'Pending',
             verif['govIdVerified'] == true
-                ? AppTheme.successColor
+                ? AppTheme.successGreen
                 : AppTheme.warningColor,
           ),
           _buildVerifLinkTile(
@@ -1468,7 +1469,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
             'Address Verification',
             verif['addressVerified'] == true ? 'Verified' : 'Pending',
             verif['addressVerified'] == true
-                ? AppTheme.successColor
+                ? AppTheme.successGreen
                 : AppTheme.warningColor,
           ),
           const SizedBox(height: 16),

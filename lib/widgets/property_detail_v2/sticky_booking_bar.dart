@@ -35,61 +35,69 @@ class StickyBookingBar extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: isBedSelected
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            Expanded(
+              child: isBedSelected
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'Room ${selectedRoom?['roomNumber']} | Bed ${selectedBed?['bedNumber']}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '₹$rent',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Select a bed to continue',
+                          style: TextStyle(color: AppTheme.textLightColor, fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
+                        if (defaultRent != null)
                           Text(
-                            'Room ${selectedRoom?['roomNumber']} - Bed ${selectedBed?['bedNumber']}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text('Change', style: TextStyle(color: AppTheme.successColor, fontSize: 12, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Text(
-                            '₹$rent',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                          ),
-                          const Text('/Month', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Deposit ₹$deposit',
+                            'Starting from ₹$defaultRent',
                             style: const TextStyle(color: Colors.grey, fontSize: 12),
                           ),
-                        ],
-                      ),
-                    ],
-                  )
-                : const Text(
-                    'Select a Bed to Continue',
-                    style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
-                  ),
-          ),
-          const SizedBox(width: 16),
-          ElevatedButton(
-            onPressed: isBedSelected ? onBookPressed : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.successColor,
-              disabledBackgroundColor: Colors.grey[300],
-              minimumSize: const Size(140, 54),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ],
+                    ),
             ),
-            child: const Text(
-              'Book This Bed',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            const SizedBox(width: 12),
+            ElevatedButton(
+              onPressed: isBedSelected ? onBookPressed : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                disabledBackgroundColor: Colors.grey[300],
+                minimumSize: const Size(140, 54),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                elevation: 0,
+              ),
+              child: Text(
+                isBedSelected ? 'Book Now' : 'Select Bed',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -193,7 +193,7 @@ class StayInfoScreen extends StatelessWidget {
                             .toUpperCase(),
                         valueColor:
                             booking['paymentStatus'] == 'paid'
-                                ? AppTheme.successColor
+                                ? AppTheme.successGreen
                                 : AppTheme.warningColor,
                       ),
                       _buildInfoRow(
@@ -354,10 +354,10 @@ class StayInfoScreen extends StatelessWidget {
           onPressed: () {},
           icon: const Icon(
             Icons.phone_in_talk_rounded,
-            color: AppTheme.successColor,
+            color: AppTheme.successGreen,
           ),
           style: IconButton.styleFrom(
-            backgroundColor: AppTheme.successColor.withValues(alpha: 0.1),
+            backgroundColor: AppTheme.successGreen.withValues(alpha: 0.1),
             padding: const EdgeInsets.all(10),
           ),
         ),

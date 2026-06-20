@@ -382,6 +382,7 @@ class PropertyStructureService {
 
       // 3. Generate and set Beds
       final roomNumber = roomData['roomNumber'] ?? 'Room';
+      final rent = (roomData['baseRent'] as num?)?.toDouble() ?? 0;
       for (int i = 1; i <= bedCount; i++) {
         final bedId = _db.collection('beds').doc().id;
         final bedRef = _db.collection('properties').doc(propertyId).collection('beds').doc(bedId);
@@ -403,6 +404,7 @@ class PropertyStructureService {
           'currentResidentId': null,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
+          'monthlyRent': rent,
         };
 
         transaction.set(bedRef, bedPayload, SetOptions(merge: true));

@@ -10,6 +10,7 @@ import 'package:triangle_home/splash_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/services/isar_service.dart';
 import 'package:triangle_home/services/sync_service.dart';
+import 'package:triangle_home/services/smart_location_service.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -44,6 +45,9 @@ void main() async {
 
   // Initialize App Check
   await AppCheckInitializer.initialize();
+
+  // Initialize Smart Location Tracking (48h stay logic)
+  SmartLocationService().initialize();
 
   runApp(const ProviderScope(child: TriangleHomes()));
 }

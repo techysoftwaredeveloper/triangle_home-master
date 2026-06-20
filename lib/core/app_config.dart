@@ -19,6 +19,11 @@ class AppConfig {
     }
   }
 
+  static String get razorpayKey {
+    if (isProd) return 'rzp_live_YourLiveKeyHere';
+    return 'rzp_test_YourTestKeyHere';
+  }
+
   static void initialize({required Environment env}) {
     environment = env;
   }

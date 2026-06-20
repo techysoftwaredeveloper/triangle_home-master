@@ -171,7 +171,7 @@ class HosterService {
           .map((snap) => snap.docs);
     });
 
-    final firestoreStream = Rx.combineLatest7(
+    final firestoreStream = Rx.combineLatest8(
       propertiesStream,
       bookingsStream,
       paymentsStream,
@@ -179,6 +179,7 @@ class HosterService {
       notificationsStream,
       userDocStream,
       reviewsStream,
+      _firestore.collection('propertyStats').snapshots(),
       (
         List<QueryDocumentSnapshot<Map<String, dynamic>>> properties,
         List<QueryDocumentSnapshot<Map<String, dynamic>>> bookings,
@@ -187,6 +188,7 @@ class HosterService {
         QuerySnapshot<Map<String, dynamic>> notifications,
         DocumentSnapshot<Map<String, dynamic>> userDoc,
         List<QueryDocumentSnapshot<Map<String, dynamic>>> reviews,
+        QuerySnapshot<Map<String, dynamic>> allPropertyStats,
       ) {
         final userData = userDoc.data() ?? {};
         final hostInfo = userData['info'] as Map<String, dynamic>? ?? {};
@@ -196,21 +198,31 @@ class HosterService {
         int totalCapacity = 0;
         int totalRooms = 0;
         int activeListings = 0;
+        int activeResidents = 0;
+
+        // Map allPropertyStats for quick lookup
+        final statsMap = {for (var doc in allPropertyStats.docs) doc.id: doc.data()};
 
         for (var doc in properties) {
           final data = doc.data();
+          final propertyId = doc.id;
+          final stats = statsMap[propertyId];
           final details = data['propertyDetails'] as Map? ?? {};
-          totalCapacity += _parseNum(details['totalCapacity']).toInt();
+          
           totalRooms += _parseNum(details['totalRooms']).toInt();
+
+          if (stats != null) {
+            totalCapacity += _parseNum(stats['totalBeds']).toInt();
+            activeResidents += _parseNum(stats['occupiedBeds']).toInt();
+          } else {
+            // Fallback for overview if stats doc doesn't exist
+            totalCapacity += _parseNum(details['totalCapacity'] ?? data['capacity']).toInt();
+          }
+
           if (data['status'] == 'approved' || data['status'] == 'active') {
             activeListings++;
           }
         }
-
-        final activeResidents = bookings.where((doc) {
-          final s = doc.data()['status']?.toString().toLowerCase();
-          return s == 'confirmed' || s == 'active' || s == 'checkedin';
-        }).length;
 
         final vacantBeds = totalCapacity - activeResidents;
         final occupancy = totalCapacity > 0

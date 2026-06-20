@@ -38,7 +38,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'booking':
         return AppTheme.accentColor;
       case 'payment':
-        return AppTheme.successColor;
+        return AppTheme.successGreen;
       case 'property':
         return AppTheme.primaryColor;
       case 'review':

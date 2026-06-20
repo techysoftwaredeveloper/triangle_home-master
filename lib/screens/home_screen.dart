@@ -303,7 +303,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   SvgPicture.asset(
-                                    'assets/images/Logo.svg',
+                                    'assets/images/Logo_update.svg',
                                     height: 24,
                                     width: 24,
                                     colorFilter: const ColorFilter.mode(
@@ -387,6 +387,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const AccommodationTypes(),
+                  _buildRecommendationsSection(),
                   HighestRatedSection(
                     title: 'Highest Rated College Hostels of 2025',
                     items: _mockInstitutions,
@@ -478,6 +479,70 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
       bottomNavigationBar: const HomeBottomNavBar(selectedIndex: 0),
+    );
+  }
+
+  Widget _buildRecommendationsSection() {
+    final recommendationsAsync = ref.watch(recommendedPropertiesProvider);
+
+    return recommendationsAsync.when(
+      data: (properties) {
+        if (properties.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Recommended for You',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Outfit',
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text(
+                      'View All',
+                      style: TextStyle(
+                        color: AppTheme.accentColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 280,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                scrollDirection: Axis.horizontal,
+                itemCount: properties.length,
+                itemBuilder: (context, index) {
+                  final property = properties[index];
+                  return Container(
+                    width: 280,
+                    margin: const EdgeInsets.only(right: 16),
+                    child: NearbyAccommodations(
+                      accommodations: [property],
+                      selectedCity: property['city'] ?? '',
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 

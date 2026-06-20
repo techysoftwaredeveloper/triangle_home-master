@@ -1,392 +1,142 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:triangle_home/screens/payment/payment_screen.dart';
-import 'package:triangle_home/services/firebase_service.dart';
-import 'package:triangle_home/services/inventory_service.dart';
 import 'package:triangle_home/theme/app_theme.dart';
+import 'package:intl/intl.dart';
 
-class BookingSummaryScreen extends StatefulWidget {
+class BookingSummaryScreen extends StatelessWidget {
   final Map<String, dynamic> accommodation;
-  final List<Map<String, String>> tenantDetails;
+  final List<Map<String, dynamic>> tenantDetails;
+  final List<dynamic> tenants;
+  final int tenantCount;
 
   const BookingSummaryScreen({
     super.key,
     required this.accommodation,
     required this.tenantDetails,
-    required List tenants,
-    required int tenantCount,
+    required this.tenants,
+    required this.tenantCount,
   });
 
   @override
-  State<BookingSummaryScreen> createState() => _BookingSummaryScreenState();
-}
-
-class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
-  bool _isCreatingBooking = false;
-
-  int get basePrice => _parseToInt(widget.accommodation['price'] ?? widget.accommodation['monthlyRent']);
-  int get numberOfTenants => widget.tenantDetails.isNotEmpty ? widget.tenantDetails.length : 1;
-  int get totalRent => basePrice * numberOfTenants;
-  int get deposit => _parseToInt(widget.accommodation['deposit'] ?? widget.accommodation['securityDeposit'] ?? basePrice);
-  int get total => totalRent + deposit;
-
-  int _parseToInt(dynamic value) {
-    if (value == null) return 0;
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value.replaceAll(',', '')) ?? 0;
-    return 0;
-  }
-
-  Future<void> _proceedToPayment(BuildContext context) async {
-    setState(() => _isCreatingBooking = true);
-
-    try {
-      final firebaseService = FirebaseService();
-      final inventoryService = InventoryService();
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(this.context).showSnackBar(
-          const SnackBar(content: Text('Please login to proceed')),
-        );
-        return;
-      }
-
-      final String? roomId = widget.accommodation['selectedRoomId'];
-      final String? bedId = widget.accommodation['selectedBedId'];
-      final String propertyId = widget.accommodation['id'] ?? widget.accommodation['propertyId'] ?? '';
-
-      if (propertyId.isEmpty) {
-        throw 'Critical Error: Property identifier is missing.';
-      }
-
-      // 1. Lock the bed first if selected
-      if (roomId != null && bedId != null) {
-        try {
-          await inventoryService.lockBedForUser(
-            propertyId: propertyId,
-            roomId: roomId,
-            bedId: bedId,
-            userId: user.uid,
-          );
-        } catch (e) {
-          debugPrint('Reservation Transaction Error: $e');
-          throw 'Reservation Failed: The selected bed could not be locked. Please try again.';
-        }
-      }
-
-      // 2. Create a pending booking in Firestore
-      final String bookingId;
-      try {
-        bookingId = await firebaseService.createBooking(
-          propertyId: propertyId,
-          propertyData: widget.accommodation,
-          price: total.toDouble(),
-          type: widget.accommodation['type'] ?? '',
-          tenantDetails: widget.tenantDetails,
-          roomId: roomId,
-          bedId: bedId,
-        );
-      } catch (e) {
-        debugPrint('Booking Creation Error: $e');
-        throw 'Checkout Failed: Could not create booking record. $e';
-      }
-
-      if (!mounted) return;
-
-      // Navigate to payment screen
-      Navigator.push(
-        this.context,
-        MaterialPageRoute(
-          builder:
-              (_) => PaymentScreen(
-                booking: {
-                  'id': bookingId,
-                  'title': widget.accommodation['title'],
-                  'location': widget.accommodation['location'],
-                  'type': widget.accommodation['type'],
-                  'price': total,
-                  'tenantCount': numberOfTenants,
-                  'basePrice': basePrice,
-                  'deposit': deposit,
-                  'totalRent': totalRent,
-                  'image': widget.accommodation['image'],
-                  'propertyId': widget.accommodation['id'],
-                  'roomId': roomId,
-                  'bedId': bedId,
-                  'lockExpiry': DateTime.now().add(const Duration(minutes: 15)),
-                },
-              ),
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          this.context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isCreatingBooking = false);
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final double monthlyRent = (accommodation['monthlyRent'] as num?)?.toDouble() ?? 0.0;
+    final double totalMonthlyRent = monthlyRent * tenantCount;
+    final double securityDeposit = (accommodation['securityDeposit'] as num?)?.toDouble() ?? 0.0;
+    final double totalAmount = totalMonthlyRent + securityDeposit;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Booking Summary'),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
       ),
-      body: Container(
-        color: Colors.grey[200],
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildPropertyDetails(),
-              _buildTenantDetails(),
-              _buildPaymentSummary(),
-              _buildPaymentButton(context),
-              const SizedBox(height: 40),
-            ],
-          ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Property Details
+            Text(
+              accommodation['title'] ?? 'Property',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              accommodation['location'] ?? 'Location',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const Divider(height: 32),
+
+            // Tenant Details
+            const Text(
+              'Tenant 1',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Text('Name: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(tenantDetails.isNotEmpty ? (tenantDetails[0]['name'] ?? '-') : '-'),
+              ],
+            ),
+            const Divider(height: 32),
+
+            // Payment Summary
+            const Text(
+              'Payment Summary',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _buildPriceRow('Monthly Rent (per tenant)', monthlyRent),
+            _buildInfoRow('Number of Tenants', tenantCount.toString()),
+            _buildPriceRow('Total Monthly Rent', totalMonthlyRent),
+            _buildPriceRow('Security Deposit', securityDeposit),
+            const Divider(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Total Amount',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  '₹${totalAmount.toInt()}',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+
+            // Proceed Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Proceed to Payment',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildPropertyDetails() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            widget.accommodation['title'] ?? 'Property Details',
-            style: const TextStyle(
-              fontSize: AppTheme.fontLG,
-              fontWeight: FontWeight.bold,
-              fontFamily: AppTheme.fontFamily,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            widget.accommodation['location'] ?? '',
-            style: const TextStyle(
-              color: AppTheme.textLightColor,
-              fontFamily: AppTheme.fontFamily,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Icon(Icons.home, color: Colors.grey[600]),
-              const SizedBox(width: 8),
-              Text(
-                widget.accommodation['type'] ?? '',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ).animate().fadeIn().slideY(begin: 0.2, end: 0);
-  }
-
-  Widget _buildTenantDetails() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Tenant Details',
-            style: TextStyle(
-              fontSize: AppTheme.fontLG,
-              fontWeight: FontWeight.bold,
-              fontFamily: AppTheme.fontFamily,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...List.generate(widget.tenantDetails.length, (index) {
-            final tenant = widget.tenantDetails[index];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Tenant ${index + 1}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildDetailRow('Name', tenant['name'] ?? ''),
-                  _buildDetailRow('Phone', tenant['phone'] ?? ''),
-                  _buildDetailRow('Email', tenant['email'] ?? ''),
-                  _buildDetailRow('College', tenant['college'] ?? ''),
-                ],
-              ),
-            ).animate().fadeIn(delay: Duration(milliseconds: 100 * index));
-          }),
-        ],
-      ),
-    ).animate().fadeIn().slideY(begin: 0.2, end: 0);
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Text('$label: ', style: const TextStyle(color: Colors.grey)),
-          Expanded(
-            child: Text(
-              value.isNotEmpty ? value : '-',
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentSummary() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Payment Summary',
-            style: TextStyle(
-              fontSize: AppTheme.fontLG,
-              fontWeight: FontWeight.bold,
-              fontFamily: AppTheme.fontFamily,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildPaymentRow('Monthly Rent (per tenant)', basePrice),
-          _buildPaymentRow(
-            'Number of Tenants',
-            numberOfTenants,
-            isAmount: false,
-          ),
-          _buildPaymentRow('Total Monthly Rent', totalRent),
-          _buildPaymentRow('Security Deposit', deposit),
-          const Divider(height: 32),
-          _buildPaymentRow('Total Amount', total, isTotal: true),
-        ],
-      ),
-    ).animate().fadeIn().slideY(begin: 0.2, end: 0);
-  }
-
-  Widget _buildPaymentRow(
-    String label,
-    dynamic value, {
-    bool isAmount = true,
-    bool isTotal = false,
-  }) {
+  Widget _buildPriceRow(String label, double value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              fontSize: isTotal ? 16 : 14,
-            ),
-          ),
-          Text(
-            isAmount ? '₹$value' : value.toString(),
-            style: TextStyle(
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              fontSize: isTotal ? 16 : 14,
-              color: isTotal ? AppTheme.primaryColor : null,
-            ),
-          ),
+          Text(label),
+          Text('₹${value.toInt()}'),
         ],
       ),
     );
   }
 
-  Widget _buildPaymentButton(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _isCreatingBooking ? null : () => _proceedToPayment(context),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.successColor,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-          ),
-        ),
-        child:
-            _isCreatingBooking
-                ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-                : const Text(
-                  'Proceed to Payment',
-                  style: TextStyle(
-                    fontSize: AppTheme.fontMD,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textOnPrimary,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label),
+          Text(value),
+        ],
       ),
-    ).animate().fadeIn().slideY(begin: 0.2, end: 0);
+    );
   }
 }

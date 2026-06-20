@@ -15,11 +15,15 @@ import 'package:triangle_home/models/lead.dart';
 import 'package:triangle_home/models/property_stats_model.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/widgets/hoster/hoster_bottom_nav.dart';
+import 'package:triangle_home/widgets/hoster/hoster_property_card.dart';
+import 'package:triangle_home/widgets/hoster/dashboard_property_card.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import 'package:triangle_home/core/extensions/string_extensions.dart';
+import 'package:triangle_home/services/review_service.dart';
+import 'package:triangle_home/models/review_model.dart';
 
 num _parseNum(dynamic v) {
   if (v == null) return 0;
@@ -236,6 +240,9 @@ class _DashboardTab extends StatelessWidget {
                   const SizedBox(height: 32),
                   _buildSectionHeader('Recent Activity'),
                   _buildRecentActivity(recentActivity),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader('Guest Reviews'),
+                  _buildReviewsManagement(context),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -243,6 +250,145 @@ class _DashboardTab extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildReviewsManagement(BuildContext context) {
+    // In a real multi-property hoster dashboard, we'd need to aggregate reviews from all properties.
+    // For now, let's show reviews for the hoster's properties.
+    return StreamBuilder<List<ReviewModel>>(
+      // This is a simplified implementation. A production one would have getReviewsByHoster(uid)
+      stream: FirebaseFirestore.instance
+          .collection('reviews')
+          .snapshots()
+          .map((snap) => snap.docs.map((doc) => ReviewModel.fromFirestore(doc)).toList()),
+      builder: (context, snapshot) {
+        final reviews = snapshot.data ?? [];
+        if (reviews.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Text('No reviews yet.', style: TextStyle(color: Colors.grey)),
+            ),
+          );
+        }
+
+        return Column(
+          children: reviews.take(3).map((review) => _buildHosterReviewCard(context, review)).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildHosterReviewCard(BuildContext context, ReviewModel review) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundImage: review.userImage != null ? CachedNetworkImageProvider(review.userImage!) : null,
+                child: review.userImage == null ? const Icon(Icons.person, size: 16) : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(review.userName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    Text(DateFormat('MMM dd, yyyy').format(review.createdAt), style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                  ],
+                ),
+              ),
+              Row(
+                children: [
+                  const Icon(Icons.star, color: Colors.amber, size: 14),
+                  const SizedBox(width: 4),
+                  Text(review.rating.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(review.comment, style: const TextStyle(fontSize: 12, color: Color(0xFF475569))),
+          const SizedBox(height: 12),
+          if (review.hosterReply == null)
+            TextButton.icon(
+              onPressed: () => _showReplyDialog(context, review),
+              icon: const Icon(Icons.reply, size: 16),
+              label: const Text('Reply to review', style: TextStyle(fontSize: 12)),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.forestGreen,
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            )
+          else
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Your Reply:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: AppTheme.forestGreen)),
+                  const SizedBox(height: 4),
+                  Text(review.hosterReply!, style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showReplyDialog(BuildContext context, ReviewModel review) {
+    final TextEditingController replyController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reply to Review'),
+        content: TextField(
+          controller: replyController,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            hintText: 'Type your response...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (replyController.text.isNotEmpty) {
+                await ReviewService().replyToReview(review.id, replyController.text.trim());
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.forestGreen),
+            child: const Text('Post Reply'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -274,13 +420,14 @@ class _DashboardTab extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Good Morning, $name ðŸ‘‹',
+                  'Good Morning, $name 👋',
                   style: const TextStyle(
                     color: Color(0xFF1E293B),
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'Outfit',
                   ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
@@ -290,6 +437,7 @@ class _DashboardTab extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -648,39 +796,44 @@ class _DashboardTab extends StatelessWidget {
   }
 
   Widget _buildOverviewGrid(Map data) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.5,
-      children: [
-        _overviewCard(
-          'Active Residents',
-          data['activeResidents']?.toString() ?? '0',
-          '',
-          true,
-        ),
-        _overviewCard(
-          'Vacant Beds',
-          data['vacantBeds']?.toString() ?? '0',
-          '',
-          false,
-        ),
-        _overviewCard(
-          'Occupancy',
-          '${data['occupancy'] ?? 0}%',
-          '',
-          true,
-        ),
-        _overviewCard(
-          'Monthly Revenue',
-          'â‚¹${(data['monthlyRevenue'] ?? 0).toString()}',
-          '',
-          true,
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double childAspectRatio = constraints.maxWidth > 400 ? 1.8 : 1.5;
+        return GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: childAspectRatio,
+          children: [
+            _overviewCard(
+              'Active Residents',
+              data['activeResidents']?.toString() ?? '0',
+              '',
+              true,
+            ),
+            _overviewCard(
+              'Vacant Beds',
+              data['vacantBeds']?.toString() ?? '0',
+              '',
+              false,
+            ),
+            _overviewCard(
+              'Occupancy',
+              '${data['occupancy'] ?? 0}%',
+              '',
+              true,
+            ),
+            _overviewCard(
+              'Monthly Revenue',
+              '₹${(data['monthlyRevenue'] ?? 0).toString()}',
+              '',
+              true,
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -714,12 +867,18 @@ class _DashboardTab extends StatelessWidget {
                 color: const Color(0xFF64748B),
               ),
               const SizedBox(width: 8),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -732,6 +891,8 @@ class _DashboardTab extends StatelessWidget {
               color: Color(0xFF94A3B8),
               fontWeight: FontWeight.bold,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           if (change.isNotEmpty) ...[
             const SizedBox(height: 4),
@@ -748,15 +909,19 @@ class _DashboardTab extends StatelessWidget {
                           : const Color(0xFFEF4444),
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  change,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color:
-                        isPositive
-                            ? const Color(0xFF16A34A)
-                            : const Color(0xFFEF4444),
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    change,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color:
+                          isPositive
+                              ? const Color(0xFF16A34A)
+                              : const Color(0xFFEF4444),
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -778,144 +943,66 @@ class _DashboardTab extends StatelessWidget {
     return Column(
       children: [
         SizedBox(
-          height: 320,
+          height: 520, // Height for the premium DashboardPropertyCard
           child: PageView.builder(
             itemCount: properties.length,
-            controller: PageController(viewportFraction: 0.9),
+            controller: PageController(viewportFraction: 0.88), // 86-90% viewport as requested
             itemBuilder: (context, index) {
               final p = properties[index];
-              final images = p['images'] as List? ?? [];
-              final basicInfo = p['basicInfo'] as Map? ?? {};
-              final name = basicInfo['collegeName']?.toString().isNotEmpty == true
-                  ? basicInfo['collegeName'].toString()
-                  : (p['name'] ?? p['title'] ?? 'Property').toString();
-              final propStatus = (p['status'] ?? 'pending').toString().toLowerCase();
-              final isLive = propStatus == 'approved' || propStatus == 'active';
-              final isPaused = propStatus == 'paused';
-              
-              final statusLabel = isLive ? 'Live' : isPaused ? 'Paused' : propStatus.capitalize();
-              final statusBg = isLive ? const Color(0xFFDCFCE7) : isPaused ? const Color(0xFFDBEAFE) : const Color(0xFFFEF3C7);
-              final statusFg = isLive ? const Color(0xFF16A34A) : isPaused ? const Color(0xFF2563EB) : const Color(0xFFD97706);
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('propertyStats')
+                      .doc(p['id'])
+                      .snapshots(),
+                  builder: (context, statsSnapshot) {
+                    final stats = statsSnapshot.hasData && statsSnapshot.data!.exists
+                        ? PropertyStatsModel.fromFirestore(statsSnapshot.data!)
+                        : null;
 
-              return Container(
-                margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.02),
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(24),
-                      ),
-                      child: images.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: images.first,
-                              height: 120,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) => Container(
-                                height: 120, color: Colors.grey[200],
-                                child: const Icon(Icons.home_work_outlined, size: 40, color: Colors.grey),
+                    // Prepare accurate data for the card
+                    final Map<String, dynamic> accurateData = Map.from(p);
+                    if (stats != null) {
+                      accurateData['capacity'] = stats.totalBeds;
+                      accurateData['activeResidents'] = stats.occupiedBeds;
+                      accurateData['occupancy'] = stats.totalBeds > 0 
+                          ? (stats.occupiedBeds / stats.totalBeds * 100).round() 
+                          : 0;
+                    }
+
+                    return DashboardPropertyCard(
+                      data: accurateData,
+                      onViewDetails: () {
+                        final propertyId = p['id'] ?? '';
+                        if (propertyId.isNotEmpty) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PropertyOperationalCenter(
+                                propertyId: propertyId,
+                                propertyData: accurateData,
                               ),
-                            )
-                          : Container(height: 120, color: Colors.grey[200],
-                              child: const Icon(Icons.home_work_outlined, size: 40, color: Colors.grey)),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.location_on_rounded, size: 12, color: Color(0xFF94A3B8)),
-                                        Flexible(
-                                          child: Text(
-                                            ' ${p['locality'] ?? p['city'] ?? 'Location'}',
-                                            style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: statusBg,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  statusLabel,
-                                  style: TextStyle(
-                                    color: statusFg,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              _propStat('${p['occupancy'] ?? 0}%', 'Occupancy'),
-                              _propStat('${(p['totalCapacity'] ?? 0) - (p['activeResidents'] ?? 0)}', 'Vacant'),
-                              _propStat('${p['inquiries'] ?? 0}', 'Inquiries'),
-                              _propStat('${p['activeResidents'] ?? 0}', 'Residents'),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              _propStat(propStatus, 'Status'),
-                              _propStat(p['city']?.toString() ?? 'â€”', 'City'),
-                              _propStat(
-                                'â‚¹${(p['monthlyRent'] ?? p['price'] ?? 0).toString()}',
-                                'Rent/mo',
-                              ),
-                            ],
-                          ),
-                          if (propStatus == 'rejected' && p['rejectionReason'] != null) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              'Reason: ${p['rejectionReason']}',
-                              style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.w500),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
+                          );
+                        }
+                      },
+                      onManageProperty: () {
+                        final propertyId = p['id'] ?? '';
+                        if (propertyId.isNotEmpty) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PropertyOperationalCenter(
+                                propertyId: propertyId,
+                                propertyData: accurateData,
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    );
+                  },
                 ),
               );
             },
@@ -929,35 +1016,12 @@ class _DashboardTab extends StatelessWidget {
             (i) => Container(
               width: 6,
               height: 6,
-              margin: const EdgeInsets.all(2),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
               decoration: BoxDecoration(
                 color: i == 0 ? const Color(0xFF16A34A) : const Color(0xFFCBD5E1),
                 shape: BoxShape.circle,
               ),
             ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _propStat(String val, String label) {
-    return Column(
-      children: [
-        Text(
-          val,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1E293B),
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 8,
-            color: Color(0xFF64748B),
-            fontWeight: FontWeight.bold,
           ),
         ),
       ],
@@ -977,14 +1041,19 @@ class _DashboardTab extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Revenue This Month',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+              const Expanded(
+                child: Text(
+                  'Revenue This Month',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               const Text(
                 'View Report',
                 style: TextStyle(
@@ -996,12 +1065,16 @@ class _DashboardTab extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            'â‚¹${(data['monthlyRevenue'] ?? 0).toString()}',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1E293B),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '₹${(data['monthlyRevenue'] ?? 0).toString()}',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -1095,12 +1168,16 @@ class _DashboardTab extends StatelessWidget {
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Property Stats',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+              Expanded(
+                child: Text(
+                  'Property Stats',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -1150,15 +1227,19 @@ class _DashboardTab extends StatelessWidget {
           child: Icon(i, size: 14, color: c),
         ),
         const SizedBox(width: 8),
-        Text(
-          l,
-          style: const TextStyle(
-            fontSize: 11,
-            color: Color(0xFF64748B),
-            fontWeight: FontWeight.w500,
+        Expanded(
+          child: Text(
+            l,
+            style: const TextStyle(
+              fontSize: 11,
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        const Spacer(),
+        const SizedBox(width: 4),
         Text(
           v,
           style: const TextStyle(
@@ -1533,7 +1614,42 @@ class _PropertiesTabState extends State<_PropertiesTab> {
                         // Inject the Firestore doc ID so propertyId is never empty
                         final doc = filteredDocs[index];
                         final data = {'id': doc.id, ...doc.data()};
-                        return _EnhancedPropertyCard(data: data);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: StreamBuilder<DocumentSnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('propertyStats')
+                                .doc(doc.id)
+                                .snapshots(),
+                            builder: (context, statsSnapshot) {
+                              final stats = statsSnapshot.hasData && statsSnapshot.data!.exists
+                                  ? PropertyStatsModel.fromFirestore(statsSnapshot.data!)
+                                  : null;
+
+                              // Prepare accurate data for the card
+                              final Map<String, dynamic> accurateData = Map.from(data);
+                              if (stats != null) {
+                                accurateData['capacity'] = stats.totalBeds;
+                                accurateData['activeResidents'] = stats.occupiedBeds;
+                              }
+
+                              return HosterPropertyCard(
+                                data: accurateData,
+                                onViewDetails: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => PropertyOperationalCenter(
+                                        propertyId: doc.id,
+                                        propertyData: accurateData,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        );
                       },
                       childCount: filteredDocs.length,
                     ),
@@ -1547,29 +1663,38 @@ class _PropertiesTabState extends State<_PropertiesTab> {
   }
 
   Widget _buildSummaryCards(int active, int review, int draft) {
-    return Row(
-      children: [
-        Expanded(child: GestureDetector(
-          onTap: () => setState(() => _selectedStatus = 'Active'),
-          child: _summaryCard('Active', active, const Color(0xFF16A34A), Icons.home_rounded, const Color(0xFFDCFCE7), _selectedStatus == 'Active'),
-        )),
-        const SizedBox(width: 12),
-        Expanded(child: GestureDetector(
-          onTap: () => setState(() => _selectedStatus = 'Under Review'),
-          child: _summaryCard('Under Review', review, const Color(0xFFD97706), Icons.access_time_filled_rounded, const Color(0xFFFEF3C7), _selectedStatus == 'Under Review'),
-        )),
-        const SizedBox(width: 12),
-        Expanded(child: GestureDetector(
-          onTap: () => setState(() => _selectedStatus = 'Draft'),
-          child: _summaryCard('Draft', draft, const Color(0xFF2563EB), Icons.description_rounded, const Color(0xFFDBEAFE), _selectedStatus == 'Draft'),
-        )),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isNarrow = constraints.maxWidth < 350;
+        return GridView.count(
+          crossAxisCount: isNarrow ? 2 : 3,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: isNarrow ? 1.4 : 1.1,
+          children: [
+            GestureDetector(
+              onTap: () => setState(() => _selectedStatus = 'Active'),
+              child: _summaryCard('Active', active, const Color(0xFF16A34A), Icons.home_rounded, const Color(0xFFDCFCE7), _selectedStatus == 'Active'),
+            ),
+            GestureDetector(
+              onTap: () => setState(() => _selectedStatus = 'Under Review'),
+              child: _summaryCard('Under Review', review, const Color(0xFFD97706), Icons.access_time_filled_rounded, const Color(0xFFFEF3C7), _selectedStatus == 'Under Review'),
+            ),
+            GestureDetector(
+              onTap: () => setState(() => _selectedStatus = 'Draft'),
+              child: _summaryCard('Draft', draft, const Color(0xFF2563EB), Icons.description_rounded, const Color(0xFFDBEAFE), _selectedStatus == 'Draft'),
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _summaryCard(String label, int count, Color color, IconData icon, Color bgColor, bool isSelected) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1583,30 +1708,31 @@ class _PropertiesTabState extends State<_PropertiesTab> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, color: color, size: 18),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
+              child: Icon(icon, color: color, size: 18),
+            ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
+          const SizedBox(height: 6),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
                 '$count',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
               ),
-            ],
+            ),
           ),
+          const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
-          ),
-          const Text(
-            'Properties',
-            style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -1614,45 +1740,62 @@ class _PropertiesTabState extends State<_PropertiesTab> {
   }
 
   Widget _buildSearchAndFilter() {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                hintText: 'Search properties...',
-                hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-                prefixIcon: Icon(Icons.search, color: Color(0xFF94A3B8), size: 20),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 12),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool showText = constraints.maxWidth > 380;
+        return Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'Search properties...',
+                    hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                    prefixIcon: Icon(Icons.search, color: Color(0xFF94A3B8), size: 20),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Container(
-          height: 48,
-          width: 48,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.tune_rounded, color: Color(0xFF64748B), size: 20),
-            onPressed: () {},
-          ),
-        ),
-      ],
+            const SizedBox(width: 12),
+            Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.tune_rounded, color: Color(0xFF64748B), size: 20),
+                  if (showText) ...[
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Filter',
+                      style: TextStyle(
+                        color: Color(0xFF1E293B),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1765,251 +1908,7 @@ class _PropertiesTabState extends State<_PropertiesTab> {
   }
 }
 
-class _EnhancedPropertyCard extends StatelessWidget {
-  final Map<String, dynamic> data;
-  const _EnhancedPropertyCard({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final basic = data['basicInfo'] as Map<String, dynamic>? ?? {};
-    final details = data['propertyDetails'] as Map? ?? {};
-    final images = data['images'] as List? ?? [];
-    final propertyId = data['id'] ?? '';
-    
-    final name = basic['collegeName']?.toString().isNotEmpty == true
-        ? basic['collegeName'].toString()
-        : (data['name'] ?? data['title'] ?? 'Property').toString();
-    
-    final status = (data['status'] ?? 'pending').toString().toLowerCase();
-    final isActive = status == 'active' || status == 'approved';
-    final isUnderReview = status == 'pending' || status == 'under review';
-    
-    final statusLabel = isActive ? 'Active' : isUnderReview ? 'Under Review' : status.capitalize();
-    final statusColor = isActive ? const Color(0xFF16A34A) : isUnderReview ? const Color(0xFFD97706) : const Color(0xFF64748B);
-    final statusBg = isActive ? const Color(0xFFDCFCE7) : isUnderReview ? const Color(0xFFFEF3C7) : const Color(0xFFF1F5F9);
-
-    final double monthlyRent = _parseNum(data['monthlyRent'] ?? data['price']).toDouble();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 20, offset: const Offset(0, 10)),
-        ],
-      ),
-      child: propertyId.isEmpty
-          ? const SizedBox.shrink()
-          : StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('propertyStats')
-            .doc(propertyId)
-            .snapshots(),
-        builder: (context, snapshot) {
-          final stats = snapshot.hasData && snapshot.data!.exists
-              ? PropertyStatsModel.fromFirestore(snapshot.data!)
-              : null;
-          
-          final int totalBeds = stats?.totalBeds ?? _parseNum(details['totalCapacity'] ?? data['capacity']).toInt();
-          final int activeResidents = stats?.occupiedBeds ?? 0;
-          final int vacantBeds = stats?.availableBeds ?? (totalBeds - activeResidents);
-          final int occupancyPercent = totalBeds > 0 ? (activeResidents / totalBeds * 100).round() : 0;
-
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: images.isNotEmpty
-                              ? CachedNetworkImage(
-                                  imageUrl: images.first,
-                                  height: 110,
-                                  width: 110,
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => Container(color: Colors.grey[200]),
-                                  errorWidget: (context, url, error) => Container(color: Colors.grey[200], child: const Icon(Icons.error)),
-                                )
-                              : Container(
-                                  height: 110,
-                                  width: 110,
-                                  color: Colors.grey[200],
-                                  child: const Icon(Icons.home_work_outlined, color: Colors.grey),
-                                ),
-                        ),
-                        Positioned(
-                          top: 8,
-                          left: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(8)),
-                            child: Text(
-                              statusLabel,
-                              style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  name,
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const Icon(Icons.more_vert, color: Color(0xFF64748B), size: 20),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF94A3B8)),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  '${data['locality'] ?? data['city'] ?? 'Location'}, Kerala',
-                                  style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            basic['type'] ?? 'Double & Triple Sharing',
-                            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              _miniStat('$occupancyPercent%', 'Occupancy', const Color(0xFF16A34A)),
-                              _miniStat('$vacantBeds', 'Vacant Beds', const Color(0xFF1E293B)),
-                              _miniStat('$activeResidents', 'Residents', const Color(0xFF1E293B)),
-                              _miniStat('â‚¹${(monthlyRent / 1000).toStringAsFixed(1)}k', 'Monthly Rent', const Color(0xFF16A34A)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isUnderReview) 
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: const Color(0xFFFFF7ED), borderRadius: BorderRadius.circular(12)),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline_rounded, color: Color(0xFFF59E0B), size: 20),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Review in progress', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
-                            Text('Submitted on ${_formatDate(data['createdAt'])}', style: const TextStyle(fontSize: 10, color: Color(0xFF9A3412))),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right, color: Color(0xFF9A3412)),
-                    ],
-                  ),
-                )
-              else
-                Padding(
-                  padding: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => PropertyOperationalCenter(
-                                  propertyId: propertyId,
-                                  propertyData: data,
-                                ),
-                              ),
-                            );
-                          },
-                          child: _actionBtn(Icons.visibility_outlined, 'View Details'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(child: _actionBtn(Icons.calendar_today_outlined, 'Bookings')),
-                      const SizedBox(width: 8),
-                      Expanded(child: _actionBtn(Icons.people_outline, 'Tenants')),
-                      const SizedBox(width: 8),
-                      Expanded(child: _actionBtn(Icons.more_horiz, 'More')),
-                    ],
-                  ),
-                ),
-            ],
-          );
-        }
-      ),
-    );
-  }
-
-  String _formatDate(dynamic timestamp) {
-    if (timestamp is Timestamp) {
-      final date = timestamp.toDate();
-      return DateFormat('dd MMM yyyy').format(date);
-    }
-    return 'N/A';
-  }
-
-  Widget _miniStat(String val, String label, Color valColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(val, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: valColor)),
-        Text(label, style: const TextStyle(fontSize: 8, color: Color(0xFF94A3B8))),
-      ],
-    );
-  }
-
-  Widget _actionBtn(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 14, color: const Color(0xFF16A34A)),
-          const SizedBox(width: 4),
-          Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
-        ],
-      ),
-    );
-  }
-}
-
-// â”€â”€ Bookings Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Bookings Tab ──────────────────────────────────────────────────────────────
 class _BookingsTab extends StatefulWidget {
   final String uid;
   final BookingService bookingService;
@@ -2209,49 +2108,57 @@ class _BookingsTabState extends State<_BookingsTab> {
   }
 
   Widget _buildSearchAndFilter() {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                hintText: 'Search by tenant, property or phone...',
-                hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                prefixIcon: Icon(Icons.search, color: Color(0xFF94A3B8), size: 20),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 12),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool showText = constraints.maxWidth > 380;
+        return Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'Search by tenant, property or phone...',
+                    hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                    prefixIcon: Icon(Icons.search, color: Color(0xFF94A3B8), size: 20),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.tune_rounded, color: Color(0xFF64748B), size: 20),
-              const SizedBox(width: 8),
-              const Text('Filter', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 14)),
-              const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B), size: 18),
-            ],
-          ),
-        ),
-      ],
+            const SizedBox(width: 12),
+            Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.tune_rounded, color: Color(0xFF64748B), size: 20),
+                  if (showText) ...[
+                    const SizedBox(width: 8),
+                    const Text('Filter', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 14)),
+                  ],
+                  const SizedBox(width: 4),
+                  const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B), size: 18),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

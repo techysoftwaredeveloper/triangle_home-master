@@ -104,4 +104,6 @@ flutter:
     - assets/images/mypgbookings.svg
     - assets/images/listmyproperty.svg
     - assets/images/backicon.svg
+    - assets/images/Logo_update.svg
+    - assets/icons/app_icon.png
   uses-material-design: true

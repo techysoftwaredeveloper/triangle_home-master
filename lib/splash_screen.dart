@@ -213,7 +213,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 children: [
                   // Logo Animation
                   SvgPicture.asset(
-                        'assets/images/Logo.svg',
+                        'assets/images/Logo_update.svg',
                         width: 120,
                         height: 120,
                         colorFilter: const ColorFilter.mode(

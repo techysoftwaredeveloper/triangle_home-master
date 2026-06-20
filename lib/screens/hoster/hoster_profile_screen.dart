@@ -182,8 +182,10 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     _buildVerificationStatus(stats),
-                    const SizedBox(height: 14),
-                    _buildProfileCompletion(stats),
+                    if (((stats['profileCompletion'] ?? 0.0) as num).toDouble() < 1.0) ...[
+                      const SizedBox(height: 14),
+                      _buildProfileCompletion(stats),
+                    ],
                     const SizedBox(height: 14),
                     _buildMenuTiles(stats),
                     const SizedBox(height: 14),
@@ -350,7 +352,7 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
               // Stats row
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
@@ -378,28 +380,37 @@ class _HosterProfileScreenState extends State<HosterProfileScreen> {
   }
 
   Widget _statPill(IconData icon, String val, String label) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.white70, size: 18),
-        const SizedBox(height: 4),
-        Text(val,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            )),
-        Text(label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.65),
-              fontSize: 10,
-            )),
-      ],
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white70, size: 18),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(val,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                )),
+          ),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(label,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.65),
+                  fontSize: 10,
+                )),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _vDivider() => Container(
         width: 1,
-        height: 48,
+        height: 32,
         color: Colors.white.withValues(alpha: 0.2),
       );
 

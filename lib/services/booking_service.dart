@@ -21,6 +21,13 @@ class BookingService {
     required String studentId,
     required String requestId, // For idempotency
     required Map<String, dynamic> bookingData,
+    String? roomId,
+    String? bedId,
+    Map<String, dynamic>? breakdown,
+    String? moveInDate,
+    String? floor,
+    String? roomName,
+    String? bedName,
   }) async {
     try {
       final response = await _apiService.performRequest(
@@ -29,6 +36,13 @@ class BookingService {
         body: {
           'propertyId': propertyId,
           'requestId': requestId,
+          'roomId': roomId,
+          'bedId': bedId,
+          'breakdown': breakdown,
+          'moveInDate': moveInDate,
+          'floor': floor,
+          'roomName': roomName,
+          'bedName': bedName,
           ...bookingData,
         },
       );

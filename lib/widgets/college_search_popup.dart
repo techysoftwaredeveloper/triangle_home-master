@@ -220,10 +220,41 @@ class _CollegeSearchPopupState extends State<CollegeSearchPopup> {
             'https://upload.wikimedia.org/wikipedia/en/2/2e/Yenepoya_University_Logo.png',
       },
       {
+        'name': 'IIT Delhi',
+        'location': 'New Delhi',
+        'logo': 'https://home.iitd.ac.in/images/logo.png',
+      },
+      {
+        'name': 'IIM Ahmedabad',
+        'location': 'Ahmedabad, Gujarat',
+        'logo': 'https://www.iima.ac.in/sites/default/files/iima-logo.png',
+      },
+      {
         'name': 'Madras Christian College',
         'location': 'Chennai, Tamil Nadu',
         'logo':
             'https://upload.wikimedia.org/wikipedia/en/0/0d/Madras_Christian_College_logo.png',
+      },
+      {
+        'name': 'BITS Pilani',
+        'location': 'Pilani, Rajasthan',
+        'logo': 'https://www.bits-pilani.ac.in/wp-content/uploads/bits-logo.png',
+      },
+      {
+        'name': 'Manipal Academy',
+        'location': 'Manipal, Karnataka',
+        'logo': 'https://manipal.edu/content/dam/manipal/mu/images/logo.png',
+      },
+      {
+        'name': 'SRM University',
+        'location': 'Chennai, Tamil Nadu',
+        'logo': 'https://www.srmist.edu.in/wp-content/uploads/2021/01/logo.png',
+      },
+      {
+        'name': 'Chandigarh University',
+        'location': 'Mohali, Punjab',
+        'logo':
+            'https://www.cuchd.in/assets/images/chandigarh-university-logo.png',
       },
     ];
 

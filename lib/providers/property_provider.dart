@@ -3,6 +3,7 @@ import 'package:triangle_home/core/constants/enums.dart';
 
 import 'package:triangle_home/providers/service_providers.dart';
 import 'package:triangle_home/providers/location_provider.dart';
+import 'package:triangle_home/providers/user_provider.dart';
 
 // ── Real-time stream provider (replaces paginated future) ───────────────────
 //
@@ -42,10 +43,12 @@ final propertiesStreamProvider =
       if (detectedCity.isNotEmpty) {
         return normalized.where((p) {
           final pCity = p['city']?.toString().toLowerCase() ?? '';
-          final pLocality = (p['locality'] ?? p['basicInfo']?['locality'] ?? '').toString().toLowerCase();
+          final pLocality = p['locality']?.toString().toLowerCase() ?? '';
+          final pFullAddress = p['fullAddress']?.toString().toLowerCase() ?? '';
           
           return pCity == detectedCity || 
-                 (detectedLocality.isNotEmpty && pLocality.contains(detectedLocality));
+                 (detectedLocality.isNotEmpty && pLocality.contains(detectedLocality)) ||
+                 (detectedCity.isNotEmpty && pFullAddress.contains(detectedCity));
         }).toList();
       }
       return normalized;
@@ -55,23 +58,21 @@ final propertiesStreamProvider =
     
     final results = normalized.where((p) {
       final pCity = p['city']?.toString().toLowerCase() ?? '';
-      final pLocality = (p['locality'] ?? p['basicInfo']?['locality'] ?? '').toString().toLowerCase();
+      final pLocality = p['locality']?.toString().toLowerCase() ?? '';
       final pTitle = p['title']?.toString().toLowerCase() ?? '';
+      final pFullAddress = p['fullAddress']?.toString().toLowerCase() ?? '';
       
       final matchesSelected = pCity.contains(query) || 
                               pLocality.contains(query) || 
-                              pTitle.contains(query);
+                              pTitle.contains(query) ||
+                              pFullAddress.contains(query);
                               
       final matchesDetectedLocality = (query == detectedCity) && 
                                       detectedLocality.isNotEmpty && 
-                                      pLocality.contains(detectedLocality);
+                                      (pLocality.contains(detectedLocality) || pFullAddress.contains(detectedLocality));
                                       
       return matchesSelected || matchesDetectedLocality;
     }).toList();
-
-    if (results.isEmpty && (query == 'unknown' || query.length > 3)) {
-       return normalized;
-    }
 
     return results;
   });
@@ -112,12 +113,27 @@ List<Map<String, dynamic>> _normalize(List<Map<String, dynamic>> raw) {
     final city = (data['city'] ?? pricingInfo['city'] ?? basicInfo['city'] ?? '')
         .toString();
 
-    // Locality
-    final locality =
-        (data['locality'] ?? pricingInfo['addressLine1'] ?? '').toString();
+    // Locality: Extract from address if missing
+    String locality = (data['locality'] ?? pricingInfo['locality'] ?? basicInfo['locality'] ?? '').toString();
+    final fullAddr = (pricingInfo['addressLine1'] ?? data['address'] ?? '').toString();
+    
+    if (fullAddr.isNotEmpty && (locality.isEmpty || locality.toLowerCase() == city.toLowerCase())) {
+      final upperAddr = fullAddr.toUpperCase();
+      final parts = upperAddr.split(',').map((e) => e.trim()).toList();
+      for (var part in parts) {
+        if (part.contains(' PO') || part.contains('POST OFFICE') || part.contains(' P.O')) {
+           locality = part.replaceAll(RegExp(r' PO|POST OFFICE| P\.O', caseSensitive: false), '').trim();
+           break;
+        }
+      }
+      // Fallback to second to last segment if PO not found but address is complex
+      if ((locality.isEmpty || locality.toUpperCase() == upperAddr) && parts.length > 2) {
+        locality = parts[parts.length - 2];
+      }
+    }
 
     final location =
-        (locality.isNotEmpty && city.isNotEmpty)
+        (locality.isNotEmpty && city.isNotEmpty && locality.toLowerCase() != city.toLowerCase())
             ? '$locality, $city'
             : city.isNotEmpty
                 ? city
@@ -160,6 +176,8 @@ List<Map<String, dynamic>> _normalize(List<Map<String, dynamic>> raw) {
       'id': data['id'] ?? '',
       'title': title,
       'city': city,
+      'locality': locality,
+      'fullAddress': fullAddr,
       'state': (data['state'] ?? pricingInfo['state'] ?? '').toString(),
       'location': location,
       'type': type,
@@ -191,3 +209,13 @@ List<Map<String, dynamic>> _normalize(List<Map<String, dynamic>> raw) {
 // re-export it under the old name.
 
 final paginatedPropertiesProvider = propertiesStreamProvider;
+
+/// Future provider for recommended properties based on user preferences.
+final recommendedPropertiesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final service = ref.watch(propertyServiceProvider);
+  
+  // Watch housing preferences to trigger refresh if they change
+  ref.watch(housingPreferencesProvider);
+  
+  return await service.getRecommendedProperties();
+});

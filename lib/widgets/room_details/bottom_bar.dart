@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:triangle_home/screens/auth/login_screen.dart';
-import 'package:triangle_home/screens/booking_summary_screen.dart';
+import 'package:triangle_home/screens/booking/confirm_booking_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
 
 import 'package:triangle_home/widgets/inventory/bed_selection_sheet.dart';
@@ -82,6 +82,10 @@ class _BottomBarState extends State<BottomBar> {
                 widget.accommodation['selectedBedId'] = bed.id;
                 widget.accommodation['selectedRoomNumber'] = room.roomNumber;
                 widget.accommodation['selectedBedNumber'] = bed.bedNumber;
+                widget.accommodation['selectedRoomName'] = room.roomNumber;
+                widget.accommodation['selectedBedName'] = bed.bedNumber;
+                widget.accommodation['selectedFloor'] = room.floor;
+                widget.accommodation['type'] = room.roomType.name; // doubleSharing, etc.
               });
             },
           ),
@@ -90,11 +94,9 @@ class _BottomBarState extends State<BottomBar> {
 
   void _handleApply(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final bookingSummary = BookingSummaryScreen(
+    final confirmBooking = ConfirmBookingScreen(
       accommodation: widget.accommodation,
-      tenantCount: widget.selectedTenantCount,
       tenantDetails: widget.tenantDetails,
-      tenants: const [],
     );
     if (user == null) {
       Navigator.push(
@@ -103,14 +105,14 @@ class _BottomBarState extends State<BottomBar> {
           builder:
               (_) => LoginScreen(
                 isStudent: true,
-                onLoginNavigateTo: bookingSummary,
+                onLoginNavigateTo: confirmBooking,
               ),
         ),
       );
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => bookingSummary),
+        MaterialPageRoute(builder: (_) => confirmBooking),
       );
     }
   }

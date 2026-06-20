@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,6 +10,7 @@ import 'dart:io';
 import 'package:triangle_home/screens/profile/verification_otp_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:triangle_home/theme/app_theme.dart';
 
 class VerificationCenterScreen extends StatefulWidget {
   const VerificationCenterScreen({super.key});
@@ -23,11 +25,12 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> wit
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool _isLoading = false;
+  Timer? _emailRefreshTimer;
 
   final Color _primaryBlue = const Color(0xFF0F172A);
   final Color _accentBlue = const Color(0xFF2563EB);
   final Color _bgGray = const Color(0xFFF8FAFC);
-  final Color _successGreen = const Color(0xFF10B981);
+  final Color _successGreen = AppTheme.successGreen;
 
   @override
   void initState() {
@@ -38,8 +41,31 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> wit
 
   @override
   void dispose() {
+    _emailRefreshTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _startEmailRefreshTimer() {
+    _emailRefreshTimer?.cancel();
+    _emailRefreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      final user = _auth.currentUser;
+      if (user != null && !user.emailVerified) {
+        try {
+          await user.reload();
+          if (user.emailVerified) {
+            await _updateVerification('emailVerified', true);
+            await _updateVerification('emailStatus', 'verified');
+            timer.cancel();
+            if (mounted) setState(() {});
+          }
+        } catch (e) {
+          debugPrint('Auto-refresh error: $e');
+        }
+      } else {
+        timer.cancel();
+      }
+    });
   }
 
   @override
@@ -61,6 +87,7 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> wit
       
       if (refreshed.emailVerified) {
         updates['emailVerified'] = true;
+        updates['emailStatus'] = 'verified';
       }
       
       if (refreshed.phoneNumber != null) {
@@ -103,6 +130,13 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> wit
 
         if (user.emailVerified && verif['emailVerified'] != true) {
           _updateVerification('emailVerified', true);
+          _updateVerification('emailStatus', 'verified');
+        }
+
+        if (verif['emailStatus'] == 'pending' &&
+            !user.emailVerified &&
+            (_emailRefreshTimer == null || !_emailRefreshTimer!.isActive)) {
+          _startEmailRefreshTimer();
         }
 
         if (user.phoneNumber != null && verif['phoneVerified'] != true) {
@@ -163,12 +197,13 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> wit
                     _buildVerificationTile(
                       icon: Icons.email_outlined,
                       title: 'Email Address',
-                      subtitle: user.email ?? 'Not provided',
+                      subtitle: info['email'] ?? user.email ?? 'Not provided',
                       isVerified: verif['emailVerified'] == true,
+                      status: verif['emailStatus'],
                       onTap:
                           verif['emailVerified'] == true
                               ? null
-                              : () => _verifyEmail(user.email),
+                              : () => _verifyEmail(info['email'] ?? user.email),
                     ),
 
                     const SizedBox(height: 24),
@@ -224,14 +259,14 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> wit
                         children: [
                           Icon(
                             Icons.verified_user,
-                            color: _successGreen,
+                            color: AppTheme.successGreen,
                             size: 16,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             'Verified by Triangle Homes',
                             style: TextStyle(
-                              color: _successGreen,
+                              color: AppTheme.successGreen,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               fontFamily: 'Outfit',
@@ -287,11 +322,11 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> wit
     String statusText = 'Pending';
 
     if (isVerified) {
-      statusColor = _successGreen;
+      statusColor = AppTheme.successGreen;
       statusText = 'Verified';
     } else if (status == 'pending') {
       statusColor = _accentBlue;
-      statusText = 'In Review';
+      statusText = title.contains('Email') ? 'Check Inbox' : 'In Review';
     } else if (status == 'rejected') {
       statusColor = const Color(0xFFEF4444);
       statusText = 'Rejected';
@@ -596,11 +631,11 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> wit
     String statusText = 'Pending';
 
     if (isVerified) {
-      statusColor = _successGreen;
+      statusColor = AppTheme.successGreen;
       statusText = 'Verified';
     } else if (status == 'pending') {
       statusColor = _accentBlue;
-      statusText = 'In Review';
+      statusText = title.contains('Email') ? 'Check Inbox' : 'In Review';
     } else if (status == 'rejected') {
       statusColor = const Color(0xFFEF4444);
       statusText = 'Rejected';
@@ -713,13 +748,41 @@ class _VerificationCenterScreenState extends State<VerificationCenterScreen> wit
   }
 
   Future<void> _verifyEmail(String? email) async {
-    if (email == null || email.isEmpty) return;
+    if (email == null || email.isEmpty) {
+      Fluttertoast.showToast(msg: 'Please add email in profile first');
+      return;
+    }
+
+    setState(() => _isLoading = true);
     try {
-      await _auth.currentUser?.sendEmailVerification();
-      Fluttertoast.showToast(msg: 'Verification email sent to $email');
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      // Check if email in Auth matches or is missing
+      if (user.email == null || user.email != email) {
+        // This updates the email in Auth and sends a verification link simultaneously
+        await user.verifyBeforeUpdateEmail(email);
+      } else {
+        // If already set in Auth but not verified, just resend
+        await user.sendEmailVerification();
+      }
+
+      Fluttertoast.showToast(
+        msg: 'Verification email sent to $email. Please check your inbox.',
+      );
       await _updateVerification('emailStatus', 'pending');
+      _startEmailRefreshTimer();
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error: $e');
+      debugPrint('Email verification error: $e');
+      if (e.toString().contains('requires-recent-login')) {
+        Fluttertoast.showToast(
+          msg: 'For security, please re-login to verify your email',
+        );
+      } else {
+        Fluttertoast.showToast(msg: 'Error: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
