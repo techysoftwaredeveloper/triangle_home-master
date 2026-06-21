@@ -3,6 +3,7 @@ import 'package:triangle_home/services/admin_service.dart';
 import 'package:triangle_home/screens/admin/widgets/analytics_widgets.dart';
 import 'package:triangle_home/screens/admin/widgets/activity_feed_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class ListingsTab extends StatefulWidget {
   final AdminService adminService;
@@ -261,6 +262,12 @@ class _ListingsTabState extends State<ListingsTab> {
               color: Colors.white54,
               onTap: () => _handleBulkAction('archive'),
             ),
+            _ToolbarAction(
+              label: 'Delete', 
+              icon: Icons.delete_forever_rounded, 
+              color: const Color(0xFFEF4444),
+              onTap: () => _handleBulkAction('delete'),
+            ),
             const SizedBox(width: 32),
             TextButton(
               onPressed: () => setState(() => _selectedIds.clear()),
@@ -282,8 +289,12 @@ class _ListingsTabState extends State<ListingsTab> {
       final auditRef = FirebaseFirestore.instance.collection('auditLogs').doc();
       String newStatus = action == 'approve' ? 'active' : action == 'suspend' ? 'suspended' : action == 'reject' ? 'rejected' : 'archived';
 
-      batch.update(docRef, {'status': newStatus, 'updatedAt': timestamp});
-      batch.set(auditRef, {'adminId': adminId, 'action': 'bulk_$action', 'propertyId': id, 'timestamp': timestamp, 'newValue': newStatus, 'type': 'property'});
+      if (action == 'delete') {
+        batch.delete(docRef);
+      } else {
+        batch.update(docRef, {'status': newStatus, 'updatedAt': timestamp});
+      }
+      batch.set(auditRef, {'adminId': adminId, 'action': 'bulk_$action', 'propertyId': id, 'timestamp': timestamp, 'newValue': action == 'delete' ? 'deleted' : newStatus, 'type': 'property'});
     }
 
     try {
@@ -582,7 +593,44 @@ class _ListingsTabState extends State<ListingsTab> {
     );
   }
 
-  Widget _buildBookingsTab() => const _NotConfigured(label: 'Bookings');
+  Widget _buildBookingsTab() {
+    final propertyId = _selectedProperty?['id'];
+    if (propertyId == null) return _EmptyState(label: 'Select a property');
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('bookings')
+          .where('propertyId', isEqualTo: propertyId)
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+        final bookings = snapshot.data?.docs ?? [];
+        if (bookings.isEmpty) return const _NotConfigured(label: 'Bookings');
+        
+        return ListView.builder(
+          padding: const EdgeInsets.all(24),
+          itemCount: bookings.length,
+          itemBuilder: (context, index) {
+            final booking = bookings[index].data();
+            final status = (booking['status'] ?? 'pending').toString().toUpperCase();
+            final tenantName = booking['tenantDetails']?[0]?['name'] ?? 'Guest';
+            final date = booking['createdAt'] is Timestamp 
+                ? DateFormat('dd MMM yyyy').format((booking['createdAt'] as Timestamp).toDate())
+                : 'N/A';
+            
+            return _DrawerListTile(
+              title: 'Booking #$index',
+              subtitle: 'By $tenantName • $date',
+              trailing: status,
+              icon: Icons.calendar_today_rounded,
+              color: const Color(0xFF3B82F6),
+            );
+          },
+        );
+      },
+    );
+  }
 
   Widget _buildRoomsTab() {
     final propertyId = _selectedProperty?['id'];
@@ -731,17 +779,29 @@ class _ListingsTabState extends State<ListingsTab> {
     if (propertyId == null) return _EmptyState(label: 'Select a property');
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance.collection('complaints').where('propertyId', isEqualTo: propertyId).orderBy('createdAt', descending: true).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('reports')
+          .where('targetId', isEqualTo: propertyId)
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-        final complaints = snapshot.data?.docs ?? [];
-        if (complaints.isEmpty) return const _NotConfigured(label: 'Complaints');
+        final reports = snapshot.data?.docs ?? [];
+        if (reports.isEmpty) return const _NotConfigured(label: 'Reports/Complaints');
         return ListView.builder(
           padding: const EdgeInsets.all(24),
-          itemCount: complaints.length,
+          itemCount: reports.length,
           itemBuilder: (context, index) {
-            final complaint = complaints[index].data();
-            return _DrawerListTile(title: complaint['title'] ?? 'Complaint', subtitle: complaint['category'] ?? 'General', trailing: complaint['status']?.toString().toUpperCase(), icon: Icons.report_problem_rounded, color: const Color(0xFFEF4444));
+            final report = reports[index].data();
+            final status = (report['status'] ?? 'pending').toString().toUpperCase();
+            final priority = report['priority'] ?? 'MEDIUM';
+            return _DrawerListTile(
+              title: report['title'] ?? 'Complaint', 
+              subtitle: '${report['category'] ?? "General"} • $priority PRIORITY', 
+              trailing: status, 
+              icon: Icons.report_problem_rounded, 
+              color: priority == 'HIGH' ? const Color(0xFFEF4444) : const Color(0xFFF59E0B)
+            );
           },
         );
       },
@@ -771,20 +831,28 @@ class _ListingsTabState extends State<ListingsTab> {
   }
 
   Widget _buildAddButton() {
-    return Container(
-      decoration: BoxDecoration(color: const Color(0xFF6366F1), borderRadius: BorderRadius.circular(10)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [Icon(Icons.add, color: Colors.white, size: 18), SizedBox(width: 8), Text('Add New Listing', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold))],
+    return InkWell(
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Hoster approval flow is the primary way to add properties. Direct admin entry coming soon.')),
+        );
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        decoration: BoxDecoration(color: const Color(0xFF6366F1), borderRadius: BorderRadius.circular(10)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [Icon(Icons.add, color: Colors.white, size: 18), SizedBox(width: 8), Text('Add New Listing', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold))],
+              ),
             ),
-          ),
-          Container(height: 44, width: 1, color: Colors.white24),
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20)),
-        ],
+            Container(height: 44, width: 1, color: Colors.white24),
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20)),
+          ],
+        ),
       ),
     );
   }
@@ -970,11 +1038,59 @@ class _PropertyRow extends StatelessWidget {
             Expanded(flex: 2, child: _ComplianceBadges(property: property)),
             Expanded(flex: 1, child: _HealthScore(score: property['healthScore'] ?? 0)),
             Expanded(flex: 1, child: _StatusBadge(status: property['status'])),
-            SizedBox(width: 48, child: IconButton(icon: const Icon(Icons.more_vert, color: Color(0xFF475569)), onPressed: () {})),
+            SizedBox(
+              width: 48, 
+              child: PopupMenuButton<String>(
+                onSelected: (val) {
+                  if (val == 'delete') {
+                    _showDeleteConfirmation(context, property['id']);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, color: Color(0xFFEF4444), size: 18),
+                        SizedBox(width: 12),
+                        Text('Delete', style: TextStyle(color: Color(0xFFEF4444), fontSize: 13, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ],
+                icon: const Icon(Icons.more_vert, color: Color(0xFF475569)),
+              )
+            ),
           ],
         ),
       ),
     );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, String id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text('Confirm Deletion', style: TextStyle(color: Colors.white)),
+        content: const Text('Are you sure you want to permanently delete this property? All associated data will be lost.', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await FirebaseFirestore.instance.collection('properties').doc(id).delete();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Property deleted successfully')));
+      }
+    }
   }
 }
 

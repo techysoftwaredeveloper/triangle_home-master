@@ -88,17 +88,13 @@ flutter:
   assets:
     - assets/images/splashbackground.svg
     - assets/images/Logo.svg
-    - assets/images/searchicon.svg
     - assets/images/Boyface.svg
     - assets/images/Girlface.svg
     - assets/images/school.svg
     - assets/images/home_work.svg
-    - assets/images/sharingicon.svg
-    - assets/images/Logosmall.svg
     - assets/images/google-login.png
     - assets/images/logomain.png
     - assets/images/otp_animation.json
-    - assets/images/logo_white.png
     - assets/images/Homeicon.svg
     - assets/images/mywishlisticon.svg
     - assets/images/mypgbookings.svg

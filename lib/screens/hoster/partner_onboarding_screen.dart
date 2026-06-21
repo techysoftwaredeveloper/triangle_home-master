@@ -296,6 +296,8 @@ class _PartnerOnboardingScreenState extends State<PartnerOnboardingScreen> {
             (userData['accountStatus'] == 'active') ||
             (userData['status'] == 'approved');
 
+        final bool isRejected = userData['status'] == 'rejected';
+
         return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, result) {
@@ -363,6 +365,10 @@ class _PartnerOnboardingScreenState extends State<PartnerOnboardingScreen> {
                 // Real-time Approval Overlay
                 if (isApproved)
                   _buildApprovalOverlay(),
+                  
+                // Real-time Rejection Overlay
+                if (isRejected && !isApproved)
+                  _buildRejectionOverlay(userData['rejectionReason'] ?? 'Application requirements not met.'),
               ],
             ),
           ),
@@ -419,6 +425,95 @@ class _PartnerOnboardingScreenState extends State<PartnerOnboardingScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildRejectionOverlay(String reason) {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.85),
+      width: double.infinity,
+      height: double.infinity,
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(color: AppTheme.errorColor, shape: BoxShape.circle),
+            child: const Icon(Icons.close_rounded, color: Colors.white, size: 48),
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            'Application Rejected',
+            style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            child: Column(
+              children: [
+                const Text('Reason from Triangle Homes:', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text(
+                  reason,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white, fontSize: 15, fontStyle: FontStyle.italic),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Don\'t worry! You can correct your details and re-submit your application for review.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+          ),
+          const SizedBox(height: 48),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => _handleResubmission(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppTheme.errorColor,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: const Text('Edit & Re-submit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Go Back', style: TextStyle(color: Colors.white60)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleResubmission() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+        'status': 'pending', // Reset status to pending
+        'onboardingStatus': 'in_progress',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      
+      // The StreamBuilder will automatically re-render and hide the rejection overlay
+    } catch (e) {
+      debugPrint('Error resetting status for resubmission: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   String _getStepTitle() {

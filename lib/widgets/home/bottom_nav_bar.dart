@@ -8,7 +8,7 @@ import 'package:triangle_home/screens/bookings_screen.dart';
 import 'package:triangle_home/screens/home_screen.dart';
 import 'package:triangle_home/screens/list_property/intro_screen.dart';
 import 'package:triangle_home/screens/list_property/list_property_screen.dart';
-import 'package:triangle_home/screens/list_property/my_property_info_screen.dart';
+import 'package:triangle_home/screens/hoster/hoster_dashboard_screen.dart';
 import 'package:triangle_home/screens/wishlist_screen.dart';
 import 'package:triangle_home/screens/suggest_property/suggest_property_intro_screen.dart';
 import 'package:triangle_home/theme/app_theme.dart';
@@ -110,7 +110,7 @@ class HomeBottomNavBar extends StatelessWidget {
             .get();
 
     if (snapshot.docs.isNotEmpty) {
-      return const MyAddedPropertyScreen();
+      return const HosterDashboardScreen();
     } else {
       return const ListPropertyScreen();
     }

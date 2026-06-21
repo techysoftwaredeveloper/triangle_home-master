@@ -229,7 +229,7 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
         final pricing = _propertyData['pricing'] as Map<String, dynamic>;
         finalData['pricing'] = pricing;
         finalData['monthlyRent'] = pricing['singleRent'];
-        finalData['securityDeposit'] = pricing['deposit'];
+        finalData['securityDeposit'] = pricing['singleDeposit'] ?? pricing['deposit']; // Use room-wise or fallback
       }
 
       // 4. Map Amenities

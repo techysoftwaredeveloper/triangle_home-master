@@ -41,16 +41,17 @@ class AdminApiService {
     final headers = await _getHeaders();
     
     debugPrint('📡 [API] REQUEST: $method $url');
-    if (body != null) debugPrint('📦 [API] BODY: ${json.encode(body)}');
+    final encodedBody = json.encode(body ?? {});
+    if (body != null) debugPrint('📦 [API] BODY: $encodedBody');
 
     try {
       http.Response response;
       switch (method.toUpperCase()) {
         case 'POST':
-          response = await http.post(url, headers: headers, body: json.encode(body));
+          response = await http.post(url, headers: headers, body: encodedBody);
           break;
         case 'PATCH':
-          response = await http.patch(url, headers: headers, body: json.encode(body));
+          response = await http.patch(url, headers: headers, body: encodedBody);
           break;
         case 'GET':
         default:

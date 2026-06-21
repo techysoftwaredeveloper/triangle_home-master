@@ -67,7 +67,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     String? rejectionReason;
     if (status == 'rejected') {
       rejectionReason = await _showRejectionDialog();
-      if (rejectionReason == null) return; // User cancelled
+      if (rejectionReason == null || rejectionReason.isEmpty) return; // User cancelled
     }
 
     setState(() => _isUpdating = true);

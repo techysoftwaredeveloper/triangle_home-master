@@ -33,7 +33,7 @@ class _AboutScreenState extends State<AboutScreen> {
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBgColor,
       appBar: AppBar(
-        title: const Text('About Us'),
+        title: const Text('About Triangle Homes'),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -80,39 +80,61 @@ class _AboutScreenState extends State<AboutScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'BETA $_version',
+                    'VERSION $_version',
                     style: const TextStyle(
                       color: AppTheme.textMutedColor,
                       fontFamily: AppTheme.fontFamily,
                       fontSize: AppTheme.fontSM,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 40),
+            
             _buildSectionCard(
-              title: 'Who We Are',
+              title: 'Our Vision',
               content:
-                  'Triangle Homes is your trusted partner in finding the perfect accommodation. We connect students and professionals with quality paying guest accommodations, hostels, and apartments.',
-              icon: Icons.info_outline_rounded,
+                  'Triangle Homes is revolutionizing the way students and young professionals find and experience housing. Our digital-first platform creates safe, verified, and vibrant living communities that feel like home.',
+              icon: Icons.lightbulb_outline_rounded,
             ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0),
-            const SizedBox(height: 20),
+            
+            const SizedBox(height: 24),
+            
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Our Core Values',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Outfit',
+                  color: AppTheme.textDarkColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
             _buildInfoRow(
-              'Our Mission',
-              'To provide safe, comfortable, and affordable accommodation solutions for everyone.',
-              Icons.flag_outlined,
+              'Verified Trust',
+              'Every property and hoster undergoes a multi-layer verification process, ensuring 100% safety and transparency for our residents.',
+              Icons.verified_user_outlined,
             ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1, end: 0),
+            
             _buildInfoRow(
-              'Quality Assurance',
-              'All properties are verified and regularly inspected for quality.',
-              Icons.verified_outlined,
+              'Seamless Living',
+              'From discovery to digital checkout, we automate the boring stuff so you can focus on your studies and career.',
+              Icons.auto_awesome_outlined,
             ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.1, end: 0),
+            
             _buildInfoRow(
-              'Customer Support',
-              '24/7 support to assist you with your accommodation needs.',
-              Icons.support_agent_rounded,
+              'Community First',
+              'We don\'t just provide beds; we build communities. Find roommates who share your interests and vibes.',
+              Icons.people_outline_rounded,
             ).animate().fadeIn(delay: 500.ms).slideX(begin: -0.1, end: 0),
+            
             const SizedBox(height: 40),
             const Text(
               'Connect With Us',
@@ -133,6 +155,15 @@ class _AboutScreenState extends State<AboutScreen> {
               ],
             ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
             const SizedBox(height: 40),
+            const Text(
+              'Made with ❤️ in India',
+              style: TextStyle(
+                color: AppTheme.textMutedColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -145,25 +176,33 @@ class _AboutScreenState extends State<AboutScreen> {
     required IconData icon,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
+        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: AppTheme.primaryColor, size: 24),
-              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: AppTheme.primaryColor, size: 24),
+              ),
+              const SizedBox(width: 16),
               Text(
                 title,
                 style: const TextStyle(
@@ -174,7 +213,7 @@ class _AboutScreenState extends State<AboutScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             content,
             style: const TextStyle(
@@ -191,19 +230,26 @@ class _AboutScreenState extends State<AboutScreen> {
 
   Widget _buildInfoRow(String title, String description, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withValues(alpha: 0.08),
-              shape: BoxShape.circle,
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Icon(icon, color: AppTheme.primaryColor, size: 22),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,7 +269,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     fontSize: AppTheme.fontSM,
                     color: AppTheme.textLightColor,
                     fontFamily: AppTheme.fontFamily,
-                    height: 1.4,
+                    height: 1.5,
                   ),
                 ),
               ],

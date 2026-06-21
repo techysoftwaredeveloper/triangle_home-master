@@ -12,8 +12,8 @@ import 'package:triangle_home/screens/profile/privacy_security_screen.dart';
 import 'package:triangle_home/screens/profile/help_support_screen.dart';
 import 'package:triangle_home/screens/profile/about_screen.dart';
 import 'package:triangle_home/screens/profile/profile_details_screen.dart';
-import 'package:triangle_home/screens/profile/privacy_policy_screen.dart';
 import 'package:triangle_home/screens/profile/verification_center_screen.dart';
+import 'package:triangle_home/screens/profile/terms_conditions_screen.dart';
 import 'package:triangle_home/screens/profile/saved_payments_screen.dart';
 import 'package:triangle_home/screens/list_property/intro_screen.dart';
 import 'package:triangle_home/screens/auth/login_screen.dart';
@@ -396,16 +396,21 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                         const SizedBox(height: 24),
                         _buildCurrentlyStaying(),
                       ],
-                      const SizedBox(height: 24),
-                      _buildBookingReadinessCard(userData, role),
+                      if (role != 'hoster' &&
+                          _calculateBookingReadiness(userData) < 1.0) ...[
+                        const SizedBox(height: 24),
+                        _buildBookingReadinessCard(userData, role),
+                      ],
                       const SizedBox(height: 24),
                       _buildAboutMeCard(userData, role),
                       const SizedBox(height: 24),
                       _buildHousingPreferencesCard(userData),
                       const SizedBox(height: 24),
                       _buildEmergencyContactCard(userData, verif),
-                      const SizedBox(height: 24),
-                      _buildVerificationCenterCard(verif),
+                      if (role != 'hoster' && !_isFullyVerified(verif)) ...[
+                        const SizedBox(height: 24),
+                        _buildVerificationCenterCard(verif),
+                      ],
                       const SizedBox(height: 24),
                       _buildContributionsEarningsCard(),
                       const SizedBox(height: 24),
@@ -1057,6 +1062,15 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     if (verif['selfieVerified'] == true) completedSteps++;
 
     return (completedSteps / totalSteps).clamp(0.0, 1.0);
+  }
+
+  bool _isFullyVerified(Map verif) {
+    final user = _auth.currentUser;
+    return (verif['phoneVerified'] == true || user?.phoneNumber != null) &&
+        (verif['emailVerified'] == true || user?.emailVerified == true) &&
+        verif['roleIdVerified'] == true &&
+        verif['govIdVerified'] == true &&
+        verif['addressVerified'] == true;
   }
 
   Widget _buildBookingReadinessCard(
@@ -1805,7 +1819,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                 () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const PrivacyPolicyScreen(),
+                    builder: (_) => const TermsConditionsScreen(),
                   ),
                 ),
           ),

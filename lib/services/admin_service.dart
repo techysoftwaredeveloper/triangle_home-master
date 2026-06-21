@@ -602,6 +602,13 @@ class AdminService {
         status: 'rejected',
         isActive: false,
       );
+      
+      // Save rejection reason to user document for their feedback
+      await _firestore.collection('users').doc(id).update({
+        'status': 'rejected',
+        'rejectionReason': reason ?? 'Application requirements not met.',
+        'rejectedAt': FieldValue.serverTimestamp(),
+      });
     } else if (type == 'user_verification') {
       await _firestore.collection('users').doc(id).set({
         'verification': {
@@ -736,5 +743,90 @@ class AdminService {
 
   Future<void> promoteToAdmin(String userId) async {
     await updateUserRole(userId, 'admin');
+  }
+
+  Future<void> deleteApprovalRequest(String id, String type) async {
+    if (type == 'property') {
+      await _firestore.collection('properties').doc(id).delete();
+    } else if (type == 'hoster') {
+      // Deleting a hoster request usually means deleting the draft info
+      // But we should be careful not to delete the actual user unless specified
+      await _firestore.collection('hoster_requests').doc(id).delete();
+      // Reset onboarding status so they can start over if they want
+      await _firestore.collection('users').doc(id).update({
+        'onboardingStatus': 'pending',
+        'status': 'pending'
+      });
+    } else if (type == 'user_verification') {
+      await _firestore.collection('users').doc(id).update({
+        'verification.roleIdStatus': FieldValue.delete(),
+        'verification.roleIdUrl': FieldValue.delete(),
+      });
+    }
+    
+    await _auditService.logAction(
+      action: 'item_deletion',
+      targetId: id,
+      targetType: type,
+      reason: 'Permanently deleted by admin',
+    );
+  }
+
+  /// Migrates existing properties to the new room-wise security deposit logic.
+  /// Sets default 2 months rent if no deposit is found.
+  Future<void> migratePropertySecurityDeposits() async {
+    final snap = await _firestore.collection('properties').get();
+    final batch = _firestore.batch();
+    int migratedCount = 0;
+
+    for (final doc in snap.docs) {
+      final data = doc.data();
+      final pricing = data['pricing'] as Map? ?? {};
+      
+      bool needsUpdate = false;
+      final Map<String, dynamic> updates = {};
+
+      // 1. Check for missing room-wise deposits
+      final singleRent = double.tryParse(pricing['singleRent']?.toString() ?? '0') ?? 0;
+      final doubleRent = double.tryParse(pricing['doubleRent']?.toString() ?? '0') ?? 0;
+      final tripleRent = double.tryParse(pricing['tripleRent']?.toString() ?? '0') ?? 0;
+
+      if (singleRent > 0 && pricing['singleDeposit'] == null) {
+        updates['pricing.singleDeposit'] = (singleRent * 2).toInt().toString();
+        needsUpdate = true;
+      }
+      if (doubleRent > 0 && pricing['doubleDeposit'] == null) {
+        updates['pricing.doubleDeposit'] = (doubleRent * 2).toInt().toString();
+        needsUpdate = true;
+      }
+      if (tripleRent > 0 && pricing['tripleDeposit'] == null) {
+        updates['pricing.tripleDeposit'] = (tripleRent * 2).toInt().toString();
+        needsUpdate = true;
+      }
+
+      // 2. Fallback for main securityDeposit field if missing
+      if (data['securityDeposit'] == null || data['securityDeposit'].toString().isEmpty) {
+        final mainRent = double.tryParse(data['monthlyRent']?.toString() ?? '0') ?? singleRent;
+        if (mainRent > 0) {
+          updates['securityDeposit'] = (mainRent * 2).toInt().toString();
+          needsUpdate = true;
+        }
+      }
+
+      if (needsUpdate) {
+        batch.update(doc.reference, updates);
+        migratedCount++;
+      }
+    }
+
+    if (migratedCount > 0) {
+      await batch.commit();
+      await _auditService.logAction(
+        action: 'security_deposit_migration',
+        targetId: 'system',
+        targetType: 'system',
+        reason: 'Migrated $migratedCount properties to 2-month rent default standard',
+      );
+    }
   }
 }

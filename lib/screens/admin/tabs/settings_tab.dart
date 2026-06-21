@@ -321,7 +321,15 @@ class _SettingsTabState extends State<SettingsTab> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _buildSecuritySettingsCard()),
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildSecuritySettingsCard(),
+                    const SizedBox(height: 24),
+                    _buildMigrationCard(),
+                  ],
+                ),
+              ),
               const SizedBox(width: 24),
               Expanded(child: _buildSystemStatusCard()),
             ],
@@ -332,9 +340,57 @@ class _SettingsTabState extends State<SettingsTab> {
               _buildSecuritySettingsCard(),
               const SizedBox(height: 16),
               _buildSystemStatusCard(),
+              const SizedBox(height: 16),
+              _buildMigrationCard(),
             ],
           ),
       ],
+    );
+  }
+
+  Widget _buildMigrationCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFFEF3C7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.auto_fix_high_rounded, size: 18, color: Color(0xFFD97706)),
+              SizedBox(width: 12),
+              Text(
+                'Data Migration',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF92400E)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Migrate existing properties to the new 2-month security deposit standard. This will update properties without specified deposits.',
+            style: TextStyle(fontSize: 12, color: Color(0xFF92400E), height: 1.4),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () async {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Starting security deposit migration...')));
+              try {
+                await widget.adminService.migratePropertySecurityDeposits();
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Migration completed successfully!'), backgroundColor: Colors.green));
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Migration failed: $e'), backgroundColor: Colors.red));
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), foregroundColor: Colors.white, elevation: 0),
+            child: const Text('Run Security Deposit Migration', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -429,14 +485,14 @@ class _SettingsTabState extends State<SettingsTab> {
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(
+        children: [
+          const Icon(
             Icons.change_history_rounded,
             color: Color(0xFF8B5CF6),
             size: 40,
           ),
-          SizedBox(height: 8),
-          Text(
+          const SizedBox(height: 8),
+          const Text(
             'Triangle Homes',
             style: TextStyle(
               fontSize: 10,

@@ -174,64 +174,83 @@ class _ApprovalsTabState extends State<ApprovalsTab>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Approvals',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                fontFamily: 'Outfit',
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Review and take action on pending requests',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 15,
-                fontFamily: 'Outfit',
-              ),
-            ),
-          ],
-        ),
-        PopupMenuButton<String>(
-          onSelected: (value) => setState(() => _filterBy = value),
-          itemBuilder: (context) => [
-            const PopupMenuItem(value: 'All', child: Text('All Requests')),
-            const PopupMenuItem(value: 'Incomplete Docs', child: Text('Incomplete Documents')),
-            const PopupMenuItem(value: 'Urgent', child: Text('Urgent (>24h)')),
-          ],
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.tune_rounded, size: 18, color: Colors.white.withValues(alpha: 0.5)),
-                const SizedBox(width: 10),
-                Text(
-                  _filterBy == 'All' ? 'Filter' : _filterBy,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Approvals',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontFamily: 'Outfit',
                 ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.keyboard_arrow_down,
-                  size: 18,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Review and take action on pending requests',
+                style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 15,
+                  fontFamily: 'Outfit',
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () => _showAddRequestDialog(),
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Add Request', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF8B5CF6),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            const SizedBox(width: 16),
+            PopupMenuButton<String>(
+              onSelected: (value) => setState(() => _filterBy = value),
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'All', child: Text('All Requests')),
+                const PopupMenuItem(value: 'Incomplete Docs', child: Text('Incomplete Documents')),
+                const PopupMenuItem(value: 'Urgent', child: Text('Urgent (>24h)')),
+              ],
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.tune_rounded, size: 18, color: Colors.white.withValues(alpha: 0.5)),
+                    const SizedBox(width: 10),
+                    Text(
+                      _filterBy == 'All' ? 'Filter' : _filterBy,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 18,
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -507,7 +526,9 @@ class _ApprovalsTabState extends State<ApprovalsTab>
                   onApprove:
                       () => _handleAction(item['id'], item['type'], 'approve'),
                   onReject:
-                      () => _handleAction(item['id'], item['type'], 'reject'),
+                      () => _handleRejectAction(item['id'], item['type']),
+                  onDelete: 
+                      () => _handleDeleteAction(item['id'], item['type']),
                   onDetails: () => _viewDetails(item),
                 ),
               )
@@ -558,12 +579,150 @@ class _ApprovalsTabState extends State<ApprovalsTab>
     }
   }
 
-  Future<void> _handleAction(String id, String type, String action) async {
+  Future<void> _showAddRequestDialog() async {
+    final controller = TextEditingController();
+    String type = 'hoster';
+    
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          title: const Text('Add Approval Request', style: TextStyle(color: Colors.white)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                initialValue: type,
+                dropdownColor: const Color(0xFF1E293B),
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: 'Request Type', labelStyle: TextStyle(color: Colors.white60)),
+                items: const [
+                  DropdownMenuItem(value: 'hoster', child: Text('Hoster Onboarding')),
+                  DropdownMenuItem(value: 'property', child: Text('Property Listing')),
+                ],
+                onChanged: (val) => setDialogState(() => type = val!),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Target ID (UID or Property ID)',
+                  labelStyle: TextStyle(color: Colors.white60),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white10)),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, {'id': controller.text, 'type': type}),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8B5CF6)),
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null && result['id']!.isNotEmpty) {
+      try {
+        if (result['type'] == 'hoster') {
+          await FirebaseFirestore.instance.collection('users').doc(result['id']).update({
+            'onboardingStatus': 'submitted',
+            'status': 'pending',
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        } else {
+          await FirebaseFirestore.instance.collection('properties').doc(result['id']).update({
+            'status': 'pending',
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request added to approvals queue')));
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  Future<void> _handleDeleteAction(String id, String type) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text('Confirm Deletion', style: TextStyle(color: Colors.white)),
+        content: Text('Are you sure you want to permanently delete this $type request? This action cannot be undone.', style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await widget.adminService.deleteApprovalRequest(id, type);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${type[0].toUpperCase()}${type.substring(1)} request deleted successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to delete: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _handleRejectAction(String id, String type) async {
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text('Reject Request', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Enter reason for rejection...',
+            hintStyle: TextStyle(color: Colors.white24),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white10)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            child: const Text('Reject'),
+          ),
+        ],
+      ),
+    );
+
+    if (reason != null && reason.isNotEmpty) {
+      await _handleAction(id, type, 'reject', reason: reason);
+    }
+  }
+
+  Future<void> _handleAction(String id, String type, String action, {String? reason}) async {
     try {
       if (action == 'approve') {
         await widget.adminService.approveItem(id, type);
       } else if (action == 'reject') {
-        await widget.adminService.rejectItem(id, type);
+        await widget.adminService.rejectItem(id, type, reason: reason);
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -738,6 +897,7 @@ class _ApprovalItemCard extends StatelessWidget {
   final ValueChanged<bool?> onSelect;
   final VoidCallback onApprove;
   final VoidCallback onReject;
+  final VoidCallback onDelete;
   final VoidCallback onDetails;
 
   const _ApprovalItemCard({
@@ -746,6 +906,7 @@ class _ApprovalItemCard extends StatelessWidget {
     required this.onSelect,
     required this.onApprove,
     required this.onReject,
+    required this.onDelete,
     required this.onDetails,
   });
 
@@ -1088,6 +1249,16 @@ class _ApprovalItemCard extends StatelessWidget {
               textColor: const Color(0xFFEF4444),
             ),
           ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _ActionButton(
+              label: 'Delete',
+              onPressed: onDelete,
+              color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+              textColor: const Color(0xFFEF4444),
+              border: true,
+            ),
+          ),
         ],
       ),
     );
@@ -1121,7 +1292,7 @@ class _ActionButton extends StatelessWidget {
           elevation: 0,
           minimumSize: Size.zero,
           padding: EdgeInsets.zero,
-          side: border ? BorderSide(color: Colors.white.withValues(alpha: 0.1)) : null,
+          side: border ? const BorderSide(color: Colors.white10) : null,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: Row(
