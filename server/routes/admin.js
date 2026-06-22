@@ -22,6 +22,9 @@ router.patch('/properties/:propertyId/status', adminController.updatePropertySta
 router.post('/hosters/:hosterId/approve', adminController.approveHoster);
 router.patch('/suggestions/:id/status', adminController.updateSuggestionStatus);
 router.patch('/reports/:id/status', adminController.updateReportStatus);
+router.delete('/users/:userId', adminController.deleteUser);
+router.delete('/bookings/:bookingId', adminController.deleteBooking);
+router.post('/approvals/cleanup', adminController.cleanupIncompleteApprovals);
 
 // Verification Management
 router.get('/verifications/pending', adminController.getPendingVerifications);

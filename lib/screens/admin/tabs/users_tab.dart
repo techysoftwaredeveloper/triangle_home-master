@@ -609,6 +609,9 @@ class _UsersTabState extends State<UsersTab>
         case 'role_owner':
           await widget.adminService.updateUserRole(userId, 'owner');
           break;
+        case 'delete':
+          await _showDeleteUserConfirmation(userId);
+          return; // The confirmation dialog handles the actual call
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -637,6 +640,49 @@ class _UsersTabState extends State<UsersTab>
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Add User feature coming soon')),
     );
+  }
+
+  Future<void> _showDeleteUserConfirmation(String userId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete User Permanently?'),
+        content: const Text(
+          'This action cannot be undone. All user profile data and authentication will be permanently removed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await widget.adminService.deleteUser(userId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('User deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
   }
 
   String _formatRole(dynamic role) {
@@ -995,6 +1041,15 @@ class _UserCard extends StatelessWidget {
                       'Owner',
                       rawRole == 'owner',
                       Icons.home_work_outlined,
+                    ),
+                  ),
+                  const PopupMenuDivider(height: 1),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: _buildPopupItem(
+                      Icons.delete_forever_outlined,
+                      'Delete User',
+                      color: Colors.red,
                     ),
                   ),
                 ],

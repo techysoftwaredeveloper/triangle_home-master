@@ -66,11 +66,22 @@ class AdminService {
 
   Stream<List<Map<String, dynamic>>> getActivityLogsStream() {
     return _firestore
-        .collection('activityLogs')
+        .collection('audit_logs')
         .orderBy('timestamp', descending: true)
         .limit(50)
         .snapshots()
-        .map((snap) => snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
+        .map((snap) => snap.docs.map((doc) {
+          final data = doc.data();
+          // Map audit_logs to what ActivityFeedWidget expects
+          return {
+            'id': doc.id,
+            'timestamp': data['timestamp'],
+            'type': data['targetType'] == 'users' ? 'hoster' : data['targetType'], // Map users to hoster icon
+            'action': data['action']?.toString().replaceAll('_', ' ').toUpperCase() ?? 'ACTION',
+            'property': data['reason'] ?? data['targetId'], // Use reason or targetId as detail
+            ...data,
+          };
+        }).toList());
   }
 
   Stream<List<Map<String, dynamic>>> getAuditLogsStream() {
@@ -164,113 +175,126 @@ class AdminService {
   }
 
   Stream<List<Map<String, dynamic>>> getPendingApprovalsStream() {
-    // Optimization: Use targeted streams for pending actions
-    final submittedHosters = _firestore
-        .collection('users')
-        .where('onboardingStatus', isEqualTo: 'submitted')
-        .snapshots();
+    // We use BehaviorSubject to manage the combined state manually and ensure immediate emissions
+    final subject = BehaviorSubject<List<Map<String, dynamic>>>.seeded([]);
+    final Map<String, List<QueryDocumentSnapshot<Map<String, dynamic>>>> latestDocs = {
+      'submittedHosters': [],
+      'pendingStatusUsers': [],
+      'pendingAccountUsers': [],
+      'pendingVerifUsers': [],
+      'pendingProperties': [],
+    };
 
-    final pendingStatusUsers = _firestore
-        .collection('users')
-        .where('status', isEqualTo: 'pending')
-        .snapshots();
-        
-    final pendingAccountUsers = _firestore
-        .collection('users')
-        .where('accountStatus', isEqualTo: 'pending')
-        .snapshots();
+    void emit() {
+      if (subject.isClosed) return;
+      
+      final Map<String, Map<String, dynamic>> approvalMap = {};
 
-    final pendingVerifUsers = _firestore
-        .collection('users')
-        .where('verification.roleIdStatus', isEqualTo: 'pending')
-        .snapshots();
-
-    final pendingProperties = _firestore
-        .collection('properties')
-        .where('status', isEqualTo: 'pending')
-        .snapshots();
-
-    return Rx.combineLatest5(
-      submittedHosters,
-      pendingStatusUsers,
-      pendingAccountUsers,
-      pendingVerifUsers,
-      pendingProperties,
-      (submitted, statusPending, accountPending, verifPending, propertySnap) {
-        final Map<String, Map<String, dynamic>> approvalMap = {};
-
-        void addUsers(QuerySnapshot<Map<String, dynamic>> snap, String type) {
-          for (var doc in snap.docs) {
-            final data = doc.data();
-            final info = data['info'] as Map? ?? {};
-            final role = (data['role'] ?? '').toString().toLowerCase();
-
-            approvalMap[doc.id] = {
-              ...data,
-              'id': doc.id,
-              'uid': doc.id, // Primary ID for detail screens
-              'userId': doc.id,
-              'type': type,
-              'name': info['name'] ?? 'User Applicant',
-              'email': info['email'],
-              'createdAt': data['updatedAt'] ?? 
-                          data['createdAt'] ?? 
-                          (type == 'user_verification' ? (data['verification']?['roleIdTimestamp'] ?? data['verification']?['selfieTimestamp']) : null),
-            };
-            
-            if (type == 'user_verification') {
-               approvalMap[doc.id]!['verificationType'] = role == 'student' ? 'Student ID' : 'Professional ID';
-            } else if (type == 'hoster') {
-               approvalMap[doc.id]!['hosterName'] = info['name'];
-               approvalMap[doc.id]!['location'] = '${info['city'] ?? ""}, ${info['state'] ?? ""}';
-            }
-          }
-        }
-
-        addUsers(verifPending, 'user_verification');
-        addUsers(submitted, 'hoster');
-        addUsers(statusPending, 'hoster');
-        addUsers(accountPending, 'hoster');
-
-        final List<Map<String, dynamic>> approvals = approvalMap.values.toList();
-
-        for (var doc in propertySnap.docs) {
+      void addUsers(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs, String type) {
+        for (var doc in docs) {
           final data = doc.data();
-          final verification = data['verification'] as Map? ?? {};
-          final documents = data['documents'] as Map? ?? {};
+          final info = data['info'] as Map? ?? {};
+          final role = (data['role'] ?? '').toString().toLowerCase();
 
-          int uploaded = 0;
-          if (verification['aadhaarUrl'] != null) uploaded++;
-          if (verification['panUrl'] != null) uploaded++;
-          if (documents['ownershipUrl'] != null) uploaded++;
-          if (documents['utilityUrl'] != null) uploaded++;
-          if (documents['additionalUrl'] != null) uploaded++;
-
-          approvals.add({
+          approvalMap[doc.id] = {
             ...data,
             'id': doc.id,
-            'type': 'property',
-            'docsCount': '$uploaded/5',
-          });
+            'uid': doc.id,
+            'userId': doc.id,
+            'type': type,
+            'name': info['name'] ?? 'User Applicant',
+            'email': info['email'],
+            'createdAt': data['updatedAt'] ?? 
+                        data['createdAt'] ?? 
+                        (type == 'user_verification' ? (data['verification']?['roleIdTimestamp'] ?? data['verification']?['selfieTimestamp']) : null),
+          };
+          
+          if (type == 'user_verification') {
+             approvalMap[doc.id]!['verificationType'] = role == 'student' ? 'Student ID' : 'Professional ID';
+          } else if (type == 'hoster') {
+             approvalMap[doc.id]!['hosterName'] = info['name'];
+             approvalMap[doc.id]!['location'] = '${info['city'] ?? ""}, ${info['state'] ?? ""}';
+          }
         }
+      }
 
-        approvals.sort((a, b) {
-          final aDate = a['createdAt'] as Timestamp?;
-          final bDate = b['createdAt'] as Timestamp?;
-          if (aDate == null && bDate == null) return 0;
-          if (aDate == null) return 1;
-          if (bDate == null) return -1;
-          return bDate.compareTo(aDate);
+      addUsers(latestDocs['pendingVerifUsers']!, 'user_verification');
+      addUsers(latestDocs['submittedHosters']!, 'hoster');
+      addUsers(latestDocs['pendingStatusUsers']!, 'hoster');
+      addUsers(latestDocs['pendingAccountUsers']!, 'hoster');
+
+      final List<Map<String, dynamic>> approvals = approvalMap.values.toList();
+
+      for (var doc in latestDocs['pendingProperties']!) {
+        final data = doc.data();
+        final verification = data['verification'] as Map? ?? {};
+        final documents = data['documents'] as Map? ?? {};
+
+        int uploaded = 0;
+        if (verification['aadhaarUrl'] != null) uploaded++;
+        if (verification['panUrl'] != null) uploaded++;
+        if (documents['ownershipUrl'] != null) uploaded++;
+        if (documents['utilityUrl'] != null) uploaded++;
+        if (documents['additionalUrl'] != null) uploaded++;
+
+        approvals.add({
+          ...data,
+          'id': doc.id,
+          'type': 'property',
+          'docsCount': '$uploaded/5',
         });
+      }
 
-        _isarService.saveAdminCache(
-          'admin_pending_approvals',
-          json.encode(_sanitize(approvals)),
-        );
+      approvals.sort((a, b) {
+        final aDate = a['createdAt'] as Timestamp?;
+        final bDate = b['createdAt'] as Timestamp?;
+        if (aDate == null && bDate == null) return 0;
+        if (aDate == null) return 1;
+        if (bDate == null) return -1;
+        return bDate.compareTo(aDate);
+      });
 
-        return approvals;
-      },
-    ).asBroadcastStream();
+      subject.add(approvals);
+      
+      // Cache the result
+      _isarService.saveAdminCache(
+        'admin_pending_approvals',
+        json.encode(_sanitize(approvals)),
+      );
+    }
+
+    // Individual listeners
+    final subscriptions = [
+      _firestore.collection('users').where('onboardingStatus', isEqualTo: 'submitted').snapshots().listen((snap) {
+        latestDocs['submittedHosters'] = snap.docs;
+        emit();
+      }),
+      _firestore.collection('users').where('status', isEqualTo: 'pending').snapshots().listen((snap) {
+        latestDocs['pendingStatusUsers'] = snap.docs;
+        emit();
+      }),
+      _firestore.collection('users').where('accountStatus', isEqualTo: 'pending').snapshots().listen((snap) {
+        latestDocs['pendingAccountUsers'] = snap.docs;
+        emit();
+      }),
+      _firestore.collection('users').where('verification.roleIdStatus', isEqualTo: 'pending').snapshots().listen((snap) {
+        latestDocs['pendingVerifUsers'] = snap.docs;
+        emit();
+      }),
+      _firestore.collection('properties').where('status', isEqualTo: 'pending').snapshots().listen((snap) {
+        latestDocs['pendingProperties'] = snap.docs;
+        emit();
+      }),
+    ];
+
+    // Ensure subscriptions are closed when stream is canceled
+    subject.onCancel = () {
+      for (var sub in subscriptions) {
+        sub.cancel();
+      }
+    };
+
+    return subject.stream;
   }
 
   Stream<List<Map<String, dynamic>>> getUsersStream() async* {
@@ -741,8 +765,42 @@ class AdminService {
     await _firestore.collection('properties').doc(propertyId).delete();
   }
 
+  Future<void> deleteBooking(String bookingId) async {
+    await _apiService.deleteBooking(bookingId);
+
+    await _auditService.logAction(
+      action: 'booking_deletion',
+      targetId: bookingId,
+      targetType: 'bookings',
+      reason: 'Permanently deleted by admin',
+    );
+  }
+
+  Future<void> cleanupApprovals() async {
+    final result = await _apiService.cleanupApprovals();
+    
+    await _auditService.logAction(
+      action: 'approvals_cleanup',
+      targetId: 'system',
+      targetType: 'system',
+      reason: 'Automated cleanup of incomplete requests',
+      extraData: {'count': result['message']},
+    );
+  }
+
   Future<void> promoteToAdmin(String userId) async {
     await updateUserRole(userId, 'admin');
+  }
+
+  Future<void> deleteUser(String userId) async {
+    await _apiService.deleteUser(userId);
+
+    await _auditService.logAction(
+      action: 'user_deletion',
+      targetId: userId,
+      targetType: 'users',
+      reason: 'Permanently deleted by admin',
+    );
   }
 
   Future<void> deleteApprovalRequest(String id, String type) async {

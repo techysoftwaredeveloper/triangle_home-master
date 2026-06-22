@@ -8,8 +8,12 @@ class AppConfig {
   static bool get isProd => environment == Environment.prod;
 
   static String get apiBaseUrl {
+    // Check if we should override the environment (e.g., via a constant for quick testing)
+    const bool useProdForDev = false; // Set to true to hit production even in debug mode
+
     switch (environment) {
       case Environment.dev:
+        if (useProdForDev) return 'https://api.trianglehomes.com';
         // Use local IP to support both physical devices and emulators
         return 'http://192.168.31.25:5000';
       case Environment.staging:

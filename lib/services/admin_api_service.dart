@@ -24,11 +24,16 @@ class AdminApiService {
       debugPrint('⚠️ [API] Warning: App Check token is null. Request will likely fail on production server.');
     }
 
-    return {
-      'Authorization': 'Bearer $token',
+    final headers = {
       'X-Firebase-AppCheck': appCheckToken ?? '',
       'Content-Type': 'application/json',
     };
+
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    return headers;
   }
 
   /// UNIFIED REQUEST WRAPPER WITH DIAGNOSTICS
@@ -52,6 +57,9 @@ class AdminApiService {
           break;
         case 'PATCH':
           response = await http.patch(url, headers: headers, body: encodedBody);
+          break;
+        case 'DELETE':
+          response = await http.delete(url, headers: headers);
           break;
         case 'GET':
         default:
@@ -122,6 +130,27 @@ class AdminApiService {
       method: 'PATCH',
       endpoint: '/admin/users/$userId/role',
       body: {'role': role},
+    );
+  }
+
+  Future<void> deleteUser(String userId) async {
+    await performRequest(
+      method: 'DELETE',
+      endpoint: '/admin/users/$userId',
+    );
+  }
+
+  Future<void> deleteBooking(String bookingId) async {
+    await performRequest(
+      method: 'DELETE',
+      endpoint: '/admin/bookings/$bookingId',
+    );
+  }
+
+  Future<Map<String, dynamic>> cleanupApprovals() async {
+    return await performRequest(
+      method: 'POST',
+      endpoint: '/admin/approvals/cleanup',
     );
   }
 

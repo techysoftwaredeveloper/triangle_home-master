@@ -529,7 +529,14 @@ class _HosterDetailScreenState extends State<HosterDetailScreen> {
           if (status != 'rejected')
             OutlinedButton(
               onPressed: () => _showRejectAccountDialog(),
-              style: OutlinedButton.styleFrom(side: const BorderSide(color: errorRed), foregroundColor: errorRed, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: errorRed),
+                foregroundColor: errorRed,
+                minimumSize: const Size(0, 44),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
               child: const Text('Reject Account', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             ),
           const SizedBox(width: 16),
@@ -538,6 +545,8 @@ class _HosterDetailScreenState extends State<HosterDetailScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: isReady ? successGreen : Colors.white10,
               foregroundColor: Colors.white,
+              minimumSize: const Size(0, 44),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 0,
@@ -581,9 +590,30 @@ class _HosterDetailScreenState extends State<HosterDetailScreen> {
 
   Widget _actionBtnMini(String label, VoidCallback onPressed, Color color, {bool isOutline = false}) {
     if (isOutline) {
-      return OutlinedButton(onPressed: onPressed, style: OutlinedButton.styleFrom(side: BorderSide(color: color), foregroundColor: color, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))), child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)));
+      return OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: color),
+          foregroundColor: color,
+          minimumSize: const Size(0, 36),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+      );
     }
-    return ElevatedButton(onPressed: onPressed, style: ElevatedButton.styleFrom(backgroundColor: color, foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))), child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)));
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        minimumSize: const Size(0, 36),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+    );
   }
 
   void _viewDocument(String url, String title) {

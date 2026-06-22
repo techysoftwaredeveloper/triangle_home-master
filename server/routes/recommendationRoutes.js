@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const recommendationController = require('../controllers/recommendationController');
-const { verifyToken } = require('../middleware/auth');
+const { optionalVerifyToken } = require('../middleware/auth');
 
-// Recommendations require authentication to access user preferences
-router.get('/', verifyToken, recommendationController.getRecommendedProperties);
+// Recommendations can support guest users with optional authentication
+router.get('/', optionalVerifyToken, recommendationController.getRecommendedProperties);
 
 module.exports = router;

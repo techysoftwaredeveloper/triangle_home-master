@@ -7,39 +7,39 @@ const logger = require('../utils/logger');
  * Scores properties based on housing preferences: city, budget, property type, and gender.
  */
 exports.getRecommendedProperties = asyncHandler(async (req, res) => {
-    const userId = req.user.uid;
+    const userId = req.user?.uid;
 
     try {
-        // 1. Fetch User Housing Preferences
-        const userDoc = await db.collection('users').doc(userId).get();
-        if (!userDoc.exists) {
-            return res.status(404).json({ success: false, error: 'User not found' });
-        }
+        let preferences = {};
+        let userGender = '';
 
-        const userData = userDoc.data();
-        const preferences = userData.housing_preferences || {};
+        // 1. Fetch User Housing Preferences (if logged in)
+        if (userId) {
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                preferences = userData.housing_preferences || {};
+                userGender = (userData.info?.gender || '').toLowerCase().trim();
+            }
+        }
 
         // Extract preferences with defaults
         const prefCity = (preferences.preferredCity || '').toLowerCase().trim();
         const budgetMin = preferences.budgetMin || 0;
         const budgetMax = preferences.budgetMax || 100000;
         const lookingFor = preferences.lookingFor || []; // Array of types
-        const userGender = (userData.info?.gender || '').toLowerCase().trim();
 
-        if (!prefCity) {
-            return res.json({
-                success: true,
-                count: 0,
-                results: [],
-                message: 'No preferred city set'
-            });
+        // 2. Query properties
+        let query = db.collection('properties').where('status', '==', 'approved');
+
+        // If user has a preferred city, filter by it.
+        // Otherwise (guest or no preference), we show general top properties.
+        if (prefCity) {
+            query = query.where('city_normalized', '==', prefCity);
+        } else {
+            // Generic recommendations (e.g., sort by rating)
+            query = query.orderBy('rating', 'desc');
         }
-
-        // 2. Query properties in the preferred city
-        // We use city_normalized for efficient filtering
-        let query = db.collection('properties')
-            .where('status', '==', 'approved')
-            .where('city_normalized', '==', prefCity);
 
         const snapshot = await query.limit(50).get();
         let scoredResults = [];

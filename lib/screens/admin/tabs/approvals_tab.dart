@@ -27,7 +27,7 @@ class _ApprovalsTabState extends State<ApprovalsTab>
   String _searchQuery = '';
   final Set<String> _selectedIds = {};
   String _sortBy = 'Newest First';
-  String _filterBy = 'All';
+  final String _filterBy = 'All';
 
   @override
   void initState() {
@@ -48,124 +48,173 @@ class _ApprovalsTabState extends State<ApprovalsTab>
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: widget.adminService.getPendingApprovalsStream(),
       builder: (context, snapshot) {
-        final allItems = snapshot.data ?? [];
-        final List<Map<String, dynamic>> displayItems = allItems;
-
-        final hosterRequests =
-            displayItems.where((i) => i['type'] == 'hoster').toList();
-        final propertyListings =
-            displayItems.where((i) => i['type'] == 'property').toList();
-        final userVerifications =
-            displayItems
-                .where((i) => i['type'] == 'user_verification')
-                .toList();
-        final otherRequests =
-            displayItems.where((i) => i['type'] == 'other').toList();
-
-        // Filter based on tab
-        List<Map<String, dynamic>> filteredItems;
-        switch (_tabController.index) {
-          case 1:
-            filteredItems = hosterRequests;
-            break;
-          case 2:
-            filteredItems = propertyListings;
-            break;
-          case 3:
-            filteredItems = userVerifications;
-            break;
-          case 4:
-            filteredItems = otherRequests;
-            break;
-          default:
-            filteredItems = displayItems;
-            break;
-        }
-
-        if (_searchQuery.isNotEmpty) {
-          filteredItems =
-              filteredItems.where((item) {
-                final title =
-                    (item['name'] ?? item['info']?['name'] ?? '')
-                        .toString()
-                        .toLowerCase();
-                return title.contains(_searchQuery.toLowerCase());
-              }).toList();
-        }
-
-        // Apply Sorting
-        if (_sortBy == 'Newest First') {
-          filteredItems.sort((a, b) {
-            final aTime = a['createdAt'] as Timestamp?;
-            final bTime = b['createdAt'] as Timestamp?;
-            if (aTime == null || bTime == null) return 0;
-            return bTime.compareTo(aTime);
-          });
-        } else if (_sortBy == 'Oldest First') {
-          filteredItems.sort((a, b) {
-            final aTime = a['createdAt'] as Timestamp?;
-            final bTime = b['createdAt'] as Timestamp?;
-            if (aTime == null || bTime == null) return 0;
-            return aTime.compareTo(bTime);
-          });
-        } else if (_sortBy == 'Alphabetical') {
-          filteredItems.sort((a, b) {
-            final aName = (a['name'] ?? a['info']?['name'] ?? '').toString();
-            final bName = (b['name'] ?? b['info']?['name'] ?? '').toString();
-            return aName.compareTo(bName);
-          });
-        }
-
-        // Apply Global Filter
-        if (_filterBy == 'Incomplete Docs') {
-          filteredItems = filteredItems.where((item) {
-            final docsCount = (item['docsCount'] ?? '0/0').toString();
-            final parts = docsCount.split('/');
-            if (parts.length == 2) {
-              return int.tryParse(parts[0]) != int.tryParse(parts[1]);
-            }
-            return false;
-          }).toList();
-        } else if (_filterBy == 'Urgent') {
-          filteredItems = filteredItems.where((item) {
-            final aTime = item['createdAt'] as Timestamp?;
-            if (aTime == null) return false;
-            // Urgent if older than 24 hours
-            return DateTime.now().difference(aTime.toDate()).inHours > 24;
-          }).toList();
-        }
-
-        return Container(
-          color: const Color(0xFF020617), // Enterprise Dark Background
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(widget.isNarrow ? 16 : 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 32),
-                _buildSummaryRow(displayItems),
-                const SizedBox(height: 48),
-                _buildTabNavigation(displayItems),
-                const SizedBox(height: 24),
-                _buildSearchAndFilterRow(),
-                const SizedBox(height: 24),
-                if (_selectedIds.isNotEmpty) _buildBulkOperationsToolbar(),
-                const SizedBox(height: 24),
-                if (snapshot.connectionState == ConnectionState.waiting &&
-                    allItems.isEmpty)
-                  Column(
-                    children: List.generate(3, (index) => _buildSkeletonItem()),
-                  )
-                else
-                  _buildItemsList(filteredItems),
-                const SizedBox(height: 40),
-                _buildGuidelineBanner(),
-                const SizedBox(height: 40),
-              ],
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
+                  const Text('Error loading approvals', style: TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text(snapshot.error.toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                ],
+              ),
             ),
-          ),
-        );
+          );
+        }
+
+        try {
+          final allItems = snapshot.data ?? [];
+          final List<Map<String, dynamic>> displayItems = allItems;
+
+          final hosterRequests =
+              displayItems.where((i) => i['type'] == 'hoster').toList();
+          final propertyListings =
+              displayItems.where((i) => i['type'] == 'property').toList();
+          final userVerifications =
+              displayItems
+                  .where((i) => i['type'] == 'user_verification')
+                  .toList();
+          final otherRequests =
+              displayItems.where((i) => i['type'] == 'other').toList();
+
+          // Filter based on tab
+          List<Map<String, dynamic>> filteredItems;
+          switch (_tabController.index) {
+            case 1:
+              filteredItems = hosterRequests;
+              break;
+            case 2:
+              filteredItems = propertyListings;
+              break;
+            case 3:
+              filteredItems = userVerifications;
+              break;
+            case 4:
+              filteredItems = otherRequests;
+              break;
+            default:
+              filteredItems = displayItems;
+              break;
+          }
+
+          if (_searchQuery.isNotEmpty) {
+            filteredItems =
+                filteredItems.where((item) {
+                  final title =
+                      (item['name'] ?? item['info']?['name'] ?? '')
+                          .toString()
+                          .toLowerCase();
+                  return title.contains(_searchQuery.toLowerCase());
+                }).toList();
+          }
+
+          // Apply Sorting
+          if (_sortBy == 'Newest First') {
+            filteredItems.sort((a, b) {
+              final aTime = a['createdAt'] as Timestamp?;
+              final bTime = b['createdAt'] as Timestamp?;
+              if (aTime == null || bTime == null) return 0;
+              return bTime.compareTo(aTime);
+            });
+          } else if (_sortBy == 'Oldest First') {
+            filteredItems.sort((a, b) {
+              final aTime = a['createdAt'] as Timestamp?;
+              final bTime = b['createdAt'] as Timestamp?;
+              if (aTime == null || bTime == null) return 0;
+              return aTime.compareTo(bTime);
+            });
+          } else if (_sortBy == 'Alphabetical') {
+            filteredItems.sort((a, b) {
+              final aName = (a['name'] ?? a['info']?['name'] ?? '').toString();
+              final bName = (b['name'] ?? b['info']?['name'] ?? '').toString();
+              return aName.compareTo(bName);
+            });
+          }
+
+          // Apply Global Filter
+          if (_filterBy == 'Incomplete Docs') {
+            filteredItems = filteredItems.where((item) {
+              final docsCount = (item['docsCount'] ?? '0/0').toString();
+              final parts = docsCount.split('/');
+              if (parts.length == 2) {
+                return int.tryParse(parts[0]) != int.tryParse(parts[1]);
+              }
+              return false;
+            }).toList();
+          } else if (_filterBy == 'Urgent') {
+            filteredItems = filteredItems.where((item) {
+              final aTime = item['createdAt'] as Timestamp?;
+              if (aTime == null) return false;
+              // Urgent if older than 24 hours
+              return DateTime.now().difference(aTime.toDate()).inHours > 24;
+            }).toList();
+          }
+
+          return Container(
+            color: const Color(0xFF020617), // Deep Dark Background (Matching Listings)
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(widget.isNarrow ? 16 : 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 32),
+                  _buildSummaryRow(displayItems),
+                  const SizedBox(height: 48),
+                  _buildTabNavigation(displayItems),
+                  const SizedBox(height: 24),
+                  _buildSearchAndFilterRow(),
+                  const SizedBox(height: 24),
+                  if (_selectedIds.isNotEmpty) _buildBulkOperationsToolbar(),
+                  const SizedBox(height: 24),
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      allItems.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 80),
+                        child: Column(
+                          children: [
+                            CircularProgressIndicator(color: Color(0xFF6366F1)),
+                            SizedBox(height: 16),
+                            Text('Syncing with Real-time Engine...', style: TextStyle(color: Colors.white54, fontSize: 14)),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    _buildItemsList(filteredItems),
+                  const SizedBox(height: 40),
+                  _buildGuidelineBanner(),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          );
+        } catch (e, stack) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.bug_report, color: Colors.orange, size: 48),
+                    const SizedBox(height: 16),
+                    const Text('Synchronous Exception Caught', style: TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text(e.toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.deepOrange)),
+                    const SizedBox(height: 8),
+                    Text(stack.toString(), style: const TextStyle(color: Colors.black54, fontSize: 10)),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
       },
     );
   }
@@ -178,14 +227,20 @@ class _ApprovalsTabState extends State<ApprovalsTab>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Approvals',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  fontFamily: 'Outfit',
-                ),
+              const Row(
+                children: [
+                  Text(
+                    'Approvals',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  _LiveBadge(),
+                ],
               ),
               const SizedBox(height: 4),
               Text(
@@ -199,58 +254,69 @@ class _ApprovalsTabState extends State<ApprovalsTab>
             ],
           ),
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ElevatedButton.icon(
-              onPressed: () => _showAddRequestDialog(),
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Add Request', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF8B5CF6),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        InkWell(
+          onTap: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                backgroundColor: const Color(0xFF1E293B),
+                title: const Text('Cleanup Incomplete Requests?', style: TextStyle(color: Colors.white)),
+                content: const Text('This will permanently delete all pending properties without images and in-progress onboarding without data.', style: TextStyle(color: Colors.white70)),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                  TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Run Cleanup', style: TextStyle(color: Colors.orange))),
+                ],
               ),
+            );
+            if (confirmed == true) {
+              try {
+                await widget.adminService.cleanupApprovals();
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cleanup completed successfully')));
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Cleanup failed: $e'), backgroundColor: Colors.red));
+              }
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0x1AFFFFFF)),
             ),
-            const SizedBox(width: 16),
-            PopupMenuButton<String>(
-              onSelected: (value) => setState(() => _filterBy = value),
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: 'All', child: Text('All Requests')),
-                const PopupMenuItem(value: 'Incomplete Docs', child: Text('Incomplete Documents')),
-                const PopupMenuItem(value: 'Urgent', child: Text('Urgent (>24h)')),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cleaning_services_rounded, size: 18, color: Colors.orangeAccent),
+                SizedBox(width: 8),
+                Text('Cleanup', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
               ],
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.tune_rounded, size: 18, color: Colors.white.withValues(alpha: 0.5)),
-                    const SizedBox(width: 10),
-                    Text(
-                      _filterBy == 'All' ? 'Filter' : _filterBy,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 18,
-                      color: Colors.white.withValues(alpha: 0.5),
-                    ),
-                  ],
-                ),
-              ),
             ),
-          ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        InkWell(
+          onTap: () {},
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0x1AFFFFFF)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.filter_list, size: 18, color: Colors.white54),
+                SizedBox(width: 8),
+                Text('Filter', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                SizedBox(width: 8),
+                Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.white54),
+              ],
+            ),
+          ),
         ),
       ],
     );
@@ -270,52 +336,52 @@ class _ApprovalsTabState extends State<ApprovalsTab>
         children: [
           _SummaryStatCard(
             count: items.length.toString(),
-            label: 'Total Pending',
+            label: 'Total\nPending',
             icon: Icons.assignment_outlined,
             iconColor: const Color(0xFFEF4444),
             bgColor: const Color(0xFFEF4444).withValues(alpha: 0.1),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
           _SummaryStatCard(
             count: hosterCount.toString(),
-            label: 'Hoster Requests',
+            label: 'Hoster\nRequests',
             icon: Icons.business_outlined,
             iconColor: const Color(0xFFF59E0B),
             bgColor: const Color(0xFFF59E0B).withValues(alpha: 0.1),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
           _SummaryStatCard(
             count: propertyCount.toString(),
-            label: 'Property Listings',
+            label: 'Property\nListings',
             icon: Icons.home_outlined,
-            iconColor: const Color(0xFF3B82F6),
-            bgColor: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+            iconColor: const Color(0xFF6366F1),
+            bgColor: const Color(0xFF6366F1).withValues(alpha: 0.1),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
           _SummaryStatCard(
             count: userCount.toString(),
-            label: 'User Verifications',
+            label: 'User\nVerifications',
             icon: Icons.person_outline,
             iconColor: const Color(0xFF8B5CF6),
             bgColor: const Color(0xFF8B5CF6).withValues(alpha: 0.1),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
           _SummaryStatCard(
             count: otherCount.toString(),
-            label: 'Other Requests',
+            label: 'Other\nRequests',
             icon: Icons.description_outlined,
             iconColor: const Color(0xFF10B981),
             bgColor: const Color(0xFF10B981).withValues(alpha: 0.1),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
           StreamBuilder<int>(
             stream: widget.adminService.getApprovedTodayCountStream(),
             builder: (context, snapshot) {
               return _SummaryStatCard(
                 count: (snapshot.data ?? 0).toString(),
-                label: 'Approved Today',
+                label: 'Approved\nToday',
                 icon: Icons.check_circle_outline,
-                iconColor: Colors.white.withValues(alpha: 0.5),
+                iconColor: Colors.white,
                 bgColor: Colors.white.withValues(alpha: 0.05),
               );
             }
@@ -333,16 +399,17 @@ class _ApprovalsTabState extends State<ApprovalsTab>
     final otherCount = items.where((i) => i['type'] == 'other').length;
 
     return Container(
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0x0DFFFFFF))),
       ),
       child: TabBar(
         controller: _tabController,
         isScrollable: true,
+        tabAlignment: TabAlignment.start,
         onTap: (index) => setState(() {}),
-        labelColor: const Color(0xFF8B5CF6),
-        unselectedLabelColor: Colors.white.withValues(alpha: 0.4),
-        indicatorColor: const Color(0xFF8B5CF6),
+        labelColor: const Color(0xFF6366F1), // Indigo Primary
+        unselectedLabelColor: Colors.white38,
+        indicatorColor: const Color(0xFF6366F1),
         indicatorWeight: 3,
         labelStyle: const TextStyle(
           fontWeight: FontWeight.bold,
@@ -368,25 +435,32 @@ class _ApprovalsTabState extends State<ApprovalsTab>
             height: 48,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
+              color: const Color(0xFF0F172A),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              border: Border.all(color: const Color(0x1AFFFFFF)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Row(
               children: [
-                Icon(Icons.search, color: Colors.white.withValues(alpha: 0.3), size: 20),
+                const Icon(Icons.search, color: Color(0x4DFFFFFF), size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
                     controller: _searchController,
                     onChanged: (val) => setState(() => _searchQuery = val),
                     style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Search approvals...',
                       border: InputBorder.none,
                       hintStyle: TextStyle(
                         fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.3),
+                        color: Color(0x4DFFFFFF),
                       ),
                     ),
                   ),
@@ -407,11 +481,19 @@ class _ApprovalsTabState extends State<ApprovalsTab>
             height: 48,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
+              color: const Color(0xFF0F172A),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              border: Border.all(color: const Color(0x1AFFFFFF)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   _sortBy,
@@ -422,10 +504,10 @@ class _ApprovalsTabState extends State<ApprovalsTab>
                   ),
                 ),
                 const SizedBox(width: 12),
-                Icon(
+                const Icon(
                   Icons.keyboard_arrow_down,
                   size: 20,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: Colors.white38,
                 ),
               ],
             ),
@@ -439,10 +521,10 @@ class _ApprovalsTabState extends State<ApprovalsTab>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B).withValues(alpha: 0.8),
+        color: const Color(0xCC1E293B),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.3)),
-        boxShadow: [BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: 0.1), blurRadius: 20)],
+        border: Border.all(color: const Color(0x4D6366F1)),
+        boxShadow: [BoxShadow(color: const Color(0x196366F1), blurRadius: 20)],
       ),
       child: Row(
         children: [
@@ -466,7 +548,7 @@ class _ApprovalsTabState extends State<ApprovalsTab>
           const Spacer(),
           TextButton(
             onPressed: () => setState(() => _selectedIds.clear()),
-            child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 12)),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white38, fontSize: 12)),
           ),
         ],
       ),
@@ -500,9 +582,9 @@ class _ApprovalsTabState extends State<ApprovalsTab>
       return Container(
         height: 200,
         alignment: Alignment.center,
-        child: Text(
+        child: const Text(
           'No matching requests found',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+          style: TextStyle(color: Color(0x33FFFFFF), fontWeight: FontWeight.bold),
         ),
       );
     }
@@ -579,74 +661,6 @@ class _ApprovalsTabState extends State<ApprovalsTab>
     }
   }
 
-  Future<void> _showAddRequestDialog() async {
-    final controller = TextEditingController();
-    String type = 'hoster';
-    
-    final result = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
-          title: const Text('Add Approval Request', style: TextStyle(color: Colors.white)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                initialValue: type,
-                dropdownColor: const Color(0xFF1E293B),
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: 'Request Type', labelStyle: TextStyle(color: Colors.white60)),
-                items: const [
-                  DropdownMenuItem(value: 'hoster', child: Text('Hoster Onboarding')),
-                  DropdownMenuItem(value: 'property', child: Text('Property Listing')),
-                ],
-                onChanged: (val) => setDialogState(() => type = val!),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  labelText: 'Target ID (UID or Property ID)',
-                  labelStyle: TextStyle(color: Colors.white60),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white10)),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, {'id': controller.text, 'type': type}),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8B5CF6)),
-              child: const Text('Add'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (result != null && result['id']!.isNotEmpty) {
-      try {
-        if (result['type'] == 'hoster') {
-          await FirebaseFirestore.instance.collection('users').doc(result['id']).update({
-            'onboardingStatus': 'submitted',
-            'status': 'pending',
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-        } else {
-          await FirebaseFirestore.instance.collection('properties').doc(result['id']).update({
-            'status': 'pending',
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-        }
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request added to approvals queue')));
-      } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red));
-      }
-    }
-  }
 
   Future<void> _handleDeleteAction(String id, String type) async {
     final confirmed = await showDialog<bool>(
@@ -659,7 +673,11 @@ class _ApprovalsTabState extends State<ApprovalsTab>
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              minimumSize: Size.zero,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -705,7 +723,11 @@ class _ApprovalsTabState extends State<ApprovalsTab>
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, controller.text),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              minimumSize: Size.zero,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
             child: const Text('Reject'),
           ),
         ],
@@ -746,41 +768,36 @@ class _ApprovalsTabState extends State<ApprovalsTab>
     }
   }
 
-  Widget _buildSkeletonItem() {
-    return Container(
-      margin: const EdgeInsets.only(top: 24),
-      height: 180,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-    );
-  }
 
   Widget _buildGuidelineBanner() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF).withValues(alpha: 0.1),
+        color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBFDBFE).withValues(alpha: 0.2)),
+        border: Border.all(color: const Color(0x1A6366F1)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x196366F1),
+            blurRadius: 20,
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: const BoxDecoration(
-              color: Color(0xFF2563EB),
+              color: Color(0xFF6366F1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.info_outline,
               color: Colors.white,
-              size: 18,
+              size: 20,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -789,33 +806,33 @@ class _ApprovalsTabState extends State<ApprovalsTab>
                   'Need help reviewing approvals?',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 16,
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   'Check our approval guidelines and documentation.',
-                  style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.5)),
+                  style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.5)),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 24),
           IntrinsicWidth(
             child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white.withValues(alpha: 0.05),
+                backgroundColor: const Color(0xFF6366F1),
                 foregroundColor: Colors.white,
                 elevation: 0,
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                minimumSize: Size.zero, // Override global infinite width
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: 20,
+                  vertical: 14,
                 ),
               ),
               child: const Text(
@@ -849,13 +866,21 @@ class _SummaryStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 140,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
+        color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: const Color(0x0DFFFFFF)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(12),
@@ -865,24 +890,24 @@ class _SummaryStatCard extends StatelessWidget {
             ),
             child: Icon(icon, color: iconColor, size: 24),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
             count,
             style: const TextStyle(
-              fontSize: 24,
+              fontSize: 32,
               fontWeight: FontWeight.bold,
               color: Colors.white,
+              fontFamily: 'Outfit',
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             label,
-            textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
               color: Colors.white.withValues(alpha: 0.4),
-              letterSpacing: 0.2,
+              height: 1.2,
             ),
           ),
         ],
@@ -940,15 +965,15 @@ class _ApprovalItemCard extends StatelessWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.only(top: 24),
+      margin: const EdgeInsets.only(top: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0x0DFFFFFF)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 10,
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -956,7 +981,7 @@ class _ApprovalItemCard extends StatelessWidget {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -964,37 +989,68 @@ class _ApprovalItemCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Checkbox(
-                          value: isSelected,
-                          onChanged: onSelect,
-                          activeColor: const Color(0xFF8B5CF6),
-                          side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          typeLabel,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: typeColor,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: typeColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: typeColor.withValues(alpha: 0.1)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(typeIcon, size: 14, color: typeColor),
+                              const SizedBox(width: 8),
+                              Text(
+                                typeLabel.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: typeColor,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                    _StatusBadge(
-                      text: 'Pending',
-                      color: const Color(0xFFF59E0B),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Text(
+                              'Submitted on',
+                              style: TextStyle(fontSize: 10, color: Color(0x4DFFFFFF), fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              _formatDate(item['createdAt']),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 20),
+                        const _StatusBadge(
+                          text: 'PENDING',
+                          color: Color(0xFFF59E0B),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildThumbnail(typeIcon, typeColor),
-                    const SizedBox(width: 20),
+                    const SizedBox(width: 24),
                     Expanded(child: _buildMainInfo(item, type)),
                     _buildMetaInfo(item, type),
                   ],
@@ -1004,45 +1060,47 @@ class _ApprovalItemCard extends StatelessWidget {
               ],
             ),
           ),
+          const Divider(height: 1, color: Color(0x0DFFFFFF)),
           _buildActionButtons(),
         ],
       ),
     );
   }
 
+  String _formatDate(dynamic timestamp) {
+    if (timestamp is Timestamp) {
+      return DateFormat('dd MMM yyyy, hh:mm a').format(timestamp.toDate());
+    }
+    return 'N/A';
+  }
+
   Widget _buildThumbnail(IconData icon, Color color) {
     final images = item['images'] as List? ?? [];
-    final imageUrl =
-        images.isNotEmpty ? images.first : 'https://via.placeholder.com/90';
+    final imageUrl = images.isNotEmpty ? images.first : '';
 
-    return Stack(
-      children: [
-        Container(
-          width: 90,
-          height: 90,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
-            image: DecorationImage(
-              image: NetworkImage(imageUrl),
-              fit: BoxFit.cover,
-            ),
-          ),
+    if (imageUrl.isEmpty) {
+      return Container(
+        width: 100,
+        height: 100,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
         ),
-        Positioned(
-          left: -4,
-          top: -4,
-          child: Container(
-            padding: const EdgeInsets.all(6),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
-            ),
-            child: Icon(icon, size: 14, color: color),
-          ),
+        child: Icon(icon, size: 32, color: color),
+      );
+    }
+
+    return Container(
+      width: 100,
+      height: 100,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+        image: DecorationImage(
+          image: NetworkImage(imageUrl),
+          fit: BoxFit.cover,
         ),
-      ],
+      ),
     );
   }
 
@@ -1063,59 +1121,59 @@ class _ApprovalItemCard extends StatelessWidget {
         Text(
           name,
           style: const TextStyle(
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
         Row(
           children: [
             Text(
-              'Requested by: ',
-              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4)),
+              type == 'user_verification' ? 'Phone: ' : type == 'property' ? 'Submitted by: ' : 'Requested by: ',
+              style: const TextStyle(fontSize: 13, color: Color(0x80FFFFFF)),
             ),
             Text(
-              requester,
+              type == 'user_verification' ? phone : requester,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Color(0xFF6366F1),
               ),
             ),
             if (item['isVerified'] == true) ...[
               const SizedBox(width: 4),
               const Icon(
-                Icons.check_circle,
-                size: 14,
-                color: Color(0xFF3B82F6),
+                Icons.verified,
+                size: 16,
+                color: Color(0xFF6366F1),
               ),
             ],
           ],
         ),
-        const SizedBox(height: 4),
-        if (phone.isNotEmpty || email.isNotEmpty)
+        const SizedBox(height: 6),
+        if (phone.isNotEmpty && type != 'user_verification')
           Text(
-            '${phone.isNotEmpty ? "$phone  •  " : ""}$email',
-            style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4)),
+            '$phone  •  $email',
+            style: const TextStyle(fontSize: 13, color: Color(0x66FFFFFF)),
           ),
-        if (location.isNotEmpty)
+        if (type == 'user_verification' && email.isNotEmpty)
+          Text(
+            'Email: $email',
+            style: const TextStyle(fontSize: 13, color: Color(0x66FFFFFF)),
+          ),
+        if (location.isNotEmpty) ...[
+          const SizedBox(height: 6),
           Text(
             location,
-            style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4)),
+            style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.w500),
           ),
+        ],
       ],
     );
   }
 
   Widget _buildMetaInfo(Map<String, dynamic> item, String type) {
-    final dateStr =
-        item['createdAt'] is Timestamp
-            ? DateFormat(
-              'dd MMM yyyy, hh:mm a',
-            ).format((item['createdAt'] as Timestamp).toDate())
-            : 'N/A';
-
     final String label;
     final String value;
     final Color valueColor;
@@ -1130,34 +1188,22 @@ class _ApprovalItemCard extends StatelessWidget {
       valueColor = Colors.white;
     } else {
       label = 'Request Type';
-      value = item['requestType'] ?? 'General';
+      value = item['requestType'] ?? 'General Update';
       valueColor = Colors.white;
     }
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Requested on',
-          style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.3)),
-        ),
-        Text(
-          dateStr,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: Colors.white.withValues(alpha: 0.6),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
           label,
-          style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.3)),
+          style: const TextStyle(fontSize: 11, color: Color(0x4DFFFFFF)),
         ),
+        const SizedBox(height: 4),
         Text(
           value,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: FontWeight.bold,
             color: valueColor,
           ),
@@ -1182,82 +1228,63 @@ class _ApprovalItemCard extends StatelessWidget {
 
     if (tags.isEmpty) return const SizedBox.shrink();
 
-    return Wrap(
-      spacing: 8,
-      children:
-          tags
-              .map(
-                (t) => Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    t,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ),
-              )
-              .toList(),
+    return Row(
+      children: tags.map((t) => Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0x0DFFFFFF),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          t,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Color(0x80FFFFFF),
+          ),
+        ),
+      )).toList(),
     );
   }
 
   Widget _buildActionButtons() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Expanded(
-            child: _ActionButton(
-              label: 'Details',
-              onPressed: onDetails,
-              color: Colors.white.withValues(alpha: 0.05),
-              textColor: Colors.white,
-              border: true,
-            ),
+          _ActionButton(
+            label: 'View Details',
+            onPressed: onDetails,
+            color: const Color(0x0DFFFFFF),
+            textColor: Colors.white,
+            borderColor: const Color(0x1AFFFFFF),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: _ActionButton(
-              label: 'Approve',
-              onPressed: onApprove,
-              color: const Color(0xFF2563EB),
-              textColor: Colors.white,
-            ),
+          _ActionButton(
+            label: 'Approve',
+            onPressed: onApprove,
+            color: const Color(0xFF6366F1),
+            textColor: Colors.white,
+            icon: Icons.check_circle_outline,
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: _ActionButton(
-              label: 'Reject',
-              onPressed: onReject,
-              color: const Color(0xFFEF4444).withValues(alpha: 0.1),
-              textColor: const Color(0xFFEF4444),
-            ),
+          _ActionButton(
+            label: 'Reject',
+            onPressed: onReject,
+            color: const Color(0x0DFFFFFF),
+            textColor: const Color(0xFFEF4444),
+            borderColor: const Color(0x1AEF4444),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: _ActionButton(
-              label: 'Delete',
-              onPressed: onDelete,
-              color: const Color(0xFFEF4444).withValues(alpha: 0.1),
-              textColor: const Color(0xFFEF4444),
-              border: true,
-            ),
+          _ActionButton(
+            label: 'Delete',
+            onPressed: onDelete,
+            color: const Color(0x0DFFFFFF),
+            textColor: const Color(0xFFEF4444),
+            borderColor: const Color(0x1AEF4444),
+            icon: Icons.delete_outline_rounded,
           ),
         ],
       ),
@@ -1270,46 +1297,46 @@ class _ActionButton extends StatelessWidget {
   final VoidCallback onPressed;
   final Color color;
   final Color textColor;
-  final bool border;
+  final Color? borderColor;
+  final IconData? icon;
 
   const _ActionButton({
     required this.label,
     required this.onPressed,
     required this.color,
     required this.textColor,
-    this.border = false,
+    this.borderColor,
+    this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: textColor,
-          elevation: 0,
-          minimumSize: Size.zero,
-          padding: EdgeInsets.zero,
-          side: border ? const BorderSide(color: Colors.white10) : null,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Flexible(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: textColor,
+        elevation: 0,
+        minimumSize: Size.zero, // Override global infinite width
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        side: borderColor != null ? BorderSide(color: borderColor!) : null,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
             ),
+          ),
+          if (icon != null) ...[
+            const SizedBox(width: 4),
+            Icon(icon, size: 16),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -1327,15 +1354,84 @@ class _StatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.1)),
       ),
       child: Text(
         text,
         style: TextStyle(
           color: color,
           fontSize: 10,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveBadge extends StatelessWidget {
+  const _LiveBadge();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0x1910B981),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0x4D10B981)),
+      ),
+      child: const Row(
+        children: [
+          _PulseCircle(),
+          SizedBox(width: 6),
+          Text(
+            'Live',
+            style: TextStyle(
+              color: Color(0xFF10B981),
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PulseCircle extends StatefulWidget {
+  const _PulseCircle();
+  @override
+  State<_PulseCircle> createState() => _PulseCircleState();
+}
+
+class _PulseCircleState extends State<_PulseCircle>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(seconds: 1))
+          ..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _controller,
+      child: Container(
+        width: 6,
+        height: 6,
+        decoration: const BoxDecoration(
+          color: Color(0xFF10B981),
+          shape: BoxShape.circle,
         ),
       ),
     );
@@ -1370,7 +1466,7 @@ class _ToolbarAction extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 label, 
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w600),
               ),
             ],
           ),

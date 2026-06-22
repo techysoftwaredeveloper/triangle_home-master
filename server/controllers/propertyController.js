@@ -342,6 +342,20 @@ async function performReconciliation(propertyId) {
         updatedAt: new Date().toISOString()
     };
 
+    // NEW: Calculate propertyDetails room counts for dashboard consistency
+    let singleRooms = 0;
+    let doubleRooms = 0;
+    let tripleRooms = 0;
+    let dormitoryBeds = 0;
+
+    roomsMap.forEach(room => {
+        const type = (room.roomType || '').toLowerCase();
+        if (type === 'single') singleRooms++;
+        else if (type === 'double') doubleRooms++;
+        else if (type === 'triple') tripleRooms++;
+        else if (type === 'dormitory') dormitoryBeds += (room.totalBeds || 0);
+    });
+
     // 3. Transactional Update
     await db.runTransaction(async (t) => {
         t.update(propertyRef, {
@@ -351,6 +365,10 @@ async function performReconciliation(propertyId) {
             totalBeds: totalBeds,
             availableRooms: availableRoomsCount,
             currentOccupancy: occupiedBeds,
+            'propertyDetails.singleRooms': singleRooms,
+            'propertyDetails.doubleRooms': doubleRooms,
+            'propertyDetails.tripleRooms': tripleRooms,
+            'propertyDetails.dormitoryBeds': dormitoryBeds,
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
 

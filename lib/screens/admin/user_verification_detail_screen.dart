@@ -34,6 +34,26 @@ class _UserVerificationDetailScreenState extends State<UserVerificationDetailScr
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: bgColor,
+            appBar: AppBar(backgroundColor: bgColor, elevation: 0),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    const SizedBox(height: 16),
+                    Text('Error loading details: ${snapshot.error}', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
         if (!snapshot.hasData) {
           return const Scaffold(
             backgroundColor: bgColor,
@@ -254,7 +274,7 @@ class _UserVerificationDetailScreenState extends State<UserVerificationDetailScr
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF10B981),
                   foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 56),
+                  minimumSize: const Size(0, 56), // Fixed width to 0/Infinity conflict
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
@@ -270,7 +290,7 @@ class _UserVerificationDetailScreenState extends State<UserVerificationDetailScr
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFEF4444),
                   side: const BorderSide(color: Color(0xFFEF4444)),
-                  minimumSize: const Size(double.infinity, 56),
+                  minimumSize: const Size(0, 56), // Fixed width to 0/Infinity conflict
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text('Reject Request', style: TextStyle(fontWeight: FontWeight.bold)),

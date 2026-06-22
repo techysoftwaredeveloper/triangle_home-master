@@ -267,18 +267,30 @@ class PremiumPropertyCard extends StatelessWidget {
   }
 
   String _getImageUrl() {
+    String url = '';
     if (property['image'] != null && property['image'].toString().isNotEmpty) {
-      return property['image'].toString();
+      url = property['image'].toString();
+    } else {
+      final images = property['images'] as List?;
+      if (images != null && images.isNotEmpty) {
+        url = images[0].toString();
+      } else {
+        final imageUrls = property['image_urls'] as List?;
+        if (imageUrls != null && imageUrls.isNotEmpty) {
+          url = imageUrls[0].toString();
+        }
+      }
     }
-    final images = property['images'] as List?;
-    if (images != null && images.isNotEmpty) {
-      return images[0].toString();
+
+    // Clean URL (remove whitespace, etc.)
+    url = url.trim();
+
+    // Basic validation
+    if (url.isEmpty || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+      return '';
     }
-    final imageUrls = property['image_urls'] as List?;
-    if (imageUrls != null && imageUrls.isNotEmpty) {
-      return imageUrls[0].toString();
-    }
-    return '';
+
+    return url;
   }
 
   String _formatLocation() {

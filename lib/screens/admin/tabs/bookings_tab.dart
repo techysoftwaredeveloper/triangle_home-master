@@ -51,13 +51,21 @@ class _BookingsTabState extends State<BookingsTab>
         await widget.adminService.updateBookingStatus(id, 'cancelled');
       } else if (action == 'checkout') {
         await widget.adminService.updateBookingStatus(id, 'checked_out');
+      } else if (action == 'delete') {
+        final confirmed = await _showDeleteConfirmation();
+        if (confirmed == true) {
+          await widget.adminService.deleteBooking(id);
+          setState(() => _selectedBooking = null);
+        } else {
+          return;
+        }
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Booking $action successfully'),
-            backgroundColor: action == 'cancel' ? Colors.orange : Colors.green,
+            content: Text('Booking ${action == 'delete' ? 'deleted' : '${action}ed'} successfully'),
+            backgroundColor: (action == 'cancel' || action == 'delete') ? Colors.orange : Colors.green,
           ),
         );
       }
@@ -71,6 +79,24 @@ class _BookingsTabState extends State<BookingsTab>
         );
       }
     }
+  }
+
+  Future<bool?> _showDeleteConfirmation() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Booking?'),
+        content: const Text('This action is permanent and will remove the booking record from the system.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -111,119 +137,159 @@ class _BookingsTabState extends State<BookingsTab>
               }
             }).toList();
 
-        return Row(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(widget.isNarrow ? 16 : 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 32),
-                    _buildSummaryRow(allBookings),
-                    const SizedBox(height: 64),
-                    _buildCategoryTabs(allBookings),
-                    const SizedBox(height: 24),
-                    _buildFilterControls(),
-                    const SizedBox(height: 24),
-                    _buildPolicyBanner(),
-                    const SizedBox(height: 24),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final bool isNarrowContent = constraints.maxWidth < 900;
+            
+            if (isNarrowContent) {
+              return Column(
+                children: [
+                  Expanded(child: _buildMainWorkspace(allBookings, filteredBookings, snapshot.connectionState)),
+                  if (_selectedBooking != null)
+                    _buildMobileDetailSheet(),
+                ],
+              );
+            }
 
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: Container(
-                        constraints: BoxConstraints(
-                          minWidth: widget.isNarrow ? 0 : 1100,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (!widget.isNarrow) _buildTableHeader(),
-                            const SizedBox(height: 12),
-                            if (snapshot.connectionState ==
-                                    ConnectionState.waiting &&
-                                allBookings.isEmpty)
-                              const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(40.0),
-                                  child: CircularProgressIndicator(),
-                                ),
-                              )
-                            else if (filteredBookings.isEmpty)
-                              _buildEmptyState()
-                            else
-                              _buildBookingsList(filteredBookings),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-                    _buildPaginationFooter(filteredBookings.length),
-                    const SizedBox(height: 40),
-                  ],
+            return Row(
+              children: [
+                Expanded(
+                  child: _buildMainWorkspace(allBookings, filteredBookings, snapshot.connectionState),
                 ),
-              ),
-            ),
-            if (!widget.isNarrow && _selectedBooking != null) _buildSideSheet(),
-          ],
+                if (_selectedBooking != null) _buildSideSheet(),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  Widget _buildHeader() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          runSpacing: 16,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Bookings',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
-                    fontFamily: 'Outfit',
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Manage all booking requests and reservations',
-                  style: TextStyle(
-                    color: Color(0xFF64748B),
-                    fontSize: 15,
-                    fontFamily: 'Outfit',
-                  ),
-                ),
-              ],
+  Widget _buildMainWorkspace(List<Map<String, dynamic>> allBookings, List<Map<String, dynamic>> filteredBookings, ConnectionState connectionState) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(widget.isNarrow ? 16 : 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(),
+          const SizedBox(height: 32),
+          _buildSummaryRow(allBookings),
+          const SizedBox(height: 64),
+          _buildCategoryTabs(allBookings),
+          const SizedBox(height: 24),
+          _buildFilterControls(),
+          const SizedBox(height: 24),
+          _buildPolicyBanner(),
+          const SizedBox(height: 24),
+
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: SizedBox(
+              width: 1100, // Explicitly bound width for children with flex
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTableHeader(),
+                  const SizedBox(height: 12),
+                  if (connectionState == ConnectionState.waiting && allBookings.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (filteredBookings.isEmpty)
+                    _buildEmptyState()
+                  else
+                    _buildBookingsList(filteredBookings),
+                ],
+              ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildHeaderActionBtn(
-                  'Export',
-                  Icons.file_download_outlined,
-                  isOutline: true,
-                ),
-                const SizedBox(width: 16),
-                _buildHeaderActionBtn(
-                  'Filters',
-                  Icons.tune_rounded,
-                  hasDropdown: true,
-                ),
-              ],
+          ),
+
+          const SizedBox(height: 40),
+          _buildPaginationFooter(filteredBookings.length),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileDetailSheet() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+      ),
+      child: Stack(
+        children: [
+          _buildSideSheet(isMobile: true),
+          Positioned(
+            top: 12,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      runSpacing: 16,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'Bookings',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+                fontFamily: 'Outfit',
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Manage all booking requests and reservations',
+              style: TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 15,
+                fontFamily: 'Outfit',
+              ),
             ),
           ],
-        );
-      },
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHeaderActionBtn(
+              'Export',
+              Icons.file_download_outlined,
+              isOutline: true,
+            ),
+            const SizedBox(width: 16),
+            _buildHeaderActionBtn(
+              'Filters',
+              Icons.tune_rounded,
+              hasDropdown: true,
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -389,158 +455,149 @@ class _BookingsTabState extends State<BookingsTab>
   }
 
   Widget _buildFilterControls() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final bool isCompact = constraints.maxWidth < 900;
-        return Column(
+    final bool isCompact = widget.isNarrow;
+    return Column(
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 48,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.search,
-                          color: Color(0xFF94A3B8),
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            decoration: const InputDecoration(
-                              hintText:
-                                  'Search by booking ID, guest name, property...',
-                              border: InputBorder.none,
-                              hintStyle: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF94A3B8),
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (!isCompact)
-                          const Text(
-                            '⌘ K',
-                            style: TextStyle(
-                              color: Color(0xFFCBD5E1),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
+            Expanded(
+              child: Container(
+                height: 48,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
-                if (!isCompact) ...[
-                  const SizedBox(width: 16),
-                  _FilterBtn(label: 'Status', hasDropdown: true),
-                  const SizedBox(width: 16),
-                  _FilterBtn(label: 'User Type', hasDropdown: true),
-                ],
-              ],
-            ),
-            const SizedBox(height: 16),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Row(
-                children: [
-                  if (isCompact) ...[
-                    _FilterBtn(label: 'Status', hasDropdown: true),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.search,
+                      color: Color(0xFF94A3B8),
+                      size: 20,
+                    ),
                     const SizedBox(width: 12),
-                    _FilterBtn(label: 'User Type', hasDropdown: true),
-                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: const InputDecoration(
+                          hintText:
+                              'Search by booking ID, guest name, property...',
+                          border: InputBorder.none,
+                          hintStyle: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (!isCompact)
+                      const Text(
+                        '⌘ K',
+                        style: TextStyle(
+                          color: Color(0xFFCBD5E1),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                   ],
-                  _FilterBtn(
-                    label: 'Date Range',
-                    icon: Icons.calendar_month_outlined,
-                    hasDropdown: true,
-                  ),
-                  const SizedBox(width: 12),
-                  _FilterBtn(label: 'More Filters', hasDropdown: true),
-                  const SizedBox(width: 12),
-                  _FilterBtn(label: 'Newest First', hasDropdown: true),
-                ],
+                ),
               ),
             ),
+            if (!isCompact) ...[
+              const SizedBox(width: 16),
+              _FilterBtn(label: 'Status', hasDropdown: true),
+              const SizedBox(width: 16),
+              _FilterBtn(label: 'User Type', hasDropdown: true),
+            ],
           ],
-        );
-      },
+        ),
+        const SizedBox(height: 16),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children: [
+              if (isCompact) ...[
+                _FilterBtn(label: 'Status', hasDropdown: true),
+                const SizedBox(width: 12),
+                _FilterBtn(label: 'User Type', hasDropdown: true),
+                const SizedBox(width: 12),
+              ],
+              _FilterBtn(
+                label: 'Date Range',
+                icon: Icons.calendar_month_outlined,
+                hasDropdown: true,
+              ),
+              const SizedBox(width: 12),
+              _FilterBtn(label: 'More Filters', hasDropdown: true),
+              const SizedBox(width: 12),
+              _FilterBtn(label: 'Newest First', hasDropdown: true),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildPolicyBanner() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final bool isCompact = constraints.maxWidth < 800;
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child:
-              isCompact
-                  ? Column(
-                    children: [
-                      _policyItem(
-                        Icons.school_outlined,
-                        'Student Booking Policy',
-                        'Minimum stay: 1 Month (30 Nights)\nPayment is collected monthly in advance.',
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Divider(color: Color(0xFFE2E8F0)),
-                      ),
-                      _policyItem(
-                        Icons.work_outline_rounded,
-                        'Professional Booking Policy',
-                        'Minimum stay: 3 Days (2 Nights)\nPayment is collected in advance.',
-                      ),
-                    ],
-                  )
-                  : Row(
-                    children: [
-                      _policyItem(
-                        Icons.school_outlined,
-                        'Student Booking Policy',
-                        'Minimum stay: 1 Month (30 Nights)\nPayment is collected monthly in advance.',
-                      ),
-                      const SizedBox(width: 48),
-                      _policyItem(
-                        Icons.work_outline_rounded,
-                        'Professional Booking Policy',
-                        'Minimum stay: 3 Days (2 Nights)\nPayment is collected in advance.',
-                      ),
-                      const Spacer(),
-                      const Text(
-                        'Learn More',
-                        style: TextStyle(
-                          color: Color(0xFF2563EB),
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.arrow_forward,
-                        size: 14,
-                        color: Color(0xFF2563EB),
-                      ),
-                    ],
+    final bool isCompact = widget.isNarrow;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: isCompact
+          ? Column(
+              children: [
+                _policyItem(
+                  Icons.school_outlined,
+                  'Student Booking Policy',
+                  'Minimum stay: 1 Month (30 Nights)\nPayment is collected monthly in advance.',
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Divider(color: Color(0xFFE2E8F0)),
+                ),
+                _policyItem(
+                  Icons.work_outline_rounded,
+                  'Professional Booking Policy',
+                  'Minimum stay: 3 Days (2 Nights)\nPayment is collected in advance.',
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                _policyItem(
+                  Icons.school_outlined,
+                  'Student Booking Policy',
+                  'Minimum stay: 1 Month (30 Nights)\nPayment is collected monthly in advance.',
+                ),
+                const SizedBox(width: 48),
+                _policyItem(
+                  Icons.work_outline_rounded,
+                  'Professional Booking Policy',
+                  'Minimum stay: 3 Days (2 Nights)\nPayment is collected in advance.',
+                ),
+                const Spacer(),
+                const Text(
+                  'Learn More',
+                  style: TextStyle(
+                    color: Color(0xFF2563EB),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
                   ),
-        );
-      },
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.arrow_forward,
+                  size: 14,
+                  color: Color(0xFF2563EB),
+                ),
+              ],
+            ),
     );
   }
 
@@ -633,7 +690,6 @@ class _BookingsTabState extends State<BookingsTab>
   Widget _buildEmptyState() {
     return Container(
       height: 200,
-      width: 1100,
       alignment: Alignment.center,
       child: const Text(
         'No matching bookings found',
@@ -643,63 +699,59 @@ class _BookingsTabState extends State<BookingsTab>
   }
 
   Widget _buildPaginationFooter(int count) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final bool isCompact = constraints.maxWidth < 750;
-        return Column(
+    final bool isCompact = widget.isNarrow;
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Text(
-                    isCompact
-                        ? '1-10 of $count'
-                        : 'Showing 1 to ${count < 10 ? count : 10} of $count bookings',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF64748B),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+            Flexible(
+              child: Text(
+                isCompact
+                    ? '1-10 of $count'
+                    : 'Showing 1 to ${count < 10 ? count : 10} of $count bookings',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF64748B),
                 ),
-                if (!isCompact) _buildPageSizeSelector(),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _PageBtn(icon: Icons.chevron_left),
-                  _PageBtn(label: '1', active: true),
-                  _PageBtn(label: '2'),
-                  if (!isCompact) ...[
-                    _PageBtn(label: '3'),
-                    _PageBtn(label: '4'),
-                    _PageBtn(label: '5'),
-                  ],
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      '...',
-                      style: TextStyle(color: Color(0xFF94A3B8)),
-                    ),
-                  ),
-                  _PageBtn(label: '42'),
-                  _PageBtn(icon: Icons.chevron_right),
-                  if (isCompact) ...[
-                    const SizedBox(width: 16),
-                    _buildPageSizeSelector(),
-                  ],
-                ],
+                overflow: TextOverflow.ellipsis,
               ),
             ),
+            if (!isCompact) _buildPageSizeSelector(),
           ],
-        );
-      },
+        ),
+        const SizedBox(height: 16),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _PageBtn(icon: Icons.chevron_left),
+              _PageBtn(label: '1', active: true),
+              _PageBtn(label: '2'),
+              if (!isCompact) ...[
+                _PageBtn(label: '3'),
+                _PageBtn(label: '4'),
+                _PageBtn(label: '5'),
+              ],
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  '...',
+                  style: TextStyle(color: Color(0xFF94A3B8)),
+                ),
+              ),
+              _PageBtn(label: '42'),
+              _PageBtn(icon: Icons.chevron_right),
+              if (isCompact) ...[
+                const SizedBox(width: 16),
+                _buildPageSizeSelector(),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -725,7 +777,7 @@ class _BookingsTabState extends State<BookingsTab>
     );
   }
 
-  Widget _buildSideSheet() {
+  Widget _buildSideSheet({bool isMobile = false}) {
     final b = _selectedBooking!;
     final format = NumberFormat.currency(
       locale: 'en_IN',
@@ -734,10 +786,10 @@ class _BookingsTabState extends State<BookingsTab>
     );
 
     return Container(
-      width: 400,
-      decoration: const BoxDecoration(
+      width: isMobile ? double.infinity : 400,
+      decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(left: BorderSide(color: Color(0xFFE2E8F0))),
+        border: isMobile ? null : const Border(left: BorderSide(color: Color(0xFFE2E8F0))),
       ),
       child: Column(
         children: [
@@ -966,6 +1018,14 @@ class _BookingsTabState extends State<BookingsTab>
                     const Color(0xFFFEF2F2),
                     const Color(0xFFEF4444),
                     () => _handleBookingAction(b['id'], 'cancel'),
+                  ),
+                  const SizedBox(height: 12),
+                  _sheetActionBtn(
+                    'Delete Permanent',
+                    Icons.delete_forever_outlined,
+                    const Color(0xFFFEF2F2),
+                    const Color(0xFFEF4444),
+                    () => _handleBookingAction(b['id'], 'delete'),
                   ),
                   const SizedBox(height: 40),
                 ],
@@ -1255,7 +1315,6 @@ class _BookingTableCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 1100,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFF1F5F9) : Colors.white,
@@ -1490,7 +1549,22 @@ class _BookingTableCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-            const Icon(Icons.more_vert, color: Color(0xFFCBD5E1), size: 20),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Color(0xFFCBD5E1), size: 20),
+              onSelected: (action) {
+                if (action == 'view') {
+                  onTap();
+                } else {
+                  // Accessing the state's handler would be complex here, 
+                  // but we can pass a callback if needed. For now, 
+                  // let's assume the side sheet is the primary action source 
+                  // or implement a quick handler if possible.
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'view', child: Text('View Details')),
+              ],
+            ),
           ],
         ),
       ),

@@ -214,8 +214,12 @@ final paginatedPropertiesProvider = propertiesStreamProvider;
 final recommendedPropertiesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final service = ref.watch(propertyServiceProvider);
   
-  // Watch housing preferences to trigger refresh if they change
-  ref.watch(housingPreferencesProvider);
+  // Use select to only trigger if housing_preferences actually changes, 
+  // preventing duplicate calls from other profile updates.
+  ref.watch(userProfileProvider.select((asyncProfile) {
+    final profile = asyncProfile.valueOrNull;
+    return profile?['housing_preferences'];
+  }));
   
   return await service.getRecommendedProperties();
 });

@@ -148,6 +148,26 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
           .doc(_property['id'])
           .snapshots(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(backgroundColor: Colors.white, elevation: 0),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    const SizedBox(height: 16),
+                    Text('Error loading property: ${snapshot.error}', textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
         if (snapshot.hasData && snapshot.data!.exists) {
           _property = snapshot.data!.data()!;
           _property['id'] = snapshot.data!.id;

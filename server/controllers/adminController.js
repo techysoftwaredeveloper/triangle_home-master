@@ -321,3 +321,97 @@ exports.resubmitHoster = asyncHandler(async (req, res) => {
 
   res.json({ success: true, message: 'Application re-submitted successfully' });
 });
+
+/**
+ * NEW: Delete User Permanently
+ * Removes from Firebase Auth and Firestore users collection
+ */
+exports.deleteUser = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res.status(400).json({ success: false, error: 'User ID is required' });
+  }
+
+  // 1. Delete from Firebase Auth
+  try {
+    await auth.deleteUser(userId);
+  } catch (error) {
+    // If user not found in Auth, we should still try to delete from Firestore
+    if (error.code !== 'auth/user-not-found') {
+      throw error;
+    }
+  }
+
+  // 2. Delete from Firestore
+  await db.collection('users').doc(userId).delete();
+
+  // 3. Clear relevant caches
+  cache.del('/api/admin/stats');
+  cache.del('/api/admin/users');
+
+  res.json({ success: true, message: 'User deleted permanently' });
+});
+
+/**
+ * NEW: Delete Booking
+ */
+exports.deleteBooking = asyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
+
+  if (!bookingId) {
+    return res.status(400).json({ success: false, error: 'Booking ID is required' });
+  }
+
+  await db.collection('bookings').doc(bookingId).delete();
+
+  // Clear related cache
+  cache.del('/api/admin/bookings');
+
+  res.json({ success: true, message: 'Booking deleted successfully' });
+});
+
+/**
+ * NEW: Cleanup Incomplete Approval Requests
+ */
+exports.cleanupIncompleteApprovals = asyncHandler(async (req, res) => {
+  const batch = db.batch();
+  let count = 0;
+
+  // 1. Cleanup incomplete properties
+  const propertySnap = await db.collection('properties')
+    .where('status', '==', 'pending')
+    .get();
+
+  propertySnap.forEach(doc => {
+    const data = doc.data();
+    // Definition of incomplete property: no images or no locality
+    if (!data.images || data.images.length === 0 || !data.locality) {
+      batch.delete(doc.ref);
+      count++;
+    }
+  });
+
+  // 2. Cleanup incomplete hoster applications
+  const userSnap = await db.collection('users')
+    .where('onboardingStatus', '==', 'in_progress')
+    .get();
+
+  userSnap.forEach(doc => {
+    const data = doc.data();
+    // Definition of incomplete onboarding: no onboardingData after a certain point
+    if (!data.onboardingData || Object.keys(data.onboardingData).length === 0) {
+      batch.delete(doc.ref);
+      count++;
+    }
+  });
+
+  if (count > 0) {
+    await batch.commit();
+  }
+
+  cache.del('/api/admin/stats');
+  cache.del('/api/admin/properties');
+
+  res.json({ success: true, message: `Cleaned up ${count} incomplete requests` });
+});

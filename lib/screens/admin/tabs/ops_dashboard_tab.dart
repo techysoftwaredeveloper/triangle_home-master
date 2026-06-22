@@ -132,19 +132,14 @@ class OpsDashboardTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream:
-                FirebaseFirestore.instance
-                    .collection('admin_actions')
-                    .orderBy('timestamp', descending: true)
-                    .limit(10)
-                    .snapshots(),
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream: adminService.getActivityLogsStream(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
-              final docs = snapshot.data?.docs ?? [];
-              if (docs.isEmpty) {
+              final activities = snapshot.data ?? [];
+              if (activities.isEmpty) {
                 return const Center(
                   child: Padding(
                     padding: EdgeInsets.all(32),
@@ -158,8 +153,7 @@ class OpsDashboardTab extends StatelessWidget {
 
               return Column(
                 children:
-                    docs.map((doc) {
-                      final d = doc.data();
+                    activities.take(10).map((a) {
                       return ListTile(
                         contentPadding: const EdgeInsets.symmetric(vertical: 8),
                         leading: CircleAvatar(
@@ -171,21 +165,21 @@ class OpsDashboardTab extends StatelessWidget {
                           ),
                         ),
                         title: Text(
-                          d['actionType'] ?? 'Action',
+                          a['action'] ?? 'Action',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         subtitle: Text(
-                          'Booking: ${d['bookingId']} • ${d['adminId']}',
+                          'Target: ${a['targetId']} • ${a['performedByEmail']}',
                           style: const TextStyle(fontSize: 11),
                         ),
                         trailing: Text(
-                          d['timestamp'] != null
+                          a['timestamp'] != null
                               ? DateFormat(
                                 'hh:mm a',
-                              ).format((d['timestamp'] as Timestamp).toDate())
+                              ).format((a['timestamp'] as Timestamp).toDate())
                               : '',
                           style: const TextStyle(
                             fontSize: 10,
