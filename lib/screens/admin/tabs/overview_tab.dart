@@ -506,10 +506,10 @@ class OverviewTab extends StatelessWidget {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: isNarrow ? 2 : 5,
+      crossAxisCount: isNarrow ? 2 : 6,
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
-      childAspectRatio: isNarrow ? 1.1 : 1.0,
+      childAspectRatio: isNarrow ? 1.1 : 0.85,
       children: [
         _buildStatBox(
           'Students',
@@ -522,13 +522,23 @@ class OverviewTab extends StatelessWidget {
           isLoading,
         ),
         _buildStatBox(
+          'Professionals',
+          data?['totalProfessionals']?.toString() ?? '0',
+          '0%',
+          true,
+          const Color(0xFFF5F3FF),
+          const Color(0xFF8B5CF6),
+          Icons.business_center_outlined,
+          isLoading,
+        ),
+        _buildStatBox(
           'Hosters',
           data?['totalHosters']?.toString() ?? '0',
           '0%',
           true,
           const Color(0xFFF0FDF4),
           const Color(0xFF10B981),
-          Icons.business_center_outlined,
+          Icons.person_pin_outlined,
           isLoading,
         ),
         _buildStatBox(
@@ -537,7 +547,7 @@ class OverviewTab extends StatelessWidget {
           '0%',
           true,
           const Color(0xFFF5F3FF),
-          const Color(0xFF8B5CF6),
+          const Color(0xFF6366F1),
           Icons.home_work_outlined,
           isLoading,
         ),

@@ -96,8 +96,6 @@ class _ListingsTabState extends State<ListingsTab> {
                       fontFamily: 'Outfit',
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  const _LiveBadge(),
                 ],
               ),
               const SizedBox(height: 4),
@@ -544,11 +542,19 @@ class _ListingsTabState extends State<ListingsTab> {
     final wardenPhone = basicInfo['phone'];
     final wardenEmail = basicInfo['email'];
 
-    final pricing = p['pricing'] as Map? ?? {};
+    final pricing = Map<String, dynamic>.from(p['pricing'] as Map? ?? {});
     final singleRent = pricing['singleRent'] ?? p['monthlyRent'] ?? p['price'] ?? 'N/A';
     final doubleRent = pricing['doubleRent'] ?? 'N/A';
     final tripleRent = pricing['tripleRent'] ?? 'N/A';
-    final securityDeposit = p['securityDeposit'] ?? pricing['deposit'] ?? 'N/A';
+    final fourSharingRent = pricing['fourSharingRent'] ?? 'N/A';
+    final sixSharingRent = pricing['sixSharingRent'] ?? 'N/A';
+    
+    final singleDeposit = pricing['singleDeposit'] ?? p['securityDeposit'] ?? pricing['deposit'] ?? 'N/A';
+    final doubleDeposit = pricing['doubleDeposit'] ?? 'N/A';
+    final tripleDeposit = pricing['tripleDeposit'] ?? 'N/A';
+    final fourSharingDeposit = pricing['fourSharingDeposit'] ?? 'N/A';
+    final sixSharingDeposit = pricing['sixSharingDeposit'] ?? 'N/A';
+
     final noticePeriod = pricing['noticePeriod'] ?? 'N/A';
     final foodIncluded = pricing['foodIncluded'] == true ? 'Yes' : 'No';
 
@@ -578,10 +584,13 @@ class _ListingsTabState extends State<ListingsTab> {
 
         const SizedBox(height: 24),
         const _DetailSection(title: 'Pricing & Terms'),
-        _DetailItem(label: 'Single Sharing Rent', value: '₹$singleRent'),
-        _DetailItem(label: 'Double Sharing Rent', value: '₹$doubleRent'),
-        _DetailItem(label: 'Triple Sharing Rent', value: '₹$tripleRent'),
-        _DetailItem(label: 'Security Deposit', value: '₹$securityDeposit'),
+        _DetailItem(label: 'Single Sharing Rent', value: '₹$singleRent (Dep: ₹$singleDeposit)'),
+        if (doubleRent != 'N/A') _DetailItem(label: 'Double Sharing Rent', value: '₹$doubleRent (Dep: ₹$doubleDeposit)'),
+        if (tripleRent != 'N/A') _DetailItem(label: 'Triple Sharing Rent', value: '₹$tripleRent (Dep: ₹$tripleDeposit)'),
+        if (fourSharingRent != 'N/A') _DetailItem(label: 'Four Sharing Rent', value: '₹$fourSharingRent (Dep: ₹$fourSharingDeposit)'),
+        if (sixSharingRent != 'N/A') _DetailItem(label: 'Six Sharing Rent', value: '₹$sixSharingRent (Dep: ₹$sixSharingDeposit)'),
+        
+        const Divider(height: 32, color: Color(0x0DFFFFFF)),
         _DetailItem(label: 'Notice Period', value: noticePeriod),
         _DetailItem(label: 'Food Included', value: foodIncluded),
 
@@ -854,50 +863,6 @@ class _ListingsTabState extends State<ListingsTab> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _LiveBadge extends StatelessWidget {
-  const _LiveBadge();
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: const Color(0x1910B981), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0x4D10B981))),
-      child: const Row(
-        children: [_PulseCircle(), SizedBox(width: 6), Text('Live', style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold))],
-      ),
-    );
-  }
-}
-
-class _PulseCircle extends StatefulWidget {
-  const _PulseCircle();
-  @override
-  State<_PulseCircle> createState() => _PulseCircleState();
-}
-
-class _PulseCircleState extends State<_PulseCircle> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 1))..repeat(reverse: true);
-  }
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        FadeTransition(opacity: _controller, child: Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF10B981), shape: BoxShape.circle))),
-        const SizedBox(width: 6),
-        const Text('Live', style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold)),
-      ],
     );
   }
 }

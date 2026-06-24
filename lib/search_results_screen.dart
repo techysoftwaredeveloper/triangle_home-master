@@ -710,25 +710,26 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       itemBuilder: (context, index) {
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          height: 300,
+          height: 340, // Match new card height
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(32),
           ),
           child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    height: 200,
+                    height: 240, // Match new image height
                     decoration: BoxDecoration(
                       color: Colors.grey[200],
                       borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
+                        top: Radius.circular(32),
+                        bottom: Radius.circular(32),
                       ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -736,8 +737,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                           height: 20,
                           width: 150,
                           color: Colors.grey[200],
+                          margin: const EdgeInsets.only(bottom: 8),
                         ),
-                        const SizedBox(height: 8),
                         Container(
                           height: 14,
                           width: 250,

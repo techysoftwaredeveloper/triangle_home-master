@@ -67,7 +67,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     String? rejectionReason;
     if (status == 'rejected') {
       rejectionReason = await _showRejectionDialog();
-      if (rejectionReason == null || rejectionReason.isEmpty) return; // User cancelled
+      if (rejectionReason == null || rejectionReason.isEmpty) return; 
     }
 
     setState(() => _isUpdating = true);
@@ -116,11 +116,14 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Reject Listing'),
+            backgroundColor: const Color(0xFF0F172A),
+            title: const Text('Reject Listing', style: TextStyle(color: Colors.white)),
             content: TextField(
               controller: controller,
+              style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 hintText: 'Enter reason for rejection...',
+                hintStyle: TextStyle(color: Colors.white24),
                 border: OutlineInputBorder(),
               ),
               maxLines: 3,
@@ -148,561 +151,102 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
           .doc(_property['id'])
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Scaffold(
-            backgroundColor: Colors.white,
-            appBar: AppBar(backgroundColor: Colors.white, elevation: 0),
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                    const SizedBox(height: 16),
-                    Text('Error loading property: ${snapshot.error}', textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-
         if (snapshot.hasData && snapshot.data!.exists) {
           _property = snapshot.data!.data()!;
           _property['id'] = snapshot.data!.id;
         }
 
-        final status = _formatStatus(_property['status']);
-        final statusColor = _getStatusColor(_property['status']);
+        final basicInfo = Map<String, dynamic>.from(_property['basicInfo'] ?? {});
         final images = _property['images'] as List? ?? [];
 
         return Scaffold(
-          backgroundColor: Colors.white,
-          appBar: AppBar(
-            title: const Text(
-              'Property Details',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
-                fontFamily: 'Outfit',
-              ),
-            ),
-            backgroundColor: Colors.white,
-            elevation: 0,
-            centerTitle: true,
-            leading: IconButton(
-              icon: const Icon(
-                Icons.arrow_left_rounded,
-                color: Color(0xFF1E293B),
-                size: 32,
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.sync_rounded, color: Color(0xFF1E293B)),
-                tooltip: 'Reconcile Property',
-                onPressed: () async {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Reconciling property stats and pricing...')),
-                  );
-                  try {
-                    await AdminApiService().reconcileProperty(_property['id']);
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Property reconciled successfully!'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to reconcile property: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
+          backgroundColor: const Color(0xFF020617), // Enterprise Dark
+          appBar: _buildAppBar(),
           body: Stack(
             children: [
               SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Image Gallery / Banner
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Stack(
-                        children: [
-                          Container(
-                            height: 250,
-                            width: double.infinity,
-                            color: const Color(0xFFF1F5F9),
-                            child:
-                                images.isNotEmpty
-                                    ? CachedNetworkImage(
-                                      imageUrl: images.first,
-                                      fit: BoxFit.cover,
-                                      placeholder:
-                                          (context, url) => const Center(
-                                            child: CircularProgressIndicator(),
-                                          ),
-                                      errorWidget:
-                                          (context, url, error) => const Icon(
-                                            Icons.home_work_outlined,
-                                            size: 60,
-                                            color: Colors.grey,
-                                          ),
-                                    )
-                                    : const Icon(
-                                      Icons.home_work_outlined,
-                                      color: Colors.grey,
-                                      size: 60,
-                                    ),
-                          ),
-                          Positioned(
-                            top: 16,
-                            right: 16,
-                            child: StatusBadge(text: status, color: statusColor),
-                          ),
-                          if (images.length > 1)
-                            Positioned(
-                              bottom: 16,
-                              right: 16,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.6),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  '+${images.length - 1} Photos',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                    _buildHeroIdentity(basicInfo, images),
+                    const SizedBox(height: 48),
 
-                    Text(
-                      _property['name'] ?? 'Untitled Property',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                        fontFamily: 'Outfit',
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _property['category'] ?? _property['type'] ?? _property['propertyType'] ?? _property['basicInfo']?['type'] ?? 'Accommodation',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF94A3B8),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                    const SizedBox(height: 16),
-
-                    _buildSectionTitle('LOCATION'),
-                    const SizedBox(height: 12),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          color: Color(0xFF2563EB),
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
                         Expanded(
-                          child: Text(
-                            _property['location'] ?? _property['address'] ?? 'No Address Provided',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF475569),
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                    const SizedBox(height: 16),
-
-                    _buildSectionTitle('PRICING & TERMS'),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _pricingRow('Single Sharing Rent', '₹${_property['pricing']?['singleRent'] ?? _property['monthlyRent'] ?? _property['price'] ?? 'N/A'}', isHighlighted: true),
-                          const Divider(height: 16, color: Color(0xFFE2E8F0)),
-                          _pricingRow('Double Sharing Rent', '₹${_property['pricing']?['doubleRent'] ?? 'N/A'}'),
-                          const Divider(height: 16, color: Color(0xFFE2E8F0)),
-                          _pricingRow('Triple Sharing Rent', '₹${_property['pricing']?['tripleRent'] ?? 'N/A'}'),
-                          const Divider(height: 16, color: Color(0xFFE2E8F0)),
-                          _pricingRow('Security Deposit', '₹${_property['securityDeposit'] ?? _property['pricing']?['deposit'] ?? 'N/A'}'),
-                          const Divider(height: 16, color: Color(0xFFE2E8F0)),
-                          _pricingRow('Notice Period', '${_property['pricing']?['noticePeriod'] ?? 'N/A'}'),
-                          const Divider(height: 16, color: Color(0xFFE2E8F0)),
-                          _pricingRow('Food Included', _property['pricing']?['foodIncluded'] == true ? 'Yes' : 'No'),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                    const SizedBox(height: 16),
-
-                    _buildSectionTitle('HOSTER DETAILS'),
-                    const SizedBox(height: 16),
-                    Builder(
-                      builder: (context) {
-                        final hostProfile = _property['hostProfile'] as Map? ?? {};
-                        final hosterName = _property['hosterName'] ?? hostProfile['name'] ?? 'Unknown Hoster';
-                        final hosterPhone = _property['hosterPhone'] ?? hostProfile['phone'] ?? 'No Phone';
-                        final hosterEmail = hostProfile['email'] ?? 'No Email';
-                        final hostType = hostProfile['hostType'] ?? 'Property Owner';
-                        final isHostVerified = _property['isHostVerified'] ?? false;
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 24,
-                                  backgroundColor: const Color(0xFFF1F5F9),
-                                  child: Text(
-                                    hosterName.isNotEmpty == true ? hosterName[0].toUpperCase() : 'H',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF7C3AED),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        hosterName,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          color: Color(0xFF1E293B),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Row(
-                                        children: [
-                                          Text(
-                                            hostType,
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Color(0xFF64748B),
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: isHostVerified
-                                                  ? const Color(0xFFF0FDF4)
-                                                  : const Color(0xFFFEF2F2),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              isHostVerified ? 'Verified' : 'Unverified',
-                                              style: TextStyle(
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.bold,
-                                                color: isHostVerified
-                                                    ? const Color(0xFF16A34A)
-                                                    : const Color(0xFFDC2626),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            _iconDetail(Icons.phone_outlined, hosterPhone),
-                            const SizedBox(height: 8),
-                            _iconDetail(Icons.email_outlined, hosterEmail),
-                          ],
-                        );
-                      }
-                    ),
-
-                    Builder(
-                      builder: (context) {
-                        final basicInfo = _property['basicInfo'] as Map? ?? {};
-                        final wardenName = basicInfo['wardenName'];
-                        final wardenPhone = basicInfo['phone'];
-                        final wardenEmail = basicInfo['email'];
-
-                        if (wardenName != null && wardenName.toString().isNotEmpty) {
-                          return Column(
+                          flex: 2,
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              _buildSectionTitle('LOCATION & SPECIFICATIONS'),
+                              const SizedBox(height: 24),
+                              _buildLocationGrid(basicInfo),
+                              const SizedBox(height: 48),
+
+                              _buildSectionTitle('PRICING & TERMS'),
+                              const SizedBox(height: 24),
+                              _buildPricingGrid(),
+                              const SizedBox(height: 48),
+
+                              _buildSectionTitle('DESCRIPTION'),
                               const SizedBox(height: 16),
-                              const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                              const SizedBox(height: 16),
-                              _buildSectionTitle('PROPERTY MANAGER / WARDEN'),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 20,
-                                    backgroundColor: const Color(0xFFF1F5F9),
-                                    child: Text(
-                                      wardenName.toString()[0].toUpperCase(),
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF2563EB),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          wardenName.toString(),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                            color: Color(0xFF1E293B),
-                                          ),
-                                        ),
-                                        const Text(
-                                          'On-Site Contact / Warden',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: Color(0xFF64748B),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                              Text(
+                                _property['description'] ?? 'No description provided',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white70,
+                                  height: 1.6,
+                                  fontFamily: 'Outfit',
+                                ),
                               ),
-                              if (wardenPhone != null && wardenPhone.toString().isNotEmpty) ...[
-                                const SizedBox(height: 10),
-                                _iconDetail(Icons.phone_outlined, wardenPhone.toString()),
-                              ],
-                              if (wardenEmail != null && wardenEmail.toString().isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                _iconDetail(Icons.email_outlined, wardenEmail.toString()),
-                              ],
+                              const SizedBox(height: 48),
+
+                              _buildSectionTitle('PROPERTY INVENTORY & STRUCTURE'),
+                              const SizedBox(height: 24),
+                              _buildInventorySummaryBar(),
+                              const SizedBox(height: 24),
+                              _buildPropertyStructureTree(),
+                              const SizedBox(height: 16),
+                              _buildBedStatusLegend(),
                             ],
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      }
-                    ),
-
-                    const SizedBox(height: 16),
-                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                    const SizedBox(height: 16),
-
-                    _buildSectionTitle('SPECIFICATIONS'),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        _specChip(
-                          Icons.king_bed_outlined,
-                          '${_property['rooms'] ?? 0} Rooms',
-                        ),
-                        _specChip(
-                          Icons.people_outline,
-                          'Cap: ${_property['totalCapacity'] ?? 0}',
-                        ),
-                        _specChip(
-                          Icons.wc_outlined,
-                          'For: ${_property['gender'] ?? 'Anyone'}',
-                        ),
-                        _specChip(
-                          Icons.layers_outlined,
-                          'Floors: ${_property['floorsCount'] ?? _property['propertyDetails']?['floorsCount'] ?? 1}',
-                        ),
-                        if (_property['numberingSystem'] != null || _property['propertyDetails']?['numberingSystem'] != null)
-                          _specChip(
-                            Icons.tag_rounded,
-                            'Label: ${_property['numberingSystem'] ?? _property['propertyDetails']?['numberingSystem']}',
                           ),
-                        _specChip(
-                          Icons.calendar_today_outlined,
-                          'Listed on ${_formatDate(_property['createdAt'])}',
+                        ),
+                        const SizedBox(width: 48),
+                        Expanded(
+                          flex: 1,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionTitle('HOSTER DETAILS'),
+                              const SizedBox(height: 24),
+                              _buildHosterCard(),
+                              const SizedBox(height: 48),
+
+                              _buildSectionTitle('AMENITIES'),
+                              const SizedBox(height: 24),
+                              _buildAmenitiesChipCloud(),
+                              const SizedBox(height: 48),
+
+                              _buildSectionTitle('VERIFICATION DOCUMENTS'),
+                              const SizedBox(height: 24),
+                              _buildDocumentList(),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 16),
-                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                    const SizedBox(height: 16),
-
-                    _buildSectionTitle('PROPERTY INVENTORY & STRUCTURE'),
-                    const SizedBox(height: 12),
-                    _buildInventorySummaryBar(),
-                    const SizedBox(height: 12),
-                    _buildPropertyStructureTree(),
-                    const SizedBox(height: 8),
-                    _buildBedStatusLegend(),
-
-                    const SizedBox(height: 16),
-                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                    const SizedBox(height: 16),
-
-                    _buildSectionTitle('DESCRIPTION'),
-                    const SizedBox(height: 12),
-                    Text(
-                      _property['description'] ?? 'No description provided',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF475569),
-                        height: 1.5,
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                    const SizedBox(height: 16),
-
-                    _buildSectionTitle('AMENITIES'),
-                    const SizedBox(height: 12),
-                    if (_property['amenities'] != null &&
-                        (_property['amenities'] as List).isNotEmpty)
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children:
-                            (_property['amenities'] as List)
-                                .map(
-                                  (a) => Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF8FAFC),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: const Color(0xFFF1F5F9),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      a.toString(),
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF475569),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                      )
-                    else
-                      const Text(
-                        'No amenities specified',
-                        style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-                      ),
-
-                    const SizedBox(height: 16),
-                    const Divider(color: Color(0xFFF1F5F9), thickness: 1),
-                    const SizedBox(height: 16),
-
-                    _buildSectionTitle('VERIFICATION DOCUMENTS'),
-                    const SizedBox(height: 16),
-                    _buildDocumentSection(),
-
-                    const SizedBox(height: 40),
-
-                    // Actions
-                    if (_property['status'] == 'pending') ...[
-                      _actionBtn(
-                        'Approve Listing',
-                        const Color(0xFFF0FDF4),
-                        const Color(0xFF16A34A),
-                        Icons.check_circle_outline_rounded,
-                        () => _handleUpdateStatus('active'),
-                      ),
-                      const SizedBox(height: 12),
-                      _actionBtn(
-                        'Reject Listing',
-                        const Color(0xFFFEF2F2),
-                        const Color(0xFFDC2626),
-                        Icons.cancel_outlined,
-                        () => _handleUpdateStatus('rejected'),
-                      ),
-                    ] else if (_property['status'] == 'active' || _property['status'] == 'approved') ...[
-                      _actionBtn(
-                        'Deactivate Listing',
-                        const Color(0xFFF1F5F9),
-                        const Color(0xFF475569),
-                        Icons.pause_circle_outline_rounded,
-                        () => _handleUpdateStatus('inactive'),
-                      ),
-                    ] else ...[
-                      _actionBtn(
-                        'Re-activate Listing',
-                        const Color(0xFFF0FDF4),
-                        const Color(0xFF16A34A),
-                        Icons.play_circle_outline_rounded,
-                        () => _handleUpdateStatus('active'),
-                      ),
-                    ],
-
-                    const SizedBox(height: 60),
+                    const SizedBox(height: 64),
+                    _buildActionPanel(),
+                    const SizedBox(height: 80),
                   ],
                 ),
               ),
               if (_isUpdating)
                 Container(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  child: const Center(child: CircularProgressIndicator()),
+                  color: Colors.black54,
+                  child: const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1))),
                 ),
             ],
           ),
@@ -711,169 +255,508 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     );
   }
 
-  Widget _pricingRow(String label, String value, {bool isHighlighted = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF64748B),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: const Color(0xFF020617),
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70, size: 20),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Row(
+        children: [
+          const Text('Property Approval', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0x1910B981),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0x4D10B981)),
+            ),
+            child: const Text('Live', style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold)),
           ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            color: isHighlighted ? const Color(0xFF16A34A) : const Color(0xFF1E293B),
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        ],
+      ),
+      actions: [
+        _appBarAction(Icons.share_outlined, 'Share'),
+        _appBarAction(Icons.more_vert_rounded, 'More'),
+        const SizedBox(width: 24),
       ],
     );
   }
 
-  Widget _buildDocumentSection() {
-    final verification = _property['verification'] as Map? ?? {};
-    final documents = _property['documents'] as Map? ?? {};
+  Widget _appBarAction(IconData icon, String tooltip) {
+    return IconButton(
+      icon: Icon(icon, color: Colors.white70, size: 20),
+      tooltip: tooltip,
+      onPressed: () {},
+    );
+  }
 
-    final aadhaarUrl = verification['aadhaarUrl'] ?? _property['aadhaarUrl'];
-    final panUrl = verification['panUrl'] ?? _property['panUrl'];
-    final regCertUrl = verification['registrationCertificateUrl'] ?? documents['registrationCertificateUrl'] ?? _property['registrationCertificateUrl'];
-    final agencyLicUrl = verification['agencyLicenseUrl'] ?? documents['agencyLicenseUrl'] ?? _property['agencyLicenseUrl'];
-    final ownershipUrl = documents['ownershipUrl'] ?? _property['ownershipUrl'];
-    final utilityUrl = documents['utilityUrl'] ?? _property['utilityUrl'];
-    final additionalUrl = documents['additionalUrl'] ?? _property['additionalUrl'];
+  Widget _buildHeroIdentity(Map<String, dynamic> basic, List images) {
+    final name = basic['collegeName'] ?? _property['name'] ?? 'Untitled Property';
+    final type = _property['category'] ?? _property['type'] ?? 'Accommodation';
+    final status = _property['status'] ?? 'pending';
 
-    final List<Map<String, dynamic>> docItems = [
-      if (aadhaarUrl != null)
-        {'title': 'Aadhaar Card', 'url': aadhaarUrl},
-      if (panUrl != null)
-        {'title': 'PAN Card', 'url': panUrl},
-      if (regCertUrl != null)
-        {'title': 'Registration Certificate', 'url': regCertUrl},
-      if (agencyLicUrl != null)
-        {'title': 'Agency License', 'url': agencyLicUrl},
-      if (ownershipUrl != null)
-        {'title': 'Ownership Proof', 'url': ownershipUrl},
-      if (utilityUrl != null)
-        {'title': 'Utility Bill', 'url': utilityUrl},
-      if (additionalUrl != null)
-        {'title': 'Additional Doc', 'url': additionalUrl},
-    ];
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name,
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Outfit'),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _darkBadge(type.toString().toUpperCase(), const Color(0xFF6366F1)),
+                  const SizedBox(width: 12),
+                  _darkBadge(status.toString().toUpperCase(), _getStatusColor(status)),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 32),
+        _buildImagePreview(images),
+      ],
+    );
+  }
 
-    if (docItems.isEmpty) {
-      return const Text(
-        'No documents uploaded',
-        style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-      );
+  Widget _buildImagePreview(List images) {
+    if (images.isEmpty) return const SizedBox.shrink();
+    return Container(
+      width: 240,
+      height: 140,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0x1AFFFFFF), width: 2),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            CachedNetworkImage(imageUrl: images.first, fit: BoxFit.cover),
+            Container(color: Colors.black26),
+            Center(child: Text('+${images.length}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationGrid(Map<String, dynamic> basic) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0x0DFFFFFF))),
+      child: Column(
+        children: [
+          _infoRow(Icons.location_on_outlined, 'Full Address', _property['location'] ?? 'N/A'),
+          const Divider(height: 32, color: Color(0x0DFFFFFF)),
+          Row(
+            children: [
+              Expanded(child: _infoRow(Icons.layers_outlined, 'Floors', '${_property['floorsCount'] ?? 1}')),
+              Expanded(child: _infoRow(Icons.king_bed_outlined, 'Total Rooms', '${_property['rooms'] ?? 0}')),
+              Expanded(child: _infoRow(Icons.people_outline, 'Total Capacity', '${_property['totalCapacity'] ?? _property['capacity'] ?? 0}')),
+              Expanded(child: _infoRow(Icons.wc_outlined, 'Gender', _property['gender'] ?? 'Any')),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPricingGrid() {
+    final pricing = Map<String, dynamic>.from(_property['pricing'] as Map? ?? {});
+    
+    final List<Map<String, dynamic>> tiers = [];
+    
+    void addTier(String id, String label, Color color) {
+      final rentKey = id == 'single' || id == 'double' || id == 'triple' ? '${id}Rent' : '${id}SharingRent';
+      final depositKey = id == 'single' || id == 'double' || id == 'triple' ? '${id}Deposit' : '${id}SharingDeposit';
+      
+      final rent = pricing[rentKey] ?? (id == 'single' ? (_property['monthlyRent'] ?? _property['price']) : null);
+      final deposit = pricing[depositKey];
+      
+      if (rent != null) {
+        tiers.add({
+          'label': label,
+          'rent': rent,
+          'deposit': deposit,
+          'color': color,
+        });
+      }
     }
 
-    return Column(
-      children:
-          docItems
-              .map(
-                (item) => Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.description_outlined,
-                        color: Color(0xFF2563EB),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          item['title'],
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E293B),
-                          ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => _viewDocument(item['url']),
-                        child: const Text(
-                          'View',
-                          style: TextStyle(
-                            color: Color(0xFF2563EB),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-              .toList(),
+    addTier('single', 'Single Sharing', const Color(0xFF10B981));
+    addTier('double', 'Double Sharing', const Color(0xFF3B82F6));
+    addTier('triple', 'Triple Sharing', const Color(0xFFF59E0B));
+    addTier('four', 'Four Sharing', const Color(0xFF8B5CF6));
+    addTier('six', 'Six Sharing', const Color(0xFFEC4899));
+
+    // Fallback if no tiers found
+    if (tiers.isEmpty && (_property['monthlyRent'] != null || _property['price'] != null)) {
+      tiers.add({
+        'label': 'Monthly Rent',
+        'rent': _property['monthlyRent'] ?? _property['price'],
+        'deposit': _property['securityDeposit'] ?? pricing['deposit'],
+        'color': const Color(0xFF10B981),
+      });
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0x0DFFFFFF))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 32,
+            runSpacing: 32,
+            children: tiers.map((t) => SizedBox(
+              width: 160,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _priceItem(t['label'], t['rent'], t['color']),
+                  if (t['deposit'] != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.security_outlined, size: 12, color: Colors.white24),
+                        const SizedBox(width: 6),
+                        Text('Dep: ₹${t['deposit']}', style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            )).toList(),
+          ),
+          const Divider(height: 64, color: Color(0x0DFFFFFF)),
+          Row(
+            children: [
+              Expanded(child: _infoRow(Icons.security_outlined, 'Primary Deposit', '₹${_property['securityDeposit'] ?? pricing['deposit'] ?? "N/A"}')),
+              Expanded(child: _infoRow(Icons.history_outlined, 'Notice Period', pricing['noticePeriod'] ?? 'N/A')),
+              Expanded(child: _infoRow(Icons.restaurant_outlined, 'Food Included', pricing['foodIncluded'] == true ? 'YES' : 'NO')),
+            ],
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildHosterCard() {
+    final hostProfile = _property['hostProfile'] as Map? ?? {};
+    final basicInfo = _property['basicInfo'] as Map? ?? {};
+    final hosterName = _property['hosterName'] ?? hostProfile['name'] ?? 'Unknown Hoster';
+    final hostType = hostProfile['hostType'] ?? 'Property Owner';
+
+    // Warden info can be in basicInfo (property level) or in hoster request
+    final wardenName = basicInfo['wardenName'] ?? basicInfo['warden_name'];
+    final wardenPhone = basicInfo['wardenPhone'] ?? basicInfo['warden_phone'] ?? basicInfo['phone'];
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0x0DFFFFFF))),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              CircleAvatar(radius: 24, backgroundColor: const Color(0xFF1E293B), child: Text(hosterName[0].toUpperCase(), style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold))),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(hosterName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(hostType, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                ]),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          _infoRow(Icons.phone_outlined, 'Phone', _property['hosterPhone'] ?? hostProfile['phone'] ?? 'N/A'),
+          const SizedBox(height: 16),
+          _infoRow(Icons.email_outlined, 'Email', hostProfile['email'] ?? 'N/A'),
+          
+          if (wardenName != null) ...[
+            const Divider(height: 48, color: Color(0x0DFFFFFF)),
+            _infoRow(Icons.person_pin_outlined, 'On-Site Manager', wardenName),
+            const SizedBox(height: 16),
+            _infoRow(Icons.phone_iphone_outlined, 'Warden Phone', wardenPhone ?? 'N/A'),
+          ] else
+            StreamBuilder<Map<String, dynamic>?>(
+              stream: widget.adminService.getUserHosterRequestStream(_property['hoster_id'] ?? ''),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const SizedBox.shrink();
+                final hInfo = snapshot.data!['info'] as Map? ?? {};
+                final wName = hInfo['wardenName'] ?? hInfo['warden_name'];
+                if (wName == null) return const SizedBox.shrink();
+                return Column(children: [
+                  const Divider(height: 48, color: Color(0x0DFFFFFF)),
+                  _infoRow(Icons.person_pin_outlined, 'On-Site Manager', wName),
+                  const SizedBox(height: 16),
+                  _infoRow(Icons.phone_iphone_outlined, 'Warden Phone', hInfo['wardenPhone'] ?? hInfo['phone'] ?? 'N/A'),
+                ]);
+              }
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAmenitiesChipCloud() {
+    final amenities = _property['amenities'] as List? ?? [];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0x0DFFFFFF))),
+      child: amenities.isEmpty
+          ? const Text('No amenities listed', style: TextStyle(color: Colors.white24, fontSize: 12))
+          : Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: amenities.map((a) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0x0DFFFFFF))),
+                child: Text(a.toString(), style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+              )).toList(),
+            ),
+    );
+  }
+
+  Widget _buildDocumentList() {
+    final verification = _property['verification'] as Map? ?? {};
+    final documents = _property['documents'] as Map? ?? {};
+    final docItems = [
+      if (verification['aadhaarUrl'] != null) {'title': 'Aadhaar Card', 'url': verification['aadhaarUrl']},
+      if (verification['panUrl'] != null) {'title': 'PAN Card', 'url': verification['panUrl']},
+      if (documents['ownershipUrl'] != null) {'title': 'Ownership Proof', 'url': documents['ownershipUrl']},
+      if (documents['utilityUrl'] != null) {'title': 'Utility Bill', 'url': documents['utilityUrl']},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0x0DFFFFFF))),
+      child: docItems.isEmpty
+          ? const Text('No verification documents', style: TextStyle(color: Colors.white24, fontSize: 12))
+          : Column(children: docItems.map((d) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(children: [
+                const Icon(Icons.description_outlined, color: Colors.white38, size: 18),
+                const SizedBox(width: 12),
+                Expanded(child: Text(d['title']!, style: const TextStyle(color: Colors.white, fontSize: 13))),
+                TextButton(onPressed: () => _viewDocument(d['url']!), child: const Text('VIEW', style: TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold, fontSize: 11))),
+              ]),
+            )).toList()),
+    );
+  }
+
+  Widget _buildInventorySummaryBar() {
+    return StreamBuilder<InventorySummary>(
+      stream: _structureService.getInventorySummary(_property['id']),
+      builder: (context, snapshot) {
+        final s = snapshot.data;
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0x1A6366F1))),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _metric('Total Beds', s?.totalBeds.toString() ?? '0', Colors.white),
+              _verticalDivider(),
+              _metric('Occupied', s?.occupiedBeds.toString() ?? '0', const Color(0xFF6366F1)),
+              _verticalDivider(),
+              _metric('Available', s?.availableBeds.toString() ?? '0', const Color(0xFF10B981)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPropertyStructureTree() {
+    final propertyId = _property['id'];
+    return StreamBuilder<List<QuerySnapshot<Map<String, dynamic>>>>(
+      stream: Rx.combineLatest3(
+        FirebaseFirestore.instance.collection('properties').doc(propertyId).collection('floors').orderBy('floorNumber').snapshots(),
+        FirebaseFirestore.instance.collection('properties').doc(propertyId).collection('rooms').snapshots(),
+        FirebaseFirestore.instance.collection('properties').doc(propertyId).collection('beds').snapshots(),
+        (a, b, c) => [a, b, c],
+      ),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data![0].docs.isEmpty) return const SizedBox.shrink();
+        final floors = snapshot.data![0].docs.map((d) => d.data()).toList();
+        final rooms = snapshot.data![1].docs.map((d) => d.data()).toList();
+        final beds = snapshot.data![2].docs.map((d) => d.data()).toList();
+
+        return Column(
+          children: floors.map((floor) {
+            final floorId = floor['id'];
+            final floorRooms = rooms.where((r) => r['floorId'] == floorId).toList();
+            final isExpanded = _expandedFloors.contains(floorId);
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.02), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0x0DFFFFFF))),
+              child: Column(
+                children: [
+                  ListTile(
+                    title: Text(floor['name'] ?? 'Floor', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: Text('Rooms: ${floorRooms.length} | ${floor['status'] ?? 'Active'}', style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                    trailing: Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Colors.white38),
+                    onTap: () => setState(() => isExpanded ? _expandedFloors.remove(floorId) : _expandedFloors.add(floorId)),
+                  ),
+                  if (isExpanded) ...[
+                    const Divider(height: 1, color: Color(0x0DFFFFFF)),
+                    ...floorRooms.map((room) {
+                      final roomId = room['id'];
+                      final roomBeds = beds.where((b) => b['roomId'] == roomId).toList();
+                      final isRoomExpanded = _expandedRooms.contains(roomId);
+                      return Column(children: [
+                        ListTile(
+                          dense: true,
+                          title: Text('Room ${room['roomNumber']} (${room['roomType'] ?? 'Standard'})', style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+                          trailing: Icon(isRoomExpanded ? Icons.remove : Icons.add, size: 16, color: Colors.white38),
+                          onTap: () => setState(() => isRoomExpanded ? _expandedRooms.remove(roomId) : _expandedRooms.add(roomId)),
+                        ),
+                        if (isRoomExpanded) Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          child: Wrap(spacing: 8, runSpacing: 8, children: roomBeds.map((bed) {
+                            final bStatus = bed['status'] ?? 'available';
+                            final bColor = _getBedColor(bStatus);
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(color: bColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: bColor.withValues(alpha: 0.2))),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                Icon(Icons.king_bed_outlined, color: bColor, size: 14),
+                                const SizedBox(width: 6),
+                                Text(bed['bedNumber'].toString(), style: TextStyle(color: bColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                              ]),
+                            );
+                          }).toList()),
+                        ),
+                      ]);
+                    }),
+                  ],
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildActionPanel() {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(32), border: Border.all(color: const Color(0x0DFFFFFF))),
+      child: Column(
+        children: [
+          const Text('Administrative Controls', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          const Text('Finalize your review before taking action.', style: TextStyle(color: Colors.white38, fontSize: 13)),
+          const SizedBox(height: 32),
+          if (_property['status'] == 'pending') ...[
+            Row(children: [
+              Expanded(child: _actionBtn('APPROVE LISTING', const Color(0xFF10B981), Icons.check_circle_outline, () => _handleUpdateStatus('active'))),
+              const SizedBox(width: 16),
+              Expanded(child: _actionBtn('REJECT LISTING', const Color(0xFFEF4444), Icons.cancel_outlined, () => _handleUpdateStatus('rejected'))),
+            ]),
+          ] else if (_property['status'] == 'active' || _property['status'] == 'approved') ...[
+            _actionBtn('DEACTIVATE PROPERTY', Colors.white.withValues(alpha: 0.05), Icons.pause_circle_outline, () => _handleUpdateStatus('inactive')),
+          ] else ...[
+            _actionBtn('RE-ACTIVATE PROPERTY', const Color(0xFF10B981), Icons.play_circle_outline, () => _handleUpdateStatus('active')),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _actionBtn(String label, Color color, IconData icon, VoidCallback onTap) {
+    return ElevatedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 18),
+      label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1.0)),
+      style: ElevatedButton.styleFrom(backgroundColor: color, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 0),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [Icon(icon, color: const Color(0xFF6366F1), size: 16), const SizedBox(width: 8), Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5))]),
+      const SizedBox(height: 4),
+      Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+    ]);
+  }
+
+  Widget _priceItem(String label, dynamic value, Color color) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 6),
+      Text('₹$value', style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+    ]);
+  }
+
+  Widget _metric(String label, String value, Color color) {
+    return Column(children: [
+      Text(value, style: TextStyle(color: color, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+      Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
+    ]);
+  }
+
+  Widget _verticalDivider() => Container(width: 1, height: 40, color: const Color(0x0DFFFFFF));
+
+  Widget _darkBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withValues(alpha: 0.2))),
+      child: Text(text, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+    );
+  }
+
+  Color _getBedColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'occupied': return const Color(0xFF3B82F6);
+      case 'reserved': return const Color(0xFFF59E0B);
+      case 'maintenance': return const Color(0xFFEF4444);
+      default: return const Color(0xFF10B981);
+    }
+  }
+
+  Widget _buildBedStatusLegend() {
+    return Wrap(spacing: 16, runSpacing: 8, children: [
+      _legendItem(const Color(0xFF10B981), 'Available'),
+      _legendItem(const Color(0xFF3B82F6), 'Occupied'),
+      _legendItem(const Color(0xFFF59E0B), 'Reserved'),
+      _legendItem(const Color(0xFFEF4444), 'Maintenance'),
+    ]);
+  }
+
+  Widget _legendItem(Color color, String label) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+      const SizedBox(width: 6),
+      Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w600)),
+    ]);
   }
 
   void _viewDocument(String url) {
     showDialog(
       context: context,
-      builder:
-          (context) => Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.all(16),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child:
-                        url.toLowerCase().endsWith('.pdf')
-                            ? const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(40),
-                                child: Text(
-                                  'PDF viewer not implemented. Please check URL.',
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            )
-                            : CachedNetworkImage(
-                              imageUrl: url,
-                              fit: BoxFit.contain,
-                              placeholder:
-                                  (context, url) =>
-                                      const CircularProgressIndicator(),
-                              errorWidget:
-                                  (context, url, error) =>
-                                      const Icon(Icons.error),
-                            ),
-                  ),
-                ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: Colors.black54,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ),
-              ],
-            ),
-          ),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Stack(alignment: Alignment.center, children: [
+          ClipRRect(borderRadius: BorderRadius.circular(24), child: InteractiveViewer(child: CachedNetworkImage(imageUrl: url, fit: BoxFit.contain, placeholder: (context, url) => const CircularProgressIndicator()))),
+          Positioned(top: 10, right: 10, child: IconButton(icon: const Icon(Icons.close_rounded, color: Colors.white), onPressed: () => Navigator.pop(context))),
+        ]),
+      ),
     );
   }
 
@@ -888,661 +771,4 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       ),
     );
   }
-
-  Widget _inventoryRow(String label, dynamic count) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
-        Text(count.toString(), style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-      ],
-    ),
-  );
-
-  Widget _iconDetail(IconData i, String t) => Row(
-    children: [
-      Icon(i, size: 18, color: const Color(0xFF64748B)),
-      const SizedBox(width: 12),
-      Text(
-        t,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF475569),
-        ),
-      ),
-    ],
-  );
-
-  Widget _specChip(IconData i, String l) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    decoration: BoxDecoration(
-      color: const Color(0xFFEFF6FF),
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(i, size: 16, color: const Color(0xFF2563EB)),
-        const SizedBox(width: 8),
-        Text(
-          l,
-          style: const TextStyle(
-            color: Color(0xFF2563EB),
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-        ),
-      ],
-    ),
-  );
-
-  Widget _actionBtn(
-    String l,
-    Color bg,
-    Color t,
-    IconData i,
-    VoidCallback onTap,
-  ) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(12),
-    child: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(i, size: 18, color: t),
-          const SizedBox(width: 8),
-          Text(
-            l,
-            style: TextStyle(
-              color: t,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              fontFamily: 'Outfit',
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-
-  /// Live inventory summary bar at the top of the inventory section.
-  Widget _buildInventorySummaryBar() {
-    final propertyId = _property['id'];
-    return StreamBuilder<InventorySummary>(
-      stream: _structureService.getInventorySummary(propertyId),
-      builder: (context, snapshot) {
-        final s = snapshot.data;
-        final total = s?.totalBeds ?? 0;
-        final available = s?.availableBeds ?? 0;
-        final occupied = s?.occupiedBeds ?? 0;
-        final maintenance = s?.maintenanceBeds ?? 0;
-
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF1E3A8A).withValues(alpha: 0.06),
-                const Color(0xFF2563EB).withValues(alpha: 0.04),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFBFDBFE)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _summaryStatCell('Total Beds', total.toString(), const Color(0xFF1E293B)),
-              _dividerLine(),
-              _summaryStatCell('Available', available.toString(), const Color(0xFF16A34A)),
-              _dividerLine(),
-              _summaryStatCell('Occupied', occupied.toString(), const Color(0xFF2563EB)),
-              _dividerLine(),
-              _summaryStatCell(
-                'Maintain.',
-                maintenance.toString(),
-                const Color(0xFFDC2626),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _summaryStatCell(String label, String value, Color color) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: color,
-            fontFamily: 'Outfit',
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 9,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF94A3B8),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _dividerLine() => Container(
-    height: 28,
-    width: 1,
-    color: const Color(0xFFCBD5E1),
-  );
-
-  /// Bed status color legend.
-  Widget _buildBedStatusLegend() {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 6,
-      children: [
-        _legendItem(Colors.green, 'Available'),
-        _legendItem(Colors.blue, 'Occupied'),
-        _legendItem(Colors.orange, 'Reserved'),
-        _legendItem(Colors.red, 'Maintenance'),
-        _legendItem(Colors.grey, 'Blocked'),
-      ],
-    );
-  }
-
-  Widget _legendItem(Color color, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
-        ),
-      ],
-    );
-  }
-
-  /// Shows a bottom sheet to let admin override a bed's status.
-  void _showAdminBedStatusOverride(
-    String bedId,
-    String roomId,
-    String currentStatus,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-            ),
-          ),
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Override Bed Status',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Outfit',
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Admin override — use carefully.',
-                style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
-              ),
-              const SizedBox(height: 16),
-              for (final entry in [
-                ('available', Colors.green, 'Mark Available'),
-                ('occupied', Colors.blue, 'Mark Occupied'),
-                ('reserved', Colors.orange, 'Mark Reserved'),
-                ('maintenance', Colors.red, 'Mark Maintenance'),
-                ('blocked', Colors.grey, 'Block Bed'),
-              ])
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: InkWell(
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      try {
-                        await _structureService.updateBedStatus(
-                          propertyId: _property['id'],
-                          roomId: roomId,
-                          bedId: bedId,
-                          newStatus: entry.$1,
-                        );
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Bed status updated to ${entry.$1}'),
-                              backgroundColor: entry.$2,
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error: \$e'), backgroundColor: Colors.red),
-                          );
-                        }
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color:
-                            currentStatus == entry.$1
-                                ? entry.$2.withValues(alpha: 0.12)
-                                : const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color:
-                              currentStatus == entry.$1
-                                  ? entry.$2
-                                  : const Color(0xFFE2E8F0),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: entry.$2,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            entry.$3,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color:
-                                  currentStatus == entry.$1
-                                      ? entry.$2
-                                      : const Color(0xFF1E293B),
-                            ),
-                          ),
-                          if (currentStatus == entry.$1) ...[
-                            const Spacer(),
-                            Icon(Icons.check_rounded, color: entry.$2, size: 16),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildPropertyStructureTree() {
-    final propertyId = _property['id'];
-
-    final floorsStream = FirebaseFirestore.instance
-        .collection('properties')
-        .doc(propertyId)
-        .collection('floors')
-        .orderBy('floorNumber')
-        .snapshots();
-
-    final roomsStream = FirebaseFirestore.instance
-        .collection('properties')
-        .doc(propertyId)
-        .collection('rooms')
-        .snapshots();
-
-    final bedsStream = FirebaseFirestore.instance
-        .collection('properties')
-        .doc(propertyId)
-        .collection('beds')
-        .snapshots();
-
-    return StreamBuilder<List<QuerySnapshot<Map<String, dynamic>>>>(
-      stream: Rx.combineLatest3(
-        floorsStream,
-        roomsStream,
-        bedsStream,
-        (a, b, c) => [a, b, c],
-      ),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (!snapshot.hasData || snapshot.data![0].docs.isEmpty) {
-          return Column(
-            children: [
-              _inventoryRow('Single Rooms', _property['propertyDetails']?['singleRooms'] ?? 0),
-              _inventoryRow('Double Rooms', _property['propertyDetails']?['doubleRooms'] ?? 0),
-              _inventoryRow('Triple Rooms', _property['propertyDetails']?['tripleRooms'] ?? 0),
-              _inventoryRow('Dormitory Beds', _property['propertyDetails']?['dormitoryBeds'] ?? 0),
-            ],
-          );
-        }
-
-        final floors = snapshot.data![0].docs.map((d) => d.data()).toList();
-        final rooms = snapshot.data![1].docs.map((d) => d.data()).toList();
-        final beds = snapshot.data![2].docs.map((d) => d.data()).toList();
-
-        return StreamBuilder<Map<String, InventorySummary>>(
-          stream: _structureService.getFloorOccupancy(propertyId),
-          builder: (context, occSnap) {
-            final floorOccupancy = occSnap.data ?? {};
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: floors.map((floor) {
-            final floorId = floor['id'];
-            final floorRooms = rooms.where((r) => r['floorId'] == floorId).toList();
-            final floorBeds = beds.where((b) => b['floorId'] == floorId).toList();
-            final isExpanded = _expandedFloors.contains(floorId);
-            final occ = floorOccupancy[floorId];
-            final occPercent = occ != null && occ.totalBeds > 0
-                ? (occ.occupiedBeds / occ.totalBeds * 100).round()
-                : 0;
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Column(
-                children: [
-                  ListTile(
-                    title: Row(
-                      children: [
-                        Text(
-                          floor['name'] ?? 'Floor',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Occupancy badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: occPercent >= 80
-                                ? Colors.red.withValues(alpha: 0.12)
-                                : occPercent >= 50
-                                    ? Colors.orange.withValues(alpha: 0.12)
-                                    : Colors.green.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '$occPercent% Occ.',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: occPercent >= 80
-                                  ? Colors.red
-                                  : occPercent >= 50
-                                      ? Colors.orange
-                                      : Colors.green,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    subtitle: Text(
-                      'Rooms: ${floorRooms.length} | Beds: ${floorBeds.length} | ${floor['status'] ?? 'Active'}',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                    ),
-                    trailing: Icon(
-                      isExpanded
-                          ? Icons.keyboard_arrow_up_rounded
-                          : Icons.keyboard_arrow_down_rounded,
-                      color: const Color(0xFF64748B),
-                    ),
-                    onTap: () {
-                      setState(() {
-                        if (isExpanded) {
-                          _expandedFloors.remove(floorId);
-                        } else {
-                          _expandedFloors.add(floorId);
-                        }
-                      });
-                    },
-                  ),
-                  if (isExpanded) ...[
-                    const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: floorRooms.isEmpty
-                          ? const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8),
-                              child: Text(
-                                'No rooms on this floor.',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF94A3B8),
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            )
-                          : Column(
-                              children: floorRooms.map((room) {
-                                final roomId = room['id'];
-                                final roomBeds =
-                                    beds.where((b) => b['roomId'] == roomId).toList();
-                                final isRoomExpanded = _expandedRooms.contains(roomId);
-
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      ListTile(
-                                        dense: true,
-                                        title: Text(
-                                          'Room ${room['roomNumber']} (${room['occupancyType'] ?? room['roomType']})',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                        subtitle: Text(
-                                          'Beds: ${roomBeds.length} | ${room['status'] ?? 'Available'}',
-                                          style: const TextStyle(fontSize: 10),
-                                        ),
-                                        trailing: Icon(
-                                          isRoomExpanded
-                                              ? Icons.keyboard_arrow_up_rounded
-                                              : Icons.keyboard_arrow_down_rounded,
-                                          size: 18,
-                                        ),
-                                        onTap: () {
-                                          setState(() {
-                                            if (isRoomExpanded) {
-                                              _expandedRooms.remove(roomId);
-                                            } else {
-                                              _expandedRooms.add(roomId);
-                                            }
-                                          });
-                                        },
-                                      ),
-                                      if (isRoomExpanded) ...[
-                                        const Divider(
-                                          height: 1,
-                                          color: Color(0xFFE2E8F0),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Column(
-                                            children: roomBeds.map((bed) {
-                                              final bedId =
-                                                  bed['id'] ?? bed['bedId'] ?? '';
-                                              final bStatus =
-                                                  bed['status'] ?? 'available';
-                                              Color bColor = Colors.green;
-                                              if (bStatus == 'occupied') {
-                                                bColor = Colors.blue;
-                                              }
-                                              if (bStatus == 'reserved' ||
-                                                  bStatus == 'booked') {
-                                                bColor = Colors.orange;
-                                              }
-                                              if (bStatus == 'maintenance') {
-                                                bColor = Colors.red;
-                                              }
-                                              if (bStatus == 'blocked') {
-                                                bColor = Colors.grey;
-                                              }
-
-                                              return InkWell(
-                                                onTap: () => _showAdminBedStatusOverride(
-                                                  bedId,
-                                                  roomId,
-                                                  bStatus,
-                                                ),
-                                                borderRadius: BorderRadius.circular(8),
-                                                child: Padding(
-                                                  padding: const EdgeInsets.symmetric(
-                                                    vertical: 4,
-                                                    horizontal: 4,
-                                                  ),
-                                                  child: Row(
-                                                    children: [
-                                                      Icon(
-                                                        Icons.king_bed_outlined,
-                                                        color: bColor,
-                                                        size: 16,
-                                                      ),
-                                                      const SizedBox(width: 8),
-                                                      Expanded(
-                                                        child: Text(
-                                                          'Bed ${bed['bedNumber']}',
-                                                          style: const TextStyle(
-                                                            fontSize: 12,
-                                                            fontWeight: FontWeight.w500,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      // Resident info or status
-                                                      if (bed['currentResidentId'] != null)
-                                                        StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                                                          stream: FirebaseFirestore.instance
-                                                              .collection('bookings')
-                                                              .doc(bed['currentResidentId'])
-                                                              .snapshots(),
-                                                          builder: (context, bSnap) {
-                                                            if (!bSnap.hasData ||
-                                                                !bSnap.data!.exists) {
-                                                              return const Text(
-                                                                'Occupied',
-                                                                style: TextStyle(
-                                                                  fontSize: 10,
-                                                                  color: Colors.blue,
-                                                                  fontWeight: FontWeight.bold,
-                                                                ),
-                                                              );
-                                                            }
-                                                            final bData = bSnap.data!.data()!;
-                                                            final rName =
-                                                                bData['tenantDetails']?[0]?['name'] ??
-                                                                'Resident';
-                                                            return Text(
-                                                              rName,
-                                                              style: const TextStyle(
-                                                                fontSize: 10,
-                                                                color: Colors.blue,
-                                                                fontWeight: FontWeight.bold,
-                                                              ),
-                                                            );
-                                                          },
-                                                        )
-                                                      else
-                                                        Text(
-                                                          bStatus[0].toUpperCase() +
-                                                              bStatus.substring(1),
-                                                          style: TextStyle(
-                                                            fontSize: 10,
-                                                            color: bColor,
-                                                            fontWeight: FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                      const SizedBox(width: 4),
-                                                      // Admin override indicator
-                                                      Icon(
-                                                        Icons.tune_rounded,
-                                                        size: 12,
-                                                        color: Colors.grey.shade400,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              );
-                                            }).toList(),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          }).toList(),
-        );
-          },
-        );
-      },
-    );
-  }
 }
-

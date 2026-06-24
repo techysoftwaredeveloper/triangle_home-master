@@ -218,16 +218,20 @@ class _DashboardTab extends StatelessWidget {
                     _buildPendingBanner()
                   else if (data['accountStatus'] == 'rejected')
                     _buildRejectedBanner(context, data['adminReviewNote'] ?? 'No reason provided'),
-                  _buildTopPropertyCarousel(properties),
+                  
+                  _buildSectionHeader('Live Performance'),
+                  const SizedBox(height: 16),
+                  _buildOverviewGrid(data),
+                  
                   const SizedBox(height: 32),
                   _buildSectionHeader('Today\'s Actions'),
                   _buildActionCards(data),
-                  const SizedBox(height: 32),
-                  _buildSectionHeader('Overview'),
-                  _buildOverviewGrid(data),
+                  
                   const SizedBox(height: 32),
                   _buildSectionHeader('My Properties', onViewAll: () {}),
-                  _buildPropertiesCarousel(properties, data),
+                  const SizedBox(height: 16),
+                  _buildPropertiesCarousel(context, properties, data),
+                  
                   const SizedBox(height: 32),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,9 +241,11 @@ class _DashboardTab extends StatelessWidget {
                       Expanded(child: _buildHostManagement(data)),
                     ],
                   ),
+                  
                   const SizedBox(height: 32),
                   _buildSectionHeader('Recent Activity'),
                   _buildRecentActivity(recentActivity),
+
                   const SizedBox(height: 32),
                   _buildSectionHeader('Guest Reviews'),
                   _buildReviewsManagement(context),
@@ -396,21 +402,33 @@ class _DashboardTab extends StatelessWidget {
     final name = data['hosterName'] ?? 'Host';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'H';
     return AppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       elevation: 0,
-      leading: const Icon(Icons.menu_rounded, color: Color(0xFF1E293B)),
+      toolbarHeight: 70,
+      leading: IconButton(
+        icon: const Icon(Icons.menu_rounded, color: Color(0xFF1E293B)),
+        onPressed: () {},
+      ),
       title: Row(
         children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: const Color(0xFFF0FDF4),
-            child: Text(
-              initial,
-              style: const TextStyle(
-                color: AppTheme.forestGreen,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF16A34A).withValues(alpha: 0.2), width: 2),
+            ),
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFFF0FDF4),
+              backgroundImage: data['profileImage'] != null ? CachedNetworkImageProvider(data['profileImage']) : null,
+              child: data['profileImage'] == null ? Text(
+                initial,
+                style: const TextStyle(
+                  color: AppTheme.forestGreen,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ) : null,
             ),
           ),
           const SizedBox(width: 12),
@@ -430,15 +448,23 @@ class _DashboardTab extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                Text(
-                  data['hosterRole'] ?? 'Host & Property Manager',
-                  style: const TextStyle(
-                    color: Color(0xFF64748B),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Text(
+                      data['hosterRole'] ?? 'Host & Property Manager',
+                      style: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (data['hosterVerified'] == true) ...[
+                      const SizedBox(width: 4),
+                      const Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 12),
+                    ],
+                  ],
                 ),
               ],
             ),
@@ -458,21 +484,14 @@ class _DashboardTab extends StatelessWidget {
             ),
             if (_parseNum(data['unreadNotificationsCount']).toInt() > 0)
               Positioned(
-                top: 12,
-                right: 12,
+                top: 18,
+                right: 14,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  width: 8,
+                  height: 8,
                   decoration: const BoxDecoration(
                     color: Color(0xFFEF4444),
                     shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    '${data['unreadNotificationsCount']}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 8,
-                      fontWeight: FontWeight.bold,
-                    ),
                   ),
                 ),
               ),
@@ -796,147 +815,171 @@ class _DashboardTab extends StatelessWidget {
   }
 
   Widget _buildOverviewGrid(Map data) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double childAspectRatio = constraints.maxWidth > 400 ? 1.8 : 1.5;
-        return GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: childAspectRatio,
-          children: [
-            _overviewCard(
-              'Active Residents',
-              data['activeResidents']?.toString() ?? '0',
-              '',
-              true,
-            ),
-            _overviewCard(
-              'Vacant Beds',
-              data['vacantBeds']?.toString() ?? '0',
-              '',
-              false,
-            ),
-            _overviewCard(
-              'Occupancy',
-              '${data['occupancy'] ?? 0}%',
-              '',
-              true,
-            ),
-            _overviewCard(
-              'Monthly Revenue',
-              '₹${(data['monthlyRevenue'] ?? 0).toString()}',
-              '',
-              true,
-            ),
-          ],
-        );
-      },
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 1.4, // Decreased to provide more height
+      children: [
+        _overviewCard(
+          'Active Residents',
+          data['activeResidents']?.toString() ?? '0',
+          Icons.people_outline_rounded,
+          const Color(0xFF6366F1),
+        ),
+        _overviewCard(
+          'Vacant Beds',
+          data['vacantBeds']?.toString() ?? '0',
+          Icons.bed_outlined,
+          const Color(0xFF3B82F6),
+        ),
+        _overviewCard(
+          'Occupancy',
+          '${data['occupancy'] ?? 0}%',
+          Icons.pie_chart_outline_rounded,
+          const Color(0xFF10B981),
+        ),
+        _overviewCard(
+          'Monthly Revenue',
+          '₹${_formatRevenueAmount(data['monthlyRevenue'])}',
+          Icons.account_balance_wallet_outlined,
+          const Color(0xFFF59E0B),
+        ),
+      ],
     );
+  }
+
+  String _formatRevenueAmount(dynamic amount) {
+    final num val = _parseNum(amount);
+    if (val >= 100000) {
+      return '${(val / 1000).toStringAsFixed(1)}K';
+    }
+    return NumberFormat('#,##,###').format(val);
   }
 
   Widget _overviewCard(
     String title,
     String value,
-    String change,
-    bool isPositive,
+    IconData icon,
+    Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12), // Reduced padding
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(
-                title.contains('Residents')
-                    ? Icons.people_rounded
-                    : title.contains('Beds')
-                    ? Icons.bed_rounded
-                    : title.contains('Occupancy')
-                    ? Icons.pie_chart_rounded
-                    : Icons.currency_rupee_rounded,
-                size: 16,
-                color: const Color(0xFF64748B),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
-                    ),
-                  ),
+              Container(
+                padding: const EdgeInsets.all(6), // Slightly smaller icon container
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                child: Icon(icon, size: 16, color: color),
               ),
+              const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Color(0xFFCBD5E1)),
             ],
           ),
-          const Spacer(),
+          const Spacer(), // Use spacer for flexible middle area
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18, // Slightly smaller font
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+                fontFamily: 'Outfit',
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               color: Color(0xFF94A3B8),
               fontWeight: FontWeight.bold,
+              letterSpacing: 0.3,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          if (change.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(
-                  isPositive
-                      ? Icons.arrow_upward_rounded
-                      : Icons.arrow_downward_rounded,
-                  size: 10,
-                  color:
-                      isPositive
-                          ? const Color(0xFF16A34A)
-                          : const Color(0xFFEF4444),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    change,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color:
-                          isPositive
-                              ? const Color(0xFF16A34A)
-                              : const Color(0xFFEF4444),
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildPropertiesCarousel(List properties, Map data) {
+  Widget _buildPropertiesCarousel(BuildContext context, List properties, Map data) {
     if (properties.isEmpty) {
-      return const SizedBox(
-        height: 100,
-        child: Center(child: Text('No properties listed')),
+      return Container(
+        height: 240,
+        width: double.infinity,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.home_work_outlined, size: 32, color: Color(0xFF16A34A)),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No properties listed yet',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Start earning by listing your first property',
+              style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ListPropertyScreen()),
+                );
+              },
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('List Property'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF16A34A),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -946,11 +989,11 @@ class _DashboardTab extends StatelessWidget {
           height: 520, // Height for the premium DashboardPropertyCard
           child: PageView.builder(
             itemCount: properties.length,
-            controller: PageController(viewportFraction: 0.88), // 86-90% viewport as requested
+            controller: PageController(viewportFraction: 0.9),
             itemBuilder: (context, index) {
               final p = properties[index];
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: StreamBuilder<DocumentSnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('propertyStats')
@@ -964,7 +1007,7 @@ class _DashboardTab extends StatelessWidget {
                     // Prepare accurate data for the card
                     final Map<String, dynamic> accurateData = Map.from(p);
                     if (stats != null) {
-                      accurateData['capacity'] = stats.totalBeds;
+                      accurateData['totalBeds'] = stats.totalBeds;
                       accurateData['activeResidents'] = stats.occupiedBeds;
                       accurateData['occupancy'] = stats.totalBeds > 0 
                           ? (stats.occupiedBeds / stats.totalBeds * 100).round() 
@@ -1008,7 +1051,7 @@ class _DashboardTab extends StatelessWidget {
             },
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
@@ -1433,31 +1476,31 @@ class _DashboardTab extends StatelessWidget {
   }
 
   Widget _buildSectionHeader(String title, {VoidCallback? onViewAll}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1E293B),
-            fontFamily: 'Outfit',
-          ),
-        ),
-        if (onViewAll != null)
-          GestureDetector(
-            onTap: onViewAll,
-            child: const Text(
-              'View All',
-              style: TextStyle(
-                fontSize: 12,
-                color: Color(0xFF16A34A),
-                fontWeight: FontWeight.bold,
-              ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E293B),
+              fontFamily: 'Outfit',
             ),
           ),
-      ],
+          if (onViewAll != null)
+            TextButton(
+              onPressed: onViewAll,
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF16A34A),
+                textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+              child: const Text('View All'),
+            ),
+        ],
+      ),
     );
   }
 }

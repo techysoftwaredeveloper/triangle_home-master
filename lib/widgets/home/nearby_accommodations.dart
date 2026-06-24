@@ -50,7 +50,7 @@ class NearbyAccommodations extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 540, // Increased to 540 to prevent bottom overflow on various screen sizes
+            height: 560, // Increased from 540 to accommodate new card design
             child:
                 filteredAccommodations.isEmpty
                     ? const Center(

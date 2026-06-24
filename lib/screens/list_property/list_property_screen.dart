@@ -182,7 +182,7 @@ class _ListPropertyScreenState extends State<ListPropertyScreen> {
 
       final Map<String, dynamic> finalData = {
         'hoster_id': user.uid,
-        'status': 'approved', // Changed to approved for visibility
+        'status': 'pending',
         'images': imageUrls,
         'image_urls': imageUrls,
         'verification': verification,

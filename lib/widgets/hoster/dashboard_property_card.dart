@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
-import 'package:triangle_home/theme/app_theme.dart';
 import 'package:triangle_home/core/extensions/string_extensions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:ui';
@@ -32,7 +31,7 @@ class DashboardPropertyCard extends StatelessWidget {
     final status = (data['status'] ?? 'pending').toString().toLowerCase();
     
     final int activeResidents = _parseNum(data['activeResidents']).toInt();
-    final int totalBeds = _parseNum(data['capacity']).toInt();
+    final int totalBeds = _parseNum(data['totalBeds'] ?? data['capacity']).toInt();
     final int vacantBeds = totalBeds - activeResidents;
     final int occupancyPercent = totalBeds > 0 ? (activeResidents / totalBeds * 100).round() : 0;
     

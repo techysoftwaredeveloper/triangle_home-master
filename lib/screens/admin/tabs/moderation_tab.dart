@@ -430,6 +430,7 @@ class _ModerationTabState extends State<ModerationTab>
     return Row(
       children: [
         Expanded(
+          flex: 2,
           child: Container(
             height: 44,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -460,17 +461,31 @@ class _ModerationTabState extends State<ModerationTab>
           ),
         ),
         const SizedBox(width: 12),
-        _buildSmallFilter('Content Type'),
-        const SizedBox(width: 12),
-        _buildSmallFilter('Status'),
-        const SizedBox(width: 12),
-        _buildSmallFilter('Priority'),
-        if (!widget.isNarrow) ...[
-          const SizedBox(width: 12),
-          _buildSmallFilter('Date Range', icon: Icons.calendar_month_outlined),
-          const SizedBox(width: 12),
-          _buildSmallFilter('More Filters'),
-        ],
+        Flexible(
+          flex: 3,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: [
+                _buildSmallFilter('Content Type'),
+                const SizedBox(width: 12),
+                _buildSmallFilter('Status'),
+                const SizedBox(width: 12),
+                _buildSmallFilter('Priority'),
+                if (!widget.isNarrow) ...[
+                  const SizedBox(width: 12),
+                  _buildSmallFilter(
+                    'Date Range',
+                    icon: Icons.calendar_month_outlined,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildSmallFilter('More Filters'),
+                ],
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }

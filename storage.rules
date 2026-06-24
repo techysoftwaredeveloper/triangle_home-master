@@ -23,7 +23,7 @@ service firebase.storage {
     // Profile Images: User can upload and update their own profile photo
     match /profile_images/{userId} {
       allow read: if true;
-      allow write: if isSignedIn() && (request.auth.uid == userId || request.auth.uid == userId.replace(".jpg", ""));
+      allow write: if isSignedIn() && (request.auth.uid == userId || request.auth.uid == userId.replace(".jpg", "") || isAdmin());
     }
 
     // Verification Documents: Secure folder for sensitive IDs
@@ -31,14 +31,14 @@ service firebase.storage {
       // Only the user and admins should be able to read these
       allow read: if isOwner(userId) || isAdmin();
 
-      // Only the user can upload to their own folder
-      allow write: if isOwner(userId);
+      // Only the user and admins can upload to their own folder
+      allow write: if isOwner(userId) || isAdmin();
     }
 
     // Property Images: Used for listing properties. Must be prefixed by user ID.
     match /property_images/{hosterId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isOwner(hosterId);
+      allow write: if isOwner(hosterId) || isAdmin();
     }
   }
 }

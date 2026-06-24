@@ -570,18 +570,22 @@ class _BookingsTabState extends State<BookingsTab>
             )
           : Row(
               children: [
-                _policyItem(
-                  Icons.school_outlined,
-                  'Student Booking Policy',
-                  'Minimum stay: 1 Month (30 Nights)\nPayment is collected monthly in advance.',
+                Expanded(
+                  child: _policyItem(
+                    Icons.school_outlined,
+                    'Student Booking Policy',
+                    'Minimum stay: 1 Month (30 Nights)\nPayment is collected monthly in advance.',
+                  ),
                 ),
                 const SizedBox(width: 48),
-                _policyItem(
-                  Icons.work_outline_rounded,
-                  'Professional Booking Policy',
-                  'Minimum stay: 3 Days (2 Nights)\nPayment is collected in advance.',
+                Expanded(
+                  child: _policyItem(
+                    Icons.work_outline_rounded,
+                    'Professional Booking Policy',
+                    'Minimum stay: 3 Days (2 Nights)\nPayment is collected in advance.',
+                  ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 24),
                 const Text(
                   'Learn More',
                   style: TextStyle(
@@ -614,31 +618,34 @@ class _BookingsTabState extends State<BookingsTab>
           child: Icon(icon, color: const Color(0xFF6366F1), size: 18),
         ),
         const SizedBox(width: 16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: Color(0xFF0F172A),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFF0F172A),
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              sub,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF64748B),
-                height: 1.4,
+              const SizedBox(height: 4),
+              Text(
+                sub,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF64748B),
+                  height: 1.4,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
   }
+
 
   Widget _buildTableHeader() {
     return Container(

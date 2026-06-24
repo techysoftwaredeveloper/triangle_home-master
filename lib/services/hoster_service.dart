@@ -95,7 +95,7 @@ class HosterService {
   Stream<Map<String, dynamic>> getDetailedHosterStatsStream(String hosterId) {
     // 1. Initial cached emission
     final cachedStream =
-        Stream.fromFuture(_isarService.getAdminCache('hoster_stats_$hosterId'))
+        Stream.fromFuture(_isarService.getCachedData('hoster_stats_$hosterId'))
             .where((c) => c != null)
             .map((c) => json.decode(c!) as Map<String, dynamic>);
 
@@ -136,501 +136,139 @@ class HosterService {
       _mergeSnapshots,
     );
 
-    final leadsStream = Rx.combineLatest2(
-      _firestore
-          .collection('leads')
-          .where('hoster_id', isEqualTo: hosterId)
-          .snapshots(),
-      _firestore
-          .collection('leads')
-          .where('hosterId', isEqualTo: hosterId)
-          .snapshots(),
-      _mergeSnapshots,
-    );
+    final userStream = _firestore.collection('users').doc(hosterId).snapshots();
 
-    final notificationsStream = _firestore
-        .collection('notifications')
-        .where('userId', isEqualTo: hosterId)
-        .where('isRead', isEqualTo: false)
-        .snapshots();
-
-    final userDocStream = _firestore
-        .collection('users')
-        .doc(hosterId)
-        .snapshots();
-
-    final reviewsStream = propertiesStream.switchMap((properties) {
-      final propertyIds = properties.map((p) => p.id).toList();
-      if (propertyIds.isEmpty) {
-        return Stream.value(<QueryDocumentSnapshot<Map<String, dynamic>>>[]);
-      }
-      return _firestore
-          .collection('reviews')
-          .where('property_id', whereIn: propertyIds.take(10).toList())
-          .snapshots()
-          .map((snap) => snap.docs);
-    });
-
-    final firestoreStream = Rx.combineLatest8(
+    final remoteStream = Rx.combineLatest4(
       propertiesStream,
       bookingsStream,
       paymentsStream,
-      leadsStream,
-      notificationsStream,
-      userDocStream,
-      reviewsStream,
-      _firestore.collection('propertyStats').snapshots(),
-      (
-        List<QueryDocumentSnapshot<Map<String, dynamic>>> properties,
-        List<QueryDocumentSnapshot<Map<String, dynamic>>> bookings,
-        List<QueryDocumentSnapshot<Map<String, dynamic>>> payments,
-        List<QueryDocumentSnapshot<Map<String, dynamic>>> leads,
-        QuerySnapshot<Map<String, dynamic>> notifications,
-        DocumentSnapshot<Map<String, dynamic>> userDoc,
-        List<QueryDocumentSnapshot<Map<String, dynamic>>> reviews,
-        QuerySnapshot<Map<String, dynamic>> allPropertyStats,
-      ) {
-        final userData = userDoc.data() ?? {};
-        final hostInfo = userData['info'] as Map<String, dynamic>? ?? {};
-        final verif = userData['verification'] as Map? ?? {};
-
-        // Calculate Overview Stats
-        int totalCapacity = 0;
+      userStream,
+      (properties, bookings, payments, userDoc) {
+        int totalBeds = 0;
+        int occupiedBeds = 0;
+        int activeProperties = 0;
         int totalRooms = 0;
-        int activeListings = 0;
-        int activeResidents = 0;
-
-        // Map allPropertyStats for quick lookup
-        final statsMap = {for (var doc in allPropertyStats.docs) doc.id: doc.data()};
 
         for (var doc in properties) {
           final data = doc.data();
-          final propertyId = doc.id;
-          final stats = statsMap[propertyId];
-          final details = data['propertyDetails'] as Map? ?? {};
-          
-          totalRooms += _parseNum(details['totalRooms']).toInt();
-
-          if (stats != null) {
-            totalCapacity += _parseNum(stats['totalBeds']).toInt();
-            activeResidents += _parseNum(stats['occupiedBeds']).toInt();
-          } else {
-            // Fallback for overview if stats doc doesn't exist
-            totalCapacity += _parseNum(details['totalCapacity'] ?? data['capacity']).toInt();
+          final status = (data['status'] ?? '').toString().toLowerCase();
+          if (status == 'active' || status == 'approved') {
+            activeProperties++;
           }
-
-          if (data['status'] == 'approved' || data['status'] == 'active') {
-            activeListings++;
-          }
+          totalBeds += _parseNum(data['totalBeds'] ?? data['capacity']).toInt();
+          occupiedBeds += _parseNum(data['occupiedBeds']).toInt();
+          totalRooms += _parseNum(data['rooms'] ?? data['totalRooms']).toInt();
         }
 
-        final vacantBeds = totalCapacity - activeResidents;
-        final occupancy = totalCapacity > 0
-            ? (activeResidents / totalCapacity * 100).round()
-            : 0;
-
-        // Lead counts
-        final newLeadsCount = leads.where((doc) {
-          final s = doc.data()['status']?.toString();
-          return s == 'newLead' || s == 'pending';
-        }).length;
-
-        // Revenue calculations
-        double monthlyRevenue = 0;
-        final now = DateTime.now();
+        double earnings = 0;
         for (var doc in payments) {
-          final data = doc.data();
-          final timestamp = data['createdAt'] as Timestamp?;
-          if (timestamp != null) {
-            final date = timestamp.toDate();
-            if (date.month == now.month && date.year == now.year) {
-              monthlyRevenue += (data['amount'] as num?)?.toDouble() ?? 0;
-            }
-          }
+          earnings += (doc.data()['amount'] as num?)?.toDouble() ?? 0;
         }
 
-        // Today's Actions
-        final today = DateTime(now.year, now.month, now.day);
-        final pendingCheckins = bookings.where((doc) {
-          final data = doc.data();
-          final checkinDate = (data['checkinDate'] as Timestamp?)?.toDate();
-          return checkinDate != null &&
-              checkinDate.year == today.year &&
-              checkinDate.month == today.month &&
-              checkinDate.day == today.day &&
-              data['status'] == 'confirmed';
-        }).length;
+        final userData = userDoc.data() ?? {};
+        final info = userData['info'] as Map? ?? {};
+        final verif = userData['verification'] as Map? ?? {};
+        final onboardingStatus = (userData['onboardingStatus'] ?? '').toString();
+        final status = (userData['status'] ?? '').toString();
+        final accountStatus = (userData['accountStatus'] ?? '').toString();
 
-        final paymentsDue = bookings.where((doc) {
-          final data = doc.data();
-          return data['paymentStatus'] == 'pending' &&
-              data['status'] == 'confirmed';
-        }).length;
-
-        final bookingsConfirmedToday = bookings.where((doc) {
-          final data = doc.data();
-          final updatedAt = (data['updatedAt'] as Timestamp?)?.toDate();
-          return updatedAt != null &&
-              updatedAt.year == today.year &&
-              updatedAt.month == today.month &&
-              updatedAt.day == today.day &&
-              data['status'] == 'confirmed';
-        }).length;
-
-        // Inquiries
-        final newInquiries = bookings
-            .where((doc) => doc.data()['status'] == 'pending')
-            .length;
-
-        // Calculate profile completion — 12 meaningful fields
-        const int totalFields = 12;
-        int filledFields = 0;
-
-        final onb = userData['onboardingData'] as Map? ?? {};
-
-        // 1. Name
-        if ((hostInfo['name'] ?? onb['name'] ?? '').toString().isNotEmpty) {
-          filledFields++;
-        }
-        // 2. Email present
-        if ((hostInfo['email'] ?? userData['email'] ?? onb['email'] ?? '')
-            .toString()
-            .isNotEmpty) {
-          filledFields++;
-        }
-        // 3. Phone present
-        if ((hostInfo['phone'] ?? userData['phone'] ?? onb['phone'] ?? '')
-            .toString()
-            .isNotEmpty) {
-          filledFields++;
-        }
-        // 4. Profile photo
-        if (hostInfo['profileImage'] != null || onb['profileImage'] != null) {
-          filledFields++;
-        }
-
-        // 5. Email verified (Firebase Auth OR Firestore flag)
-        if (userData['emailVerified'] == true ||
-            verif['emailVerified'] == true) {
-          filledFields++;
-        }
-        // 6. Phone verified
-        if (verif['phoneVerified'] == true) filledFields++;
-
-        // 7. Gov ID uploaded or verified
-        if (verif['govIdVerified'] == true ||
-            verif['aadhaarVerified'] == true ||
-            (verif['govIdFrontUrl'] ?? verif['aadhaarFrontUrl']) != null ||
-            (onb['aadhaarFront'] != null)) {
-          filledFields++;
-        }
-        // 8. PAN uploaded or verified
-        if (verif['panVerified'] == true ||
-            (verif['panFrontUrl'] ?? verif['panUrl']) != null ||
-            (onb['panUrl'] != null)) {
-          filledFields++;
-        }
-        // 9. Host preferences set
-        if (userData['host_preferences'] != null ||
-            (onb['preferredTenants'] != null &&
-                (onb['preferredTenants'] as List).isNotEmpty)) {
-          filledFields++;
-        }
-
-        // 10. Bank info linked
-        if (userData['bank_info'] != null || onb['bankAccNo'] != null) {
-          filledFields++;
-        }
-
-        // 11. Aadhaar/PAN number text present
-        if ((verif['aadhaarNumber'] ??
-                verif['panNumber'] ??
-                onb['aadhaarNumber'] ??
-                onb['panNumber']) !=
-            null) {
-          filledFields++;
-        }
-
-        // 12. Emergency contact set
-        final emergency = userData['emergency_contact'] as Map?;
-        if ((emergency != null &&
-                (emergency['name'] ?? emergency['phone']) != null) ||
-            (onb['emergencyName'] ?? onb['emergencyPhone']) != null) {
-          filledFields++;
-        }
-
-        final completion = filledFields / totalFields;
-
-        // Calculate trust score dynamically
-        final isHosterVerified =
-            (userData['role'] == 'hoster') ||
-            (userData['onboardingStatus'] == 'approved') ||
-            (userData['accountStatus'] == 'active') ||
-            (userData['status'] == 'approved') ||
-            (userData['permissions'] is Map &&
-                userData['permissions']['status'] == 'approved');
-        final isEmailVerified =
-            userData['emailVerified'] == true || verif['emailVerified'] == true;
-        final isPhoneVerified = verif['phoneVerified'] == true;
-        final isIdentityVerified = verif['govIdVerified'] == true;
-        final isBankLinked =
-            userData['bank_info'] != null || onb['bankAccNo'] != null;
-
-        int trustScore = 0;
-        if (isHosterVerified) trustScore += 30;
-        if (isIdentityVerified) trustScore += 25;
-        if (isBankLinked) trustScore += 20;
-        if (isPhoneVerified) trustScore += 15;
-        if (isEmailVerified) trustScore += 10;
-
-        // Calculate Rating & Reviews dynamically
-        int reviewCount = reviews.length;
-        double averageRating = 0.0;
-        if (reviewCount > 0) {
-          double totalRating = 0.0;
-          for (var doc in reviews) {
-            final data = doc.data();
-            totalRating += (data['rating'] as num?)?.toDouble() ?? 0.0;
-          }
-          averageRating = totalRating / reviewCount;
-        } else {
-          averageRating = (userData['rating'] as num?)?.toDouble() ?? 0.0;
-          reviewCount = (userData['reviewCount'] as num?)?.toInt() ?? 0;
-        }
-
-        // Revenue Chart Data
-        final chartData = _generateRevenueChartData(payments);
-
-        final stats = {
-          'hosterName': hostInfo['name'] ?? onb['name'] ?? 'Host',
-          'hosterRole':
-              userData['hosterRole'] ?? onb['role'] ?? 'Partner Hoster',
-          'experience':
-              userData['experience'] ??
-              onb['experience'] ??
-              hostInfo['experience'] ??
-              '3-5 Years',
-          'profileImage': hostInfo['profileImage'] ?? onb['profileImage'],
-          'totalCapacity': totalCapacity,
+        final Map<String, dynamic> stats = {
+          'totalProperties': properties.length,
+          'properties': properties.map((p) => {'id': p.id, ...p.data()}).toList(),
+          'activeProperties': activeProperties,
+          'totalBookings': bookings.length,
+          'totalEarnings': earnings,
+          'totalBeds': totalBeds,
+          'occupiedBeds': occupiedBeds,
           'totalRooms': totalRooms,
-          'activeListings': activeListings,
-          'profileCompletion': completion,
-          'trustScore': trustScore,
+          'activeListings': activeProperties,
+          'vacantBeds': totalBeds - occupiedBeds,
+          'occupancy': totalBeds > 0 ? (occupiedBeds / totalBeds * 100).round() : 0,
+          'occupancyRate': totalBeds > 0 ? (occupiedBeds / totalBeds * 100).round() : 0,
+          'pendingBookings': bookings
+              .where((doc) => doc.data()['status'] == 'pending')
+              .length,
+          
+          // Profile Fields
+          'hosterName': info['name'] ?? 'Host',
+          'profileImage': info['profileImage'],
+          'hosterRole': _formatRole(userData['role'] ?? ''),
+          'rating': _parseNum(userData['rating']).toDouble() == 0 ? 4.5 : _parseNum(userData['rating']).toDouble(),
+          'reviewCount': _parseNum(userData['reviewCount']).toInt(),
+          'hosterVerified': onboardingStatus == 'approved' || status == 'approved' || accountStatus == 'active',
           'emailVerified': userData['emailVerified'] == true,
           'phoneVerified': verif['phoneVerified'] == true,
-          'identityVerified': verif['govIdVerified'] == true,
-          'hosterVerified': isHosterVerified,
-          'rating': averageRating,
-          'reviewCount': reviewCount,
-          'reviews': reviews.map((doc) {
-            final data = doc.data();
-            return {
-              'id': doc.id,
-              'title': data['userName'] ?? data['user_name'] ?? 'Guest',
-              'comment': data['comment'] ?? data['review'] ?? '',
-              'rating': (data['rating'] as num?)?.toDouble() ?? 5.0,
-              'time': _formatTimestamp(data['createdAt']),
-              'type': 'review',
-            };
-          }).toList(),
-          'occupancy': occupancy,
-          'vacantBeds': vacantBeds,
-          'activeResidents': activeResidents,
-          'monthlyRevenue': monthlyRevenue,
-          'newInquiries': newInquiries,
-          'newLeadsCount': newLeadsCount,
-          'unreadNotificationsCount': notifications.docs.length,
-          'pendingCheckins': pendingCheckins,
-          'paymentsDue': paymentsDue,
-          'bookingsConfirmed': bookingsConfirmedToday,
-          'chartData': chartData,
-          'totalProperties': properties.length,
-          'properties': properties
-              .map((doc) => {'id': doc.id, ...doc.data()})
-              .toList(),
-          'recentActivity': _generateRecentActivity(bookings, payments),
-
-          // ── Extra profile fields for menu subtitles ──────────────
-          'email': hostInfo['email'] ?? userData['email'] ?? onb['email'] ?? '',
-          'phone': hostInfo['phone'] ?? userData['phone'] ?? onb['phone'] ?? '',
-          'gender': hostInfo['gender'] ?? onb['gender'] ?? '',
-          'dob': hostInfo['dob'] ?? onb['dob'] ?? '',
-
-          // Contact verification (strict)
-          'emailVerifiedFlag':
-              userData['emailVerified'] == true ||
-              verif['emailVerified'] == true,
-          'phoneVerifiedFlag': verif['phoneVerified'] == true,
-
-          // KYC / Identity — separate verified vs uploaded
-          'aadhaarVerified':
-              verif['govIdVerified'] == true ||
-              verif['aadhaarVerified'] == true,
-          'panVerified': verif['panVerified'] == true,
-          'aadhaarUrl':
-              verif['govIdFrontUrl'] ??
-              verif['aadhaarFrontUrl'] ??
-              onb['aadhaarFront'],
-          'panUrl': verif['panFrontUrl'] ?? verif['panUrl'] ?? onb['panUrl'],
-
-          // Business & Property proof
-          'businessProofVerified': verif['businessProofVerified'] == true,
-          'businessProofUrl':
-              verif['businessProofFrontUrl'] ?? verif['businessProofUrl'],
-          'propertyProofVerified': verif['propertyProofVerified'] == true,
-          'propertyProofUrl':
-              verif['propertyProofFrontUrl'] ?? verif['propertyProofUrl'],
-
-          // Bank / Payout
-          'bankName':
-              (userData['bank_info'] as Map?)?['bankName'] ??
-              onb['bankName'] ??
-              '',
-          'bankAccountNo':
-              (userData['bank_info'] as Map?)?['accountNumber'] ??
-              onb['bankAccNo'] ??
-              '',
-          'bankIfsc':
-              (userData['bank_info'] as Map?)?['ifsc'] ?? onb['bankIfsc'] ?? '',
-          'bankVerified': (userData['bank_info'] as Map?)?['verified'] == true,
-          'upiVerified':
-              (userData['bank_info'] as Map?)?['upiVerified'] == true,
-          'hasBankInfo':
-              userData['bank_info'] != null || (onb['bankAccNo'] != null),
-
-          // Host preferences
-          'prefBookingType':
-              (userData['host_preferences'] as Map?)?['bookingType'] ?? '',
-          'prefTenants':
-              (userData['host_preferences'] as Map?)?['preferredTenants'] ??
-              onb['preferredTenants'] ??
-              [],
-          'prefGender':
-              (userData['host_preferences'] as Map?)?['preferredGender'] ??
-              onb['preferredGender'] ??
-              '',
-          'prefDuration':
-              (userData['host_preferences'] as Map?)?['preferredDuration'] ??
-              '',
-
-          // Emergency contact
-          'emergencyContactName':
-              (userData['emergency_contact'] as Map?)?['name'] ??
-              onb['emergencyName'] ??
-              '',
-          'emergencyContactPhone':
-              (userData['emergency_contact'] as Map?)?['phone'] ??
-              onb['emergencyPhone'] ??
-              '',
-
-          // Address
-          'address': hostInfo['address'] ?? onb['address1'] ?? '',
-          'city': hostInfo['city'] ?? onb['city'] ?? '',
-          'state': onb['state'] ?? '',
-
-          // Rejection info
-          'accountStatus':
-              userData['accountStatus'] ??
-              userData['status'] ??
-              (userData['permissions'] as Map?)?['status'] ??
-              'pending',
-          'adminReviewNote': userData['adminReviewNote'] ?? '',
+          'identityVerified': verif['roleIdVerified'] == true || verif['govIdVerified'] == true,
+          'accountStatus': accountStatus.isNotEmpty ? accountStatus : (status.isNotEmpty ? status : 'pending'),
+          'onboardingStatus': onboardingStatus,
+          'profileCompletion': _calculateCompletion(userData),
+          'email': info['email'] ?? '',
+          'phone': info['phone'] ?? info['phoneNumber'] ?? '',
+          'trustScore': _parseNum(userData['trustScore']).toInt() == 0 ? 85 : _parseNum(userData['trustScore']).toInt(),
         };
 
-        // Cache the sanitized result
-        _isarService.saveAdminCache(
+        // Background cache update
+        _isarService.cacheData(
           'hoster_stats_$hosterId',
           json.encode(_sanitize(stats)),
+          ttl: const Duration(hours: 4),
         );
 
         return stats;
       },
     );
 
-    return Rx.concat([cachedStream, firestoreStream]).asBroadcastStream();
+    return Rx.concat([cachedStream, remoteStream]);
   }
 
-  List<double> _generateRevenueChartData(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> payments,
-  ) {
-    if (payments.isEmpty) return [0, 0, 0, 0, 0, 0, 0];
-    return [40, 60, 45, 80, 50, 70, 95];
+  String _formatRole(dynamic role) {
+    final r = role?.toString().toLowerCase() ?? 'hoster';
+    if (r == 'owner') return 'Property Owner';
+    if (r == 'manager') return 'Property Manager';
+    if (r == 'agency') return 'Agency Partner';
+    return 'Individual Owner';
   }
 
-  List<Map<String, dynamic>> _generateRecentActivity(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> bookings,
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> payments,
-  ) {
-    final List<Map<String, dynamic>> activities = [];
-
-    for (var doc in bookings.take(5)) {
-      final data = doc.data();
-      activities.add({
-        'title':
-            '${data['studentName'] ?? "Guest"} booked ${data['roomType'] ?? "Room"} in ${data['propertyName'] ?? "Property"}',
-        'time': _formatTimestamp(data['createdAt']),
-        'type': 'booking',
-      });
-    }
-
-    for (var doc in payments.take(5)) {
-      final data = doc.data();
-      activities.add({
-        'title':
-            'Payment received ₹${data['amount']} from ${data['userName'] ?? "User"}',
-        'time': _formatTimestamp(data['createdAt']),
-        'type': 'payment',
-      });
-    }
-
-    activities.sort((a, b) => b['time'].compareTo(a['time']));
-    return activities.take(5).toList();
+  double _calculateCompletion(Map<String, dynamic> userData) {
+    int score = 0;
+    final info = userData['info'] as Map? ?? {};
+    final verif = userData['verification'] as Map? ?? {};
+    
+    if (info['name'] != null) score += 10;
+    if (info['profileImage'] != null) score += 10;
+    if (userData['emailVerified'] == true) score += 15;
+    if (verif['phoneVerified'] == true) score += 15;
+    if (verif['roleIdVerified'] == true) score += 20;
+    if (verif['govIdVerified'] == true) score += 20;
+    if (userData['bankName'] != null) score += 10;
+    
+    return (score / 100).clamp(0.0, 1.0);
   }
 
-  String _formatTimestamp(dynamic timestamp) {
-    if (timestamp is Timestamp) {
-      return DateFormat('hh:mm a').format(timestamp.toDate());
-    }
-    return 'Just now';
+  Stream<Map<String, dynamic>> getUserProfileStream(String userId) {
+    // 1. Immediate cache
+    final cached = Stream.fromFuture(_isarService.getCachedData('user_profile_$userId'))
+        .where((c) => c != null)
+        .map((c) => json.decode(c!) as Map<String, dynamic>);
+
+    final remote = _firestore.collection('users').doc(userId).snapshots().map((snap) {
+      final data = snap.data() ?? {};
+      _isarService.cacheData(
+        'user_profile_$userId',
+        json.encode(_sanitize(data)),
+        ttl: const Duration(days: 1),
+      );
+      return data;
+    });
+
+    return Rx.concat([cached, remote]);
   }
 
-  Stream<Map<String, dynamic>> getHosterProfileStatsStream(String hosterId) {
-    return getDetailedHosterStatsStream(hosterId);
-  }
+  /// Alias for backward compatibility with newer code using the "New" suffix
+  Stream<Map<String, dynamic>> getUserProfileStreamNew(String userId) => 
+      getUserProfileStream(userId);
 
-  Stream<Map<String, dynamic>> getUserProfileStream(String? userId) {
-    return getUserProfileStreamNew(userId);
-  }
-
-  Stream<Map<String, dynamic>> getUserProfileStreamNew(String? userId) {
-    if (userId == null || userId.trim().isEmpty) {
-      return Stream.value({});
-    }
-
-    // 1. Initial cached emission
-    final cachedStream =
-        Stream.fromFuture(_isarService.getAdminCache('user_profile_$userId'))
-            .where((c) => c != null)
-            .map((c) => json.decode(c!) as Map<String, dynamic>);
-
-    // 2. Real-time Firestore stream
-    final firestoreStream = _firestore
-        .collection('users')
-        .doc(userId)
-        .snapshots()
-        .map((doc) {
-          final data = doc.data();
-          if (data != null) {
-            final sanitized = _sanitize(data);
-            _isarService.saveAdminCache(
-              'user_profile_$userId',
-              json.encode(sanitized),
-            );
-            return sanitized as Map<String, dynamic>;
-          }
-          return <String, dynamic>{};
-        });
-
-    return Rx.concat([cachedStream, firestoreStream]).asBroadcastStream();
-  }
+  /// Alias for profile-specific stats stream
+  Stream<Map<String, dynamic>> getHosterProfileStatsStream(String hosterId) =>
+      getDetailedHosterStatsStream(hosterId);
 }

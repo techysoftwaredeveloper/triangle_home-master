@@ -18,10 +18,14 @@ class _PricingStepState extends State<PricingStep> {
   late TextEditingController _singleRentController;
   late TextEditingController _doubleRentController;
   late TextEditingController _tripleRentController;
-  
+  late TextEditingController _fourSharingRentController;
+  late TextEditingController _sixSharingRentController;
+
   late TextEditingController _singleDepositController;
   late TextEditingController _doubleDepositController;
   late TextEditingController _tripleDepositController;
+  late TextEditingController _fourSharingDepositController;
+  late TextEditingController _sixSharingDepositController;
   
   late TextEditingController _noticePeriodController;
   bool _isFoodIncluded = false;
@@ -34,11 +38,15 @@ class _PricingStepState extends State<PricingStep> {
     _singleRentController = TextEditingController(text: data['singleRent'] ?? '');
     _doubleRentController = TextEditingController(text: data['doubleRent'] ?? '');
     _tripleRentController = TextEditingController(text: data['tripleRent'] ?? '');
-    
+    _fourSharingRentController = TextEditingController(text: data['fourSharingRent'] ?? '');
+    _sixSharingRentController = TextEditingController(text: data['sixSharingRent'] ?? '');
+
     _singleDepositController = TextEditingController(text: data['singleDeposit'] ?? '');
     _doubleDepositController = TextEditingController(text: data['doubleDeposit'] ?? '');
     _tripleDepositController = TextEditingController(text: data['tripleDeposit'] ?? '');
-    
+    _fourSharingDepositController = TextEditingController(text: data['fourSharingDeposit'] ?? '');
+    _sixSharingDepositController = TextEditingController(text: data['sixSharingDeposit'] ?? '');
+
     _noticePeriodController = TextEditingController(text: data['noticePeriod'] ?? '30 Days');
     _isFoodIncluded = data['foodIncluded'] ?? false;
 
@@ -46,6 +54,8 @@ class _PricingStepState extends State<PricingStep> {
     _singleRentController.addListener(() => _autoUpdateDeposit(_singleRentController, _singleDepositController));
     _doubleRentController.addListener(() => _autoUpdateDeposit(_doubleRentController, _doubleDepositController));
     _tripleRentController.addListener(() => _autoUpdateDeposit(_tripleRentController, _tripleDepositController));
+    _fourSharingRentController.addListener(() => _autoUpdateDeposit(_fourSharingRentController, _fourSharingDepositController));
+    _sixSharingRentController.addListener(() => _autoUpdateDeposit(_sixSharingRentController, _sixSharingDepositController));
   }
 
   void _autoUpdateDeposit(TextEditingController rentCtrl, TextEditingController depositCtrl) {
@@ -62,9 +72,13 @@ class _PricingStepState extends State<PricingStep> {
     _singleRentController.dispose();
     _doubleRentController.dispose();
     _tripleRentController.dispose();
+    _fourSharingRentController.dispose();
+    _sixSharingRentController.dispose();
     _singleDepositController.dispose();
     _doubleDepositController.dispose();
     _tripleDepositController.dispose();
+    _fourSharingDepositController.dispose();
+    _sixSharingDepositController.dispose();
     _noticePeriodController.dispose();
     super.dispose();
   }
@@ -99,6 +113,20 @@ class _PricingStepState extends State<PricingStep> {
               rentController: _tripleRentController,
               depositLabel: 'Triple Security Deposit',
               depositController: _tripleDepositController,
+            ),
+            const SizedBox(height: 16),
+            _buildRentAndDepositPair(
+              rentLabel: '4 Sharing Rent',
+              rentController: _fourSharingRentController,
+              depositLabel: '4 Sharing Security Deposit',
+              depositController: _fourSharingDepositController,
+            ),
+            const SizedBox(height: 16),
+            _buildRentAndDepositPair(
+              rentLabel: '6 Sharing Rent',
+              rentController: _sixSharingRentController,
+              depositLabel: '6 Sharing Security Deposit',
+              depositController: _sixSharingDepositController,
             ),
             
             const SizedBox(height: 24),
@@ -154,9 +182,13 @@ class _PricingStepState extends State<PricingStep> {
                         'singleRent': _singleRentController.text,
                         'doubleRent': _doubleRentController.text,
                         'tripleRent': _tripleRentController.text,
+                        'fourSharingRent': _fourSharingRentController.text,
+                        'sixSharingRent': _sixSharingRentController.text,
                         'singleDeposit': _singleDepositController.text,
                         'doubleDeposit': _doubleDepositController.text,
                         'tripleDeposit': _tripleDepositController.text,
+                        'fourSharingDeposit': _fourSharingDepositController.text,
+                        'sixSharingDeposit': _sixSharingDepositController.text,
                         'deposit': _singleDepositController.text, // Legacy fallback
                         'noticePeriod': _noticePeriodController.text,
                         'foodIncluded': _isFoodIncluded,

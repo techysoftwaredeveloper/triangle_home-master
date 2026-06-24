@@ -5,6 +5,7 @@ class TabHeader extends StatelessWidget {
   final String subtitle;
   final List<Widget>? actions;
   final bool isNarrow;
+  final bool isDark;
 
   const TabHeader({
     super.key,
@@ -12,10 +13,14 @@ class TabHeader extends StatelessWidget {
     required this.subtitle,
     this.actions,
     required this.isNarrow,
+    this.isDark = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final titleColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final subtitleColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -26,10 +31,10 @@ class TabHeader extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color: titleColor,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -49,7 +54,7 @@ class TabHeader extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           subtitle,
-          style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
+          style: TextStyle(color: subtitleColor, fontSize: 14),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -74,6 +79,7 @@ class SummaryCard extends StatelessWidget {
   final String? percentage;
   final bool? isUp;
   final String? sub;
+  final bool isDark;
 
   const SummaryCard({
     super.key,
@@ -85,10 +91,16 @@ class SummaryCard extends StatelessWidget {
     this.percentage,
     this.isUp,
     this.sub,
+    this.isDark = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final borderColor = isDark ? const Color(0x1AFFFFFF) : const Color(0xFFE2E8F0);
+    final titleColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final subtitleColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final bool isSmall =
@@ -98,16 +110,18 @@ class SummaryCard extends StatelessWidget {
         return Container(
           padding: EdgeInsets.all(padding),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: cardBg,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            border: Border.all(color: borderColor),
+            boxShadow: isDark
+                ? []
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
           ),
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -156,7 +170,7 @@ class SummaryCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: isSmall ? 22 : 24,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1E293B),
+                    color: titleColor,
                   ),
                 ),
                 Text(
@@ -165,7 +179,7 @@ class SummaryCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: isSmall ? 10 : 11,
-                    color: const Color(0xFF64748B),
+                    color: subtitleColor,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
                   ),

@@ -107,10 +107,8 @@ class _SuggestionsTabState extends State<SuggestionsTab>
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
-                            child: Container(
-                              constraints: BoxConstraints(
-                                minWidth: widget.isNarrow ? 0 : 1100,
-                              ),
+                            child: SizedBox(
+                              width: 1100, // Explicitly bound width for children with flex
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [

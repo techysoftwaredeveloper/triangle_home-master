@@ -6,6 +6,7 @@ import 'package:triangle_home/services/isar_service.dart';
 import 'package:triangle_home/services/admin_api_service.dart';
 import 'package:triangle_home/services/hoster_service.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:intl/intl.dart';
 
 class AdminService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -119,6 +120,23 @@ class AdminService {
 
   // ==================== REAL-TIME STREAMS WITH CACHE ====================
 
+  String _timeAgo(dynamic timestamp) {
+    if (timestamp == null) return 'now';
+    DateTime dt;
+    if (timestamp is Timestamp) {
+      dt = timestamp.toDate();
+    } else if (timestamp is DateTime) {
+      dt = timestamp;
+    } else {
+      dt = DateTime.tryParse(timestamp.toString()) ?? DateTime.now();
+    }
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+
   Stream<Map<String, dynamic>> getStatsStream() {
     final statsSubject = BehaviorSubject<Map<String, dynamic>>.seeded({});
 
@@ -145,30 +163,134 @@ class AdminService {
     _firestore.collection('users').snapshots().listen((snap) {
       final docs = snap.docs;
       updateStats('totalUsers', docs.length);
-      updateStats('totalStudents', docs.where((d) => ['student', 'user'].contains(d.data()['role'])).length);
-      updateStats('totalHosters', docs.where((d) => ['hoster', 'owner', 'manager', 'agency'].contains(d.data()['role'])).length);
+      updateStats('totalStudents', docs.where((d) => ['student', 'user', ''].contains(d.data()['role']?.toString().toLowerCase())).length);
+      updateStats('totalProfessionals', docs.where((d) => d.data()['role']?.toString().toLowerCase() == 'professional').length);
+      updateStats('totalHosters', docs.where((d) => ['hoster', 'owner', 'manager', 'agency'].contains(d.data()['role']?.toString().toLowerCase())).length);
       updateStats('pendingHosters', docs.where((d) => d.data()['onboardingStatus'] == 'submitted').length);
+      updateStats('reportedUsers', docs.where((d) => d.data()['reportCount'] != null && (d.data()['reportCount'] as num) > 0).length);
+      updateStats('blockedUsers', docs.where((d) => d.data()['is_active'] == false).length);
+      updateStats('pendingApprovals', docs.where((d) => d.data()['verification']?['roleIdStatus'] == 'pending').length);
     });
 
     _firestore.collection('properties').snapshots().listen((snap) {
       updateStats('totalProperties', snap.size);
+      updateStats('activeProperties', snap.docs.where((d) => d.data()['status'] == 'active').length);
       updateStats('pendingProperties', snap.docs.where((d) => d.data()['status'] == 'pending').length);
+      
+      // Top Cities Logic
+      final Map<String, int> cityCounts = {};
+      for (var doc in snap.docs) {
+        final city = (doc.data()['info']?['city'] ?? 'Other').toString();
+        cityCounts[city] = (cityCounts[city] ?? 0) + 1;
+      }
+      final sortedCities = cityCounts.entries
+          .map((e) => {'name': e.key, 'count': e.value})
+          .toList();
+      sortedCities.sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
+      updateStats('topCities', sortedCities.take(5).toList());
+    });
+
+    _firestore.collection('beds').snapshots().listen((snap) {
+      final total = snap.size;
+      final occupied = snap.docs.where((d) => d.data()['status']?.toString().toLowerCase() == 'occupied').length;
+      final rate = total > 0 ? (occupied / total * 100).toStringAsFixed(1) : '0.0';
+      updateStats('totalBeds', total);
+      updateStats('occupiedBeds', occupied);
+      updateStats('occupancyRate', rate);
     });
 
     _firestore.collection('bookings').snapshots().listen((snap) {
       updateStats('totalBookings', snap.size);
-    });
-
-    _firestore.collection('payments').where('status', isNotEqualTo: 'failed').snapshots().listen((snap) {
-      double total = 0;
-      for (var doc in snap.docs) {
-        total += (doc.data()['amount'] as num?)?.toDouble() ?? 0;
+      
+      // Booking history for chart (last 7 data points)
+      final now = DateTime.now();
+      final Map<String, int> dailyBookings = {};
+      for (var i = 0; i < 7; i++) {
+        final date = now.subtract(Duration(days: i));
+        dailyBookings[DateFormat('dd MMM').format(date)] = 0;
       }
-      updateStats('totalRevenue', total);
+      
+      for (var doc in snap.docs) {
+        final created = doc.data()['createdAt'];
+        if (created is Timestamp) {
+          final dateStr = DateFormat('dd MMM').format(created.toDate());
+          if (dailyBookings.containsKey(dateStr)) {
+            dailyBookings[dateStr] = dailyBookings[dateStr]! + 1;
+          }
+        }
+      }
+      
+      final history = dailyBookings.entries.map((e) => {'date': e.key, 'value': e.value}).toList().reversed.toList();
+      updateStats('bookingHistory', history);
     });
 
-    _firestore.collection('reports').where('status', isEqualTo: 'pending').snapshots().listen((snap) {
-      updateStats('pendingReports', snap.size);
+    _firestore.collection('payments').snapshots().listen((snap) {
+      double total = 0;
+      double paid = 0;
+      double pending = 0;
+      double refunded = 0;
+      
+      final Map<String, double> revenueHistoryMap = {};
+      final now = DateTime.now();
+      for (var i = 0; i < 7; i++) {
+        final date = now.subtract(Duration(days: i));
+        revenueHistoryMap[DateFormat('dd MMM').format(date)] = 0;
+      }
+
+      for (var doc in snap.docs) {
+        final amount = (doc.data()['amount'] as num?)?.toDouble() ?? 0;
+        final status = doc.data()['status']?.toString().toLowerCase();
+        
+        if (status == 'completed' || status == 'success') {
+          paid += amount;
+          total += amount;
+        } else if (status == 'pending') {
+          pending += amount;
+        } else if (status == 'refunded') {
+          refunded += amount;
+        }
+
+        final created = doc.data()['createdAt'];
+        if (created is Timestamp && (status == 'completed' || status == 'success')) {
+          final dateStr = DateFormat('dd MMM').format(created.toDate());
+          if (revenueHistoryMap.containsKey(dateStr)) {
+            revenueHistoryMap[dateStr] = revenueHistoryMap[dateStr]! + amount;
+          }
+        }
+      }
+      
+      updateStats('totalRevenue', total);
+      updateStats('paidRevenue', paid);
+      updateStats('pendingRevenue', pending);
+      updateStats('refundedRevenue', refunded);
+      
+      final history = revenueHistoryMap.entries.map((e) => {'date': e.key, 'value': e.value}).toList().reversed.toList();
+      updateStats('revenueHistory', history);
+    });
+
+    _firestore.collection('property_suggestions').snapshots().listen((snap) {
+      final docs = snap.docs;
+      updateStats('newSuggestions', docs.where((d) => d.data()['status'] == 'pending' || d.data()['status'] == 'new').length);
+      updateStats('reviewSuggestions', docs.where((d) => d.data()['status'] == 'under_review').length);
+      updateStats('contactedSuggestions', docs.where((d) => d.data()['status'] == 'contacted').length);
+      updateStats('approvedSuggestions', docs.where((d) => d.data()['status'] == 'approved').length);
+      updateStats('rejectedSuggestions', docs.where((d) => d.data()['status'] == 'rejected').length);
+    });
+
+    _firestore.collection('reports').snapshots().listen((snap) {
+      updateStats('reportedListings', snap.docs.where((d) => d.data()['status'] == 'pending').length);
+    });
+
+    _firestore.collection('audit_logs').orderBy('timestamp', descending: true).limit(10).snapshots().listen((snap) {
+      final activities = snap.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'title': data['action']?.toString().replaceAll('_', ' ').toUpperCase() ?? 'ACTION',
+          'subtitle': data['reason'] ?? data['targetId'] ?? 'Platform update',
+          'time': _timeAgo(data['timestamp']),
+        };
+      }).toList();
+      updateStats('recentActivities', activities);
     });
 
     return statsSubject.stream;

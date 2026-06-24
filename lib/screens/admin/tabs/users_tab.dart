@@ -60,12 +60,15 @@ class _UsersTabState extends State<UsersTab>
                   const SizedBox(height: 16),
                   const Text(
                     'Data Fetching Error',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.white),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     snapshot.error.toString(),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: const TextStyle(fontSize: 12, color: Colors.white54),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -82,96 +85,98 @@ class _UsersTabState extends State<UsersTab>
         final allUsers = snapshot.data ?? [];
 
         // Dynamic Filtering
-        final filteredUsers =
-            allUsers.where((u) {
-              final info = Map<String, dynamic>.from(
-                  (u['info'] as Map? ?? {}));
-              final name = info['name']?.toString().toLowerCase() ?? '';
-              final email = info['email']?.toString().toLowerCase() ?? '';
-              final phone = (info['phone'] ?? info['phoneNumber'])
-                      ?.toString()
-                      .toLowerCase() ??
-                  '';
+        final filteredUsers = allUsers.where((u) {
+          final info = Map<String, dynamic>.from((u['info'] as Map? ?? {}));
+          final name = info['name']?.toString().toLowerCase() ?? '';
+          final email = info['email']?.toString().toLowerCase() ?? '';
+          final phone = (info['phone'] ?? info['phoneNumber'])
+                  ?.toString()
+                  .toLowerCase() ??
+              '';
 
-              final matchesSearch =
-                  name.contains(_searchQuery) ||
-                  email.contains(_searchQuery) ||
-                  phone.contains(_searchQuery);
+          final matchesSearch = name.contains(_searchQuery) ||
+              email.contains(_searchQuery) ||
+              phone.contains(_searchQuery);
 
-              // Support both top-level and nested role
-              final permissions = Map<String, dynamic>.from(
-                  (u['permissions'] as Map? ?? {}));
-              final role =
-                  (u['role'] ?? permissions['role'])
-                      ?.toString()
-                      .toLowerCase() ??
-                  '';
-              final isActive = u['is_active'] as bool? ?? true;
+          // Support both top-level and nested role
+          final permissions =
+              Map<String, dynamic>.from((u['permissions'] as Map? ?? {}));
+          final role = (u['role'] ?? permissions['role'])
+                  ?.toString()
+                  .toLowerCase() ??
+              '';
+          final isActive = u['is_active'] as bool? ?? true;
 
-              switch (_tabController.index) {
-                case 1: // Students
-                  return matchesSearch &&
-                      (role == 'student' || role == 'user' || role == '');
-                case 2: // Professionals
-                  return matchesSearch && role == 'professional';
-                case 3: // Hosters
-                  return matchesSearch &&
-                      (role == 'hoster' || role == 'owner' || role == 'manager' || role == 'agency');
-                case 4: // Blocked
-                  return matchesSearch && !isActive;
-                default: // All
-                  return matchesSearch;
-              }
-            }).toList();
+          switch (_tabController.index) {
+            case 1: // Students
+              return matchesSearch &&
+                  (role == 'student' || role == 'user' || role == '');
+            case 2: // Professionals
+              return matchesSearch && role == 'professional';
+            case 3: // Hosters
+              return matchesSearch &&
+                  (role == 'hoster' ||
+                      role == 'owner' ||
+                      role == 'manager' ||
+                      role == 'agency');
+            case 4: // Blocked
+              return matchesSearch && !isActive;
+            default: // All
+              return matchesSearch;
+          }
+        }).toList();
 
-        return SingleChildScrollView(
-          padding: EdgeInsets.all(widget.isNarrow ? 16 : 32),
-          child: Column(
-            children: [
-              TabHeader(
-                title: 'Users Hub',
-                subtitle:
-                    widget.isNarrow ? 'Community' : 'Manage all platform users',
-                isNarrow: widget.isNarrow,
-                actions: [
-                  if (!widget.isNarrow)
+        return Container(
+          color: const Color(0xFF020617),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(widget.isNarrow ? 16 : 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TabHeader(
+                  title: 'Users Hub',
+                  subtitle: widget.isNarrow
+                      ? 'Community'
+                      : 'Manage all platform users and community members',
+                  isNarrow: widget.isNarrow,
+                  actions: [
+                    if (!widget.isNarrow)
+                      _buildHeaderAction(
+                        'Export',
+                        Icons.file_download_outlined,
+                        isOutline: true,
+                        onPressed: _handleExport,
+                      ),
+                    if (!widget.isNarrow) const SizedBox(width: 12),
                     _buildHeaderAction(
-                      'Export',
-                      Icons.file_download_outlined,
-                      isOutline: true,
-                      onPressed: _handleExport,
+                      'Add User',
+                      Icons.add,
+                      hasDropdown: true,
+                      onPressed: _handleAddUser,
                     ),
-                  if (!widget.isNarrow) const SizedBox(width: 12),
-                  _buildHeaderAction(
-                    'Add',
-                    Icons.add,
-                    hasDropdown: true,
-                    onPressed: _handleAddUser,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _buildSummaryCards(allUsers),
-              const SizedBox(height: 64),
-              _buildCategoryTabs(allUsers),
-              const SizedBox(height: 24),
-              _buildFilterRow(),
-              const SizedBox(height: 24),
-              if (!widget.isNarrow) _buildTableHeader(),
-              const SizedBox(height: 12),
-              if (snapshot.connectionState == ConnectionState.waiting &&
-                  allUsers.isEmpty)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(60.0),
-                    child: CircularProgressIndicator(),
-                  ),
-                )
-              else
-                _buildUsersList(filteredUsers),
-              const SizedBox(height: 32),
-              _buildPaginationFooter(filteredUsers.length),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 32),
+                _buildSummaryCards(allUsers),
+                const SizedBox(height: 64),
+                _buildCategoryTabs(allUsers),
+                const SizedBox(height: 24),
+                _buildFilterRow(),
+                const SizedBox(height: 24),
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    allUsers.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(60.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else
+                  _buildUsersGrid(filteredUsers),
+                const SizedBox(height: 32),
+                _buildPaginationFooter(filteredUsers.length),
+              ],
+            ),
           ),
         );
       },
@@ -179,35 +184,32 @@ class _UsersTabState extends State<UsersTab>
   }
 
   Widget _buildSummaryCards(List<Map<String, dynamic>> users) {
-    final students =
-        users.where((u) {
-          final permissions = Map<String, dynamic>.from(
-              (u['permissions'] as Map? ?? {}));
-          final r =
-              (u['role'] ?? permissions['role'])?.toString().toLowerCase() ??
-              '';
-          return r == 'student' || r == 'user' || r == '';
-        }).length;
+    final students = users.where((u) {
+      final permissions =
+          Map<String, dynamic>.from((u['permissions'] as Map? ?? {}));
+      final r = (u['role'] ?? permissions['role'])?.toString().toLowerCase() ??
+          '';
+      return r == 'student' || r == 'user' || r == '';
+    }).length;
 
-    final professionals =
-        users.where((u) {
-          final permissions = Map<String, dynamic>.from(
-              (u['permissions'] as Map? ?? {}));
-          final r =
-              (u['role'] ?? permissions['role'])?.toString().toLowerCase() ??
-              '';
-          return r == 'professional';
-        }).length;
+    final professionals = users.where((u) {
+      final permissions =
+          Map<String, dynamic>.from((u['permissions'] as Map? ?? {}));
+      final r = (u['role'] ?? permissions['role'])?.toString().toLowerCase() ??
+          '';
+      return r == 'professional';
+    }).length;
 
-    final hosters =
-        users.where((u) {
-          final permissions = Map<String, dynamic>.from(
-              (u['permissions'] as Map? ?? {}));
-          final r =
-              (u['role'] ?? permissions['role'])?.toString().toLowerCase() ??
-              '';
-          return r == 'hoster' || r == 'owner' || r == 'manager' || r == 'agency';
-        }).length;
+    final hosters = users.where((u) {
+      final permissions =
+          Map<String, dynamic>.from((u['permissions'] as Map? ?? {}));
+      final r = (u['role'] ?? permissions['role'])?.toString().toLowerCase() ??
+          '';
+      return r == 'hoster' ||
+          r == 'owner' ||
+          r == 'manager' ||
+          r == 'agency';
+    }).length;
 
     final inactive = users.where((u) => (u['is_active'] == false)).length;
 
@@ -225,11 +227,12 @@ class _UsersTabState extends State<UsersTab>
             SummaryCard(
               count: users.length.toString(),
               label: 'Total Users',
-              bg: const Color(0xFFEFF6FF),
+              bg: const Color(0xFFEFF6FF).withValues(alpha: 0.1),
               color: const Color(0xFF2563EB),
               icon: Icons.people_rounded,
               percentage: '12.6%',
               isUp: true,
+              isDark: true,
             ),
           ),
           const SizedBox(width: 16),
@@ -239,13 +242,13 @@ class _UsersTabState extends State<UsersTab>
             SummaryCard(
               count: students.toString(),
               label: 'Students',
-              bg: const Color(0xFFF0FDF4),
+              bg: const Color(0xFFF0FDF4).withValues(alpha: 0.1),
               color: const Color(0xFF16A34A),
               icon: Icons.school_rounded,
-              sub:
-                  users.isEmpty
-                      ? '0% of total'
-                      : '${((students / users.length) * 100).toStringAsFixed(1)}% of total',
+              sub: users.isEmpty
+                  ? '0% of total'
+                  : '${((students / users.length) * 100).toStringAsFixed(1)}% of total',
+              isDark: true,
             ),
           ),
           const SizedBox(width: 16),
@@ -255,13 +258,13 @@ class _UsersTabState extends State<UsersTab>
             SummaryCard(
               count: professionals.toString(),
               label: 'Professionals',
-              bg: const Color(0xFFF5F3FF),
+              bg: const Color(0xFFF5F3FF).withValues(alpha: 0.1),
               color: const Color(0xFF7C3AED),
               icon: Icons.business_center_rounded,
-              sub:
-                  users.isEmpty
-                      ? '0% of total'
-                      : '${((professionals / users.length) * 100).toStringAsFixed(1)}% of total',
+              sub: users.isEmpty
+                  ? '0% of total'
+                  : '${((professionals / users.length) * 100).toStringAsFixed(1)}% of total',
+              isDark: true,
             ),
           ),
           const SizedBox(width: 16),
@@ -271,13 +274,13 @@ class _UsersTabState extends State<UsersTab>
             SummaryCard(
               count: hosters.toString(),
               label: 'Hosters',
-              bg: const Color(0xFFFFF7ED),
+              bg: const Color(0xFFFFF7ED).withValues(alpha: 0.1),
               color: const Color(0xFFD97706),
               icon: Icons.person_pin_rounded,
-              sub:
-                  users.isEmpty
-                      ? '0% of total'
-                      : '${((hosters / users.length) * 100).toStringAsFixed(1)}% of total',
+              sub: users.isEmpty
+                  ? '0% of total'
+                  : '${((hosters / users.length) * 100).toStringAsFixed(1)}% of total',
+              isDark: true,
             ),
           ),
           const SizedBox(width: 16),
@@ -287,13 +290,13 @@ class _UsersTabState extends State<UsersTab>
             SummaryCard(
               count: inactive.toString(),
               label: 'Inactive',
-              bg: const Color(0xFFFEF2F2),
+              bg: const Color(0xFFFEF2F2).withValues(alpha: 0.1),
               color: const Color(0xFFDC2626),
               icon: Icons.block_rounded,
-              sub:
-                  users.isEmpty
-                      ? '0% of total'
-                      : '${((inactive / users.length) * 100).toStringAsFixed(1)}% of total',
+              sub: users.isEmpty
+                  ? '0% of total'
+                  : '${((inactive / users.length) * 100).toStringAsFixed(1)}% of total',
+              isDark: true,
             ),
           ),
         ],
@@ -307,14 +310,14 @@ class _UsersTabState extends State<UsersTab>
   Widget _buildCategoryTabs(List<Map<String, dynamic>> users) {
     return Container(
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+        border: Border(bottom: BorderSide(color: Color(0xFF1E293B))),
       ),
       child: TabBar(
         controller: _tabController,
         isScrollable: true,
-        labelColor: const Color(0xFF2563EB),
+        labelColor: const Color(0xFF6366F1),
         unselectedLabelColor: const Color(0xFF64748B),
-        indicatorColor: const Color(0xFF2563EB),
+        indicatorColor: const Color(0xFF6366F1),
         indicatorWeight: 3,
         labelStyle: const TextStyle(
           fontWeight: FontWeight.bold,
@@ -324,30 +327,31 @@ class _UsersTabState extends State<UsersTab>
         tabs: [
           Tab(text: 'All (${users.length})'),
           Tab(
-            text:
-                'Students (${users.where((u) {
-                   final p = Map<String, dynamic>.from(
-                      (u['permissions'] as Map? ?? {}));
-                   final r = (u['role'] ?? p['role'])?.toString().toLowerCase() ?? '';
-                   return r == 'student' || r == 'user' || r.isEmpty;
-                }).length})',
+            text: 'Students (${users.where((u) {
+              final p =
+                  Map<String, dynamic>.from((u['permissions'] as Map? ?? {}));
+              final r = (u['role'] ?? p['role'])?.toString().toLowerCase() ?? '';
+              return r == 'student' || r == 'user' || r.isEmpty;
+            }).length})',
           ),
           Tab(
-            text:
-                'Pros (${users.where((u) {
-                   final p = Map<String, dynamic>.from(
-                      (u['permissions'] as Map? ?? {}));
-                   return (u['role'] ?? p['role'])?.toString().toLowerCase() == 'professional';
-                }).length})',
+            text: 'Pros (${users.where((u) {
+              final p =
+                  Map<String, dynamic>.from((u['permissions'] as Map? ?? {}));
+              return (u['role'] ?? p['role'])?.toString().toLowerCase() ==
+                  'professional';
+            }).length})',
           ),
           Tab(
-            text:
-                'Hosters (${users.where((u) {
-                   final p = Map<String, dynamic>.from(
-                      (u['permissions'] as Map? ?? {}));
-                   final r = (u['role'] ?? p['role'])?.toString().toLowerCase() ?? '';
-                   return r == 'hoster' || r == 'owner' || r == 'manager' || r == 'agency';
-                }).length})',
+            text: 'Hosters (${users.where((u) {
+              final p =
+                  Map<String, dynamic>.from((u['permissions'] as Map? ?? {}));
+              final r = (u['role'] ?? p['role'])?.toString().toLowerCase() ?? '';
+              return r == 'hoster' ||
+                  r == 'owner' ||
+                  r == 'manager' ||
+                  r == 'agency';
+            }).length})',
           ),
           Tab(
             text:
@@ -362,25 +366,27 @@ class _UsersTabState extends State<UsersTab>
     return Row(
       children: [
         Expanded(
+          flex: 2,
           child: Container(
-            height: 44,
+            height: 48,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFF0F172A),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: const Color(0x1AFFFFFF)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.search, color: Colors.grey, size: 18),
-                const SizedBox(width: 8),
+                const Icon(Icons.search, color: Color(0xFF64748B), size: 20),
+                const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
                     controller: _searchController,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
                     decoration: const InputDecoration(
-                      hintText: 'Search community...',
+                      hintText: 'Search by name, email or ID...',
                       border: InputBorder.none,
-                      hintStyle: TextStyle(fontSize: 12),
+                      hintStyle: TextStyle(fontSize: 14, color: Color(0xFF475569)),
                     ),
                   ),
                 ),
@@ -388,48 +394,64 @@ class _UsersTabState extends State<UsersTab>
             ),
           ),
         ),
-        const SizedBox(width: 12),
-        _buildSmallFilter(widget.isNarrow ? '' : 'Filter', Icons.tune),
+        const SizedBox(width: 16),
+        Flexible(
+          flex: 3,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: [
+                _buildSmallFilter('User Role'),
+                const SizedBox(width: 12),
+                _buildSmallFilter('Account Status'),
+                const SizedBox(width: 12),
+                _buildSmallFilter('Location'),
+                const SizedBox(width: 12),
+                _buildSmallFilter('Join Date'),
+                const SizedBox(width: 12),
+                _buildSmallFilter('More Filters', hasDropdown: false),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildSmallFilter(
-    String label,
-    IconData? icon, {
-    bool hasDropdown = false,
+    String label, {
+    IconData? icon,
+    bool hasDropdown = true,
   }) {
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: label.isEmpty ? 10 : 12,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null)
+          if (icon != null) ...[
             Icon(icon, size: 16, color: const Color(0xFF64748B)),
-          if (label.isNotEmpty) ...[
             const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
-              ),
-            ),
           ],
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.white70,
+            ),
+          ),
           if (hasDropdown) ...[
             const SizedBox(width: 8),
             const Icon(
               Icons.keyboard_arrow_down,
               size: 16,
-              color: Color(0xFF64748B),
+              color: Color(0xFF475569),
             ),
           ],
         ],
@@ -437,151 +459,237 @@ class _UsersTabState extends State<UsersTab>
     );
   }
 
-  Widget _buildTableHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+  Widget _buildUsersGrid(List<Map<String, dynamic>> users) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x0DFFFFFF)),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SizedBox(
+          width: 1200,
+          child: Column(
+            children: [
+              _buildGridHeader(),
+              if (users.isEmpty)
+                _buildEmptyState()
+              else
+                ...users.map((u) {
+                  final info = Map<String, dynamic>.from((u['info'] as Map? ?? {}));
+                  final permissions = Map<String, dynamic>.from((u['permissions'] as Map? ?? {}));
+                  final rawRole = (u['role'] ?? permissions['role'])?.toString() ?? 'student';
+                  final isActive = u['is_active'] as bool? ?? true;
+
+                  String userStatus = isActive ? 'Active' : 'Blocked';
+                  if (isActive) {
+                    final r = rawRole.toLowerCase();
+                    if (r == 'hoster' || r == 'owner' || r == 'manager' || r == 'agency') {
+                      final onboardingStatus = (u['status'] ?? u['accountStatus'] ?? permissions['status'] ?? '').toString().toLowerCase();
+                      if (onboardingStatus == 'pending') {
+                        userStatus = 'Pending';
+                      } else if (onboardingStatus == 'approved' || onboardingStatus == 'active') {
+                        userStatus = 'Approved';
+                      } else if (onboardingStatus == 'rejected') {
+                        userStatus = 'Rejected';
+                      }
+                    }
+                  }
+
+                  return _UserRow(
+                    user: u,
+                    name: info['name']?.toString() ?? 'Unknown User',
+                    displayId: u['id']?.toString().substring(0, 8).toUpperCase() ?? 'USR-NEW',
+                    role: _formatRole(rawRole),
+                    rawRole: rawRole,
+                    phone: (info['phone'] ?? info['phoneNumber'])?.toString() ?? 'No Phone',
+                    email: info['email']?.toString() ?? 'No Email',
+                    joined: _formatDate(u['createdAt'] ?? u['updatedAt']),
+                    status: userStatus,
+                    isActive: isActive,
+                    onAction: () => _showUserActionsBottomSheet(context, u),
+                    onTap: () => _viewUserProfile(u),
+                  );
+                }).toList(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGridHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.02),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        border: const Border(bottom: BorderSide(color: Color(0x0DFFFFFF))),
+      ),
       child: Row(
         children: [
-          Expanded(flex: 3, child: _tableLabel('USER')),
-          Expanded(flex: 2, child: _tableLabel('ROLE')),
-          Expanded(flex: 3, child: _tableLabel('CONTACT')),
-          Expanded(flex: 2, child: _tableLabel('JOINED')),
-          Expanded(flex: 2, child: _tableLabel('STATUS')),
-          const SizedBox(width: 40),
+          const SizedBox(width: 24),
+          const SizedBox(width: 16),
+          const Expanded(flex: 3, child: _HeaderLabel('USER')),
+          const Expanded(flex: 2, child: _HeaderLabel('ROLE')),
+          const Expanded(flex: 3, child: _HeaderLabel('CONTACT')),
+          const Expanded(flex: 2, child: _HeaderLabel('LOCATION')),
+          const Expanded(flex: 2, child: _HeaderLabel('JOINED')),
+          const Expanded(flex: 2, child: _HeaderLabel('STATUS')),
+          const SizedBox(width: 48, child: _HeaderLabel('ACTIONS')),
         ],
       ),
     );
   }
 
-  Widget _tableLabel(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 10,
-        fontWeight: FontWeight.bold,
-        color: Color(0xFF94A3B8),
-        letterSpacing: 0.5,
+  void _viewUserProfile(Map<String, dynamic> user) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserProfileViewScreen(
+          userId: user['id'],
+          adminService: widget.adminService,
+          initialData: user,
+        ),
       ),
     );
   }
 
-  Widget _buildUsersList(List<Map<String, dynamic>> users) {
-    if (users.isEmpty) {
-      return Container(
-        margin: const EdgeInsets.symmetric(vertical: 20),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFF1F5F9)),
+  void _showUserActionsBottomSheet(BuildContext context, Map<String, dynamic> user) {
+    final info = Map<String, dynamic>.from((user['info'] as Map? ?? {}));
+    final name = info['name']?.toString() ?? 'Unknown User';
+    final isActive = user['is_active'] as bool? ?? true;
+    final userId = user['id'];
+    final rawRole = (user['role'] ?? user['permissions']?['role'])?.toString().toLowerCase() ?? 'student';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: const Color(0xFF1E293B),
+                    child: Text(name[0].toUpperCase(), style: const TextStyle(color: Colors.white)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text('ID: ${userId.toString().toUpperCase()}', style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Color(0xFF64748B)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              _actionItem(Icons.visibility_outlined, 'View Full Profile', () {
+                Navigator.pop(context);
+                _viewUserProfile(user);
+              }),
+              _actionItem(
+                isActive ? Icons.block_flipped : Icons.check_circle_outline,
+                isActive ? 'Deactivate Account' : 'Activate Account',
+                () {
+                  Navigator.pop(context);
+                  _handleUserAction(userId, isActive ? 'deactivate' : 'activate');
+                },
+                color: isActive ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+              ),
+              _actionItem(Icons.admin_panel_settings_outlined, 'Promote to Admin', () {
+                Navigator.pop(context);
+                _handleUserAction(userId, 'promote');
+              }),
+              _actionItem(Icons.manage_accounts_outlined, 'Change User Role', () {
+                Navigator.pop(context);
+                _showChangeRoleDialog(userId, rawRole);
+              }),
+              const Divider(color: Color(0x0DFFFFFF), height: 32),
+              _actionItem(Icons.delete_forever_outlined, 'Delete User Permanently', () {
+                Navigator.pop(context);
+                _handleUserAction(userId, 'delete');
+              }, color: const Color(0xFFEF4444)),
+            ],
+          ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
+      ),
+    );
+  }
+
+  Widget _actionItem(IconData icon, String label, VoidCallback onTap, {Color? color}) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Color(0xFFEFF6FF),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.people_outline,
-                size: 40,
-                color: Color(0xFF3B82F6),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'No community members found',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Color(0xFF1E293B),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Try clear all filters or adjust your search to see more results',
-              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            TextButton.icon(
-              onPressed: () {
-                _searchController.clear();
-                _tabController.index = 0;
-              },
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text(
-                'Reset All Filters',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
+            Icon(icon, size: 20, color: color ?? const Color(0xFF94A3B8)),
+            const SizedBox(width: 16),
+            Text(label, style: TextStyle(color: color ?? Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
           ],
         ),
-      );
-    }
-    return Column(
-      children:
-          users.map((u) {
-             final info = Map<String, dynamic>.from(
-                 (u['info'] as Map? ?? {}));
-             final permissions = Map<String, dynamic>.from(
-                 (u['permissions'] as Map? ?? {}));
-             final rawRole =
-                 (u['role'] ?? permissions['role'])?.toString() ?? 'student';
-             final isActive = u['is_active'] as bool? ?? true;
- 
-             String userStatus = isActive ? 'Active' : 'Blocked';
-             if (isActive) {
-               final r = rawRole.toLowerCase();
-               if (r == 'hoster' || r == 'owner' || r == 'manager' || r == 'agency') {
-                 final onboardingStatus = (u['status'] ?? u['accountStatus'] ?? permissions['status'] ?? '').toString().toLowerCase();
-                 if (onboardingStatus == 'pending') {
-                   userStatus = 'Pending';
-                 } else if (onboardingStatus == 'approved' || onboardingStatus == 'active') {
-                   userStatus = 'Approved';
-                 } else if (onboardingStatus == 'rejected') {
-                   userStatus = 'Rejected';
-                 }
-               }
-             }
- 
-             return _UserCard(
-               id: u['id'],
-               name: info['name']?.toString() ?? 'Unknown User',
-               displayId:
-                   u['id']?.toString().substring(0, 8).toUpperCase() ??
-                   'USR-NEW',
-               role: _formatRole(rawRole),
-               rawRole: rawRole,
-               phone: (info['phone'] ?? info['phoneNumber'])?.toString() ?? 'No Phone',
-               email: info['email']?.toString() ?? 'No Email',
-               joined: _formatDate(u['createdAt'] ?? u['updatedAt']),
-               status: userStatus,
-               isActive: isActive,
-              isNarrow: widget.isNarrow,
-              onAction: (action) {
-                if (action == 'view') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => UserProfileViewScreen(
-                            userId: u['id'],
-                            adminService: widget.adminService,
-                            initialData: u,
-                          ),
-                    ),
-                  );
-                } else {
-                  _handleUserAction(u['id'], action);
-                }
-              },
-            );
-          }).toList(),
+      ),
+    );
+  }
+
+  void _showChangeRoleDialog(String userId, String currentRole) {
+    // We already have _showChangeRoleBottomSheet in UserProfileViewScreen, 
+    // but let's implement a quick one here or just use a simple alert dialog.
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        title: const Text('Select New Role', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _roleDialogOption(userId, 'student', 'Student', Icons.school_outlined),
+            _roleDialogOption(userId, 'professional', 'Professional', Icons.business_center_outlined),
+            _roleDialogOption(userId, 'hoster', 'Hoster', Icons.person_pin_outlined),
+            _roleDialogOption(userId, 'owner', 'Owner', Icons.home_work_outlined),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _roleDialogOption(String userId, String role, String label, IconData icon) {
+    return ListTile(
+      leading: Icon(icon, color: const Color(0xFF6366F1)),
+      title: Text(label, style: const TextStyle(color: Colors.white)),
+      onTap: () {
+        Navigator.pop(context);
+        _handleUserAction(userId, 'role_$role');
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.all(60),
+      child: Column(
+        children: [
+          const Icon(Icons.people_outline, size: 64, color: Color(0x1AFFFFFF)),
+          const SizedBox(height: 16),
+          const Text('No community members found', style: TextStyle(color: Colors.white54, fontSize: 16, fontWeight: FontWeight.bold)),
+        ],
+      ),
     );
   }
 
@@ -780,8 +888,8 @@ class _UsersTabState extends State<UsersTab>
   }
 }
 
-class _UserCard extends StatelessWidget {
-  final String id;
+class _UserRow extends StatelessWidget {
+  final Map<String, dynamic> user;
   final String name;
   final String displayId;
   final String role;
@@ -791,11 +899,11 @@ class _UserCard extends StatelessWidget {
   final String joined;
   final String status;
   final bool isActive;
-  final bool isNarrow;
-  final Function(String) onAction;
+  final VoidCallback onAction;
+  final VoidCallback onTap;
 
-  const _UserCard({
-    required this.id,
+  const _UserRow({
+    required this.user,
     required this.name,
     required this.displayId,
     required this.role,
@@ -805,335 +913,182 @@ class _UserCard extends StatelessWidget {
     required this.joined,
     required this.status,
     required this.isActive,
-    required this.isNarrow,
     required this.onAction,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
-      child: Row(
-        children: [
-          // 1. User
-          Expanded(
-            flex: 3,
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: const Color(0xFFF1F5F9),
-                  child: Text(
-                    name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Color(0xFF1E293B),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.check_circle,
-                            color: Color(0xFF2563EB),
-                            size: 12,
-                          ),
-                        ],
-                      ),
-                      Text(
-                        displayId,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Color(0xFF94A3B8),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+    final info = Map<String, dynamic>.from(user['info'] as Map? ?? {});
+    final location = info['city']?.toString() ?? info['location']?.toString() ?? 'Unknown';
 
-          // 2. Role
-          if (!isNarrow)
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Color(0x0DFFFFFF))),
+        ),
+        child: Row(
+          children: [
+            // Selection Checkbox (Placeholder for now)
+            SizedBox(
+              width: 24,
+              child: Checkbox(
+                value: false,
+                onChanged: (v) {},
+                activeColor: const Color(0xFF6366F1),
+                side: const BorderSide(color: Color(0x33FFFFFF)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            // 1. User Info
             Expanded(
-              flex: 2,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getRoleColor(role).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    role,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: _getRoleColor(role),
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
+              flex: 3,
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.white.withValues(alpha: 0.05),
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                      style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          displayId,
+                          style: const TextStyle(color: Color(0x4DFFFFFF), fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
 
-          // 3. Contact
-          if (!isNarrow)
+            // 2. Role
+            Expanded(
+              flex: 2,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getRoleColor(role).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      role.toUpperCase(),
+                      style: TextStyle(color: _getRoleColor(role), fontSize: 9, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // 3. Contact
             Expanded(
               flex: 3,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    phone,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
-                    ),
-                  ),
-                  Text(
-                    email,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
+                  Text(phone, style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500)),
+                  Text(email, style: const TextStyle(fontSize: 11, color: Color(0x80FFFFFF))),
                 ],
               ),
             ),
 
-          // 4. Joined On
-          if (!isNarrow)
+            // 4. Location
             Expanded(
               flex: 2,
               child: Text(
-                joined,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF475569),
-                ),
+                location,
+                style: const TextStyle(fontSize: 12, color: Colors.white70),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
 
-          // 5. Status
-          Expanded(
-            flex: isNarrow ? 1 : 2,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment:
-                  isNarrow ? Alignment.centerRight : Alignment.centerLeft,
-              child: StatusBadge(text: status, color: _getStatusColor(status)),
+            // 5. Joined
+            Expanded(
+              flex: 2,
+              child: Text(joined, style: const TextStyle(fontSize: 12, color: Color(0x80FFFFFF))),
             ),
-          ),
 
-          const SizedBox(width: 8),
-          PopupMenuButton<String>(
-            icon: const Icon(
-              Icons.more_vert,
-              color: Color(0xFFCBD5E1),
-              size: 18,
-            ),
-            onSelected: onAction,
-            offset: const Offset(0, 40),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: Color(0xFFF1F5F9)),
-            ),
-            elevation: 8,
-            shadowColor: Colors.black12,
-            itemBuilder:
-                (context) => [
-                  PopupMenuItem(
-                    value: 'view',
-                    child: _buildPopupItem(
-                      Icons.visibility_outlined,
-                      'View Profile',
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: isActive ? 'deactivate' : 'activate',
-                    child: _buildPopupItem(
-                      isActive
-                          ? Icons.block_flipped
-                          : Icons.check_circle_outline,
-                      isActive ? 'Deactivate User' : 'Activate User',
-                      color: isActive ? Colors.red : Colors.green,
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'promote',
-                    child: _buildPopupItem(
-                      Icons.admin_panel_settings_outlined,
-                      'Promote to Admin',
-                    ),
-                  ),
-                  const PopupMenuDivider(height: 1),
-                  const PopupMenuItem(
-                    enabled: false,
-                    child: Text(
-                      'CHANGE ROLE',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF94A3B8),
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'role_student',
-                    child: _roleItem(
-                      'Student',
-                      rawRole == 'student',
-                      Icons.school_outlined,
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'role_professional',
-                    child: _roleItem(
-                      'Professional',
-                      rawRole == 'professional',
-                      Icons.business_center_outlined,
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'role_hoster',
-                    child: _roleItem(
-                      'Hoster',
-                      rawRole == 'hoster',
-                      Icons.person_pin_outlined,
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'role_owner',
-                    child: _roleItem(
-                      'Owner',
-                      rawRole == 'owner',
-                      Icons.home_work_outlined,
-                    ),
-                  ),
-                  const PopupMenuDivider(height: 1),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: _buildPopupItem(
-                      Icons.delete_forever_outlined,
-                      'Delete User',
-                      color: Colors.red,
-                    ),
-                  ),
+            // 6. Status
+            Expanded(
+              flex: 2,
+              child: Row(
+                children: [
+                  StatusBadge(text: status, color: _getStatusColor(status)),
                 ],
-          ),
-        ],
+              ),
+            ),
+
+            // Actions
+            SizedBox(
+              width: 48,
+              child: IconButton(
+                icon: const Icon(Icons.more_vert, color: Color(0xFF475569), size: 18),
+                onPressed: onAction,
+              ),
+            ),
+          ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildPopupItem(IconData icon, String label, {Color? color}) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: color ?? const Color(0xFF64748B)),
-        const SizedBox(width: 12),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: color ?? const Color(0xFF1E293B),
-            fontFamily: 'Outfit',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _roleItem(String label, bool isCurrent, IconData icon) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 18,
-          color: isCurrent ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-            color:
-                isCurrent ? const Color(0xFF2563EB) : const Color(0xFF475569),
-            fontFamily: 'Outfit',
-          ),
-        ),
-        if (isCurrent) ...[
-          const Spacer(),
-          const Icon(Icons.check_circle, size: 14, color: Color(0xFF2563EB)),
-        ],
-      ],
     );
   }
 
   Color _getRoleColor(String role) {
     switch (role) {
-      case 'Student':
-        return const Color(0xFF2563EB);
-      case 'Hoster':
-        return const Color(0xFFD97706);
-      case 'Owner':
-        return const Color(0xFF10B981);
-      case 'Professional':
-        return const Color(0xFF7C3AED);
-      default:
-        return Colors.grey;
+      case 'Student': return const Color(0xFF2563EB);
+      case 'Hoster': return const Color(0xFFD97706);
+      case 'Owner': return const Color(0xFF10B981);
+      case 'Professional': return const Color(0xFF7C3AED);
+      default: return Colors.grey;
     }
   }
 
   Color _getStatusColor(String s) {
     switch (s) {
       case 'Active':
-      case 'Approved':
-        return const Color(0xFF16A34A);
-      case 'Inactive':
-        return const Color(0xFF64748B);
+      case 'Approved': return const Color(0xFF16A34A);
+      case 'Inactive': return const Color(0xFF64748B);
       case 'Blocked':
-      case 'Rejected':
-        return const Color(0xFFDC2626);
-      case 'Pending':
-        return const Color(0xFFD97706);
-      default:
-        return Colors.grey;
+      case 'Rejected': return const Color(0xFFDC2626);
+      case 'Pending': return const Color(0xFFD97706);
+      default: return Colors.grey;
     }
+  }
+}
+
+class _HeaderLabel extends StatelessWidget {
+  final String label;
+  const _HeaderLabel(this.label);
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.bold,
+        color: Color(0x4DFFFFFF),
+        letterSpacing: 1.0,
+      ),
+    );
   }
 }
 

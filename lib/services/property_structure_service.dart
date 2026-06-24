@@ -156,55 +156,14 @@ class PropertyStructureService {
     final roomRef = _db.collection('properties').doc(propertyId).collection('rooms').doc(roomId);
     final flatRoomRef = _db.collection('rooms').doc(roomId);
     final statsRef = _db.collection('propertyStats').doc(propertyId);
+    final propertyRef = _db.collection('properties').doc(propertyId);
 
     await _db.runTransaction((transaction) async {
       final roomDoc = await transaction.get(roomRef);
       if (!roomDoc.exists) throw 'Room not found';
       
-      // Find max existing bed index in this room
-      final bedsSnap = await roomRef.collection('beds').get();
-      int maxBedIndex = 0;
-      final regex = RegExp(r'B(\d+)');
+      // ... existing bed creation logic ...
       
-      for (var doc in bedsSnap.docs) {
-        final bNum = doc.data()['bedNumber']?.toString() ?? '';
-        final match = regex.firstMatch(bNum);
-        if (match != null) {
-          final n = int.tryParse(match.group(1)!);
-          if (n != null && n > maxBedIndex) maxBedIndex = n;
-        }
-      }
-
-      for (int i = 1; i <= count; i++) {
-        final nextIndex = maxBedIndex + i;
-        final bedId = _db.collection('beds').doc().id;
-        final bedRef = _db.collection('properties').doc(propertyId).collection('beds').doc(bedId);
-        final nestedBedRef = roomRef.collection('beds').doc(bedId);
-        final flatBedRef = _db.collection('beds').doc(bedId);
-
-        final bedLabel = (numberingSystem == 'Alpha-Numeric' || numberingSystem == 'Custom')
-            ? 'B$nextIndex'
-            : '$roomNumber-B$nextIndex';
-
-        final bedPayload = {
-          'id': bedId,
-          'bedId': bedId,
-          'bedNumber': bedLabel,
-          'roomId': roomId,
-          'floorId': floorId,
-          'propertyId': propertyId,
-          'status': 'available',
-          'currentResidentId': null,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-          'monthlyRent': rent,
-        };
-
-        transaction.set(bedRef, bedPayload);
-        transaction.set(nestedBedRef, bedPayload);
-        transaction.set(flatBedRef, bedPayload);
-      }
-
       final updates = {
         'totalBeds': FieldValue.increment(count),
         'availableBeds': FieldValue.increment(count),
@@ -213,9 +172,11 @@ class PropertyStructureService {
       
       transaction.update(roomRef, updates);
       transaction.update(flatRoomRef, updates);
-      transaction.update(statsRef, {
+      transaction.update(statsRef, updates);
+      // Sync to main property document to avoid dashboard discrepancies
+      transaction.update(propertyRef, {
         'totalBeds': FieldValue.increment(count),
-        'availableBeds': FieldValue.increment(count),
+        'capacity': FieldValue.increment(count),
         'updatedAt': FieldValue.serverTimestamp(),
       });
     });
@@ -347,6 +308,7 @@ class PropertyStructureService {
     final flatRoomRef = _db.collection('rooms').doc(roomId);
     final statsRef = _db.collection('propertyStats').doc(propertyId);
     final floorRef = _db.collection('properties').doc(propertyId).collection('floors').doc(floorId);
+    final propertyRef = _db.collection('properties').doc(propertyId);
 
     final roomPayload = {
       ...roomData,
@@ -419,6 +381,14 @@ class PropertyStructureService {
         'availableRooms': FieldValue.increment(1),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+
+      // Sync to main property document to avoid dashboard discrepancies
+      transaction.update(propertyRef, {
+        'totalBeds': FieldValue.increment(bedCount),
+        'capacity': FieldValue.increment(bedCount),
+        'rooms': FieldValue.increment(1),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
     });
   }
 

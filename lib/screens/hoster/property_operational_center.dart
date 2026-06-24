@@ -51,7 +51,7 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
     _tabController.addListener(() => setState(() {}));
   }
 
@@ -111,6 +111,7 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
                   propertyData: widget.propertyData,
                 ),
                 _BedsTab(propertyId: widget.propertyId, propertyData: widget.propertyData),
+                _PricingTab(propertyId: widget.propertyId, propertyData: widget.propertyData),
                 _ResidentsTab(propertyId: widget.propertyId),
                 _BookingsTab(propertyId: widget.propertyId, bookingService: _bookingService),
                 _FinanceTab(propertyId: widget.propertyId),
@@ -140,24 +141,44 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
     switch (_tabController.index) {
       case 0: return 'New Booking';
       case 1: return 'Add Room / Bed';
-      case 2: return 'Add Resident';
-      case 3: return 'New Booking';
-      case 4: return 'Log Expense';
-      case 5: return 'Add Lead';
-      case 6: return 'Invite Host';
+      case 2: return 'Update Pricing';
+      case 3: return 'Add Resident';
+      case 4: return 'New Booking';
+      case 5: return 'Log Expense';
+      case 6: return 'Add Lead';
+      case 7: return 'Invite Host';
       default: return 'New';
     }
   }
 
   void _handleFabPress() {
     switch (_tabController.index) {
-      case 0: _tabController.animateTo(3); break;
+      case 0: _tabController.animateTo(4); break;
       case 1: _showAddRoomDialog(); break;
-      case 2: _tabController.animateTo(3); break;
-      case 4: _showAddExpenseDialog(); break;
-      case 6: _showInviteHostDialog(); break;
+      case 2: _showUpdatePricingDialog(); break;
+      case 3: _tabController.animateTo(4); break;
+      case 5: _showAddExpenseDialog(); break;
+      case 7: _showInviteHostDialog(); break;
       default: _showAddRoomDialog();
     }
+  }
+
+  void _showUpdatePricingDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _UpdatePricingBottomSheet(
+        propertyId: widget.propertyId,
+        propertyData: widget.propertyData,
+        onComplete: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pricing updated successfully')),
+          );
+          // Optional: Re-fetch or rely on Firestore snapshots if applicable
+        },
+      ),
+    );
   }
 
   void _showAddRoomDialog({int? initialFloor}) {
@@ -349,7 +370,7 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
         children: [
           Container(
             padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(color: color.withOpacity(0.05), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.05), shape: BoxShape.circle),
             child: Icon(icon, color: color, size: 16),
           ),
           const SizedBox(height: 12),
@@ -395,8 +416,14 @@ class _PropertyOperationalCenterState extends State<PropertyOperationalCenter> w
         labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Outfit'),
         unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
         tabs: const [
-          Tab(text: 'Overview'), Tab(text: 'Beds & Inventory'), Tab(text: 'Residents'),
-          Tab(text: 'Bookings'), Tab(text: 'Finance'), Tab(text: 'Leads'), Tab(text: 'Hosts'),
+          Tab(text: 'Overview'), 
+          Tab(text: 'Beds & Inventory'), 
+          Tab(text: 'Pricing & Deposit'),
+          Tab(text: 'Residents'),
+          Tab(text: 'Bookings'), 
+          Tab(text: 'Finance'), 
+          Tab(text: 'Leads'), 
+          Tab(text: 'Hosts'),
         ],
       ),
     );
@@ -660,7 +687,7 @@ class _OverviewTab extends StatelessWidget {
               _revRow('Pending Revenue', '₹13,500', color: const Color(0xFFF59E0B)),
               _revRow('Overdue Payments', '₹2,000', color: const Color(0xFFEF4444)),
               const SizedBox(height: 12),
-              Align(alignment: Alignment.centerRight, child: _viewDetailsBtn(() => tabController.animateTo(4), label: 'View Finance')),
+              Align(alignment: Alignment.centerRight, child: _viewDetailsBtn(() => tabController.animateTo(5), label: 'View Finance')),
             ],
           ),
         )),
@@ -676,7 +703,7 @@ class _OverviewTab extends StatelessWidget {
               _pipeRow(Icons.bookmark_outline_rounded, 'Bookings Pending', '8', const Color(0xFF8B5CF6)),
               _pipeRow(Icons.check_circle_outline_rounded, 'Confirmed Bookings', '12', const Color(0xFF16A34A)),
               const SizedBox(height: 12),
-              Align(alignment: Alignment.centerRight, child: _viewDetailsBtn(() => tabController.animateTo(5), label: 'View Leads & Bookings')),
+              Align(alignment: Alignment.centerRight, child: _viewDetailsBtn(() => tabController.animateTo(6), label: 'View Leads & Bookings')),
             ],
           ),
         )),
@@ -818,6 +845,18 @@ class _OverviewTab extends StatelessWidget {
     return Row(children: [Container(width: 8, height: 8, decoration: BoxDecoration(color: c, shape: BoxShape.circle)), const SizedBox(width: 4), Text(l, style: const TextStyle(fontSize: 8, color: Color(0xFF64748B)))]);
   }
 
+  void _handleFloorAction(BuildContext context, String action, int floor) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Floor $floor: $action action triggered')));
+  }
+
+  void _handleRoomAction(BuildContext context, String action, String roomNum) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Room $roomNum: $action action triggered')));
+  }
+
+  void _handleBedAction(BuildContext context, String action, String bedId, String roomId) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Bed $bedId: $action action triggered')));
+  }
+
   Widget _revRow(String l, String v, {Color? color}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -833,13 +872,13 @@ class _OverviewTab extends StatelessWidget {
   }
 
   Widget _statusBadge(String t, Color c) {
-    return Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1), decoration: BoxDecoration(color: c.withOpacity(0.1), borderRadius: BorderRadius.circular(4)), child: Text(t, style: TextStyle(color: c, fontSize: 7, fontWeight: FontWeight.bold)));
+    return Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1), decoration: BoxDecoration(color: c.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)), child: Text(t, style: TextStyle(color: c, fontSize: 7, fontWeight: FontWeight.bold)));
   }
 
   Widget _outlineBtn(IconData i, String l, Color c) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      decoration: BoxDecoration(border: Border.all(color: c.withOpacity(0.2)), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(border: Border.all(color: c.withValues(alpha: 0.2)), borderRadius: BorderRadius.circular(8)),
       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(i, size: 12, color: c), const SizedBox(width: 4), Text(l, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold))]),
     );
   }
@@ -901,12 +940,14 @@ class _FloorSection extends StatefulWidget {
   final List<Map<String, dynamic>> beds;
   final int floorOccupied;
   final int floorTotal;
+  final Map<String, dynamic> propertyData;
   final Widget Function(String) bedIndicatorBuilder;
   final Widget Function(String, String, List<String>, {String? occupancyType, VoidCallback? onAddBed}) roomCardBuilder;
 
   const _FloorSection({
     required this.floorNumber, required this.rooms, required this.beds,
     required this.floorOccupied, required this.floorTotal,
+    required this.propertyData,
     required this.bedIndicatorBuilder, required this.roomCardBuilder,
   });
 
@@ -917,6 +958,113 @@ class _FloorSection extends StatefulWidget {
 class _FloorSectionState extends State<_FloorSection> {
   bool _expanded = true;
   String? _expandedRoomId;
+
+  void _showFloorActions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.floorNumber == 0 ? 'Ground Floor Management' : 'Floor ${widget.floorNumber} Management',
+                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 24),
+              _actionItem(Icons.build_circle_outlined, 'Maintenance Mode', () {
+                Navigator.pop(context);
+                _handleFloorAction('maintenance', widget.floorNumber);
+              }),
+              _actionItem(Icons.block_flipped, 'Block Entire Floor', () {
+                Navigator.pop(context);
+                _handleFloorAction('block', widget.floorNumber);
+              }),
+              _actionItem(Icons.check_circle_outline, 'Set All Available', () {
+                Navigator.pop(context);
+                _handleFloorAction('available', widget.floorNumber);
+              }),
+              const Divider(color: Colors.white10, height: 32),
+              _actionItem(Icons.delete_forever_outlined, 'Delete Floor', () {
+                Navigator.pop(context);
+                _handleFloorAction('delete', widget.floorNumber);
+              }, color: const Color(0xFFEF4444)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showBedActions(BuildContext context, String bedId, String roomId) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Bed Management', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 24),
+              _actionItem(Icons.settings_backup_restore_rounded, 'Override Status', () {
+                Navigator.pop(context);
+                _handleBedAction('override', bedId, roomId);
+              }),
+              _actionItem(Icons.person_add_alt_1_outlined, 'Assign Resident', () {
+                Navigator.pop(context);
+                _handleBedAction('assign', bedId, roomId);
+              }),
+              _actionItem(Icons.history_rounded, 'View Bed History', () {
+                Navigator.pop(context);
+                _handleBedAction('history', bedId, roomId);
+              }),
+              const Divider(color: Colors.white10, height: 32),
+              _actionItem(Icons.delete_forever_outlined, 'Delete Bed', () {
+                Navigator.pop(context);
+                _handleBedAction('delete', bedId, roomId);
+              }, color: const Color(0xFFEF4444)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _actionItem(IconData icon, String label, VoidCallback onTap, {Color? color}) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: color ?? const Color(0xFF94A3B8)),
+            const SizedBox(width: 16),
+            Text(label, style: TextStyle(color: color ?? Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleFloorAction(String action, int floor) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Floor $floor: $action action triggered')));
+  }
+
+  void _handleBedAction(String action, String bedId, String roomId) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Bed $bedId: $action action triggered')));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -981,6 +1129,11 @@ class _FloorSectionState extends State<_FloorSection> {
                       ),
                       Text('$occupancyRate%', style: const TextStyle(fontSize: 7, fontWeight: FontWeight.bold)),
                     ],
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.more_vert, color: Color(0xFF64748B), size: 20),
+                    onPressed: () => _showFloorActions(context),
                   ),
                   IconButton(
                     icon: Icon(_expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, color: const Color(0xFF64748B), size: 20),
@@ -1064,6 +1217,24 @@ class _FloorSectionState extends State<_FloorSection> {
 
     final roomBeds = widget.beds.where((b) => b['roomId'] == roomId).toList();
 
+    // Determine deposit based on occupancy type with correct key mapping
+    final occupancyType = (room?.occupancyType ?? 'single').toLowerCase();
+    String prefix = 'single';
+    if (occupancyType.contains('double')) {
+      prefix = 'double';
+    } else if (occupancyType.contains('triple')) {
+      prefix = 'triple';
+    } else if (occupancyType.contains('four') || occupancyType.contains('4')) {
+      prefix = 'fourSharing';
+    } else if (occupancyType.contains('six') || occupancyType.contains('6')) {
+      prefix = 'sixSharing';
+    }
+    
+    final pricing = Map<String, dynamic>.from(widget.propertyData['pricing'] as Map? ?? {});
+    final depositKey = '${prefix}Deposit';
+    // Fallback logic: check specific tier deposit -> primary deposit field -> pricing map default -> N/A
+    final deposit = pricing[depositKey] ?? widget.propertyData['securityDeposit'] ?? pricing['deposit'] ?? '—';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1084,21 +1255,24 @@ class _FloorSectionState extends State<_FloorSection> {
           const SizedBox(height: 12),
           Table(
             columnWidths: const {
-              0: FlexColumnWidth(0.8),
+              0: FlexColumnWidth(1.0),
               1: FlexColumnWidth(1.2),
-              2: FlexColumnWidth(3),
+              2: FlexColumnWidth(2.8),
               3: FlexColumnWidth(1.5),
-              4: FlexColumnWidth(1),
+              4: FlexColumnWidth(1.2),
               5: FlexColumnWidth(1.2),
+              6: FlexColumnWidth(1.2),
             },
+            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
             children: [
               const TableRow(
                 children: [
                   Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Bed', style: TextStyle(fontSize: 9, color: Color(0xFF64748B)))),
                   Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Status', style: TextStyle(fontSize: 9, color: Color(0xFF64748B)))),
                   Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Resident / Booking', style: TextStyle(fontSize: 9, color: Color(0xFF64748B)))),
-                  Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Check-in Date', style: TextStyle(fontSize: 9, color: Color(0xFF64748B)))),
-                  Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Rent', style: TextStyle(fontSize: 9, color: Color(0xFF64748B)))),
+                  Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Check-in', style: TextStyle(fontSize: 9, color: Color(0xFF64748B)))),
+                  Padding(padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4), child: Text('Rent', style: TextStyle(fontSize: 9, color: Color(0xFF64748B)))),
+                  Padding(padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4), child: Text('Deposit', style: TextStyle(fontSize: 9, color: Color(0xFF64748B)))),
                   Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Actions', style: TextStyle(fontSize: 9, color: Color(0xFF64748B)))),
                 ],
               ),
@@ -1109,6 +1283,17 @@ class _FloorSectionState extends State<_FloorSection> {
                 final status = b['status']?.toString().toLowerCase() ?? 'available';
                 final color = status == 'occupied' ? const Color(0xFF16A34A) : status == 'available' ? const Color(0xFF3B82F6) : const Color(0xFFF59E0B);
                 
+                // Logic to ensure Rent is visible by falling back to Tier Pricing if bed-level is zero/null
+                final bedRent = _parseNum(b['monthlyRent'] ?? b['baseRent']).toDouble();
+                final rentKey = prefix == 'fourSharing' || prefix == 'sixSharing' ? '${prefix}Rent' : '${prefix}Rent';
+                // Note: The logic above handles the naming convention where four/six use 'SharingRent'
+                final tierRentKey = prefix.contains('Sharing') ? '${prefix}Rent' : '${prefix}Rent'; 
+                // Re-evaluate prefix based on exact keys in pricing map
+                final actualRentKey = pricing.containsKey('${prefix}Rent') ? '${prefix}Rent' : '${prefix}SharingRent';
+                
+                final tierRent = _parseNum(pricing[actualRentKey]).toDouble();
+                final monthlyRent = bedRent > 0 ? bedRent.toString() : (tierRent > 0 ? tierRent.toString() : '—');
+
                 return TableRow(
                   decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFF1F5F9)))),
                   children: [
@@ -1117,13 +1302,23 @@ class _FloorSectionState extends State<_FloorSection> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                        decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.circle, size: 6, color: color),
                             const SizedBox(width: 4),
-                            Text(status.capitalize(), style: TextStyle(fontSize: 8, color: color, fontWeight: FontWeight.bold)),
+                            Flexible(
+                              child: Text(
+                                status.capitalize(),
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  color: color,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -1134,25 +1329,47 @@ class _FloorSectionState extends State<_FloorSection> {
                         children: [
                           const CircleAvatar(radius: 12, backgroundImage: NetworkImage('https://via.placeholder.com/150')),
                           const SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Arjun Nair', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                              Text('Booking ID: BK-2025-${1048+i}', style: const TextStyle(fontSize: 8, color: Color(0xFF64748B))),
-                            ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Arjun Nair', 
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  'Booking ID: BK-2025-${1048+i}', 
+                                  style: const TextStyle(fontSize: 8, color: Color(0xFF64748B)),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ) : Text(status == 'available' ? '—' : 'Reserved for Guest', style: const TextStyle(fontSize: 9, color: Color(0xFF64748B))),
                     ),
                     Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(status == 'occupied' ? '10 May 2025' : '—', style: const TextStyle(fontSize: 9))),
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('₹8,000', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text('₹$monthlyRent', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                          ),
                           if (status == 'occupied') const Text('Paid', style: TextStyle(fontSize: 8, color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
                         ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('₹$deposit', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
                       ),
                     ),
                     Padding(
@@ -1160,9 +1377,17 @@ class _FloorSectionState extends State<_FloorSection> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.visibility_outlined, size: 14, color: Color(0xFF64748B)),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.more_vert, size: 14, color: Color(0xFF64748B)),
+                          InkWell(
+                            onTap: () {},
+                            child: const Icon(Icons.visibility_outlined, size: 14, color: Color(0xFF64748B))
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.more_vert, size: 14, color: Color(0xFF64748B)),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () => _showBedActions(context, b['id'], roomId),
+                          ),
                         ],
                       ),
                     ),
@@ -1191,6 +1416,66 @@ class _BedsTabState extends State<_BedsTab> {
   int? _selectedFloor;
   String _selectedRoomType = 'All Room Types';
   String _selectedStatus = 'All Status';
+
+  void _showRoomActions(BuildContext context, String roomNum) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('$roomNum Management', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 24),
+              _actionItem(Icons.build_circle_outlined, 'Room Maintenance', () {
+                Navigator.pop(context);
+                _handleRoomAction('maintenance', roomNum);
+              }),
+              _actionItem(Icons.block_flipped, 'Block Room', () {
+                Navigator.pop(context);
+                _handleRoomAction('block', roomNum);
+              }),
+              _actionItem(Icons.payments_outlined, 'Update Pricing/Type', () {
+                Navigator.pop(context);
+                _handleRoomAction('update', roomNum);
+              }),
+              const Divider(color: Colors.white10, height: 32),
+              _actionItem(Icons.delete_forever_outlined, 'Delete Room', () {
+                Navigator.pop(context);
+                _handleRoomAction('delete', roomNum);
+              }, color: const Color(0xFFEF4444)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _actionItem(IconData icon, String label, VoidCallback onTap, {Color? color}) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: color ?? const Color(0xFF94A3B8)),
+            const SizedBox(width: 16),
+            Text(label, style: TextStyle(color: color ?? Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleRoomAction(String action, String roomNum) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Room $roomNum: $action action triggered')));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1374,6 +1659,7 @@ class _BedsTabState extends State<_BedsTab> {
             floorNumber: floor, rooms: filteredFloorRooms, beds: beds,
             floorOccupied: floorBeds.where((b) => b['status'] == 'occupied').length,
             floorTotal: floorBeds.length,
+            propertyData: widget.propertyData,
             bedIndicatorBuilder: _bedIndicator,
             roomCardBuilder: _roomCard,
           );
@@ -1383,6 +1669,7 @@ class _BedsTabState extends State<_BedsTab> {
           floorNumber: floor, rooms: floorRooms, beds: beds,
           floorOccupied: floorBeds.where((b) => b['status'] == 'occupied').length,
           floorTotal: floorBeds.length,
+          propertyData: widget.propertyData,
           bedIndicatorBuilder: _bedIndicator,
           roomCardBuilder: _roomCard,
         );
@@ -1411,7 +1698,12 @@ class _BedsTabState extends State<_BedsTab> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11), overflow: TextOverflow.ellipsis)),
-                const Icon(Icons.more_vert, size: 14, color: Color(0xFF64748B)),
+                IconButton(
+                  icon: const Icon(Icons.more_vert, size: 14, color: Color(0xFF64748B)),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => _showRoomActions(context, name),
+                ),
               ],
             ),
             const SizedBox(height: 2),
@@ -1448,9 +1740,9 @@ class _BedsTabState extends State<_BedsTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.15)),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1532,7 +1824,7 @@ class _ResidentsTabState extends State<_ResidentsTab> {
         children: [
           Container(
             padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
             child: Icon(icon, color: color, size: 16),
           ),
           const SizedBox(height: 12),
@@ -1600,7 +1892,7 @@ class _ResidentsTabState extends State<_ResidentsTab> {
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF16A34A).withOpacity(0.1) : Colors.white,
+        color: isSelected ? const Color(0xFF16A34A).withValues(alpha: 0.1) : Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: isSelected ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0)),
       ),
@@ -1695,7 +1987,7 @@ class _ResidentsTabState extends State<_ResidentsTab> {
   Widget _tag(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
       child: Text(label, style: TextStyle(fontSize: 8, color: color, fontWeight: FontWeight.bold)),
     );
   }
@@ -1703,7 +1995,7 @@ class _ResidentsTabState extends State<_ResidentsTab> {
   Widget _statusTag(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
       child: Text(label, style: TextStyle(fontSize: 9, color: color, fontWeight: FontWeight.bold)),
     );
   }
@@ -1746,7 +2038,7 @@ class _ResidentsTabState extends State<_ResidentsTab> {
     return Container(
       margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(color: color.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(0.1))),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withValues(alpha: 0.1))),
       child: Row(
         children: [
           Icon(icon, size: 16, color: color),
@@ -1818,7 +2110,7 @@ class _BookingsTabState extends State<_BookingsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 16)),
+          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 16)),
           const SizedBox(height: 12),
           Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           Text(label, style: const TextStyle(fontSize: 9, color: Color(0xFF64748B))),
@@ -1859,7 +2151,7 @@ class _BookingsTabState extends State<_BookingsTab> {
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFE2E8F0))),
       child: Row(
         children: [
-          Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(4)), child: Icon(icon, size: 12, color: color)),
+          Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)), child: Icon(icon, size: 12, color: color)),
           const SizedBox(width: 8),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontSize: 8, color: Color(0xFF64748B))), Text(val, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold))]),
         ],
@@ -1886,7 +2178,7 @@ class _BookingsTabState extends State<_BookingsTab> {
   }
 
   Widget _filterChip(String l, bool s) {
-    return Container(margin: const EdgeInsets.only(right: 8), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: s ? const Color(0xFF16A34A).withOpacity(0.1) : Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: s ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0))), child: Text(l, style: TextStyle(fontSize: 10, color: s ? const Color(0xFF16A34A) : const Color(0xFF1E293B), fontWeight: s ? FontWeight.bold : FontWeight.normal)));
+    return Container(margin: const EdgeInsets.only(right: 8), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: s ? const Color(0xFF16A34A).withValues(alpha: 0.1) : Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: s ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0))), child: Text(l, style: TextStyle(fontSize: 10, color: s ? const Color(0xFF16A34A) : const Color(0xFF1E293B), fontWeight: s ? FontWeight.bold : FontWeight.normal)));
   }
 
   Widget _buildBookingCard(Map<String, dynamic> data) {
@@ -1920,8 +2212,8 @@ class _BookingsTabState extends State<_BookingsTab> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(t, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)), Text(s, style: TextStyle(fontSize: 10, color: s == 'Paid' ? const Color(0xFF16A34A) : const Color(0xFFEF4444), fontWeight: FontWeight.bold)), Text(b, style: const TextStyle(fontSize: 9, color: Color(0xFF64748B)))]);
   }
 
-  Widget _tag(String l, Color c) { return Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: c.withOpacity(0.1), borderRadius: BorderRadius.circular(4)), child: Text(l, style: TextStyle(fontSize: 8, color: c, fontWeight: FontWeight.bold))); }
-  Widget _statusTag(String l, Color c) { return Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: c.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Text(l, style: TextStyle(fontSize: 9, color: c, fontWeight: FontWeight.bold))); }
+  Widget _tag(String l, Color c) { return Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: c.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)), child: Text(l, style: TextStyle(fontSize: 8, color: c, fontWeight: FontWeight.bold))); }
+  Widget _statusTag(String l, Color c) { return Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: c.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: Text(l, style: TextStyle(fontSize: 9, color: c, fontWeight: FontWeight.bold))); }
 
   Widget _buildHorizontalSummaries() {
     return Column(
@@ -1970,7 +2262,7 @@ class _BookingsTabState extends State<_BookingsTab> {
   }
 
   Widget _actionBtn(IconData i, String l, Color c) {
-    return Container(margin: const EdgeInsets.only(right: 12), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: c.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: c.withOpacity(0.1))), child: Row(children: [Icon(i, size: 16, color: c), const SizedBox(width: 8), Text(l, style: TextStyle(fontSize: 10, color: c, fontWeight: FontWeight.bold))]));
+    return Container(margin: const EdgeInsets.only(right: 12), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: c.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: c.withValues(alpha: 0.1))), child: Row(children: [Icon(i, size: 16, color: c), const SizedBox(width: 8), Text(l, style: TextStyle(fontSize: 10, color: c, fontWeight: FontWeight.bold))]));
   }
 }
 
@@ -2079,7 +2371,7 @@ class _FinanceTabState extends State<_FinanceTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 16)),
+          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 16)),
           const SizedBox(height: 12),
           Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           Text(label, style: const TextStyle(fontSize: 9, color: Color(0xFF64748B))),
@@ -2144,7 +2436,7 @@ class _FinanceTabState extends State<_FinanceTab> {
       padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFE2E8F0))),
       child: Row(
         children: [
-          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: col.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Icon(i, size: 14, color: col)),
+          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: col.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: Icon(i, size: 14, color: col)),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [Row(children: [Text(l, style: const TextStyle(fontSize: 9, color: Color(0xFF64748B))), const SizedBox(width: 4), Text(c, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10))]), Text(a, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11))])),
         ],
@@ -2195,7 +2487,7 @@ class _FinanceTabState extends State<_FinanceTab> {
   }
 
   Widget _expItem(String l, String v, IconData i, Color c) {
-    return Column(children: [Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: c.withOpacity(0.1), shape: BoxShape.circle), child: Icon(i, size: 14, color: c)), const SizedBox(height: 4), Text(l, style: const TextStyle(fontSize: 8, color: Color(0xFF64748B))), Text(v, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10))]);
+    return Column(children: [Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: c.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(i, size: 14, color: c)), const SizedBox(height: 4), Text(l, style: const TextStyle(fontSize: 8, color: Color(0xFF64748B))), Text(v, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10))]);
   }
 
   Widget _buildQuickActions() {
@@ -2212,7 +2504,7 @@ class _FinanceTabState extends State<_FinanceTab> {
   }
 
   Widget _actionBtn(IconData i, String l, Color c) {
-    return Container(margin: const EdgeInsets.only(right: 12), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: c.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: c.withOpacity(0.1))), child: Row(children: [Icon(i, size: 16, color: c), const SizedBox(width: 8), Text(l, style: TextStyle(fontSize: 10, color: c, fontWeight: FontWeight.bold))]));
+    return Container(margin: const EdgeInsets.only(right: 12), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: c.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: c.withValues(alpha: 0.1))), child: Row(children: [Icon(i, size: 16, color: c), const SizedBox(width: 8), Text(l, style: TextStyle(fontSize: 10, color: c, fontWeight: FontWeight.bold))]));
   }
 }
 
@@ -2277,7 +2569,7 @@ class _LeadsTabState extends State<_LeadsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 16)),
+          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 16)),
           const SizedBox(height: 12),
           Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           Text(label, style: const TextStyle(fontSize: 9, color: Color(0xFF64748B))),
@@ -2315,7 +2607,7 @@ class _LeadsTabState extends State<_LeadsTab> {
   Widget _pipeStep(String val, String label, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFE2E8F0))),
-      child: Row(children: [Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(4)), child: Icon(icon, size: 12, color: color)), const SizedBox(width: 8), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontSize: 8, color: Color(0xFF64748B))), Text(val, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold))])]),
+      child: Row(children: [Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)), child: Icon(icon, size: 12, color: color)), const SizedBox(width: 8), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontSize: 8, color: Color(0xFF64748B))), Text(val, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold))])]),
     );
   }
 
@@ -2338,7 +2630,7 @@ class _LeadsTabState extends State<_LeadsTab> {
   }
 
   Widget _filterChip(String l, bool s) {
-    return Container(margin: const EdgeInsets.only(right: 8), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: s ? const Color(0xFF16A34A).withOpacity(0.1) : Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: s ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0))), child: Text(l, style: TextStyle(fontSize: 10, color: s ? const Color(0xFF16A34A) : const Color(0xFF1E293B), fontWeight: s ? FontWeight.bold : FontWeight.normal)));
+    return Container(margin: const EdgeInsets.only(right: 8), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: s ? const Color(0xFF16A34A).withValues(alpha: 0.1) : Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: s ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0))), child: Text(l, style: TextStyle(fontSize: 10, color: s ? const Color(0xFF16A34A) : const Color(0xFF1E293B), fontWeight: s ? FontWeight.bold : FontWeight.normal)));
   }
 
   Widget _buildLeadCard(Lead lead) {
@@ -2367,7 +2659,7 @@ class _LeadsTabState extends State<_LeadsTab> {
     );
   }
 
-  Widget _tag(String l, Color c) { return Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: c.withOpacity(0.1), borderRadius: BorderRadius.circular(4)), child: Text(l, style: TextStyle(fontSize: 8, color: c, fontWeight: FontWeight.bold))); }
+  Widget _tag(String l, Color c) { return Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: c.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)), child: Text(l, style: TextStyle(fontSize: 8, color: c, fontWeight: FontWeight.bold))); }
 
   Widget _buildFollowUps() {
     return Column(
@@ -2410,7 +2702,7 @@ class _LeadsTabState extends State<_LeadsTab> {
   }
 
   Widget _actionBtn(IconData i, String l, Color c) {
-    return Container(margin: const EdgeInsets.only(right: 12), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: c.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: c.withOpacity(0.1))), child: Row(children: [Icon(i, size: 16, color: c), const SizedBox(width: 8), Text(l, style: TextStyle(fontSize: 10, color: c, fontWeight: FontWeight.bold))]));
+    return Container(margin: const EdgeInsets.only(right: 12), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: c.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: c.withValues(alpha: 0.1))), child: Row(children: [Icon(i, size: 16, color: c), const SizedBox(width: 8), Text(l, style: TextStyle(fontSize: 10, color: c, fontWeight: FontWeight.bold))]));
   }
 }
 
@@ -2473,7 +2765,7 @@ class _HostsTabState extends State<_HostsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 16)),
+          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 16)),
           const SizedBox(height: 12),
           Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           Text(label, style: const TextStyle(fontSize: 9, color: Color(0xFF64748B))),
@@ -2566,7 +2858,7 @@ class _HostsTabState extends State<_HostsTab> {
   }
 
   Widget _statusBadge(String t, Color c) {
-    return Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: c.withOpacity(0.1), borderRadius: BorderRadius.circular(4)), child: Text(t, style: TextStyle(color: c, fontSize: 8, fontWeight: FontWeight.bold)));
+    return Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: c.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)), child: Text(t, style: TextStyle(color: c, fontSize: 8, fontWeight: FontWeight.bold)));
   }
 
   Widget _buildHostActivity() {
@@ -2594,7 +2886,7 @@ class _HostsTabState extends State<_HostsTab> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: c.withOpacity(0.1), borderRadius: BorderRadius.circular(6)), child: Icon(i, size: 14, color: c)),
+          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: c.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)), child: Icon(i, size: 14, color: c)),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(t, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500)), Text(s, style: const TextStyle(fontSize: 8, color: Color(0xFF94A3B8)))])),
         ],
@@ -2602,7 +2894,7 @@ class _HostsTabState extends State<_HostsTab> {
     );
   }
 
-  Widget _tag(String l, Color c) { return Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: c.withOpacity(0.1), borderRadius: BorderRadius.circular(4)), child: Text(l, style: TextStyle(fontSize: 8, color: c, fontWeight: FontWeight.bold))); }
+  Widget _tag(String l, Color c) { return Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: c.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)), child: Text(l, style: TextStyle(fontSize: 8, color: c, fontWeight: FontWeight.bold))); }
 
   Widget _buildQuickActions() {
     return SingleChildScrollView(
@@ -2618,7 +2910,7 @@ class _HostsTabState extends State<_HostsTab> {
   }
 
   Widget _actionBtn(IconData i, String l, Color c) {
-    return Container(margin: const EdgeInsets.only(right: 12), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: c.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: c.withOpacity(0.1))), child: Row(children: [Icon(i, size: 16, color: c), const SizedBox(width: 8), Text(l, style: TextStyle(fontSize: 10, color: c, fontWeight: FontWeight.bold))]));
+    return Container(margin: const EdgeInsets.only(right: 12), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: c.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: c.withValues(alpha: 0.1))), child: Row(children: [Icon(i, size: 16, color: c), const SizedBox(width: 8), Text(l, style: TextStyle(fontSize: 10, color: c, fontWeight: FontWeight.bold))]));
   }
 }
 
@@ -3137,6 +3429,216 @@ class _AddBedBottomSheetState extends State<_AddBedBottomSheet> {
   }
 }
 
+// ── Pricing Tab ────────────────────────────────────────────────────────────
+class _PricingTab extends StatelessWidget {
+  final String propertyId;
+  final Map<String, dynamic> propertyData;
+
+  const _PricingTab({required this.propertyId, required this.propertyData});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance.collection('properties').doc(propertyId).snapshots(),
+      builder: (context, snapshot) {
+        final data = snapshot.data?.data() ?? propertyData;
+        final pricing = Map<String, dynamic>.from(data['pricing'] as Map? ?? {});
+        
+        final List<Map<String, dynamic>> tiers = [];
+        int maxDeposit = 0;
+        
+        void addTier(String id, String label, Color color) {
+          final rentKey = id == 'single' || id == 'double' || id == 'triple' ? '${id}Rent' : '${id}SharingRent';
+          final depositKey = id == 'single' || id == 'double' || id == 'triple' ? '${id}Deposit' : '${id}SharingDeposit';
+          
+          final rent = pricing[rentKey] ?? (id == 'single' ? (data['monthlyRent'] ?? data['price']) : null);
+          final deposit = pricing[depositKey];
+          
+          if (rent != null) {
+            final depVal = int.tryParse(deposit?.toString() ?? '0') ?? 0;
+            if (depVal > maxDeposit) maxDeposit = depVal;
+
+            tiers.add({
+              'label': label,
+              'rent': rent,
+              'deposit': deposit,
+              'color': color,
+            });
+          }
+        }
+
+        addTier('single', 'Single Sharing', const Color(0xFF16A34A));
+        addTier('double', 'Double Sharing', const Color(0xFF3B82F6));
+        addTier('triple', 'Triple Sharing', const Color(0xFFF59E0B));
+        addTier('four', 'Four Sharing', const Color(0xFF8B5CF6));
+        addTier('six', 'Six Sharing', const Color(0xFFEC4899));
+
+        // Fallback if no tiers found
+        if (tiers.isEmpty && (data['monthlyRent'] != null || data['price'] != null)) {
+          final rootDeposit = int.tryParse(data['securityDeposit']?.toString() ?? '0') ?? 0;
+          maxDeposit = rootDeposit;
+
+          tiers.add({
+            'label': 'Monthly Rent',
+            'rent': data['monthlyRent'] ?? data['price'],
+            'deposit': data['securityDeposit'] ?? pricing['deposit'],
+            'color': const Color(0xFF16A34A),
+          });
+        }
+
+        // Primary Deposit logic: use the field from doc, or fallback to max found in tiers
+        final primaryDeposit = data['securityDeposit'] ?? (maxDeposit > 0 ? maxDeposit.toString() : 'N/A');
+
+        return ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            _buildSectionHeader('Rental Tiers & Deposits'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 32,
+                    runSpacing: 32,
+                    children: tiers.map((t) => SizedBox(
+                      width: 140,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _priceItem(t['label'], t['rent'], t['color']),
+                          if (t['deposit'] != null) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.security_outlined, size: 12, color: Color(0xFF94A3B8)),
+                                const SizedBox(width: 6),
+                                Text('Dep: ₹${t['deposit']}', style: const TextStyle(color: Color(0xFF64748B), fontSize: 11, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    )).toList(),
+                  ),
+                  const Divider(height: 64, color: Color(0xFFF1F5F9)),
+                  Row(
+                    children: [
+                      Expanded(child: _infoItem(Icons.security_outlined, 'Primary Deposit', '₹$primaryDeposit')),
+                      Expanded(child: _infoItem(Icons.history_outlined, 'Notice Period', pricing['noticePeriod'] ?? 'N/A')),
+                      Expanded(child: _infoItem(Icons.restaurant_outlined, 'Food Included', pricing['foodIncluded'] == true ? 'YES' : 'NO')),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+            _buildSectionHeader('Pricing Policy'),
+            const SizedBox(height: 12),
+            _buildPolicyCard(),
+            const SizedBox(height: 100),
+          ],
+        );
+      }
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        color: Color(0xFF64748B),
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+
+  Widget _priceItem(String label, dynamic value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 10, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            '₹$value',
+            style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _infoItem(IconData icon, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: const Color(0xFF40916C), size: 14),
+            const SizedBox(width: 8),
+            Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 9, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(color: Color(0xFF1E293B), fontSize: 13, fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
+  Widget _buildPolicyCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          _policyRow(Icons.info_outline, 'Rent is collected on the 1st of every month.'),
+          const SizedBox(height: 12),
+          _policyRow(Icons.info_outline, 'Security deposit is refundable upon checkout.'),
+          const SizedBox(height: 12),
+          _policyRow(Icons.info_outline, 'Notice period must be served as per agreement.'),
+        ],
+      ),
+    );
+  }
+
+  Widget _policyRow(IconData icon, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: const Color(0xFF16A34A)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF475569), height: 1.4),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   final Widget child; _SliverTabBarDelegate({required this.child});
   @override double get minExtent => 48.0; @override double get maxExtent => 48.0;
@@ -3169,4 +3671,352 @@ class _ManagePermissionsDialog extends StatefulWidget {
 }
 class _ManagePermissionsDialogState extends State<_ManagePermissionsDialog> {
   @override Widget build(BuildContext context) { return const Center(child: Text('Permissions')); }
+}
+
+class _UpdatePricingBottomSheet extends StatefulWidget {
+  final String propertyId;
+  final Map<String, dynamic> propertyData;
+  final VoidCallback onComplete;
+
+  const _UpdatePricingBottomSheet({
+    required this.propertyId,
+    required this.propertyData,
+    required this.onComplete,
+  });
+
+  @override
+  State<_UpdatePricingBottomSheet> createState() => _UpdatePricingBottomSheetState();
+}
+
+class _UpdatePricingBottomSheetState extends State<_UpdatePricingBottomSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late Map<String, dynamic> _pricing;
+  bool _isLoading = false;
+
+  // Controllers for common tiers
+  final Map<String, TextEditingController> _rentControllers = {};
+  final Map<String, TextEditingController> _depositControllers = {};
+  final TextEditingController _noticeController = TextEditingController();
+  bool _foodIncluded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pricing = Map<String, dynamic>.from(widget.propertyData['pricing'] as Map? ?? {});
+    _foodIncluded = _pricing['foodIncluded'] == true;
+    _noticeController.text = _pricing['noticePeriod']?.toString() ?? '15 Days';
+
+    _initController('single', 'singleRent', 'singleDeposit');
+    _initController('double', 'doubleRent', 'doubleDeposit');
+    _initController('triple', 'tripleRent', 'tripleDeposit');
+    _initController('four', 'fourSharingRent', 'fourSharingDeposit');
+    _initController('six', 'sixSharingRent', 'sixSharingDeposit');
+  }
+
+  void _initController(String id, String rKey, String dKey) {
+    _rentControllers[id] = TextEditingController(text: _pricing[rKey]?.toString() ?? (id == 'single' ? widget.propertyData['monthlyRent']?.toString() : ''));
+    _depositControllers[id] = TextEditingController(text: _pricing[dKey]?.toString() ?? (id == 'single' ? widget.propertyData['securityDeposit']?.toString() : ''));
+  }
+
+  @override
+  void dispose() {
+    for (var c in _rentControllers.values) { c.dispose(); }
+    for (var c in _depositControllers.values) { c.dispose(); }
+    _noticeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      padding: EdgeInsets.fromLTRB(24, 12, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const Text('Update Pricing & Deposits', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+              const Text('Set monthly rents and security deposits per tier', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+              const SizedBox(height: 24),
+
+              _buildTierInput('single', 'Single Sharing', const Color(0xFF16A34A)),
+              _buildTierInput('double', 'Double Sharing', const Color(0xFF3B82F6)),
+              _buildTierInput('triple', 'Triple Sharing', const Color(0xFFF59E0B)),
+              _buildTierInput('four', 'Four Sharing', const Color(0xFF8B5CF6)),
+              _buildTierInput('six', 'Six Sharing', const Color(0xFFEC4899)),
+
+              const Divider(height: 48),
+              const Text('Additional Terms', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSimpleInput(
+                      controller: _noticeController,
+                      label: 'Notice Period',
+                      hint: 'e.g. 30 Days',
+                      icon: Icons.history_outlined,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Text('Food Included', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 8),
+                        Switch.adaptive(
+                          value: _foodIncluded,
+                          activeColor: const Color(0xFF16A34A),
+                          onChanged: (v) => setState(() => _foodIncluded = v),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 56),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      child: const Text('Cancel', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1B4332), // Forest Green
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(0, 56),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTierInput(String id, String label, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(width: 4, height: 16, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 10),
+              Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSmallInput(
+                  controller: _rentControllers[id]!,
+                  label: 'Rent (₹)',
+                  hint: 'Monthly',
+                  icon: Icons.payments_outlined,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildSmallInput(
+                  controller: _depositControllers[id]!,
+                  label: 'Deposit (₹)',
+                  hint: 'Refundable',
+                  icon: Icons.security_outlined,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSmallInput({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+          TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 4),
+              hintText: hint,
+              hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+              border: InputBorder.none,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimpleInput({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: const Color(0xFF64748B)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                TextField(
+                  controller: controller,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                    hintText: hint,
+                    hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                    border: InputBorder.none,
+                  ),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
+    setState(() => _isLoading = true);
+    try {
+      final updates = <String, dynamic>{};
+      final Map<String, dynamic> newPricing = Map.from(_pricing);
+
+      void updateTier(String id, String rKey, String dKey) {
+        final rent = _rentControllers[id]!.text.trim();
+        final deposit = _depositControllers[id]!.text.trim();
+        
+        if (rent.isNotEmpty) {
+          newPricing[rKey] = rent;
+          if (id == 'single') updates['monthlyRent'] = rent;
+        } else {
+          newPricing.remove(rKey);
+        }
+
+        if (deposit.isNotEmpty) {
+          newPricing[dKey] = deposit;
+        } else {
+          newPricing.remove(dKey);
+        }
+      }
+
+      updateTier('single', 'singleRent', 'singleDeposit');
+      updateTier('double', 'doubleRent', 'doubleDeposit');
+      updateTier('triple', 'tripleRent', 'tripleDeposit');
+      updateTier('four', 'fourSharingRent', 'fourSharingDeposit');
+      updateTier('six', 'sixSharingRent', 'sixSharingDeposit');
+
+      newPricing['noticePeriod'] = _noticeController.text.trim();
+      newPricing['foodIncluded'] = _foodIncluded;
+
+      // Primary Deposit Calculation: max of all tiers
+      int maxDep = 0;
+      final depKeys = ['singleDeposit', 'doubleDeposit', 'tripleDeposit', 'fourSharingDeposit', 'sixSharingDeposit'];
+      for (var k in depKeys) {
+        final val = int.tryParse(newPricing[k]?.toString() ?? '0') ?? 0;
+        if (val > maxDep) maxDep = val;
+      }
+      if (maxDep > 0) {
+        newPricing['deposit'] = maxDep.toString();
+        updates['securityDeposit'] = maxDep.toString();
+      }
+
+      updates['pricing'] = newPricing;
+      updates['updatedAt'] = FieldValue.serverTimestamp();
+
+      await FirebaseFirestore.instance
+          .collection('properties')
+          .doc(widget.propertyId)
+          .update(updates);
+
+      // NEW: Trigger backend reconciliation to sync new prices to all beds
+      try {
+        await AdminApiService().reconcileProperty(widget.propertyId);
+      } catch (reconcileError) {
+        debugPrint('Post-pricing-update reconciliation failed: $reconcileError');
+      }
+
+      widget.onComplete();
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 }

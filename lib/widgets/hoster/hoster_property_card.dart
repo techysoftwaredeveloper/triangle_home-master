@@ -130,9 +130,9 @@ class _HosterPropertyCardState extends State<HosterPropertyCard>
     final statusBg = _getStatusBg(status);
 
     final int activeResidents = _parseNum(widget.data['activeResidents']).toInt();
-    final int totalBeds = _parseNum(widget.data['capacity']).toInt();
+    final int totalBeds = _parseNum(widget.data['totalBeds'] ?? widget.data['capacity']).toInt();
     final int vacantBeds = totalBeds - activeResidents;
-    final int occupancyPercent = _parseNum(widget.data['occupancy']).toInt();
+    final int occupancyPercent = totalBeds > 0 ? (activeResidents / totalBeds * 100).round() : 0;
     
     final double monthlyRent = _parseNum(widget.data['monthlyRent'] ?? widget.data['price']).toDouble();
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:triangle_home/models/local_user.dart';
@@ -7,43 +8,45 @@ import 'package:triangle_home/models/pending_action.dart';
 import 'package:triangle_home/models/cached_search_result.dart';
 
 class IsarService {
+  static final IsarService instance = IsarService._internal();
   late Future<Isar> db;
+  bool _isInitialized = false;
 
-  IsarService() {
+  IsarService._internal() {
     db = openDB();
   }
 
+  factory IsarService() => instance;
+
   Future<Isar> openDB() async {
-    if (Isar.instanceNames.isEmpty) {
-      final dir = await getApplicationDocumentsDirectory();
-      return await Isar.open(
-        [
-          LocalUserSchema,
-          LocalLocationSchema,
-          UserLocationPreferenceSchema,
-          AdminCacheSchema,
-          PendingActionSchema,
-          CachedSearchResultSchema,
-        ],
-        inspector: true,
-        directory: dir.path,
-      );
-    }
-    return Isar.getInstance()!;
+    if (_isInitialized) return Isar.getInstance()!;
+
+    final dir = await getApplicationDocumentsDirectory();
+    final isar = await Isar.open(
+      [
+        LocalUserSchema,
+        LocalLocationSchema,
+        UserLocationPreferenceSchema,
+        AdminCacheSchema,
+        PendingActionSchema,
+        CachedSearchResultSchema,
+      ],
+      inspector: true,
+      directory: dir.path,
+    );
+    _isInitialized = true;
+    return isar;
   }
 
-  // Admin Cache Operations (Used for general caching including drafts)
-  Future<void> saveAdminCache(
-    String key,
-    String jsonData, {
-    Duration? ttl,
-  }) async {
+  // --- Generic Cache Core ---
+
+  Future<void> cacheData(String key, String data, {Duration? ttl}) async {
     final isar = await db;
     await isar.writeTxn(() async {
       await isar.adminCaches.put(
         AdminCache(
           key: key,
-          jsonData: jsonData,
+          jsonData: data,
           lastUpdated: DateTime.now(),
           expiresAt: ttl != null ? DateTime.now().add(ttl) : null,
         ),
@@ -51,21 +54,71 @@ class IsarService {
     });
   }
 
-  Future<String?> getAdminCache(String key) async {
+  Future<String?> getCachedData(String key) async {
     final isar = await db;
     final cache = await isar.adminCaches.filter().keyEqualTo(key).findFirst();
 
     if (cache != null &&
         cache.expiresAt != null &&
         cache.expiresAt!.isBefore(DateTime.now())) {
-      // Expired
       await isar.writeTxn(() async {
         await isar.adminCaches.filter().keyEqualTo(key).deleteFirst();
       });
       return null;
     }
-
     return cache?.jsonData;
+  }
+
+  /// Aliases for backward compatibility
+  Future<void> saveAdminCache(String key, String jsonData, {Duration? ttl}) => 
+    cacheData(key, jsonData, ttl: ttl);
+
+  Future<String?> getAdminCache(String key) => getCachedData(key);
+
+  /// Loads from cache first, then executes [remoteFetcher] and updates cache.
+  Stream<String> getWithRevalidate({
+    required String key,
+    required Future<String> Function() remoteFetcher,
+  }) async* {
+    final cached = await getCachedData(key);
+    if (cached != null) {
+      yield cached;
+    }
+
+    try {
+      final fresh = await remoteFetcher();
+      await cacheData(key, fresh);
+      yield fresh;
+    } catch (e) {
+      debugPrint('Revalidation failed for $key: $e');
+    }
+  }
+
+  // --- User Module Cache ---
+  Future<void> cacheUserProfile(String uid, String jsonData) async {
+    await cacheData('user_profile_$uid', jsonData, ttl: const Duration(days: 1));
+  }
+
+  Future<String?> getCachedUserProfile(String uid) async {
+    return await getCachedData('user_profile_$uid');
+  }
+
+  // --- Hoster Module Cache ---
+  Future<void> cacheHosterProperties(String hosterId, String jsonData) async {
+    await cacheData('hoster_props_$hosterId', jsonData, ttl: const Duration(hours: 4));
+  }
+
+  Future<String?> getCachedHosterProperties(String hosterId) async {
+    return await getCachedData('hoster_props_$hosterId');
+  }
+
+  // --- Admin Module Cache ---
+  Future<void> cacheAdminStats(String jsonData) async {
+    await cacheData('admin_dashboard_stats', jsonData, ttl: const Duration(minutes: 30));
+  }
+
+  Future<String?> getCachedAdminStats() async {
+    return await getCachedData('admin_dashboard_stats');
   }
 
   Future<void> clearAdminCache(String key) async {
@@ -89,7 +142,7 @@ class IsarService {
 
   // Generic Draft Operations
   Future<void> saveDraft(String type, String id, String jsonData) async {
-    await saveAdminCache(
+    await cacheData(
       'draft_${type}_$id',
       jsonData,
       ttl: const Duration(days: 7),
@@ -97,7 +150,7 @@ class IsarService {
   }
 
   Future<String?> getDraft(String type, String id) async {
-    return await getAdminCache('draft_${type}_$id');
+    return await getCachedData('draft_${type}_$id');
   }
 
   Future<void> clearDraft(String type, String id) async {
@@ -119,7 +172,7 @@ class IsarService {
 
   // Legacy Property Draft wrappers using AdminCache
   Future<void> savePropertyDraft(String hosterId, String jsonData) async {
-    await saveAdminCache(
+    await cacheData(
       'property_draft_$hosterId',
       jsonData,
       ttl: const Duration(days: 30),
@@ -127,7 +180,7 @@ class IsarService {
   }
 
   Future<String?> getPropertyDraft(String hosterId) async {
-    return await getAdminCache('property_draft_$hosterId');
+    return await getCachedData('property_draft_$hosterId');
   }
 
   Future<void> clearPropertyDraft(String hosterId) async {
@@ -201,7 +254,7 @@ class IsarService {
 
   // User Intent Tracking (Separates Hoster/Student flows)
   Future<void> setUserIntent(String mode) async {
-    await saveAdminCache(
+    await cacheData(
       'user_onboarding_intent',
       mode,
       ttl: const Duration(hours: 24),
@@ -209,7 +262,7 @@ class IsarService {
   }
 
   Future<String?> getUserIntent() async {
-    return await getAdminCache('user_onboarding_intent');
+    return await getCachedData('user_onboarding_intent');
   }
 
   Future<void> clearUserIntent() async {

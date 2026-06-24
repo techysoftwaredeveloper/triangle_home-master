@@ -138,6 +138,10 @@ async function performReconciliation(propertyId) {
                 derivedRent = parseFloat(pricing.doubleRent || 0);
             } else if (roomType === 'triple') {
                 derivedRent = parseFloat(pricing.tripleRent || 0);
+            } else if (roomType === 'four' || roomType.includes('4')) {
+                derivedRent = parseFloat(pricing.fourSharingRent || pricing.fourRent || 0);
+            } else if (roomType === 'six' || roomType.includes('6')) {
+                derivedRent = parseFloat(pricing.sixSharingRent || pricing.sixRent || 0);
             } else if (roomType === 'dormitory') {
                 derivedRent = parseFloat(pricing.dormitoryRent || 0);
                 // Smart fallback for dormitory if specific rent is missing
@@ -153,7 +157,22 @@ async function performReconciliation(propertyId) {
         }
 
         if (derivedDeposit < 100) {
-            derivedDeposit = parseFloat(pricing.deposit || currentData.securityDeposit || currentData.deposit || 0);
+            if (roomType === 'single') {
+                derivedDeposit = parseFloat(pricing.singleDeposit || pricing.deposit || 0);
+            } else if (roomType === 'double') {
+                derivedDeposit = parseFloat(pricing.doubleDeposit || 0);
+            } else if (roomType === 'triple') {
+                derivedDeposit = parseFloat(pricing.tripleDeposit || 0);
+            } else if (roomType === 'four' || roomType.includes('4')) {
+                derivedDeposit = parseFloat(pricing.fourSharingDeposit || pricing.fourDeposit || 0);
+            } else if (roomType === 'six' || roomType.includes('6')) {
+                derivedDeposit = parseFloat(pricing.sixSharingDeposit || pricing.sixDeposit || 0);
+            }
+
+            // Final fallback to global deposit
+            if (derivedDeposit === 0) {
+                derivedDeposit = parseFloat(pricing.deposit || currentData.securityDeposit || currentData.deposit || 0);
+            }
         }
 
         let derivedOccupancyType = room.occupancyType || '';

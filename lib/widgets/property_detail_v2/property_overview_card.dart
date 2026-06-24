@@ -16,7 +16,21 @@ class PropertyOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final depositValue = _getValue(property, ['deposit', 'securityDeposit', 'security_deposit', 'baseDeposit', 'initialDeposit', 'depositAmount', 'deposit_amount', 'basicInfo.deposit', 'basicInfo.securityDeposit', 'propertyDetails.deposit', 'basicInfo.security_deposit']);
+    final depositValue = _getValue(property, [
+      'deposit', 
+      'securityDeposit', 
+      'security_deposit', 
+      'baseDeposit', 
+      'initialDeposit', 
+      'depositAmount', 
+      'deposit_amount', 
+      'basicInfo.deposit', 
+      'basicInfo.securityDeposit', 
+      'propertyDetails.deposit', 
+      'basicInfo.security_deposit',
+      'pricing.securityDeposit',
+      'pricing.deposit'
+    ]);
     final displayDeposit = depositValue != 'N/A' ? '₹$depositValue' : (calculatedDeposit != null && calculatedDeposit! > 0 ? '₹${calculatedDeposit!.toStringAsFixed(0)}' : '₹N/A');
 
     final double rating = stats['rating']?.toDouble() ?? (property['rating'] as num?)?.toDouble() ?? 0.0;

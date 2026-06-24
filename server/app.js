@@ -19,6 +19,7 @@ const paymentRoutes = require('./routes/payment');
 const maintenanceRoutes = require('./routes/maintenance');
 const complianceRoutes = require('./routes/compliance');
 const searchRoutes = require('./routes/search');
+const inventoryRoutes = require('./routes/inventory');
 const recommendationRoutes = require('./routes/recommendationRoutes');
 
 const app = express();
@@ -67,6 +68,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/compliance', complianceRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/inventory', inventoryRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 
 app.get('/', (req, res) => {
